@@ -1,14 +1,25 @@
-pub fn add(left: usize, right: usize) -> usize {
-	left + right
-}
+#![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(test)]
-mod tests {
-	use super::*;
+pub use pallet::*;
 
-	#[test]
-	fn it_works() {
-		let result = add(2, 2);
-		assert_eq!(result, 4);
+#[frame_support::pallet]
+pub mod pallet {
+	use frame_support::pallet_prelude::*;
+	//use frame_system::pallet_prelude::*;
+
+	#[pallet::config]
+	pub trait Config: frame_system::Config {
+		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 	}
+
+	#[pallet::event]
+	pub enum Event<T: Config> {
+		GuildCreated,
+		GuildEntered,
+	}
+
+	#[pallet::pallet]
+	#[pallet::without_storage_info]
+	#[pallet::generate_store(pub(super) trait Store)]
+	pub struct Pallet<T>(_);
 }
