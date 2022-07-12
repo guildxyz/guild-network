@@ -1,0 +1,15 @@
+[package]
+name = "pallet-guild"
+version = "0.1.0-alpha"
+edition = "2021"
+
+[dependencies]
+frame-support = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25"}
+frame-system = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
+
+[features]
+default = ["std"]
+std = [
+	"frame-support/std",
+	"frame-system/std",
+]

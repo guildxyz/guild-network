@@ -3794,6 +3794,7 @@ dependencies = [
  "pallet-aura",
  "pallet-balances",
  "pallet-grandpa",
+ "pallet-guild",
  "pallet-nicks",
  "pallet-randomness-collective-flip",
  "pallet-sudo",
@@ -4048,6 +4049,14 @@ dependencies = [
  "sp-session",
  "sp-staking",
  "sp-std",
+]
+
+[[package]]
+name = "pallet-guild"
+version = "0.1.0-alpha"
+dependencies = [
+ "frame-support",
+ "frame-system",
 ]
 
 [[package]]
