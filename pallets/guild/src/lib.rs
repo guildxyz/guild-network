@@ -2,10 +2,17 @@
 
 pub use pallet::*;
 
+
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	//use frame_system::pallet_prelude::*;
+	
+	#[derive(Encode, Decode)]
+	struct Guild {
+		owner: AccountId,
+		members: BoundedVec<AccountId, MaxLen>,
+	}
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -15,7 +22,7 @@ pub mod pallet {
 	#[pallet::event]
 	pub enum Event<T: Config> {
 		GuildCreated,
-		GuildEntered,
+		GuildJoined,
 	}
 
 	#[pallet::pallet]
