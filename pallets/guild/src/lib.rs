@@ -10,8 +10,18 @@ pub mod pallet {
 
 	#[derive(Encode, Decode, Clone, TypeInfo)]
 	pub struct Guild<AccountId> {
-		pub owner: AccountId,
-		pub members: SpVec<AccountId>,
+		owner: AccountId,
+		members: SpVec<AccountId>,
+	}
+
+	impl<AccountId> Guild<AccountId> {
+		pub fn owner(&self) -> &AccountId {
+			&self.owner
+		}
+
+		pub fn members(&self) -> &[AccountId] {
+			&self.members
+		}
 	}
 
 	type GuildId = u64;
@@ -62,14 +72,13 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 			Guilds::<T>::try_mutate(&guild_id, |value| {
 				if let Some(guild) = value {
-					guild
-						.members
-						.binary_search(&sender)
-						.ok()
-						.ok_or(Error::<T>::SignerAlreadyJoined)?;
-					guild.members.push(sender.clone());
-					Self::deposit_event(Event::GuildJoined(sender, guild_id));
-					Ok::<(), DispatchError>(())
+					if guild.members.binary_search(&sender).is_ok() {
+						Err(Error::<T>::SignerAlreadyJoined.into())
+					} else {
+						guild.members.push(sender.clone());
+						Self::deposit_event(Event::GuildJoined(sender, guild_id));
+						Ok::<(), DispatchError>(())
+					}
 				} else {
 					Err(Error::<T>::GuildDoesNotExist.into())
 				}
@@ -92,7 +101,7 @@ mod test {
 
 	use frame_support::{
 		assert_noop, assert_ok,
-		traits::{ConstU32, ConstU64, StorageVersion},
+		traits::{ConstU32, ConstU64},
 	};
 
 	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -148,7 +157,20 @@ mod test {
 			assert_ok!(Guild::create_guild(Origin::signed(4), 444));
 			assert!(Guild::guilds(444).is_some());
 			assert_ok!(Guild::join_guild(Origin::signed(4), 444));
-			assert_eq!(Guild::guilds(444).unwrap().members.len(), 1);
+			assert_eq!(Guild::guilds(444).unwrap().members().len(), 1);
+			assert_eq!(Guild::guilds(444).unwrap().members()[0], 4);
+			assert_noop!(Guild::create_guild(Origin::signed(4), 444), Error::<Test>::GuildAlreadyExists);
+			assert_noop!(Guild::create_guild(Origin::signed(5), 444), Error::<Test>::GuildAlreadyExists);
+			assert_noop!(Guild::join_guild(Origin::signed(4), 444), Error::<Test>::SignerAlreadyJoined);
+			assert_ok!(Guild::join_guild(Origin::signed(5), 444));
+			assert_ok!(Guild::join_guild(Origin::signed(6), 444));
+			assert_ok!(Guild::join_guild(Origin::signed(7), 444));
+			assert_ok!(Guild::join_guild(Origin::signed(8), 444));
+			assert_eq!(Guild::guilds(444).unwrap().members().len(), 5);
+			assert_noop!(Guild::join_guild(Origin::signed(7), 444), Error::<Test>::SignerAlreadyJoined);
+			assert_noop!(Guild::join_guild(Origin::signed(8), 446), Error::<Test>::GuildDoesNotExist);
+			assert_ok!(Guild::create_guild(Origin::signed(1), 446));
+			assert_ok!(Guild::join_guild(Origin::signed(8), 446));
 		});
 	}
 }
