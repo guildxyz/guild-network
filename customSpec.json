@@ -14,14 +14,14 @@
       },
       "aura": {
         "authorities": [
-          "5FL67sXX4EdyHPiNqBdF3UPfuSZJW9fiAWRNuWtqJZyWJ4nc",
+          "5Djo5GxCEhcaXDN2hjNgvFqyzF51ccX5fKb4uubUSnpswZRH",
           "5G8mVhZR5Dm9fWjA4xkaQVigC4vTF81WMdhUFiNhA1LKqLzB"
         ]
       },
       "grandpa": {
         "authorities": [
           [
-            "5GbT4BEz2d2AtchbBJRvMQjR8ecrHBjk6LkGXWAMhdTnjXKN",
+            "5Hdo2kMbuW9McdrtiRaYb4GAcQK4Am4KuzWMyg4AmzYzpjMq",
             1
           ],
           [
