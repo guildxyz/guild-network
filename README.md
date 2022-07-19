@@ -7,6 +7,14 @@ cargo build --release
 
 **NOTE**: the build process will take somewhere between 20-30 minutes (depending on the hardware) to build in `--release` mode.
 
+### Run a single test-node
+In case you want to quickly check your node, just run
+```
+./start.sh dev
+```
+
+This will spin up a clean node that you can interact with from the browser (see last paragraph).
+
 ### Generate cryptographic keys
 Every validator node will need to generate 2 cryptographic keys for `aura` (block creation) and `grandpa` (block finalization).
 
