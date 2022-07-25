@@ -27,6 +27,8 @@ elif [ $1 = "child" ]; then
 	--bootnodes /ip4/127.0.0.1/tcp/30333/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp
 elif [ $1 = "dev" ]; then
 	./target/release/node-template --dev
+elif [ $1 = "clean" ]; then
+	./target/release/node-template purge-chain --base-path /tmp/$2 -y
 else
   echo "Invalid command"
 fi

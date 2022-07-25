@@ -1,6 +1,6 @@
 {
   "name": "Substrate Bois Guild Testnet",
-  "id": "local_testnet",
+  "id": "testnet",
   "chainType": "Development",
   "bootNodes": [],
   "telemetryEndpoints": null,

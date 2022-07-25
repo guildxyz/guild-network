@@ -61,9 +61,9 @@ where the `SS58` address will be needed for later steps.
 Someone needs to generate a `customSpec.json` file that contains specifications for the blockchain.
 ```json
 {
-	 "name": "Local Testnet",
-	 "id": "local_testnet",
-	 "chainType": "Local",
+	 "name": "Testnet",
+	 "id": "testnet",
+	 "chainType": "Development",
 	 "bootNodes": [],
 	 "telemetryEndpoints": null,
 	 "protocolId": null,
@@ -137,7 +137,7 @@ Add the Ed25519 key to the node's keystore:
 
 Finally, verify that the output of 
 ```bash
-ls /tmp/mynode/chains/local_testnet/keystore
+ls /tmp/mynode/chains/testnet/keystore
 ```
 resembles this:
 ```text
