@@ -168,7 +168,7 @@ First, start the bootnode by running
   --base-path /tmp/mynode \
   --chain ./customSpecRaw.json \
   --port 30333 \
-  --ws-port 9945 \
+  --ws-port 9944 \
   --rpc-port 9933 \
   --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
   --validator \
@@ -188,9 +188,9 @@ Next, each computer that's part of the `tailscale` network should run something 
 ./target/release/node-template \
   --base-path /tmp/mynode \
   --chain ./customSpecRaw.json \
-  --port 30334 \
-  --ws-port 9946 \
-  --rpc-port 9934 \
+  --port 30333 \
+  --ws-port 9944 \
+  --rpc-port 9933 \
   --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
   --validator \
   --rpc-methods Unsafe \
