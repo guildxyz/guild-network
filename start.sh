@@ -46,7 +46,7 @@ elif [ $1 = "benchmark" ]; then
 		--wasm-execution=compiled \
 		--steps 50 \
 		--repeat 20 \
-		--output ./weights.rs
+		--output ./pallets/"$pallet"/src/default_weights.rs
 else
   echo "Invalid command"
 fi
