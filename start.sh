@@ -40,13 +40,14 @@ elif [ $1 = "benchmark" ]; then
 	[ -z "$pallet" ] && pallet="template"
 
 	./target/release/node-template benchmark pallet \
-		--pallet "pallet-$pallet" \
+		--pallet pallet-$pallet \
 		--extrinsic "*" \
 		--execution=wasm \
 		--wasm-execution=compiled \
 		--steps 50 \
 		--repeat 20 \
-		--output ./pallets/"$pallet"/src/default_weights.rs
+		--template frame-weight-template.hbs \
+		--output ./pallets/$pallet/src/weights.rs
 else
   echo "Invalid command"
 fi
