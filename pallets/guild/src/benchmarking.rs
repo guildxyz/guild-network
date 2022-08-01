@@ -17,7 +17,7 @@ benchmarks! {
 
 	join_guild {
 		let caller: T::AccountId = whitelisted_caller();
-		Guild::<T>::create_guild(RawOrigin::Signed(caller.clone()).into(), 69);
+		Guild::<T>::create_guild(RawOrigin::Signed(caller.clone()).into(), 69)?;
 	}: _(RawOrigin::Signed(caller), 69)
 	verify {
 		assert_eq!(1, 1);
