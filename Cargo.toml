@@ -2,6 +2,8 @@
 members = [
     "node",
     "pallets/template",
+    "pallets/guild",
+    "pallets/chainlink",
     "runtime",
 ]
 [profile.release]
