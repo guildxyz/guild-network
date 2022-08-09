@@ -2,8 +2,13 @@
 
 pub use pallet::*;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+pub mod weights;
+
 #[frame_support::pallet]
 pub mod pallet {
+	use super::weights::WeightInfo;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	use sp_std::vec::Vec as SpVec;
@@ -33,6 +38,7 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+		type WeightInfo: WeightInfo;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 	}
 
@@ -57,7 +63,7 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		#[pallet::weight(10_000)]
+		#[pallet::weight(T::WeightInfo::create_guild())]
 		pub fn create_guild(origin: OriginFor<T>, guild_id: GuildId) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			ensure!(!Guilds::<T>::contains_key(&guild_id), Error::<T>::GuildAlreadyExists);
@@ -67,7 +73,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(50_000_000)]
+		#[pallet::weight(T::WeightInfo::join_guild())]
 		pub fn join_guild(origin: OriginFor<T>, guild_id: GuildId) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			Guilds::<T>::try_mutate(&guild_id, |value| {
