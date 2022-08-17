@@ -21,9 +21,10 @@
 #[cfg(test)]
 mod tests;
 
+pub use pallet::*;
+
 #[frame_support::pallet]
 pub mod pallet {
-	#[warn(unused_imports)]
 	use codec::Codec;
 	use frame_support::{
 		dispatch::DispatchResult,
@@ -71,11 +72,6 @@ pub mod pallet {
 		// Period during which a request is valid
 		type ValidityPeriod: Get<Self::BlockNumber>;
 	}
-
-	#[pallet::pallet]
-	#[pallet::without_storage_info]
-	#[pallet::generate_store(pub(super) trait Store)]
-	pub struct Pallet<T>(_);
 
 	#[pallet::error]
 	pub enum Error<T> {
@@ -150,6 +146,11 @@ pub mod pallet {
 	#[pallet::getter(fn request)]
 	pub(super) type Requests<T: Config> =
 		StorageMap<_, Blake2_128Concat, RequestIdentifier, Request<T>, OptionQuery>;
+
+	#[pallet::pallet]
+	#[pallet::without_storage_info]
+	#[pallet::generate_store(pub(super) trait Store)]
+	pub struct Pallet<T>(_);
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {

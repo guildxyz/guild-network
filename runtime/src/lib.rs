@@ -43,9 +43,9 @@ use pallet_transaction_payment::CurrencyAdapter;
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 
+pub use pallet_chainlink;
 /// Import the template pallet.
 pub use pallet_guild;
-pub use pallet_chainlink;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -270,7 +270,7 @@ impl pallet_guild::Config for Runtime {
 impl pallet_chainlink::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances;
-	type Callback = ExampleCall<Runtime>;
+	type Callback = ExampleCall<Runtime>; // TODO check example.rs in chainlink repo
 	type ValidityPeriod = ValidityPeriod;
 }
 
@@ -290,7 +290,7 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment,
 		Sudo: pallet_sudo,
 		Guild: pallet_guild,
-		Chainlink: pallet_chainlink
+		Chainlink: pallet_chainlink,
 	}
 );
 
