@@ -45,6 +45,7 @@ pub use sp_runtime::{Perbill, Permill};
 
 /// Import the template pallet.
 pub use pallet_guild;
+pub use pallet_chainlink;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -142,6 +143,7 @@ parameter_types! {
 	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
 		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 42;
+	pub const ValidityPeriod: u32 = 50;
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -265,6 +267,13 @@ impl pallet_guild::Config for Runtime {
 	type Event = Event;
 }
 
+impl pallet_chainlink::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type Callback = ExampleCall<Runtime>;
+	type ValidityPeriod = ValidityPeriod;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -281,6 +290,7 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment,
 		Sudo: pallet_sudo,
 		Guild: pallet_guild,
+		Chainlink: pallet_chainlink
 	}
 );
 

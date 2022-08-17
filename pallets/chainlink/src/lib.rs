@@ -74,7 +74,7 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	#[pallet::without_storage_info]
-	#[pallet::generate_store(trait Store)]
+	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
 	#[pallet::error]
@@ -139,7 +139,6 @@ pub mod pallet {
 		fee: BalanceOf,
 	}
 
-	//<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 	pub(super) type Request<T> = RequestGeneric<
 		<T as frame_system::Config>::AccountId,
 		<T as Config>::Callback,
