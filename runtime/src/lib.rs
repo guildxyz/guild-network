@@ -23,6 +23,8 @@ use sp_std::prelude::*;
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
+pub use pallet_example_request::Call as ExampleCall;
+
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime, parameter_types,
@@ -44,6 +46,7 @@ pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 
 pub use pallet_chainlink;
+pub use pallet_example_request;
 /// Import the template pallet.
 pub use pallet_guild;
 
@@ -274,6 +277,11 @@ impl pallet_chainlink::Config for Runtime {
 	type ValidityPeriod = ValidityPeriod;
 }
 
+impl pallet_example_request::Config for Runtime {
+	type Event = Event;
+	type Callback = ExampleCall<Runtime>; // TODO check example.rs in chainlink repo
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -291,6 +299,7 @@ construct_runtime!(
 		Sudo: pallet_sudo,
 		Guild: pallet_guild,
 		Chainlink: pallet_chainlink,
+		ExampleRequest: pallet_example_request,
 	}
 );
 
