@@ -69,8 +69,12 @@ pub mod pallet {
 			+ Eq
 			+ CallbackWithParameter;
 
+		// NOTE: The following two types could be `const`
 		// Period during which a request is valid
 		type ValidityPeriod: Get<Self::BlockNumber>;
+
+		// Minimum fee paid for all requests to disincentivize spam requests
+		type MinimumFee: Get<u32>;
 	}
 
 	#[pallet::error]
@@ -154,10 +158,9 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		// REVIEW: Use `///` instead of `//` to make these doc comments that are part of the crate
-		// documentation. Register a new Operator.
-		// Fails with `OperatorAlreadyRegistered` if this Operator (identified by `origin`) has
-		// already been registered.
+		/// Register a new Operator.
+		/// Fails with `OperatorAlreadyRegistered` if this Operator (identified by `origin`) has
+		/// already been registered.
 		#[pallet::weight(10_000)]
 		pub fn register_operator(origin: OriginFor<T>) -> DispatchResult {
 			let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
@@ -171,7 +174,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// Unregisters an existing Operator
+		/// Unregisters an existing Operator
 		// TODO check weight
 		#[pallet::weight(10_000)]
 		pub fn unregister_operator(origin: OriginFor<T>) -> DispatchResult {
@@ -185,15 +188,15 @@ pub mod pallet {
 			}
 		}
 
-		// Hint specified Operator (via its `AccountId`) of a request to be performed.
-		// Request details are encapsulated in `data` and identified by `spec_index`.
-		// `data` must be SCALE encoded.
-		// If provided fee is sufficient, Operator must send back the request result in `callback`
-		// Extrinsic which then will dispatch back to the request originator callback identified by
-		// `callback`. The fee is `reserved` and only actually transferred when the result is
-		// provided in the callback. Operators are expected to listen to `OracleRequest` events.
-		// This event contains all the required information to perform the request and provide back
-		// the result. REVIEW: Use a `BalanceOf` type for the fee instead of `u32` as shown here: https://substrate.dev/recipes/3-entrees/currency.html
+		/// Hint specified Operator (via its `AccountId`) of a request to be performed.
+		/// Request details are encapsulated in `data` and identified by `spec_index`.
+		//// `data` must be SCALE encoded.
+		/// If provided fee is sufficient, Operator must send back the request result in `callback`
+		/// Extrinsic which then will dispatch back to the request originator callback identified by
+		/// `callback`. The fee is `reserved` and only actually transferred when the result is
+		/// provided in the callback. Operators are expected to listen to `OracleRequest` events.
+		/// This event contains all the required information to perform the request and provide back
+		/// the result. 
 		// TODO check weight
 		#[pallet::weight(10_000)]
 		pub fn initiate_request(
@@ -208,24 +211,31 @@ pub mod pallet {
 			let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
 			ensure!(<Operators<T>>::get(&operator), Error::<T>::UnknownOperator);
-			// REVIEW: Should probably be at least `ExistentialDeposit`
-			ensure!(fee > BalanceOf::<T>::zero(), Error::<T>::InsufficientFee);
+			// Currency::minimum_balance() is equivalent to ExistentialDeposit in the pallet_balances 
+			// config of the runtime
+			// ensure!(fee > T::Currency::minimum_balance(), Error::<T>::InsufficientFee);
+
+			// NOTE: this might not be necessary since it seems that reserved tokens are only
+			//	 	moved from the `free` balance of an account and it is not stored in a totally new account
+			// 		However, a minimum amount of fee is a good idea to disincentivize spam requests 
+			ensure!(fee > T::MinimumFee::get().into(), Error::<T>::InsufficientFee);
 
 			T::Currency::reserve(&who, fee)?;
 
 			let request_id = NextRequestIdentifier::<T>::get();
-			// REVIEW: This can overflow. You can make a maximum of `u64::max_value()` requests.
-			//         Default behavior for `u64` is to wrap around to 0, but you might want to
-			//         make this explicit.
-			//         I think using `wrapping_add` could be fine here, because it should be fine to
-			//         start at 0 when you reach `u64::max_value()`.
-			NextRequestIdentifier::<T>::put(request_id + 1);
+			// Using `wrapping_add` to start at 0 when it reaches `u64::max_value()`.
+			// This means that requests may be overwritten but it requires that at some point
+			// at least 2^64 requests are waiting to be served. Since requests also time out
+			// after a while this seems extremely unlikely.
+			NextRequestIdentifier::<T>::put(request_id.wrapping_add(1));
 
 			// REVIEW: Is it intentional that requests are only valid during the current block?
+			// NOTE: This does not validate the request for any block number.
+			//		It only serves as a timestamp for the ValidityPeriod check.
 			let now = frame_system::Pallet::<T>::block_number();
-			// REVIEW: You might want to think about and document that your requests can be
-			// overwritten         as soon as the request id wraps around.
+
 			// REVIEW: Is the `Vec` intended for forward compatibility? It seems superfluous here.
+			// NOTE: We do not plan on adding multiple callbacks, do we?
 			Requests::<T>::insert(
 				request_id,
 				Request::<T> {
@@ -250,11 +260,12 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// The callback used to be notified of all Operators results.
-		// Only the Operator responsible for an identified request can notify back the result.
-		// Result is then dispatched back to the originator's callback.
-		// The fee reserved during `initiate_request` is transferred as soon as this callback is
-		// called. TODO check weight
+		/// The callback used to be notified of all Operators results.
+		/// Only the Operator responsible for an identified request can notify back the result.
+		/// Result is then dispatched back to the originator's callback.
+		/// The fee reserved during `initiate_request` is transferred as soon as this callback is
+		/// called. 
+		//TODO check weight
 		#[pallet::weight(10_000)]
 		pub fn callback(
 			origin: OriginFor<T>,
@@ -270,11 +281,17 @@ pub mod pallet {
 
 			// REVIEW: This does not make sure that the fee is payed. `repatriate_reserved` removes
 			//         *up to* the amount passed. [See here](https://substrate.dev/rustdocs/master/frame_support/traits/trait.ReservableCurrency.html#tymethod.repatriate_reserved)
-			//         Check `reserved_balance()` to make sure that the fee is payable via this
-			// method.         Maybe use a different payment method and check `total_balance()`. I
-			// don't know         Substrate's Currency module well enough to tell.
+			//         Check `reserved_balance()` to make sure that the fee is payable via this method.
+			//         Maybe use a different payment method and check `total_balance()`. I don't know
+			//         Substrate's Currency module well enough to tell.
+			// NOTE: From what I have gathered the reserved currency cannot be moved by other than this pallet
+			//		and we made sure to reserve the exact same amount of balance in the initiate_request call
+			//		so I believe this is fine.
+
 			// REVIEW: This happens *after* the request is `take`n from storage. Is that intended?
 			//         See ["verify first, write last"](https://substrate.dev/recipes/2-appetizers/1-hello-substrate.html#inside-a-dispatchable-call) motto.
+			// NOTE: This review seems dated since the call does not remove the request from the storage
+			// TODO: Check that the request is not removed from the list
 			// TODO check whether to use BalanceStatus::Reserved or Free?
 			T::Currency::repatriate_reserved(
 				&who,
