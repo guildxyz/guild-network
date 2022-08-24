@@ -1,6 +1,6 @@
 {
   "name": "Substrate Bois Guild Testnet",
-  "id": "local_testnet",
+  "id": "testnet",
   "chainType": "Development",
   "bootNodes": [],
   "telemetryEndpoints": null,
@@ -14,18 +14,18 @@
       },
       "aura": {
         "authorities": [
-          "5Djo5GxCEhcaXDN2hjNgvFqyzF51ccX5fKb4uubUSnpswZRH",
-          "5G8mVhZR5Dm9fWjA4xkaQVigC4vTF81WMdhUFiNhA1LKqLzB"
+          "5E2dy9jCkmPehxuWntY9bLQb7aJAjHr7NWxszgVui2j7UPZZ",
+          "5CyqMVg3NMRJ4XutU8bkXqFspWeESLqQDt3VRtBSqPxfZ4FK"
         ]
       },
       "grandpa": {
         "authorities": [
           [
-            "5Hdo2kMbuW9McdrtiRaYb4GAcQK4Am4KuzWMyg4AmzYzpjMq",
+            "5Gm4dn1SZVofVSFsWFsPMStAKy3hqkDSB45hKjNe8dTwUuyi",
             1
           ],
           [
-            "5CmTyZXpe2yf4wpppwDiX1YMzeZFe8ELsVPNsVbN4s1Hjx6c",
+            "5GxvaNYh6TJuex28KLLeWm9Xf5Cg5xcoZEGve5Kn5T9krAee",
             1
           ]
         ]

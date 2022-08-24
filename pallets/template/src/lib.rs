@@ -5,64 +5,100 @@
 /// <https://docs.substrate.io/v3/runtime/frame>
 pub use pallet::*;
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+pub mod weights;
+
 #[frame_support::pallet]
 pub mod pallet {
+	use super::weights::WeightInfo;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-	use sp_std::vec::Vec as SpVec;
 
+	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+		/// Because this pallet emits events, it depends on the runtime's definition of an event.
+		type WeightInfo: WeightInfo;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 	}
-	#[pallet::event]
-	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	pub enum Event<T: Config> {
-		ClaimCreated(T::AccountId, SpVec<u8>),
-		ClaimRevoked(T::AccountId, SpVec<u8>),
-	}
-
-	#[pallet::error]
-	pub enum Error<T> {
-		ProofAlreadyClaimed,
-		NoSuchProof,
-		NotProofOwner,
-	}
-
-	#[pallet::storage]
-	pub(super) type Proofs<T: Config> =
-		StorageMap<_, Blake2_128Concat, SpVec<u8>, (T::AccountId, T::BlockNumber), OptionQuery>;
-
-	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
 	#[pallet::pallet]
-	#[pallet::without_storage_info]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
+	// The pallet's runtime storage items.
+	// https://docs.substrate.io/v3/runtime/storage
+	#[pallet::storage]
+	#[pallet::getter(fn something)]
+	// Learn more about declaring storage items:
+	// https://docs.substrate.io/v3/runtime/storage#declaring-storage-items
+	pub type Something<T> = StorageValue<_, u32>;
+
+	// Pallets use events to inform users when important changes are made.
+	// https://docs.substrate.io/v3/runtime/events-and-errors
+	#[pallet::event]
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	pub enum Event<T: Config> {
+		/// Event documentation should end with an array that provides descriptive names for event
+		/// parameters. [something, who]
+		SomethingStored(u32, T::AccountId),
+	}
+
+	// Errors inform users that something went wrong.
+	#[pallet::error]
+	pub enum Error<T> {
+		/// Error names should be descriptive.
+		NoneValue,
+		/// Errors should have helpful documentation associated with them.
+		StorageOverflow,
+	}
+
+	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
+	// These functions materialize as "extrinsics", which are often compared to transactions.
+	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		#[pallet::weight(1_000)]
-		pub fn create_claim(origin: OriginFor<T>, proof: SpVec<u8>) -> DispatchResult {
-			let sender = ensure_signed(origin)?;
-			ensure!(!Proofs::<T>::contains_key(&proof), Error::<T>::ProofAlreadyClaimed);
-			let current_block = <frame_system::Pallet<T>>::block_number();
-			Proofs::<T>::insert(&proof, (&sender, current_block));
-			Self::deposit_event(Event::ClaimCreated(sender, proof));
+		/// An example dispatchable that takes a singles value as a parameter, writes the value to
+		/// storage and emits an event. This function must be dispatched by a signed extrinsic.
+		#[pallet::weight(T::WeightInfo::do_something(*something))]
+		pub fn do_something(origin: OriginFor<T>, something: u32) -> DispatchResult {
+			// Check that the extrinsic was signed and get the signer.
+			// This function will return an error if the extrinsic is not signed.
+			// https://docs.substrate.io/v3/runtime/origins
+			let who = ensure_signed(origin)?;
+
+			// Update storage.
+			<Something<T>>::put(something);
+
+			// Emit an event.
+			Self::deposit_event(Event::SomethingStored(something, who));
+			// Return a successful DispatchResultWithPostInfo
 			Ok(())
 		}
 
-		#[pallet::weight(10_000)]
-		pub fn revoke_claim(origin: OriginFor<T>, proof: SpVec<u8>) -> DispatchResult {
-			let sender = ensure_signed(origin)?;
-			if let Some((owner, _)) = Proofs::<T>::get(&proof) {
-				ensure!(sender == owner, Error::<T>::NotProofOwner);
-				Proofs::<T>::remove(&proof);
-				Self::deposit_event(Event::ClaimRevoked(sender, proof));
-				Ok(())
-			} else {
-				Err(Error::<T>::NoSuchProof.into())
+		/// An example dispatchable that may throw a custom error.
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+		pub fn cause_error(origin: OriginFor<T>) -> DispatchResult {
+			let _who = ensure_signed(origin)?;
+
+			// Read a value from storage.
+			match <Something<T>>::get() {
+				// Return an error if the value has not been set.
+				None => return Err(Error::<T>::NoneValue.into()),
+				Some(old) => {
+					// Increment the value read from storage; will error in the event of overflow.
+					let new = old.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
+					// Update the value in storage with the incremented result.
+					<Something<T>>::put(new);
+					Ok(())
+				},
 			}
 		}
 	}
