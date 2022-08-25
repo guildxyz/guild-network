@@ -62,8 +62,15 @@ pub mod pallet {
 		pub fn callback(origin: OriginFor<T>, result: Vec<u8>) -> DispatchResult {
 			ensure_root(origin)?;
 
+			let sample_num: i128 = 1;
+
+			Self::deposit_event(Event::ExampleCallback(i128::encode(&sample_num), sample_num));
+
 			// The result is expected to be a SCALE encoded `i128`
 			let r: i128 = i128::decode(&mut &result[..]).map_err(|_| Error::<T>::DecodingFailed)?;
+
+			Self::deposit_event(Event::ExampleCallback(result, r));
+
 			Result::<T>::put(r);
 
 			Ok(())
@@ -84,6 +91,7 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		RequestSent(Vec<u8>, Vec<u8>),
+		ExampleCallback(Vec<u8>, i128),
 	}
 
 	impl<T: Config> CallbackWithParameter for Call<T> {
