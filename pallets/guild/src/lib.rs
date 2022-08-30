@@ -153,6 +153,7 @@ mod test {
 
 	impl Config for Test {
 		type Event = Event;
+		type WeightInfo = ();
 	}
 
 	#[test]

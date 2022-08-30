@@ -30,7 +30,6 @@ pub mod pallet {
 		dispatch::DispatchResult,
 		ensure,
 		pallet_prelude::*,
-		sp_runtime::traits::Zero,
 		traits::{BalanceStatus, Currency, Get, ReservableCurrency, UnfilteredDispatchable},
 		Parameter,
 	};
@@ -39,7 +38,6 @@ pub mod pallet {
 
 	use sp_std::convert::TryInto;
 
-	// REVIEW: Use this for transferring currency.
 	pub type BalanceOf<T> =
 		<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
@@ -91,6 +89,10 @@ pub mod pallet {
 		UnknownCallback,
 		// Fee provided does not match minimum required fee
 		InsufficientFee,
+		// Request has already been served by the operator
+		RequestAlreadyServed,
+		// Reserved balance is less than the specified fee for the request
+		InsufficientReservedBalance,
 	}
 
 	#[pallet::event]
@@ -133,8 +135,9 @@ pub mod pallet {
 
 	#[derive(Encode, Decode, Clone, TypeInfo)]
 	pub struct RequestGeneric<AccountId, Callback, BlockNumber, BalanceOf> {
+		requester: AccountId,
 		operator: AccountId,
-		callbacks: SpVec<Callback>,
+		callback: Callback,
 		block_number: BlockNumber,
 		fee: BalanceOf,
 	}
@@ -196,7 +199,7 @@ pub mod pallet {
 		/// `callback`. The fee is `reserved` and only actually transferred when the result is
 		/// provided in the callback. Operators are expected to listen to `OracleRequest` events.
 		/// This event contains all the required information to perform the request and provide back
-		/// the result. 
+		/// the result.
 		// TODO check weight
 		#[pallet::weight(10_000)]
 		pub fn initiate_request(
@@ -211,13 +214,14 @@ pub mod pallet {
 			let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
 			ensure!(<Operators<T>>::get(&operator), Error::<T>::UnknownOperator);
-			// Currency::minimum_balance() is equivalent to ExistentialDeposit in the pallet_balances 
-			// config of the runtime
+			// Currency::minimum_balance() is equivalent to ExistentialDeposit in the
+			// pallet_balances config of the runtime
 			// ensure!(fee > T::Currency::minimum_balance(), Error::<T>::InsufficientFee);
 
 			// NOTE: this might not be necessary since it seems that reserved tokens are only
-			//	 	moved from the `free` balance of an account and it is not stored in a totally new account
-			// 		However, a minimum amount of fee is a good idea to disincentivize spam requests 
+			//	 	moved from the `free` balance of an account and it is not stored in a totally new
+			// account 		However, a minimum amount of fee is a good idea to disincentivize spam
+			// requests
 			ensure!(fee > T::MinimumFee::get().into(), Error::<T>::InsufficientFee);
 
 			T::Currency::reserve(&who, fee)?;
@@ -229,18 +233,16 @@ pub mod pallet {
 			// after a while this seems extremely unlikely.
 			NextRequestIdentifier::<T>::put(request_id.wrapping_add(1));
 
-			// REVIEW: Is it intentional that requests are only valid during the current block?
 			// NOTE: This does not validate the request for any block number.
 			//		It only serves as a timestamp for the ValidityPeriod check.
 			let now = frame_system::Pallet::<T>::block_number();
 
-			// REVIEW: Is the `Vec` intended for forward compatibility? It seems superfluous here.
-			// NOTE: We do not plan on adding multiple callbacks, do we?
 			Requests::<T>::insert(
 				request_id,
 				Request::<T> {
+					requester: who.clone(),
 					operator: operator.clone(),
-					callbacks: vec![callback],
+					callback,
 					block_number: now,
 					fee,
 				},
@@ -264,7 +266,7 @@ pub mod pallet {
 		/// Only the Operator responsible for an identified request can notify back the result.
 		/// Result is then dispatched back to the originator's callback.
 		/// The fee reserved during `initiate_request` is transferred as soon as this callback is
-		/// called. 
+		/// called.
 		//TODO check weight
 		#[pallet::weight(10_000)]
 		pub fn callback(
@@ -278,23 +280,18 @@ pub mod pallet {
 			// Unwrap is fine here because we check its existence in the previous line
 			let request = <Requests<T>>::get(&request_id).unwrap();
 			ensure!(request.operator == who, Error::<T>::WrongOperator);
+			ensure!(
+				request.fee <= T::Currency::reserved_balance(&request.requester),
+				Error::<T>::InsufficientReservedBalance
+			);
 
-			// REVIEW: This does not make sure that the fee is payed. `repatriate_reserved` removes
-			//         *up to* the amount passed. [See here](https://substrate.dev/rustdocs/master/frame_support/traits/trait.ReservableCurrency.html#tymethod.repatriate_reserved)
-			//         Check `reserved_balance()` to make sure that the fee is payable via this method.
-			//         Maybe use a different payment method and check `total_balance()`. I don't know
-			//         Substrate's Currency module well enough to tell.
-			// NOTE: From what I have gathered the reserved currency cannot be moved by other than this pallet
-			//		and we made sure to reserve the exact same amount of balance in the initiate_request call
-			//		so I believe this is fine.
-
-			// REVIEW: This happens *after* the request is `take`n from storage. Is that intended?
-			//         See ["verify first, write last"](https://substrate.dev/recipes/2-appetizers/1-hello-substrate.html#inside-a-dispatchable-call) motto.
-			// NOTE: This review seems dated since the call does not remove the request from the storage
-			// TODO: Check that the request is not removed from the list
-			// TODO check whether to use BalanceStatus::Reserved or Free?
+			// NOTE: While `repatriate_reserved only moves UP TO the amount passed, the currency
+			// cannot be moved 		by a different pallet and we made sure to reserve the exact same
+			// amount of balance in the 		initiate_request call so I believe this is fine.
+			// NOTE: BalanceStatus::Free means that it is transferred to the Free balance of the
+			// operator
 			T::Currency::repatriate_reserved(
-				&who,
+				&request.requester,
 				&request.operator,
 				request.fee,
 				BalanceStatus::Free,
@@ -302,13 +299,16 @@ pub mod pallet {
 
 			// Dispatch the result to the original callback registered by the caller
 			// TODO fix the "?" - not sure how to proceed there
-			request.callbacks[0]
+			request
+				.callback
 				.with_result(result.clone())
 				.ok_or(Error::<T>::UnknownCallback)?
 				.dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
 				.ok();
 			// callback[0].with_result(result.clone()).ok_or(Error::<T>::UnknownCallback)?.
 			// dispatch(frame_system::RawOrigin::Root.into())?;
+
+			Requests::<T>::remove(request_id);
 
 			Self::deposit_event(Event::OracleAnswer(
 				request.operator,

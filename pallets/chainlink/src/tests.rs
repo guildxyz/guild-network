@@ -106,7 +106,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	t.into()
 }
 
-pub fn last_event() -> RawEvent<u128, u64> {
+pub fn last_event() -> Event::<Chainlink> {
 	System::events()
 		.into_iter()
 		.map(|r| r.event)
@@ -148,7 +148,7 @@ pub mod module2 {
 	impl<T: Config> CallbackWithParameter for Call<T> {
 		fn with_result(&self, result: Vec<u8>) -> Option<Self> {
 			match *self {
-				Call::callback(_) => Some(Call::callback(result)),
+				Call::callback{result: _} => Some(Call::callback(result)),
 				_ => None,
 			}
 		}
@@ -161,11 +161,11 @@ fn operators_can_be_registered() {
 		System::set_block_number(1);
 		assert!(!<Chainlink>::operator(1));
 		assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
-		assert_eq!(last_event(), RawEvent::OperatorRegistered(1));
+		assert_eq!(last_event(), Event::<Chainlink>::OperatorRegistered(1));
 		assert!(<Chainlink>::operator(1));
 		assert!(<Chainlink>::unregister_operator(Origin::signed(1)).is_ok());
 		assert!(!<Chainlink>::operator(1));
-		assert_eq!(last_event(), RawEvent::OperatorUnregistered(1));
+		assert_eq!(last_event(), Event::<Chainlink>::OperatorUnregistered(1));
 	});
 
 	new_test_ext().execute_with(|| {
@@ -225,7 +225,7 @@ fn initiate_requests() {
 	new_test_ext().execute_with(|| {
 		System::set_block_number(1);
 		assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
-		assert_eq!(last_event(), RawEvent::OperatorRegistered(1));
+		assert_eq!(last_event(), Event::<Chainlink>::OperatorRegistered(1));
 
 		let parameters = ("a", "b");
 		let data = parameters.encode();
@@ -241,7 +241,7 @@ fn initiate_requests() {
 		.is_ok());
 		assert_eq!(
 			last_event(),
-			RawEvent::OracleRequest(
+			Event::<Chainlink>::OracleRequest(
 				1,
 				vec![],
 				0,

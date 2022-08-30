@@ -28,7 +28,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn result)]
-	pub(super) type Result<T: Config> = StorageValue<_, i128, ValueQuery>;
+	pub(super) type Result<T: Config> = StorageValue<_, u128, ValueQuery>;
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
@@ -62,12 +62,8 @@ pub mod pallet {
 		pub fn callback(origin: OriginFor<T>, result: Vec<u8>) -> DispatchResult {
 			ensure_root(origin)?;
 
-			let sample_num: i128 = 1;
-
-			Self::deposit_event(Event::ExampleCallback(i128::encode(&sample_num), sample_num));
-
-			// The result is expected to be a SCALE encoded `i128`
-			let r: i128 = i128::decode(&mut &result[..]).map_err(|_| Error::<T>::DecodingFailed)?;
+			// The result is expected to be a SCALE encoded `u128`
+			let r: u128 = u128::decode(&mut &result[..]).map_err(|_| Error::<T>::DecodingFailed)?;
 
 			Self::deposit_event(Event::ExampleCallback(result, r));
 
@@ -91,7 +87,7 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		RequestSent(Vec<u8>, Vec<u8>),
-		ExampleCallback(Vec<u8>, i128),
+		ExampleCallback(Vec<u8>, u128),
 	}
 
 	impl<T: Config> CallbackWithParameter for Call<T> {
