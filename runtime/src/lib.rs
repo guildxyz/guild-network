@@ -148,6 +148,8 @@ parameter_types! {
 		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 42;
 	pub const ValidityPeriod: u32 = 50;
+	/// This is a placeholder value further discussion is required
+	pub const MinimumFee: u32 = 1_000;
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -282,6 +284,7 @@ impl pallet_chainlink::Config for Runtime {
 	type Currency = Balances;
 	type Callback = ExampleCall<Runtime>; // TODO check example.rs in chainlink repo
 	type ValidityPeriod = ValidityPeriod;
+	type MinimumFee = MinimumFee;
 }
 
 impl pallet_example_request::Config for Runtime {
