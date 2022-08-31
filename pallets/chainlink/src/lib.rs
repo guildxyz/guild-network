@@ -297,10 +297,13 @@ pub mod pallet {
 				BalanceStatus::Free,
 			)?;
 
+			let mut complete_response = request_id.encode();
+			complete_response.append(&mut result.clone());
+
 			// Dispatch the result to the original callback registered by the caller
 			let callback = request
 				.callback
-				.with_result(result.clone())
+				.with_result(complete_response.clone())
 				.ok_or(Error::<T>::UnknownCallback)?;
 			callback
 				.dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
@@ -313,7 +316,8 @@ pub mod pallet {
 				request.operator,
 				request_id,
 				who,
-				result,
+				complete_response,
+				//result,
 				request.fee,
 			));
 

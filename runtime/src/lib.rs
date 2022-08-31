@@ -23,7 +23,7 @@ use sp_std::prelude::*;
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
-pub use pallet_example_request::Call as ExampleCall;
+pub use pallet_guild::Call as ExampleCall;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -277,20 +277,23 @@ impl pallet_sudo::Config for Runtime {
 impl pallet_guild::Config for Runtime {
 	type Event = Event;
 	type WeightInfo = pallet_guild::weights::SubstrateWeight<Runtime>;
+	type Callback = ExampleCall<Runtime>;
 }
 
 impl pallet_chainlink::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances;
-	type Callback = ExampleCall<Runtime>; // TODO check example.rs in chainlink repo
+	type Callback = ExampleCall<Runtime>;
 	type ValidityPeriod = ValidityPeriod;
 	type MinimumFee = MinimumFee;
 }
 
+/*
 impl pallet_example_request::Config for Runtime {
 	type Event = Event;
-	type Callback = ExampleCall<Runtime>; // TODO check example.rs in chainlink repo
+	type Callback = ExampleCall<Runtime>;
 }
+*/
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -309,7 +312,7 @@ construct_runtime!(
 		Sudo: pallet_sudo,
 		Guild: pallet_guild,
 		Chainlink: pallet_chainlink,
-		ExampleRequest: pallet_example_request,
+		//ExampleRequest: pallet_example_request,
 		Template: pallet_template,
 	}
 );
@@ -358,7 +361,7 @@ mod benches {
 		[pallet_template, TemplateModule]
 		[pallet_guild, Guild]
 		[pallet_chainlink, Chainlink]
-		[pallet_example_request, ExampleRequest]
+		//[pallet_example_request, ExampleRequest]
 	);
 }
 
@@ -539,7 +542,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_template, TemplateModule);
 			add_benchmark!(params, batches, pallet_guild, Guild);
 			add_benchmark!(params, batches, pallet_chainlink, Chainlink);
-			add_benchmark!(params, batches, pallet_example_request, ExampleRequest);
+			///add_benchmark!(params, batches, pallet_example_request, ExampleRequest);
 
 			Ok(batches)
 		}
