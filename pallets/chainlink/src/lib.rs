@@ -183,7 +183,7 @@ pub mod pallet {
 		pub fn unregister_operator(origin: OriginFor<T>) -> DispatchResult {
 			let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
-			if Operators::<T>::take(who.clone()) {
+			if Operators::<T>::take(&who) {
 				Self::deposit_event(Event::OperatorUnregistered(who));
 				Ok(())
 			} else {
@@ -193,7 +193,7 @@ pub mod pallet {
 
 		/// Hint specified Operator (via its `AccountId`) of a request to be performed.
 		/// Request details are encapsulated in `data` and identified by `spec_index`.
-		//// `data` must be SCALE encoded.
+		/// `data` must be SCALE encoded.
 		/// If provided fee is sufficient, Operator must send back the request result in `callback`
 		/// Extrinsic which then will dispatch back to the request originator callback identified by
 		/// `callback`. The fee is `reserved` and only actually transferred when the result is
@@ -298,16 +298,15 @@ pub mod pallet {
 			)?;
 
 			// Dispatch the result to the original callback registered by the caller
-			// TODO fix the "?" - not sure how to proceed there
-			request
+			let callback = request
 				.callback
 				.with_result(result.clone())
-				.ok_or(Error::<T>::UnknownCallback)?
+				.ok_or(Error::<T>::UnknownCallback)?;
+			callback
 				.dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
-				.ok();
-			// callback[0].with_result(result.clone()).ok_or(Error::<T>::UnknownCallback)?.
-			// dispatch(frame_system::RawOrigin::Root.into())?;
+				.map_err(|e| e.error)?;
 
+			// Remove the request from the queue
 			Requests::<T>::remove(request_id);
 
 			Self::deposit_event(Event::OracleAnswer(

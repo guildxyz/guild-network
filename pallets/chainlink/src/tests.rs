@@ -60,10 +60,12 @@ impl system::Config for Test {
 	type SystemWeightInfo = ();
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
+	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
 parameter_types! {
 	pub const ExistentialDeposit: u64 = 1;
+	pub const MinimumFee: u32 = 500;
 }
 
 type Balance = u64;
@@ -85,6 +87,7 @@ impl pallet_chainlink::Config for Test {
 	type Currency = pallet_balances::Pallet<Test>;
 	type Callback = module2::Call<Test>;
 	type ValidityPeriod = ValidityPeriod;
+	type MinimumFee = MinimumFee;
 }
 
 impl module2::Config for Test {}
@@ -93,62 +96,71 @@ parameter_types! {
 	pub const ValidityPeriod: u64 = 10;
 }
 
-// type Chainlink = pallet_chainlink::Pallet<Test>;
+//type Chainlink = pallet_chainlink::Pallet<Test>;
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	let mut t = system::GenesisConfig::default().build_storage::<Test>().unwrap();
 	pallet_balances::GenesisConfig::<Test> {
 		// Total issuance will be 200 with treasury account initialized at ED.
-		balances: vec![(0, 100000), (1, 100000), (2, 100000)],
+		balances: vec![(0, 1_000_000_000), (1, 1_000_000_000), (2, 1_000_000_000)],
 	}
 	.assimilate_storage(&mut t)
 	.unwrap();
 	t.into()
 }
 
-pub fn last_event() -> Event::<Chainlink> {
+pub fn last_event() -> tests::Event {
 	System::events()
 		.into_iter()
 		.map(|r| r.event)
-		.filter_map(|e| if let Event::Chainlink(inner) = e { Some(inner) } else { None })
+		.filter_map(|e| {
+			if let Event::Chainlink(inner) = e {
+				Some(Event::Chainlink(inner))
+			} else {
+				None
+			}
+		})
 		.last()
 		.unwrap()
 }
 
+#[frame_support::pallet]
 pub mod module2 {
 	use super::*;
+	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
+	use frame_system::{ensure_root, pallet_prelude::*};
 
+	#[pallet::config]
 	pub trait Config: frame_system::Config {}
 
-	frame_support::decl_module! {
-		pub struct Module<T: Config> for enum Call
-			where origin: <T as frame_system::Config>::Origin
-		{
-			#[weight = 0]
-			pub fn callback(_origin, result: Vec<u8>) -> frame_support::dispatch::DispatchResult {
-				let r : u128 = u128::decode(&mut &result[..]).map_err(|_| Error::<T>::DecodingFailed)?;
-				<Result>::put(r);
-				Ok(())
-			}
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
+		#[pallet::weight(10_000_000)]
+		pub fn callback(_origin: OriginFor<T>, result: Vec<u8>) -> DispatchResult {
+			let r: u128 = u128::decode(&mut &result[..]).map_err(|_| Error::<T>::DecodingFailed)?;
+			Result::<T>::put(r);
+			Ok(())
 		}
 	}
 
-	frame_support::decl_storage! {
-		trait Store for Module<T: Config> as TestStorage {
-			pub Result: u128;
-		}
-	}
+	#[pallet::storage]
+	#[pallet::getter(fn result)]
+	pub(super) type Result<T: Config> = StorageValue<_, u128, ValueQuery>;
 
-	frame_support::decl_error! {
-		pub enum Error for Module<T: Config> {
-			DecodingFailed
-		}
+	#[pallet::pallet]
+	#[pallet::without_storage_info]
+	#[pallet::generate_store(pub(super) trait Store)]
+	pub struct Pallet<T>(_);
+
+	#[pallet::error]
+	pub enum Error<T> {
+		DecodingFailed,
 	}
 
 	impl<T: Config> CallbackWithParameter for Call<T> {
 		fn with_result(&self, result: Vec<u8>) -> Option<Self> {
 			match *self {
-				Call::callback{result: _} => Some(Call::callback(result)),
+				Call::callback { result: _ } => Some(Call::callback { result }),
 				_ => None,
 			}
 		}
@@ -161,14 +173,22 @@ fn operators_can_be_registered() {
 		System::set_block_number(1);
 		assert!(!<Chainlink>::operator(1));
 		assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
-		assert_eq!(last_event(), Event::<Chainlink>::OperatorRegistered(1));
+		assert_eq!(
+			last_event(),
+			tests::Event::Chainlink(pallet_chainlink::Event::OperatorRegistered(1))
+		);
 		assert!(<Chainlink>::operator(1));
 		assert!(<Chainlink>::unregister_operator(Origin::signed(1)).is_ok());
 		assert!(!<Chainlink>::operator(1));
-		assert_eq!(last_event(), Event::<Chainlink>::OperatorUnregistered(1));
+
+		assert_eq!(
+			last_event(),
+			tests::Event::Chainlink(pallet_chainlink::Event::OperatorUnregistered(1))
+		);
 	});
 
 	new_test_ext().execute_with(|| {
+		// Unknown operator error
 		assert!(<Chainlink>::unregister_operator(Origin::signed(1)).is_err());
 		assert!(!<Chainlink>::operator(1));
 	});
@@ -178,6 +198,7 @@ fn operators_can_be_registered() {
 fn initiate_requests() {
 	new_test_ext().execute_with(|| {
 		assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
+		// Insufficient fee error
 		assert!(<Chainlink>::initiate_request(
 			Origin::signed(2),
 			1,
@@ -185,20 +206,21 @@ fn initiate_requests() {
 			1,
 			vec![],
 			0,
-			module2::Call::<Test>::callback(vec![]).into()
+			module2::Call::<Test>::callback { result: vec![] }.into()
 		)
 		.is_err());
 	});
 
 	new_test_ext().execute_with(|| {
+		// Unknown operator error
 		assert!(<Chainlink>::initiate_request(
 			Origin::signed(2),
 			1,
 			vec![],
 			1,
 			vec![],
-			1,
-			module2::Call::<Test>::callback(vec![]).into()
+			1_000,
+			module2::Call::<Test>::callback { result: vec![] }.into()
 		)
 		.is_err());
 	});
@@ -211,21 +233,26 @@ fn initiate_requests() {
 			vec![],
 			1,
 			vec![],
-			2,
-			module2::Call::<Test>::callback(vec![]).into()
+			1_000,
+			module2::Call::<Test>::callback { result: vec![] }.into()
 		)
 		.is_ok());
+		// Wrong operator error
 		assert!(<Chainlink>::callback(Origin::signed(3), 0, 10.encode()).is_err());
 	});
 
 	new_test_ext().execute_with(|| {
+		// Unknown request error
 		assert!(<Chainlink>::callback(Origin::signed(1), 0, 10.encode()).is_err());
 	});
 
 	new_test_ext().execute_with(|| {
 		System::set_block_number(1);
 		assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
-		assert_eq!(last_event(), Event::<Chainlink>::OperatorRegistered(1));
+		assert_eq!(
+			last_event(),
+			tests::Event::Chainlink(pallet_chainlink::Event::OperatorRegistered(1))
+		);
 
 		let parameters = ("a", "b");
 		let data = parameters.encode();
@@ -235,13 +262,13 @@ fn initiate_requests() {
 			vec![],
 			1,
 			data.clone(),
-			2,
-			module2::Call::<Test>::callback(vec![]).into()
+			1_000,
+			module2::Call::<Test>::callback { result: vec![] }.into()
 		)
 		.is_ok());
 		assert_eq!(
 			last_event(),
-			Event::<Chainlink>::OracleRequest(
+			tests::Event::Chainlink(pallet_chainlink::Event::OracleRequest(
 				1,
 				vec![],
 				0,
@@ -249,8 +276,8 @@ fn initiate_requests() {
 				1,
 				data.clone(),
 				"Chainlink.callback".into(),
-				2
-			)
+				1_000
+			))
 		);
 
 		let r = <(Vec<u8>, Vec<u8>)>::decode(&mut &data[..]).unwrap().0;
@@ -258,7 +285,7 @@ fn initiate_requests() {
 
 		let result = 10;
 		assert!(<Chainlink>::callback(Origin::signed(1), 0, result.encode()).is_ok());
-		assert_eq!(module2::Result::get(), result);
+		//assert_eq!(<module2>::Result::get(), result);
 	});
 }
 
@@ -272,12 +299,13 @@ pub fn on_finalize() {
 			vec![],
 			1,
 			vec![],
-			2,
-			module2::Call::<Test>::callback(vec![]).into()
+			1_000,
+			module2::Call::<Test>::callback { result: vec![] }.into()
 		)
 		.is_ok());
 		<Chainlink as OnFinalize<u64>>::on_finalize(20);
 		// Request has been killed, too old
+		// Unknown request error
 		assert!(<Chainlink>::callback(Origin::signed(1), 0, 10.encode()).is_err());
 	});
 }
