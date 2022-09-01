@@ -63,15 +63,19 @@ SS58 Address:      5CuqCGfwqhjGzSqz5mnq36tMe651mU9Ji8xQ4JRuUTvPcjVN
 
 where the `SS58` address will be needed for later steps.
 
-### Generate custom specification
+### Generate custom chain specification
 
-Someone needs to generate a `customSpec.json` file that contains specifications for the blockchain.
+Someone needs to generate a `chain-spec.json` file that contains specifications for the blockchain by running 
+
+```sh
+./target/release/node-template build-spec --disable-default-bootnode > chain-spec-plain.json
+```
 
 ```json
 {
-	 "name": "Testnet",
-	 "id": "testnet",
-	 "chainType": "Development",
+	 "name": "Local Testnet",
+	 "id": "local_testnet",
+	 "chainType": "Local",
 	 "bootNodes": [],
 	 "telemetryEndpoints": null,
 	 "protocolId": null,
@@ -82,7 +86,7 @@ Someone needs to generate a `customSpec.json` file that contains specifications 
  }
 ```
 
-Here, the `chainType` can be set to `Local`, `Development`, or `Live`. The difference between these is that when the type is `Local` or `Development` , the chain starts with pre-funded accounts that can interact with the network. The `Live` type doesn't provide pre-funded accounts. You may set the `name` and `id` fields if you want but otherwise there's only two fields that definitely require modification:
+Here, the `chainType` can be set to `Local`, `Development`, or `Live`. The difference between these is that when the type is `Local` or `Development` , the chain starts with pre-funded accounts that can interact with the network. The `Live` type doesn't provide pre-funded accounts. You may set the `name` and `id` fields if you want but note that the `id` field determines where the chain data will be located on on you computer. For example if `id = hello`, then the node database, keystore, and other network-related stuff will be located in `/tmp/mynode/hello`. Therefore, make sure that the `aura` and `grandpa` keys are saved under `/tmp/mynode/hello/keystore`, otherwise you won't be able to validate and produce blocks. Generally there's only two fields that definitely require modification.
 
 The `aura` field needs to contain all `SS58` addresses of the Sr25519 keys generated in the previous steps:
 
@@ -114,13 +118,13 @@ The `grandpa` field needs to contain all `SS58` addresses of the Ed25519 keys ge
 
 The second element after the address is the voting weight of the nodes, here set to 1 for both members.
 
-After the specs are finalized, the `customSpec.json` file needs to be converted to raw format by running
+After the specs are finalized, the `chain-spec.json` file needs to be converted to raw format by running
 
 ```bash
-./target/release/node-template build-spec --chain=customSpec.json --raw --disable-default-bootnode > customSpecRaw.json
+./target/release/node-template build-spec --chain=chain-spec.json --raw --disable-default-bootnode > chain-spec-raw.json
 ```
 
-Finally, make sure that every node operator receives the same `customSpecRaw.json` file.
+Finally, make sure that every node operator receives the same `chain-spec-raw.json` file.
 
 ### Insert keys into the keystore
 
@@ -130,7 +134,7 @@ Add the Sr25519 key to the node's keystore:
 
 ```bash
 ./target/release/node-template key insert --base-path /tmp/mynode \
-  --chain customSpecRaw.json \
+  --chain chain-spec-raw.json \
   --scheme Sr25519 \
   --suri <your-secret-seed> \
   --password-interactive \
@@ -144,7 +148,7 @@ Add the Ed25519 key to the node's keystore:
 ```bash
 ./target/release/node-template key insert \
   --base-path /tmp/mynode \
-  --chain customSpecRaw.json \
+  --chain chain-spec-raw.json \
   --scheme Ed25519 \
   --suri <your-secret-seed> \
   --password-interactive \
@@ -196,14 +200,14 @@ First, start the bootnode by running
 ```bash
 ./target/release/node-template \
   --base-path /tmp/mynode \
-  --chain ./customSpecRaw.json \
+  --chain ./chain-spec-raw.json \
   --port 30333 \
   --ws-port 9944 \
   --rpc-port 9933 \
   --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
   --validator \
   --rpc-methods Unsafe \
-  --name MyNode01 \
+  --name MyNode \
   --password-interactive
 ```
 
@@ -220,7 +224,7 @@ Next, each computer that's part of the `tailscale` network should run something 
 ```bash
 ./target/release/node-template \
   --base-path /tmp/mynode \
-  --chain ./customSpecRaw.json \
+  --chain ./chain-spec-raw.json \
   --port 30333 \
   --ws-port 9944 \
   --rpc-port 9933 \
@@ -245,6 +249,21 @@ tailscale status
 ```
 
 Furthermore, the local node identity should be added after `p2p/...`.
+
+---
+
+#### Troubleshooting
+
+In case you don't see the local node identity line in your bootnode's logs, then you can pass an extra argument to your bootnode startup command:
+```bash
+--node-key 0000000000000000000000000000000000000000000000000000000000000001
+```
+
+which should be added by all other nodes at the end of line `--bootnodes .../p2p/...` in their startup command options.
+If the node key still doesn't match, the logs will tell which is the correct bootnode identity. This is kinda crappy and we should definitely
+check how this really works.
+
+---
 
 If the nodes are successfully started, you should start seeing blocks being finalized:
 
@@ -289,3 +308,13 @@ yarn start
 ```
 
 the app will open in your browser and you will see some pre-funded accounts from which you can choose and interact with the blockchain via a the `Pallet Interactor`.
+
+### Pruning the chain
+
+Whenever you want to delete your local copy of the chain, you can run
+
+```bash
+./target/release/node-template purge-chain --base-path /tmp/mynode --chain local_testnet
+```
+
+which will delete the database under `/tmp/mynode/local_testnet/db`. You can do this manually as well.
