@@ -4,5 +4,7 @@
 .direnv
 .devcontainer
 .DS_Store
+.editorconfig
+.envrc
 .local
 .vscode
