@@ -26,6 +26,9 @@ jobs:
 
       - uses: actions/checkout@v2
 
+      - name: install wasm toolchain
+        run: rustup target add wasm32-unknown-unknown
+
       - name: add-nightly-clippy
         run: rustup component add clippy --toolchain nightly
 
