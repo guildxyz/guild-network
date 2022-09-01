@@ -1,0 +1,36 @@
+name: general code check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  fmt:
+    name: formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: cargo fmt -- --check
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      RUSTFLAGS: -Dwarnings # fails on warnings as well
+    steps:
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          profile: minimal
+
+      - uses: actions/checkout@v2
+
+      - name: add-nightly-clippy
+        run: rustup component add clippy --toolchain nightly
+
+      - name: clippy
+        run: cargo clippy --color=always --tests --workspace --exclude node-template
+
+      - name: test
+        run: cargo test --workspace --exclude node-template

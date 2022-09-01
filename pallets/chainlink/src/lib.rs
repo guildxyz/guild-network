@@ -284,7 +284,7 @@ pub mod pallet {
         pub fn callback(
             origin: OriginFor<T>,
             request_id: RequestIdentifier,
-            result: Vec<u8>,
+            mut result: Vec<u8>,
         ) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
@@ -313,7 +313,7 @@ pub mod pallet {
             )?;
 
             let mut complete_response = request_id.encode();
-            complete_response.append(&mut result.clone());
+            complete_response.append(&mut result);
 
             // Dispatch the result to the original callback registered by the caller
             let callback = request

@@ -46,10 +46,7 @@ pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 
 pub use pallet_chainlink;
-pub use pallet_example_request;
-/// Import the template pallet.
 pub use pallet_guild;
-pub use pallet_template;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -267,11 +264,6 @@ impl pallet_transaction_payment::Config for Runtime {
     type FeeMultiplierUpdate = ();
 }
 
-impl pallet_template::Config for Runtime {
-    type Event = Event;
-    type WeightInfo = pallet_template::weights::SubstrateWeight<Runtime>;
-}
-
 impl pallet_sudo::Config for Runtime {
     type Event = Event;
     type Call = Call;
@@ -291,13 +283,6 @@ impl pallet_chainlink::Config for Runtime {
     type MinimumFee = MinimumFee;
 }
 
-/*
-impl pallet_example_request::Config for Runtime {
-    type Event = Event;
-    type Callback = ExampleCall<Runtime>;
-}
-*/
-
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -315,8 +300,6 @@ construct_runtime!(
         Sudo: pallet_sudo,
         Guild: pallet_guild,
         Chainlink: pallet_chainlink,
-        //ExampleRequest: pallet_example_request,
-        Template: pallet_template,
     }
 );
 
@@ -361,10 +344,8 @@ mod benches {
         [frame_system, SystemBench::<Runtime>]
         [pallet_balances, Balances]
         [pallet_timestamp, Timestamp]
-        [pallet_template, TemplateModule]
         [pallet_guild, Guild]
         [pallet_chainlink, Chainlink]
-        //[pallet_example_request, ExampleRequest]
     );
 }
 
@@ -542,7 +523,6 @@ impl_runtime_apis! {
             let mut batches = Vec::<BenchmarkBatch>::new();
             let params = (&config, &whitelist);
 
-            add_benchmark!(params, batches, pallet_template, TemplateModule);
             add_benchmark!(params, batches, pallet_guild, Guild);
             add_benchmark!(params, batches, pallet_chainlink, Chainlink);
             ///add_benchmark!(params, batches, pallet_example_request, ExampleRequest);

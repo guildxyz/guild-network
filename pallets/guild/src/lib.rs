@@ -186,7 +186,7 @@ pub mod pallet {
             JoinRequests::<T>::insert(
                 request_id,
                 JoinRequest::<T::AccountId> {
-                    requester: sender.clone(),
+                    requester: sender,
                     guild_id,
                 },
             );
