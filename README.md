@@ -91,7 +91,7 @@ difference between these is that when the type is `Local` or `Development` ,
 the chain starts with pre-funded accounts that can interact with the
 network. The `Live` type doesn't provide pre-funded accounts. You
 may set the `name` and `id` fields if you want but note that the
-`id` field determines where the chain data will be located on on you
+`id` field determines where the chain data will be located on on your
 computer. For example if `id = hello`, then the node database,
 keystore, and other network-related stuff will be located in
 `/tmp/mynode/hello`. Therefore, make sure that the `aura` and
@@ -281,8 +281,8 @@ In case you don't see the local node identity line in your bootnode's logs, then
 ```
 
 which should be added by all other nodes at the end of line `--bootnodes
-.../p2p/...` in their startup command options. The node key will probably still
-doesn't match but the logs will tell which is the correct bootnode identity and
+.../p2p/...` in their startup command options. The node key probably still
+won't match but the logs will tell which is the correct bootnode identity and
 adding that as an argument will solve the issue. This is kinda crappy and we
 should definitely check how this really works.
 

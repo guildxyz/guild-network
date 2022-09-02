@@ -25,7 +25,7 @@ use sp_std::prelude::*;
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
-pub use pallet_guild::Call as ExampleCall;
+pub use pallet_guild::Call as OracleCallback;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -274,13 +274,13 @@ impl pallet_sudo::Config for Runtime {
 impl pallet_guild::Config for Runtime {
     type Event = Event;
     type WeightInfo = pallet_guild::weights::SubstrateWeight<Runtime>;
-    type Callback = ExampleCall<Runtime>;
+    type Callback = OracleCallback<Runtime>;
 }
 
 impl pallet_chainlink::Config for Runtime {
     type Event = Event;
     type Currency = Balances;
-    type Callback = ExampleCall<Runtime>;
+    type Callback = OracleCallback<Runtime>;
     type ValidityPeriod = ValidityPeriod;
     type MinimumFee = MinimumFee;
 }
@@ -482,6 +482,8 @@ impl_runtime_apis! {
         }
     }
 
+    // TODO
+    /*
     #[cfg(feature = "runtime-benchmarks")]
     impl frame_benchmarking::Benchmark<Block> for Runtime {
         fn benchmark_metadata(extra: bool) -> (
@@ -547,4 +549,5 @@ impl_runtime_apis! {
             Executive::execute_block_no_check(block)
         }
     }
+    */
 }

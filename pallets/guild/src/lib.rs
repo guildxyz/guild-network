@@ -4,8 +4,9 @@
 
 pub use pallet::*;
 
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
+// TODO
+//#[cfg(feature = "runtime-benchmarks")]
+//mod benchmarking;
 pub mod weights;
 
 #[frame_support::pallet]

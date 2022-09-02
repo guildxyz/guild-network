@@ -33,7 +33,7 @@ jobs:
         run: rustup component add clippy --toolchain nightly
 
       - name: clippy
-        run: cargo clippy --color=always --tests --workspace --exclude node-template
+        run: cargo clippy --color=always --all-features --tests --workspace --exclude node-template
 
       - name: test
-        run: cargo test --workspace --exclude node-template
+        run: cargo test --all-features --workspace --exclude node-template
