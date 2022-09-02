@@ -1,4 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![deny(clippy::all)]
+#![deny(clippy::dbg_macro)]
 
 pub use pallet::*;
 

@@ -17,6 +17,8 @@
 //! an identified Operator Fee: the amount of token a users pays to an operator
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![deny(clippy::all)]
+#![deny(clippy::dbg_macro)]
 
 #[cfg(test)]
 mod tests;
@@ -289,11 +291,11 @@ pub mod pallet {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
             ensure!(
-                <Requests<T>>::contains_key(&request_id),
+                <Requests<T>>::contains_key(request_id),
                 Error::<T>::UnknownRequest
             );
             // Unwrap is fine here because we check its existence in the previous line
-            let request = <Requests<T>>::get(&request_id).unwrap();
+            let request = <Requests<T>>::get(request_id).unwrap();
             ensure!(request.operator == who, Error::<T>::WrongOperator);
             ensure!(
                 request.fee <= T::Currency::reserved_balance(&request.requester),
