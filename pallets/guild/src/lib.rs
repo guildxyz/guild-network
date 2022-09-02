@@ -134,7 +134,7 @@ pub mod pallet {
                 Error::<T>::JoinRequestDoesNotExist
             );
             // Unwrap is fine here because we check its existence previously
-            let request = <JoinRequests<T>>::get(&request_id).unwrap();
+            let request = <JoinRequests<T>>::get(request_id).unwrap();
 
             ensure!(
                 <Guilds<T>>::contains_key(request.guild_id),
