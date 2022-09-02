@@ -86,9 +86,22 @@ Someone needs to generate a `chain-spec.json` file that contains specifications 
  }
 ```
 
-Here, the `chainType` can be set to `Local`, `Development`, or `Live`. The difference between these is that when the type is `Local` or `Development` , the chain starts with pre-funded accounts that can interact with the network. The `Live` type doesn't provide pre-funded accounts. You may set the `name` and `id` fields if you want but note that the `id` field determines where the chain data will be located on on you computer. For example if `id = hello`, then the node database, keystore, and other network-related stuff will be located in `/tmp/mynode/hello`. Therefore, make sure that the `aura` and `grandpa` keys are saved under `/tmp/mynode/hello/keystore`, otherwise you won't be able to validate and produce blocks. Generally there's only two fields that definitely require modification.
+Here, the `chainType` can be set to `Local`, `Development`, or `Live`. The
+difference between these is that when the type is `Local` or `Development` ,
+the chain starts with pre-funded accounts that can interact with the
+network. The `Live` type doesn't provide pre-funded accounts. You
+may set the `name` and `id` fields if you want but note that the
+`id` field determines where the chain data will be located on on you
+computer. For example if `id = hello`, then the node database,
+keystore, and other network-related stuff will be located in
+`/tmp/mynode/hello`. Therefore, make sure that the `aura` and
+`grandpa` keys are saved under `/tmp/mynode/hello/keystore`,
+otherwise you won't be able to validate and produce blocks.
+Generally there's only two fields that definitely require
+modification.
 
-The `aura` field needs to contain all `SS58` addresses of the Sr25519 keys generated in the previous steps:
+	   The `aura` field needs to contain all `SS58` addresses of the
+	   Sr25519 keys generated in the previous steps:
 
 ```json
 "aura": { 
@@ -172,7 +185,15 @@ resembles this:
 
 ### Setup Tailscale
 
-Since the nodes won't find each other if you just provide the IP address of the bootnode, you need to setup [tailscale](https://tailscale.com/](https://tailscale.com/ "https://tailscale.com/").  First, make sure to log in to the `substrate.pista@gmail.com` Google account (ask Mark or Gyozo for the password). Then go to the [tailscale](https://tailscale.com/) website and press Log In. You will be prompted by an authentication window: you should log in with Google. Install the `tailscale` cli app (the website will provide the link for it) and then you should run
+Since the nodes won't find each other if you just provide the IP address of the
+bootnode, you need to setup
+[tailscale](https://tailscale.com/](https://tailscale.com/
+"https://tailscale.com/").  First, make sure to log in to the
+`substrate.pista@gmail.com` Google account (ask Mark or Gyozo for the password).
+Then go to the [tailscale](https://tailscale.com/) website and press Log In.
+You will be prompted by an authentication window: you should log in with Google.
+Install the `tailscale` cli app (the website will provide the link for it) 
+and then you should run
 
 ```bash
 sudo tailscale up
@@ -259,9 +280,11 @@ In case you don't see the local node identity line in your bootnode's logs, then
 --node-key 0000000000000000000000000000000000000000000000000000000000000001
 ```
 
-which should be added by all other nodes at the end of line `--bootnodes .../p2p/...` in their startup command options.
-If the node key still doesn't match, the logs will tell which is the correct bootnode identity. This is kinda crappy and we should definitely
-check how this really works.
+which should be added by all other nodes at the end of line `--bootnodes
+.../p2p/...` in their startup command options. The node key will probably still
+doesn't match but the logs will tell which is the correct bootnode identity and
+adding that as an argument will solve the issue. This is kinda crappy and we
+should definitely check how this really works.
 
 ---
 
