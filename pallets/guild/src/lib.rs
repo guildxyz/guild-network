@@ -103,7 +103,7 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(
-                !Guilds::<T>::contains_key(&guild_id),
+                !Guilds::<T>::contains_key(guild_id),
                 Error::<T>::GuildAlreadyExists
             );
             let guild = Guild {
@@ -111,7 +111,7 @@ pub mod pallet {
                 members: Vec::new(),
                 minimum_balance,
             };
-            Guilds::<T>::insert(&guild_id, &guild);
+            Guilds::<T>::insert(guild_id, &guild);
             Self::deposit_event(Event::GuildCreated(sender, guild_id));
             Ok(())
         }
@@ -141,10 +141,10 @@ pub mod pallet {
                 Error::<T>::GuildDoesNotExist
             );
             // Unwrap is fine here because we check its existence previously
-            let guild = <Guilds<T>>::get(&request.guild_id).unwrap();
+            let guild = <Guilds<T>>::get(request.guild_id).unwrap();
 
             if eth_balance >= guild.minimum_balance {
-                Guilds::<T>::try_mutate(&request.guild_id, |value| {
+                Guilds::<T>::try_mutate(request.guild_id, |value| {
                     if let Some(guild) = value {
                         if guild.members.binary_search(&request.requester).is_ok() {
                             Err(Error::<T>::SignerAlreadyJoined.into())
