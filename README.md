@@ -68,7 +68,7 @@ where the `SS58` address will be needed for later steps.
 Someone needs to generate a `chain-spec.json` file that contains specifications for the blockchain by running 
 
 ```sh
-./target/release/node-template build-spec --disable-default-bootnode > chain-spec-plain.json
+./target/release/node-template build-spec --disable-default-bootnode > chain-spec.json
 ```
 
 ```json
