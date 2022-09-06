@@ -1,5 +1,4 @@
 #!/bin/sh
-
 if [ $1 = "boot" ]; then
 	./target/release/node-template purge-chain \
 		--base-path /tmp/mynode \
@@ -12,7 +11,7 @@ if [ $1 = "boot" ]; then
 		--port 30333 \
 		--ws-port 9944 \
 		--rpc-port 9933 \
-		--node-key 0000000000000000000000000000000000000000000000000000000000000001 \
+		--node-key e845dfb08feee6de8d26200dfc1956873182ad91bcc8f35162e568716bb169cf \
 		--rpc-external \
 		--ws-external \
 		--rpc-cors=all
@@ -28,7 +27,7 @@ elif [ $1 = "node" ]; then
 		--port 30333 \
 		--ws-port 9944 \
 		--rpc-port 9933 \
-		--bootnodes /ip4/$3/tcp/30333/p2p/$4 \
+		--bootnodes /ip4/$3/tcp/30333/p2p/12D3KooWErJ9ChGGenCAmRQiiqmVxkZvsqkSB5GYVBGpN2rdfccE \
 		--rpc-external \
 		--ws-external \
 		--rpc-cors=all
