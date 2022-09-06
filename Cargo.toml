@@ -6,4 +6,4 @@ members = [
     "runtime",
 ]
 [profile.release]
-panic = "unwind"
+panic = "abort"
