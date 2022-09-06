@@ -1,37 +1,39 @@
 #!/bin/sh
-
-if [ $1 = "base" ]; then
+if [ $1 = "boot" ]; then
 	./target/release/node-template purge-chain \
-		--base-path /tmp/$2 \
+		--base-path /tmp/mynode \
 		--chain local -y
 	
 	./target/release/node-template \
-		--base-path /tmp/$2 \
-		--chain local \
+		--base-path /tmp/mynode \
+		--chain chain-spec-raw.json \
 		--alice \
 		--port 30333 \
-		--ws-port 9945 \
+		--ws-port 9944 \
 		--rpc-port 9933 \
-		--node-key 0000000000000000000000000000000000000000000000000000000000000001 \
-		--telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
-		--validator
-elif [ $1 = "child" ]; then
+		--node-key e845dfb08feee6de8d26200dfc1956873182ad91bcc8f35162e568716bb169cf \
+		--rpc-external \
+		--ws-external \
+		--rpc-cors=all
+elif [ $1 = "node" ]; then
 	./target/release/node-template purge-chain \
-		--base-path /tmp/$2 \
+		--base-path /tmp/mynode \
 		--chain local -y
 	
 	./target/release/node-template \
-		--base-path /tmp/$2 \
-		--chain local \
-		--bob \
-		--port 30334 \
-		--ws-port 9946 \
-		--rpc-port 9934 \
-		--telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
-		--validator \
-		--bootnodes /ip4/127.0.0.1/tcp/30333/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp
-elif [ $1 = "dev" ]; then
-	./target/release/node-template --dev
+		--base-path /tmp/mynode \
+		--chain chain-spec-raw.json \
+		--$2 \
+		--port 30333 \
+		--ws-port 9944 \
+		--rpc-port 9933 \
+		--bootnodes /ip4/$3/tcp/30333/p2p/12D3KooWErJ9ChGGenCAmRQiiqmVxkZvsqkSB5GYVBGpN2rdfccE \
+		--rpc-external \
+		--ws-external \
+		--rpc-cors=all
+elif [ $1 = "build-spec" ]; then
+	./target/release/node-template build-spec --disable-default-bootnode > chain-spec.json
+	./target/release/node-template build-spec --chain=chain-spec.json --raw --disable-default-bootnode > chain-spec-raw.json
 elif [ $1 = "clean" ]; then
 	./target/release/node-template purge-chain --base-path /tmp/$2 -y
 elif [ $1 = "benchmark" ]; then
