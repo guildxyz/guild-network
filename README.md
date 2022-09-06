@@ -228,6 +228,8 @@ First, start the bootnode by running
   --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
   --validator \
   --rpc-methods Unsafe \
+  --ws-external \
+  --rpc-cors=all \
   --name MyNode \
   --password-interactive
 ```
@@ -238,7 +240,10 @@ This should output a ton of lines but you should find this particular line:
 2021-11-03 15:32:15 🏷 Local node identity is: 12D3KooWLmrYDLoNTyTYtRdDyZLWDe1paxzxTw5RgjmHLfzW96SX
 ```
 
-because you'll need the local node identity for the other nodes.
+because you'll need the local node identity for the other nodes. Note the `--ws-external` and the `--rpc-cors=all` flags. The former
+lets your node to listen to all websocket interfaces, not just the local ones. This is required for the node to accept websocket
+subscriptions on deployed, non-local networks. The latter flag specifies browser Origins allowed to access the HTTP and WS RPC servers.
+By default they only accept `localhost` and `polkadot.js` origins so it should be set to accept all origins.
 
 Next, each computer that's part of the `tailscale` network should run something like:
 
@@ -253,6 +258,8 @@ Next, each computer that's part of the `tailscale` network should run something 
   --validator \
   --rpc-methods Unsafe \
   --name MyNode \
+  --ws-external \
+  --rpc-cors=all \
   --bootnodes /ip4/100.x.x.x/tcp/30333/p2p/12D3KooWLmrYDLoNTyTYtRdDyZLWDe1paxzxTw5RgjmHLfzW96SX \
   --password-interactive
 ```
