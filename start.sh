@@ -7,7 +7,7 @@ if [ $1 = "boot" ]; then
 	
 	./target/release/node-template \
 		--base-path /tmp/mynode \
-		--chain local \
+		--chain chain-spec-raw.json \
 		--alice \
 		--port 30333 \
 		--ws-port 9944 \
@@ -23,12 +23,12 @@ elif [ $1 = "node" ]; then
 	
 	./target/release/node-template \
 		--base-path /tmp/mynode \
-		--chain local \
+		--chain chain-spec-raw.json \
 		--$2 \
-		--port 30334 \
+		--port 30333 \
 		--ws-port 9944 \
 		--rpc-port 9933 \
-		--bootnodes /ip4/$3/tcp/30333/$4 \
+		--bootnodes /ip4/$3/tcp/30333/p2p/$4 \
 		--rpc-external \
 		--ws-external \
 		--rpc-cors=all
