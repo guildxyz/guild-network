@@ -1,4 +1,3 @@
-/*
 use codec::{Decode, Encode};
 use frame_support::{parameter_types, traits::OnFinalize};
 use frame_system as system;
@@ -25,6 +24,7 @@ frame_support::construct_runtime!(
         System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
         Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
         Chainlink: pallet_chainlink::{Pallet, Call, Storage, Event<T>},
+        Example: example_caller::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -37,7 +37,7 @@ pub(crate) type AccountId = u128;
 pub(crate) type BlockNumber = u64;
 
 impl system::Config for Test {
-    type BaseCallFilter = frame_support::traits::AllowAll;
+    type BaseCallFilter = frame_support::traits::Everything;
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
@@ -85,12 +85,14 @@ impl pallet_balances::Config for Test {
 impl pallet_chainlink::Config for Test {
     type Event = Event;
     type Currency = pallet_balances::Pallet<Test>;
-    type Callback = module2::Call<Test>;
+    type Callback = example_caller::Call<Test>;
     type ValidityPeriod = ValidityPeriod;
     type MinimumFee = MinimumFee;
 }
 
-impl module2::Config for Test {}
+impl example_caller::Config for Test {
+    type Event = Event;
+}
 
 parameter_types! {
     pub const ValidityPeriod: u64 = 10;
@@ -125,27 +127,32 @@ pub fn last_event() -> tests::Event {
 }
 
 #[frame_support::pallet]
-pub mod module2 {
-    use super::*;
+pub mod example_caller {
+    //use super::*;
+    use super::pallet_chainlink::CallbackWithParameter;
     use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
     use frame_system::{ensure_root, pallet_prelude::*};
 
     #[pallet::config]
-    pub trait Config: frame_system::Config {}
+    pub trait Config: frame_system::Config {
+        type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+    }
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        #[pallet::weight(10_000_000)]
-        pub fn callback(_origin: OriginFor<T>, result: Vec<u8>) -> DispatchResult {
-            let r: u128 = u128::decode(&mut &result[..]).map_err(|_| Error::<T>::DecodingFailed)?;
-            Result::<T>::put(r);
+        #[pallet::weight(1_000_000)]
+        pub fn callback(origin: OriginFor<T>, result: Vec<u8>) -> DispatchResult {
+            ensure_root(origin)?;
+            let full_response: u128 = u128::decode(&mut &result[..]).map_err(|_| Error::<T>::DecodingFailed)?;
+            let res: u64 = (full_response >> 64) as u64;
+            Res::<T>::put(res);
             Ok(())
         }
     }
 
     #[pallet::storage]
     #[pallet::getter(fn result)]
-    pub(super) type Result<T: Config> = StorageValue<_, u128, ValueQuery>;
+    pub(super) type Res<T: Config> = StorageValue<_, u64, ValueQuery>;
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
@@ -156,6 +163,9 @@ pub mod module2 {
     pub enum Error<T> {
         DecodingFailed,
     }
+
+    #[pallet::event]  
+    pub enum Event<T: Config> {}
 
     impl<T: Config> CallbackWithParameter for Call<T> {
         fn with_result(&self, result: Vec<u8>) -> Option<Self> {
@@ -206,7 +216,7 @@ fn initiate_requests() {
             1,
             vec![],
             0,
-            module2::Call::<Test>::callback { result: vec![] }.into()
+            example_caller::Call::<Test>::callback { result: vec![] }
         )
         .is_err());
     });
@@ -220,7 +230,7 @@ fn initiate_requests() {
             1,
             vec![],
             1_000,
-            module2::Call::<Test>::callback { result: vec![] }.into()
+            example_caller::Call::<Test>::callback { result: vec![] }
         )
         .is_err());
     });
@@ -234,7 +244,7 @@ fn initiate_requests() {
             1,
             vec![],
             1_000,
-            module2::Call::<Test>::callback { result: vec![] }.into()
+            example_caller::Call::<Test>::callback { result: vec![] }
         )
         .is_ok());
         // Wrong operator error
@@ -263,7 +273,7 @@ fn initiate_requests() {
             1,
             data.clone(),
             1_000,
-            module2::Call::<Test>::callback { result: vec![] }.into()
+            example_caller::Call::<Test>::callback { result: vec![] }
         )
         .is_ok());
         assert_eq!(
@@ -283,9 +293,10 @@ fn initiate_requests() {
         let r = <(Vec<u8>, Vec<u8>)>::decode(&mut &data[..]).unwrap().0;
         assert_eq!("a", std::str::from_utf8(&r).unwrap());
 
-        let result = 10;
+        let result: u64 = 10;
         assert!(<Chainlink>::callback(Origin::signed(1), 0, result.encode()).is_ok());
-        //assert_eq!(<module2>::Result::get(), result);
+        System::set_block_number(10);
+        assert_eq!(<example_caller::Res<Test>>::get(), 10);
     });
 }
 
@@ -300,7 +311,7 @@ pub fn on_finalize() {
             1,
             vec![],
             1_000,
-            module2::Call::<Test>::callback { result: vec![] }.into()
+            example_caller::Call::<Test>::callback { result: vec![] }
         )
         .is_ok());
         <Chainlink as OnFinalize<u64>>::on_finalize(20);
@@ -309,4 +320,3 @@ pub fn on_finalize() {
         assert!(<Chainlink>::callback(Origin::signed(1), 0, 10.encode()).is_err());
     });
 }
-*/
