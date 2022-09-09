@@ -264,7 +264,7 @@ fn initiate_requests_valid() {
             vec![],
             1,
             data.clone(),
-            1_000,
+            get_minimum_fee(),
             example_caller::Call::<Test>::callback { result: vec![] }
         )
         .is_ok());
@@ -278,7 +278,7 @@ fn initiate_requests_valid() {
                 1,
                 data.clone(),
                 "Chainlink.callback".into(),
-                1_000
+                get_minimum_fee()
             ))
         );
 
@@ -296,7 +296,7 @@ fn initiate_requests_valid() {
                 1,
                 0,
                 expected_answer,
-                1_000
+                get_minimum_fee()
             ))
         );
 
@@ -368,7 +368,7 @@ fn initiate_requests_invalid_wrong_operator() {
             vec![],
             1,
             vec![],
-            1_000,
+            get_minimum_fee(),
             example_caller::Call::<Test>::callback { result: vec![] }
         )
         .is_ok());
