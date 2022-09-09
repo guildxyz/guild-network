@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use codec::{Decode, Encode};
 use frame_support::{parameter_types, traits::OnFinalize};
 use frame_system as system;
@@ -145,14 +147,14 @@ pub mod example_caller {
             ensure_root(origin)?;
             let full_response: u128 = u128::decode(&mut &result[..]).map_err(|_| Error::<T>::DecodingFailed)?;
             let res: u64 = (full_response >> 64) as u64;
-            Res::<T>::put(res);
+            Result::<T>::put(res);
             Ok(())
         }
     }
 
     #[pallet::storage]
     #[pallet::getter(fn result)]
-    pub(super) type Res<T: Config> = StorageValue<_, u64, ValueQuery>;
+    pub(super) type Result<T: Config> = StorageValue<_, u64, ValueQuery>;
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
@@ -295,8 +297,20 @@ fn initiate_requests() {
 
         let result: u64 = 10;
         assert!(<Chainlink>::callback(Origin::signed(1), 0, result.encode()).is_ok());
-        System::set_block_number(10);
-        assert_eq!(<example_caller::Res<Test>>::get(), 10);
+
+        let expected_answer = Chainlink::prepend_request_id(&mut result.encode(), 0);
+
+        assert_eq!(
+            last_event(),
+            tests::Event::Chainlink(pallet_chainlink::Event::OracleAnswer(
+                1,
+                0,
+                expected_answer,
+                1_000
+            ))
+        );
+
+        assert_eq!(<example_caller::Result<Test>>::get(), 10);
     });
 }
 

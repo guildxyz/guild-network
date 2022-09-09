@@ -116,7 +116,6 @@ pub mod pallet {
         OracleAnswer(
             T::AccountId,
             RequestIdentifier,
-            T::AccountId,
             SpVec<u8>,
             BalanceOf<T>,
         ),
@@ -314,13 +313,12 @@ pub mod pallet {
                 BalanceStatus::Free,
             )?;
 
-            let mut complete_response = request_id.encode();
-            complete_response.append(&mut result);
+            let prepended_response = Self::prepend_request_id(&mut result, request_id);
 
             // Dispatch the result to the original callback registered by the caller
             let callback = request
                 .callback
-                .with_result(complete_response.clone())
+                .with_result(prepended_response.clone())
                 .ok_or(Error::<T>::UnknownCallback)?;
             callback
                 .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
@@ -332,13 +330,19 @@ pub mod pallet {
             Self::deposit_event(Event::OracleAnswer(
                 request.operator,
                 request_id,
-                who,
-                complete_response,
-                //result,
+                prepended_response,
                 request.fee,
             ));
 
             Ok(())
+        }
+    }
+
+    impl<T:Config> Pallet<T> {
+        pub fn prepend_request_id(result: &mut Vec<u8>, request_id: u64) -> Vec<u8> {
+            let mut request_bytes = request_id.encode();
+            request_bytes.append(result);
+            request_bytes
         }
     }
 
