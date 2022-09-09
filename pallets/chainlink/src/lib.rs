@@ -113,12 +113,7 @@ pub mod pallet {
         ),
 
         // A request has been answered. Corresponding fee payment is transferred
-        OracleAnswer(
-            T::AccountId,
-            RequestIdentifier,
-            SpVec<u8>,
-            BalanceOf<T>,
-        ),
+        OracleAnswer(T::AccountId, RequestIdentifier, SpVec<u8>, BalanceOf<T>),
 
         // A new operator has been registered
         OperatorRegistered(T::AccountId),
@@ -233,7 +228,7 @@ pub mod pallet {
             // account 		However, a minimum amount of fee is a good idea to disincentivize spam
             // requests
             ensure!(
-                fee > T::MinimumFee::get().into(),
+                fee >= T::MinimumFee::get().into(),
                 Error::<T>::InsufficientFee
             );
 
@@ -296,6 +291,8 @@ pub mod pallet {
             // Unwrap is fine here because we check its existence in the previous line
             let request = <Requests<T>>::get(request_id).unwrap();
             ensure!(request.operator == who, Error::<T>::WrongOperator);
+
+            // NOTE: This should not be possible technically but it is here to be safe
             ensure!(
                 request.fee <= T::Currency::reserved_balance(&request.requester),
                 Error::<T>::InsufficientReservedBalance
@@ -338,7 +335,7 @@ pub mod pallet {
         }
     }
 
-    impl<T:Config> Pallet<T> {
+    impl<T: Config> Pallet<T> {
         pub fn prepend_request_id(result: &mut Vec<u8>, request_id: u64) -> Vec<u8> {
             let mut request_bytes = request_id.encode();
             request_bytes.append(result);

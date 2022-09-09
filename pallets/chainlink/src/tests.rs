@@ -102,11 +102,19 @@ parameter_types! {
 
 //type Chainlink = pallet_chainlink::Pallet<Test>;
 
+const GENESIS_BALANCE: u64 = 1_000_000_000;
+
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    let mut t = system::GenesisConfig::default().build_storage::<Test>().unwrap();
+    let mut t = system::GenesisConfig::default()
+        .build_storage::<Test>()
+        .unwrap();
     pallet_balances::GenesisConfig::<Test> {
         // Total issuance will be 200 with treasury account initialized at ED.
-        balances: vec![(0, 1_000_000_000), (1, 1_000_000_000), (2, 1_000_000_000)],
+        balances: vec![
+            (0, GENESIS_BALANCE),
+            (1, GENESIS_BALANCE),
+            (2, GENESIS_BALANCE),
+        ],
     }
     .assimilate_storage(&mut t)
     .unwrap();
@@ -128,6 +136,10 @@ pub fn last_event() -> tests::Event {
         .unwrap()
 }
 
+fn get_minimum_fee() -> u64 {
+    <Test as pallet_chainlink::Config>::MinimumFee::get() as u64
+}
+
 #[frame_support::pallet]
 pub mod example_caller {
     //use super::*;
@@ -145,7 +157,8 @@ pub mod example_caller {
         #[pallet::weight(1_000_000)]
         pub fn callback(origin: OriginFor<T>, result: Vec<u8>) -> DispatchResult {
             ensure_root(origin)?;
-            let full_response: u128 = u128::decode(&mut &result[..]).map_err(|_| Error::<T>::DecodingFailed)?;
+            let full_response: u128 =
+                u128::decode(&mut &result[..]).map_err(|_| Error::<T>::DecodingFailed)?;
             let res: u64 = (full_response >> 64) as u64;
             Result::<T>::put(res);
             Ok(())
@@ -166,7 +179,7 @@ pub mod example_caller {
         DecodingFailed,
     }
 
-    #[pallet::event]  
+    #[pallet::event]
     pub enum Event<T: Config> {}
 
     impl<T: Config> CallbackWithParameter for Call<T> {
@@ -180,9 +193,11 @@ pub mod example_caller {
 }
 
 #[test]
-fn operators_can_be_registered() {
+fn operator_registration_valid() {
     new_test_ext().execute_with(|| {
+        // This is required for some reason otherwise the last_event() method fails
         System::set_block_number(1);
+
         assert!(!<Chainlink>::operator(1));
         assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
         assert_eq!(
@@ -190,6 +205,28 @@ fn operators_can_be_registered() {
             tests::Event::Chainlink(pallet_chainlink::Event::OperatorRegistered(1))
         );
         assert!(<Chainlink>::operator(1));
+    });
+}
+
+#[test]
+fn operator_registration_invalid_operator_already_registered() {
+    new_test_ext().execute_with(|| {
+        assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
+        assert!(<Chainlink>::operator(1));
+
+        // Operator already registered error
+        assert!(<Chainlink>::register_operator(Origin::signed(1)).is_err());
+        assert!(<Chainlink>::operator(1));
+    });
+}
+
+#[test]
+fn operator_unregistration_valid() {
+    new_test_ext().execute_with(|| {
+        // This is required for some reason otherwise the last_event() method fails
+        System::set_block_number(1);
+
+        assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
         assert!(<Chainlink>::unregister_operator(Origin::signed(1)).is_ok());
         assert!(!<Chainlink>::operator(1));
 
@@ -198,7 +235,10 @@ fn operators_can_be_registered() {
             tests::Event::Chainlink(pallet_chainlink::Event::OperatorUnregistered(1))
         );
     });
+}
 
+#[test]
+fn operator_unregistration_invalid_unknown_operator() {
     new_test_ext().execute_with(|| {
         // Unknown operator error
         assert!(<Chainlink>::unregister_operator(Origin::signed(1)).is_err());
@@ -207,57 +247,7 @@ fn operators_can_be_registered() {
 }
 
 #[test]
-fn initiate_requests() {
-    new_test_ext().execute_with(|| {
-        assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
-        // Insufficient fee error
-        assert!(<Chainlink>::initiate_request(
-            Origin::signed(2),
-            1,
-            vec![],
-            1,
-            vec![],
-            0,
-            example_caller::Call::<Test>::callback { result: vec![] }
-        )
-        .is_err());
-    });
-
-    new_test_ext().execute_with(|| {
-        // Unknown operator error
-        assert!(<Chainlink>::initiate_request(
-            Origin::signed(2),
-            1,
-            vec![],
-            1,
-            vec![],
-            1_000,
-            example_caller::Call::<Test>::callback { result: vec![] }
-        )
-        .is_err());
-    });
-
-    new_test_ext().execute_with(|| {
-        assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
-        assert!(<Chainlink>::initiate_request(
-            Origin::signed(2),
-            1,
-            vec![],
-            1,
-            vec![],
-            1_000,
-            example_caller::Call::<Test>::callback { result: vec![] }
-        )
-        .is_ok());
-        // Wrong operator error
-        assert!(<Chainlink>::callback(Origin::signed(3), 0, 10.encode()).is_err());
-    });
-
-    new_test_ext().execute_with(|| {
-        // Unknown request error
-        assert!(<Chainlink>::callback(Origin::signed(1), 0, 10.encode()).is_err());
-    });
-
+fn initiate_requests_valid() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
@@ -315,7 +305,61 @@ fn initiate_requests() {
 }
 
 #[test]
-pub fn on_finalize() {
+fn initiate_requests_invalid_unknown_operator() {
+    new_test_ext().execute_with(|| {
+        // Unknown operator error
+        assert!(<Chainlink>::initiate_request(
+            Origin::signed(2),
+            1,
+            vec![],
+            1,
+            vec![],
+            get_minimum_fee(),
+            example_caller::Call::<Test>::callback { result: vec![] }
+        )
+        .is_err());
+    });
+}
+
+#[test]
+fn initiate_requests_invalid_insufficient_fee() {
+    new_test_ext().execute_with(|| {
+        assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
+        // Insufficient fee error
+        assert!(<Chainlink>::initiate_request(
+            Origin::signed(2),
+            1,
+            vec![],
+            1,
+            vec![],
+            get_minimum_fee() - 1,
+            example_caller::Call::<Test>::callback { result: vec![] }
+        )
+        .is_err());
+    });
+}
+
+#[test]
+fn initiate_requests_invalid_insufficient_balance_for_fee() {
+    new_test_ext().execute_with(|| {
+        assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
+
+        // Insufficient balance error (System error)
+        assert!(<Chainlink>::initiate_request(
+            Origin::signed(2),
+            1,
+            vec![],
+            1,
+            vec![],
+            GENESIS_BALANCE + 1,
+            example_caller::Call::<Test>::callback { result: vec![] }
+        )
+        .is_err());
+    });
+}
+
+#[test]
+fn initiate_requests_invalid_wrong_operator() {
     new_test_ext().execute_with(|| {
         assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
         assert!(<Chainlink>::initiate_request(
@@ -328,7 +372,37 @@ pub fn on_finalize() {
             example_caller::Call::<Test>::callback { result: vec![] }
         )
         .is_ok());
-        <Chainlink as OnFinalize<u64>>::on_finalize(20);
+        // Wrong operator error
+        assert!(<Chainlink>::callback(Origin::signed(3), 0, 10.encode()).is_err());
+    });
+}
+
+#[test]
+fn callback_invalid_unknown_request() {
+    new_test_ext().execute_with(|| {
+        // Unknown request error
+        assert!(<Chainlink>::callback(Origin::signed(1), 0, 10.encode()).is_err());
+    });
+}
+
+#[test]
+fn kill_request() {
+    new_test_ext().execute_with(|| {
+        assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
+        assert!(<Chainlink>::initiate_request(
+            Origin::signed(2),
+            1,
+            vec![],
+            1,
+            vec![],
+            get_minimum_fee(),
+            example_caller::Call::<Test>::callback { result: vec![] }
+        )
+        .is_ok());
+
+        <Chainlink as OnFinalize<u64>>::on_finalize(
+            <Test as pallet_chainlink::Config>::ValidityPeriod::get() + 1,
+        );
         // Request has been killed, too old
         // Unknown request error
         assert!(<Chainlink>::callback(Origin::signed(1), 0, 10.encode()).is_err());
