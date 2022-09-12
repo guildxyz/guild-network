@@ -113,13 +113,7 @@ pub mod pallet {
         ),
 
         // A request has been answered. Corresponding fee payment is transferred
-        OracleAnswer(
-            T::AccountId,
-            RequestIdentifier,
-            T::AccountId,
-            SpVec<u8>,
-            BalanceOf<T>,
-        ),
+        OracleAnswer(T::AccountId, RequestIdentifier, SpVec<u8>, BalanceOf<T>),
 
         // A new operator has been registered
         OperatorRegistered(T::AccountId),
@@ -234,7 +228,7 @@ pub mod pallet {
             // account 		However, a minimum amount of fee is a good idea to disincentivize spam
             // requests
             ensure!(
-                fee > T::MinimumFee::get().into(),
+                fee >= T::MinimumFee::get().into(),
                 Error::<T>::InsufficientFee
             );
 
@@ -297,6 +291,8 @@ pub mod pallet {
             // Unwrap is fine here because we check its existence in the previous line
             let request = <Requests<T>>::get(request_id).unwrap();
             ensure!(request.operator == who, Error::<T>::WrongOperator);
+
+            // NOTE: This should not be possible technically but it is here to be safe
             ensure!(
                 request.fee <= T::Currency::reserved_balance(&request.requester),
                 Error::<T>::InsufficientReservedBalance
@@ -314,13 +310,12 @@ pub mod pallet {
                 BalanceStatus::Free,
             )?;
 
-            let mut complete_response = request_id.encode();
-            complete_response.append(&mut result);
+            let prepended_response = Self::prepend_request_id(&mut result, request_id);
 
             // Dispatch the result to the original callback registered by the caller
             let callback = request
                 .callback
-                .with_result(complete_response.clone())
+                .with_result(prepended_response.clone())
                 .ok_or(Error::<T>::UnknownCallback)?;
             callback
                 .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
@@ -332,13 +327,19 @@ pub mod pallet {
             Self::deposit_event(Event::OracleAnswer(
                 request.operator,
                 request_id,
-                who,
-                complete_response,
-                //result,
+                prepended_response,
                 request.fee,
             ));
 
             Ok(())
+        }
+    }
+
+    impl<T: Config> Pallet<T> {
+        pub fn prepend_request_id(result: &mut Vec<u8>, request_id: u64) -> Vec<u8> {
+            let mut request_bytes = request_id.encode();
+            request_bytes.append(result);
+            request_bytes
         }
     }
 
