@@ -103,7 +103,8 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(
-                !Guilds::<T>::contains_key(guild_id), Error::<T>::GuildAlreadyExists
+                !Guilds::<T>::contains_key(guild_id),
+                Error::<T>::GuildAlreadyExists
             );
             let guild = Guild {
                 owner: sender.clone(),
@@ -124,7 +125,7 @@ pub mod pallet {
             let everything: u128 =
                 u128::decode(&mut &result[..]).map_err(|_| Error::<T>::DecodingFailed)?;
             let request_id: RequestIdentifier = everything as u64;
-            let eth_balance: u64 = ((everything >> 64) as u64);
+            let eth_balance: u64 = (everything >> 64) as u64;
 
             Self::deposit_event(Event::DecodingComplete(everything, request_id, eth_balance));
 
