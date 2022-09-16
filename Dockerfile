@@ -20,7 +20,7 @@ RUN rustup toolchain install nightly \
 
 RUN cargo install cargo-chef
 COPY --from=planner /app/recipe.json recipe.json
-RUN cargo chef cook --release --recipe-path recipe.json
+RUN cargo +nightly chef cook --release --recipe-path recipe.json
 
 #---
 FROM rust:1.63.0-slim-buster as build
