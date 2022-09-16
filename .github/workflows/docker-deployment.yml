@@ -2,7 +2,7 @@ name: Branch based docker build and publish
 
 # Language: rust
 # Version: 2.0.0
-# Runner: self-hosted
+# Runner: rust
 # Visibility: private
 
 on:
@@ -21,7 +21,7 @@ env:
 jobs:
   build:
     name: Build and publish the container image
-    runs-on: self-hosted
+    runs-on: rust
     if: github.event_name == 'push' || github.event.pull_request.merged == true
     steps:
       - uses: actions/checkout@v2
@@ -115,7 +115,7 @@ jobs:
 
   scanners:
     name: Scanners
-    runs-on: self-hosted
+    runs-on: rust
     needs: build
     if: github.event_name == 'push' || github.event.pull_request.merged == true
     steps:
