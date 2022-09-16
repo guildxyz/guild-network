@@ -8,12 +8,12 @@ on:
 jobs:
   fmt:
     name: formatting
-    runs-on: ubuntu-latest
+    runs-on: rust
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: cargo fmt -- --check
   test:
-    runs-on: ubuntu-latest
+    runs-on: rust
 
     env:
       RUSTFLAGS: -Dwarnings # fails on warnings as well
