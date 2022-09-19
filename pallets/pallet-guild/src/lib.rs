@@ -68,6 +68,9 @@ pub mod pallet {
     pub trait Config: ChainlinkConfig + frame_system::Config {
         type WeightInfo: WeightInfo;
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+        // this is unfortunately required because we cannot set
+        // T: Config + ChainlinkConfig<Callback = Call<T>>
+        // in the `[pallet::call]` macro
         type Callback: From<Call<Self>> + Into<<Self as ChainlinkConfig>::Callback>;
     }
 
@@ -99,7 +102,7 @@ pub mod pallet {
         pub fn create_guild(
             origin: OriginFor<T>,
             guild_id: GuildId,
-            minimum_balance: u64,
+            minimum_balance: u64, // TODO this should be u128 (because of gwei)
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(

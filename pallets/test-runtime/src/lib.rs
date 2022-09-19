@@ -1,5 +1,7 @@
-#[cfg(test)]
+#[cfg(all(test, not(feature = "test-guild")))]
 mod chainlink;
+#[cfg(all(test, feature = "test-guild"))]
+mod guild;
 
 use frame_support::parameter_types;
 use sp_core::H256;
@@ -15,6 +17,21 @@ pub type BlockNumber = u64;
 pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<TestRuntime>;
 
 // Configure a mock runtime to test pallets
+#[cfg(feature = "test-guild")]
+frame_support::construct_runtime!(
+    pub enum TestRuntime where
+        Block = Block,
+        NodeBlock = Block,
+        UncheckedExtrinsic = UncheckedExtrinsic,
+    {
+        Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+        Chainlink: pallet_chainlink::{Pallet, Call, Storage, Event<T>},
+        Guild: pallet_guild::{Pallet, Call, Storage, Event<T>},
+        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+    }
+);
+
+#[cfg(not(feature = "test-guild"))]
 frame_support::construct_runtime!(
     pub enum TestRuntime where
         Block = Block,
@@ -78,11 +95,22 @@ impl pallet_balances::Config for TestRuntime {
 impl pallet_chainlink::Config for TestRuntime {
     type Event = Event;
     type Currency = pallet_balances::Pallet<TestRuntime>;
+    #[cfg(feature = "test-guild")]
+    type Callback = pallet_guild::Call<TestRuntime>;
+    #[cfg(not(feature = "test-guild"))]
     type Callback = pallet_test_operator::Call<TestRuntime>;
     type ValidityPeriod = ValidityPeriod;
     type MinimumFee = MinimumFee;
 }
 
+#[cfg(feature = "test-guild")]
+impl pallet_guild::Config for TestRuntime {
+    type WeightInfo = ();
+    type Event = Event;
+    type Callback = pallet_guild::Call<TestRuntime>;
+}
+
+#[cfg(not(feature = "test-guild"))]
 impl pallet_test_operator::Config for TestRuntime {
     type Event = Event;
 }
