@@ -534,6 +534,7 @@ impl_runtime_apis! {
             Ok(batches)
         }
     }
+    */
 
     #[cfg(feature = "try-runtime")]
     impl frame_try_runtime::TryRuntime<Block> for Runtime {
@@ -549,5 +550,4 @@ impl_runtime_apis! {
             Executive::execute_block_no_check(block)
         }
     }
-    */
 }

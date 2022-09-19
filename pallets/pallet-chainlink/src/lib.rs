@@ -20,9 +20,6 @@
 #![deny(clippy::all)]
 #![deny(clippy::dbg_macro)]
 
-#[cfg(test)]
-mod tests;
-
 pub use pallet::*;
 
 #[frame_support::pallet]

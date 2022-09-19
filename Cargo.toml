@@ -1,8 +1,10 @@
 [workspace]
 members = [
     "node",
-    "pallets/chainlink",
-    "pallets/guild",
+    "pallets/pallet-chainlink",
+    "pallets/pallet-guild",
+    "pallets/pallet-test-operator",
+    "pallets/test-runtime",
     "runtime",
 ]
 [profile.release]

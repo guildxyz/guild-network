@@ -17,7 +17,7 @@ pub mod pallet {
         traits::Currency,
     };
     use frame_system::pallet_prelude::*;
-    use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkTrait, RequestIdentifier};
+    use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig, RequestIdentifier};
     use sp_std::prelude::*;
 
     type BalanceOf<T> = <<T as pallet_chainlink::Config>::Currency as Currency<
@@ -65,10 +65,10 @@ pub mod pallet {
         StorageMap<_, Blake2_128Concat, RequestIdentifier, JoinRequest<T::AccountId>, OptionQuery>;
 
     #[pallet::config]
-    pub trait Config: ChainlinkTrait + frame_system::Config {
+    pub trait Config: ChainlinkConfig + frame_system::Config {
         type WeightInfo: WeightInfo;
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-        type Callback: From<Call<Self>> + Into<<Self as ChainlinkTrait>::Callback>;
+        type Callback: From<Call<Self>> + Into<<Self as ChainlinkConfig>::Callback>;
     }
 
     #[pallet::event]
@@ -223,109 +223,3 @@ pub mod pallet {
         }
     }
 }
-
-/*
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate as pallet_guild;
-
-    use sp_core::H256;
-    use sp_runtime::{
-        testing::Header,
-        traits::{BlakeTwo256, IdentityLookup},
-    };
-
-    use frame_support::{
-        assert_noop, assert_ok,
-        traits::{ConstU32, ConstU64},
-    };
-
-    type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
-    type Block = frame_system::mocking::MockBlock<Test>;
-
-    frame_support::construct_runtime!(
-        pub enum Test where
-            Block = Block,
-            NodeBlock = Block,
-            UncheckedExtrinsic = UncheckedExtrinsic,
-        {
-            System: frame_system,
-            Guild: pallet_guild,
-        }
-    );
-
-    impl frame_system::Config for Test {
-        type BaseCallFilter = frame_support::traits::Everything;
-        type BlockWeights = ();
-        type BlockLength = ();
-        type DbWeight = ();
-        type Origin = Origin;
-        type Index = u64;
-        type BlockNumber = u64;
-        type Hash = H256;
-        type Call = Call;
-        type Hashing = BlakeTwo256;
-        type AccountId = u64;
-        type Lookup = IdentityLookup<Self::AccountId>;
-        type Header = Header;
-        type Event = Event;
-        type BlockHashCount = ConstU64<250>;
-        type Version = ();
-        type PalletInfo = PalletInfo;
-        type AccountData = ();
-        type OnNewAccount = ();
-        type OnKilledAccount = ();
-        type SystemWeightInfo = ();
-        type SS58Prefix = ();
-        type OnSetCode = ();
-        type MaxConsumers = ConstU32<16>;
-    }
-
-    impl Config for Test {
-        type Event = Event;
-        type WeightInfo = ();
-    }
-
-
-    #[test]
-    fn guild_interactions_work() {
-        let mut ext: sp_io::TestExternalities =
-            frame_system::GenesisConfig::default().build_storage::<Test>().unwrap().into();
-        ext.execute_with(|| {
-            assert_ok!(Guild::create_guild(Origin::signed(4), 444));
-            assert!(Guild::guilds(444).is_some());
-            assert_ok!(Guild::join_guild(Origin::signed(4), 444));
-            assert_eq!(Guild::guilds(444).unwrap().members().len(), 1);
-            assert_eq!(Guild::guilds(444).unwrap().members()[0], 4);
-            assert_noop!(
-                Guild::create_guild(Origin::signed(4), 444),
-                Error::<Test>::GuildAlreadyExists
-            );
-            assert_noop!(
-                Guild::create_guild(Origin::signed(5), 444),
-                Error::<Test>::GuildAlreadyExists
-            );
-            assert_noop!(
-                Guild::join_guild(Origin::signed(4), 444),
-                Error::<Test>::SignerAlreadyJoined
-            );
-            assert_ok!(Guild::join_guild(Origin::signed(5), 444));
-            assert_ok!(Guild::join_guild(Origin::signed(6), 444));
-            assert_ok!(Guild::join_guild(Origin::signed(7), 444));
-            assert_ok!(Guild::join_guild(Origin::signed(8), 444));
-            assert_eq!(Guild::guilds(444).unwrap().members().len(), 5);
-            assert_noop!(
-                Guild::join_guild(Origin::signed(7), 444),
-                Error::<Test>::SignerAlreadyJoined
-            );
-            assert_noop!(
-                Guild::join_guild(Origin::signed(8), 446),
-                Error::<Test>::GuildDoesNotExist
-            );
-            assert_ok!(Guild::create_guild(Origin::signed(1), 446));
-            assert_ok!(Guild::join_guild(Origin::signed(8), 446));
-        });
-    }
-}
-*/
