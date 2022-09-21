@@ -3,7 +3,7 @@ members = [
     "node",
     "pallets/pallet-chainlink",
     "pallets/pallet-guild",
-    "pallets/pallet-test-operator",
+    "pallets/pallet-test-caller",
     "pallets/test-runtime",
     "runtime",
 ]

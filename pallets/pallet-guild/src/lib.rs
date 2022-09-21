@@ -6,6 +6,8 @@ pub use pallet::*;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+#[cfg(test)]
+mod test;
 pub mod weights;
 
 #[frame_support::pallet]

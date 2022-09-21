@@ -1,13 +1,19 @@
+#[cfg(test)]
+mod test;
+
 pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
     use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
     use frame_system::{ensure_root, pallet_prelude::*};
+    use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig};
 
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: ChainlinkConfig + frame_system::Config {
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+        type WeightInfo: Sized;
+        type Callback: From<Call<Self>> + Into<<Self as ChainlinkConfig>::Callback>;
     }
 
     #[pallet::call]
@@ -39,13 +45,13 @@ pub mod pallet {
 
     #[pallet::event]
     pub enum Event<T: Config> {}
-}
 
-impl<T: pallet::Config> pallet_chainlink::CallbackWithParameter for pallet::Call<T> {
-    fn with_result(&self, result: Vec<u8>) -> Option<Self> {
-        match *self {
-            pallet::Call::callback { result: _ } => Some(pallet::Call::callback { result }),
-            _ => None,
+    impl<T: Config> CallbackWithParameter for Call<T> {
+        fn with_result(&self, result: Vec<u8>) -> Option<Self> {
+            match *self {
+                Call::callback { result: _ } => Some(Call::callback { result }),
+                _ => None,
+            }
         }
     }
 }

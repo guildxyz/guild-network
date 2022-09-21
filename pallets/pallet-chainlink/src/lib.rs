@@ -22,6 +22,7 @@
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+
 pub use pallet::*;
 
 #[frame_support::pallet]
