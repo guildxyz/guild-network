@@ -40,6 +40,7 @@ elif [ $1 = "benchmark" ]; then
 	pallet=$2
 
 	./target/release/node-template benchmark pallet \
+		--chain dev \
 		--pallet pallet_$pallet \
 		--extrinsic "*" \
 		--execution=wasm \

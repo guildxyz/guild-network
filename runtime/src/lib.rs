@@ -482,8 +482,6 @@ impl_runtime_apis! {
         }
     }
 
-    // TODO
-    /*
     #[cfg(feature = "runtime-benchmarks")]
     impl frame_benchmarking::Benchmark<Block> for Runtime {
         fn benchmark_metadata(extra: bool) -> (
@@ -529,12 +527,9 @@ impl_runtime_apis! {
 
             add_benchmark!(params, batches, pallet_guild, Guild);
             add_benchmark!(params, batches, pallet_chainlink, Chainlink);
-            ///add_benchmark!(params, batches, pallet_example_request, ExampleRequest);
-
             Ok(batches)
         }
     }
-    */
 
     #[cfg(feature = "try-runtime")]
     impl frame_try_runtime::TryRuntime<Block> for Runtime {

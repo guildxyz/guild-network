@@ -52,6 +52,7 @@ runtime-benchmarks = [
 	"frame-system/runtime-benchmarks",
 	"hex-literal",
 	"pallet-balances/runtime-benchmarks",
+	"pallet-chainlink/runtime-benchmarks",
 	"pallet-grandpa/runtime-benchmarks",
 	"pallet-guild/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",

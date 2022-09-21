@@ -20,6 +20,8 @@
 #![deny(clippy::all)]
 #![deny(clippy::dbg_macro)]
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 pub use pallet::*;
 
 #[frame_support::pallet]

@@ -200,6 +200,7 @@ pub mod pallet {
             let call: <T as Config>::Callback = Call::callback { result: vec![] }.into();
             let spec_id = vec![0];
 
+            // TODO set unique fee
             let fee = BalanceOf::<T>::unique_saturated_from(100_000_000u32);
 
             <pallet_chainlink::Pallet<T>>::initiate_request(
