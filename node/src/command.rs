@@ -3,12 +3,12 @@ use crate::{
     cli::{Cli, Subcommand},
 };
 
-#[cfg(feature = "runtime_benchmarks")]
+#[cfg(feature = "runtime-benchmarks")]
 use crate::command_benchmark::{inherent_benchmark_data, BenchmarkExtrinsicBuilder};
 #[cfg(feature = "node")]
 use crate::service;
 
-#[cfg(feature = "runtime_benchmarks")]
+#[cfg(feature = "runtime-benchmarks")]
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 #[cfg(feature = "node")]
 use node_template_runtime::Block;
@@ -149,7 +149,7 @@ pub fn run() -> sc_cli::Result<()> {
                         if !cfg!(feature = "runtime-benchmarks") {
                             return Err(
                                 "Runtime benchmarking wasn't enabled when building the node. \
-							You can enable it with `--features runtime-benchmarks`."
+			        You can enable it with `--features runtime-benchmarks`."
                                     .into(),
                             );
                         }

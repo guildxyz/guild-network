@@ -4,9 +4,8 @@
 
 pub use pallet::*;
 
-// TODO
-//#[cfg(feature = "runtime-benchmarks")]
-//mod benchmarking;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 pub mod weights;
 
 #[frame_support::pallet]
@@ -68,7 +67,7 @@ pub mod pallet {
     pub trait Config: ChainlinkConfig + frame_system::Config {
         type WeightInfo: WeightInfo;
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-        // this is unfortunately required because we cannot set
+        // NOTE this is unfortunately required because we cannot set
         // T: Config + ChainlinkConfig<Callback = Call<T>>
         // in the `[pallet::call]` macro
         type Callback: From<Call<Self>> + Into<<Self as ChainlinkConfig>::Callback>;
@@ -172,7 +171,7 @@ pub mod pallet {
         pub fn join_guild(
             origin: OriginFor<T>,
             guild_id: GuildId,
-            eth_address: Vec<u8>,
+            eth_address: Vec<u8>, // TODO could this be a fixed length array?
             operator: T::AccountId,
         ) -> DispatchResult {
             let sender = ensure_signed(origin.clone())?;

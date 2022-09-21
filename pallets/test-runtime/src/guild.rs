@@ -1,5 +1,6 @@
 use super::*;
 
+// TODO add more tests once guild functionalities are final
 #[test]
 fn create_guild() {
     new_test_runtime().execute_with(|| {
