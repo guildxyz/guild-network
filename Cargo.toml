@@ -4,8 +4,8 @@ members = [
     "pallets/pallet-chainlink",
     "pallets/pallet-guild",
     "pallets/pallet-test-caller",
-    "pallets/test-runtime",
     "runtime",
+    "test-runtime",
 ]
 [profile.release]
 panic = "abort"
