@@ -274,7 +274,6 @@ impl pallet_sudo::Config for Runtime {
 impl pallet_guild::Config for Runtime {
     type Event = Event;
     type WeightInfo = pallet_guild::weights::SubstrateWeight<Runtime>;
-    type Callback = OracleCallback<Runtime>;
 }
 
 impl pallet_chainlink::Config for Runtime {

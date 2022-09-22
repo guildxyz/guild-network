@@ -10,10 +10,9 @@ pub mod pallet {
     use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig};
 
     #[pallet::config]
-    pub trait Config: ChainlinkConfig + frame_system::Config {
+    pub trait Config: ChainlinkConfig<Callback = Call<Self>> + frame_system::Config {
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         type WeightInfo: Sized;
-        type Callback: From<Call<Self>> + Into<<Self as ChainlinkConfig>::Callback>;
     }
 
     #[pallet::call]

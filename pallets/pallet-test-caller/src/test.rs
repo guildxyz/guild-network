@@ -120,7 +120,8 @@ fn initiate_requests_valid() {
         let result: u64 = 10;
         assert!(<Chainlink>::callback(Origin::signed(1), 0, result.encode()).is_ok());
 
-        let expected_answer = Chainlink::prepend_request_id(&mut result.encode(), 0);
+        // u64 = 8 zeros
+        let expected_answer = vec![0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0];
 
         assert_eq!(
             last_event(),

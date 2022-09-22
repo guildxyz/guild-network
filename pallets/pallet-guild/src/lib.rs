@@ -66,13 +66,9 @@ pub mod pallet {
         StorageMap<_, Blake2_128Concat, RequestIdentifier, JoinRequest<T::AccountId>, OptionQuery>;
 
     #[pallet::config]
-    pub trait Config: ChainlinkConfig + frame_system::Config {
+    pub trait Config: ChainlinkConfig<Callback = Call<Self>> + frame_system::Config {
         type WeightInfo: WeightInfo;
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-        // NOTE this is unfortunately required because we cannot set
-        // T: Config + ChainlinkConfig<Callback = Call<T>>
-        // in the `[pallet::call]` macro
-        type Callback: From<Call<Self>> + Into<<Self as ChainlinkConfig>::Callback>;
     }
 
     #[pallet::event]
@@ -199,7 +195,7 @@ pub mod pallet {
             );
 
             let parameters = eth_address;
-            let call: <T as Config>::Callback = Call::callback { result: vec![] }.into();
+            let call: <T as ChainlinkConfig>::Callback = Call::callback { result: vec![] };
             let spec_id = vec![0];
 
             // TODO set unique fee
@@ -212,7 +208,7 @@ pub mod pallet {
                 0,
                 parameters.encode(),
                 fee,
-                call.into(),
+                call,
             )?;
 
             Ok(())

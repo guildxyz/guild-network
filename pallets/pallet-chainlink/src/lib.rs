@@ -40,6 +40,12 @@ pub mod pallet {
 
     use sp_std::convert::TryInto;
 
+    fn prepend_request_id(mut result: Vec<u8>, request_id: u64) -> Vec<u8> {
+        let mut request_bytes = request_id.encode();
+        request_bytes.append(&mut result);
+        request_bytes
+    }
+
     pub type BalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
@@ -136,7 +142,7 @@ pub mod pallet {
         StorageValue<_, RequestIdentifier, ValueQuery>;
 
     #[derive(Encode, Decode, Clone, TypeInfo)]
-    pub struct RequestGeneric<AccountId, Callback, BlockNumber, BalanceOf> {
+    pub struct GenericRequest<AccountId, Callback, BlockNumber, BalanceOf> {
         requester: AccountId,
         operator: AccountId,
         callback: Callback,
@@ -144,7 +150,7 @@ pub mod pallet {
         fee: BalanceOf,
     }
 
-    pub(super) type Request<T> = RequestGeneric<
+    pub(super) type Request<T> = GenericRequest<
         <T as frame_system::Config>::AccountId,
         <T as Config>::Callback,
         <T as frame_system::Config>::BlockNumber,
@@ -280,7 +286,7 @@ pub mod pallet {
         pub fn callback(
             origin: OriginFor<T>,
             request_id: RequestIdentifier,
-            mut result: Vec<u8>,
+            result: Vec<u8>,
         ) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
@@ -298,11 +304,12 @@ pub mod pallet {
                 Error::<T>::InsufficientReservedBalance
             );
 
-            // NOTE: While `repatriate_reserved only moves UP TO the amount passed, the currency
-            // cannot be moved 		by a different pallet and we made sure to reserve the exact same
-            // amount of balance in the 		initiate_request call so I believe this is fine.
-            // NOTE: BalanceStatus::Free means that it is transferred to the Free balance of the
-            // operator
+            // NOTE: While `repatriate_reserved` only moves UP TO the amount
+            // passed, the currency cannot be moved by a different pallet and
+            // we made sure to reserve the exact same amount of balance in the
+            // initiate_request call so I believe this is fine.
+            // NOTE: BalanceStatus::Free means that it is transferred to the
+            // Free balance of the operator
             T::Currency::repatriate_reserved(
                 &request.requester,
                 &request.operator,
@@ -310,7 +317,7 @@ pub mod pallet {
                 BalanceStatus::Free,
             )?;
 
-            let prepended_response = Self::prepend_request_id(&mut result, request_id);
+            let prepended_response = prepend_request_id(result, request_id);
 
             // Dispatch the result to the original callback registered by the caller
             let callback = request
@@ -332,14 +339,6 @@ pub mod pallet {
             ));
 
             Ok(())
-        }
-    }
-
-    impl<T: Config> Pallet<T> {
-        pub fn prepend_request_id(result: &mut Vec<u8>, request_id: u64) -> Vec<u8> {
-            let mut request_bytes = request_id.encode();
-            request_bytes.append(result);
-            request_bytes
         }
     }
 

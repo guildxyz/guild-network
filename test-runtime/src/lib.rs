@@ -85,7 +85,6 @@ macro_rules! test_runtime {
         impl $pallet::Config for TestRuntime {
             type WeightInfo = ();
             type Event = Event;
-            type Callback = $pallet::Call<TestRuntime>;
         }
 
         pub const GENESIS_BALANCE: u64 = 1_000_000_000;
