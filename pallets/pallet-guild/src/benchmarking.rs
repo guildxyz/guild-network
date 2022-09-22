@@ -11,7 +11,6 @@ benchmarks! {
         let caller: T::AccountId = whitelisted_caller();
     }: _(RawOrigin::Signed(caller), 69, 123)
     verify {
-        // TODO add some verification logic here?
     }
 
     join_guild {
@@ -22,7 +21,6 @@ benchmarks! {
         Chainlink::<T>::register_operator(RawOrigin::Signed(operator.clone()).into())?;
     }: _(RawOrigin::Signed(caller), 69, sp_std::vec![128; 40], operator)
     verify {
-        // TODO add some verification logic here?
     }
 }
 

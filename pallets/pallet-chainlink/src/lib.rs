@@ -182,10 +182,10 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Unregisters an existing Operator
+        /// Deregisters an already registered Operator
         // TODO check weight
         #[pallet::weight(10_000)]
-        pub fn unregister_operator(origin: OriginFor<T>) -> DispatchResult {
+        pub fn deregister_operator(origin: OriginFor<T>) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
             if Operators::<T>::take(&who) {

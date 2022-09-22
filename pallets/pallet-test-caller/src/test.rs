@@ -59,7 +59,7 @@ fn operator_unregistration_valid() {
         System::set_block_number(1);
 
         assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
-        assert!(<Chainlink>::unregister_operator(Origin::signed(1)).is_ok());
+        assert!(<Chainlink>::deregister_operator(Origin::signed(1)).is_ok());
         assert!(!<Chainlink>::operator(1));
 
         assert_eq!(
@@ -73,7 +73,7 @@ fn operator_unregistration_valid() {
 fn operator_unregistration_invalid_unknown_operator() {
     new_test_runtime().execute_with(|| {
         // Unknown operator error
-        assert!(<Chainlink>::unregister_operator(Origin::signed(1)).is_err());
+        assert!(<Chainlink>::deregister_operator(Origin::signed(1)).is_err());
         assert!(!<Chainlink>::operator(1));
     });
 }
