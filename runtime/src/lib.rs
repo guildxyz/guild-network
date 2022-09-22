@@ -277,6 +277,7 @@ impl pallet_guild::Config for Runtime {
 }
 
 impl pallet_chainlink::Config for Runtime {
+    type WeightInfo = ();
     type Event = Event;
     type Currency = Balances;
     type Callback = OracleCallback<Runtime>;

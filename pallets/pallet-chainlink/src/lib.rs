@@ -22,11 +22,13 @@
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+pub mod weights;
 
 pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
+    use super::weights::WeightInfo;
     use codec::Codec;
     use frame_support::{
         dispatch::DispatchResult,
@@ -65,6 +67,7 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
+        type WeightInfo: WeightInfo;
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         type Currency: ReservableCurrency<Self::AccountId>;
 
@@ -172,7 +175,7 @@ pub mod pallet {
         /// Register a new Operator.
         /// Fails with `OperatorAlreadyRegistered` if this Operator (identified by `origin`) has
         /// already been registered.
-        #[pallet::weight(10_000)]
+        #[pallet::weight(T::WeightInfo::register_operator())]
         pub fn register_operator(origin: OriginFor<T>) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
@@ -189,8 +192,7 @@ pub mod pallet {
         }
 
         /// Deregisters an already registered Operator
-        // TODO check weight
-        #[pallet::weight(10_000)]
+        #[pallet::weight(10000)] //T::WeightInfo::deregister_operator())]
         pub fn deregister_operator(origin: OriginFor<T>) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 

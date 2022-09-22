@@ -65,6 +65,7 @@ pub mod pallet {
     pub(super) type JoinRequests<T: Config> =
         StorageMap<_, Blake2_128Concat, RequestIdentifier, JoinRequest<T::AccountId>, OptionQuery>;
 
+    // NOTE Self here refers to the Runtime (i think)
     #[pallet::config]
     pub trait Config: ChainlinkConfig<Callback = Call<Self>> + frame_system::Config {
         type WeightInfo: WeightInfo;
@@ -95,7 +96,7 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        #[pallet::weight(T::WeightInfo::create_guild())]
+        #[pallet::weight(1000)] //T::WeightInfo::create_guild())]
         pub fn create_guild(
             origin: OriginFor<T>,
             guild_id: GuildId,
@@ -165,7 +166,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(T::WeightInfo::join_guild())]
+        #[pallet::weight(1000)] //T::WeightInfo::join_guild())]
         pub fn join_guild(
             origin: OriginFor<T>,
             guild_id: GuildId,
