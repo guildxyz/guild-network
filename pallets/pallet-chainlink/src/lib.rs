@@ -201,7 +201,7 @@ pub mod pallet {
         /// required information to perform the request and provide back
         /// the result.
         // TODO check weight
-        #[pallet::weight(10_000)]
+        #[pallet::weight(50_000)]
         pub fn initiate_request(
             origin: OriginFor<T>,
             operator: T::AccountId,
@@ -270,7 +270,7 @@ pub mod pallet {
         /// callback. The fee reserved during `initiate_request` is transferred
         /// as soon as this callback is called.
         //TODO check weight
-        #[pallet::weight(10_000)]
+        #[pallet::weight(50_000)]
         pub fn callback(
             origin: OriginFor<T>,
             request_id: RequestIdentifier,
