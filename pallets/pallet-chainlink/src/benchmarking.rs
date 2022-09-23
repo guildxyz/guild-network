@@ -1,11 +1,8 @@
 use super::*;
 use crate::Pallet as Chainlink;
 
-use codec::Encode;
-use frame_benchmarking::{account, benchmarks, whitelisted_caller};
-use frame_support::traits::Currency;
+use frame_benchmarking::{benchmarks, whitelisted_caller};
 use frame_system::RawOrigin;
-use sp_std::{vec, vec::Vec as SpVec};
 
 benchmarks! {
     register_operator {
