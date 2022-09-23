@@ -22,30 +22,42 @@
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
-pub mod weights;
+mod weights;
 
 pub use pallet::*;
 
+use codec::Codec;
+use frame_support::{
+    dispatch::DispatchResult,
+    traits::{BalanceStatus, Currency, Get, ReservableCurrency, UnfilteredDispatchable},
+    Parameter,
+};
+use sp_std::{prelude::*, vec::Vec as SpVec};
+use weights::WeightInfo;
+
 #[frame_support::pallet]
 pub mod pallet {
-    use super::weights::WeightInfo;
-    use codec::Codec;
-    use frame_support::{
-        dispatch::DispatchResult,
-        ensure,
-        pallet_prelude::*,
-        traits::{BalanceStatus, Currency, Get, ReservableCurrency, UnfilteredDispatchable},
-        Parameter,
-    };
+    use super::*;
+    use frame_support::{ensure, pallet_prelude::*};
     use frame_system::{ensure_signed, pallet_prelude::*};
-    use sp_std::{prelude::*, vec::Vec as SpVec};
 
-    use sp_std::convert::TryInto;
+    #[pallet::config]
+    pub trait Config: frame_system::Config {
+        type WeightInfo: WeightInfo;
+        type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+        type Currency: ReservableCurrency<Self::AccountId>;
+        // A reference to an Extrinsic that can have a result injected. Used as Chainlink callback
+        type Callback: Parameter
+            + UnfilteredDispatchable<Origin = Self::Origin>
+            + Codec
+            + Eq
+            + CallbackWithParameter;
 
-    fn prepend_request_id(mut result: Vec<u8>, request_id: u64) -> Vec<u8> {
-        let mut request_bytes = request_id.encode();
-        request_bytes.append(&mut result);
-        request_bytes
+        // NOTE: The following two types could be `const`
+        // Period during which a request is valid
+        type ValidityPeriod: Get<Self::BlockNumber>;
+        // Minimum fee paid for all requests to disincentivize spam requests
+        type MinimumFee: Get<u32>;
     }
 
     pub type BalanceOf<T> =
@@ -63,27 +75,6 @@ pub mod pallet {
         fn with_result(&self, result: SpVec<u8>) -> Option<Self>
         where
             Self: core::marker::Sized;
-    }
-
-    #[pallet::config]
-    pub trait Config: frame_system::Config {
-        type WeightInfo: WeightInfo;
-        type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-        type Currency: ReservableCurrency<Self::AccountId>;
-
-        // A reference to an Extrinsic that can have a result injected. Used as Chainlink callback
-        type Callback: Parameter
-            + UnfilteredDispatchable<Origin = Self::Origin>
-            + Codec
-            + Eq
-            + CallbackWithParameter;
-
-        // NOTE: The following two types could be `const`
-        // Period during which a request is valid
-        type ValidityPeriod: Get<Self::BlockNumber>;
-
-        // Minimum fee paid for all requests to disincentivize spam requests
-        type MinimumFee: Get<u32>;
     }
 
     #[pallet::error]
@@ -231,10 +222,10 @@ pub mod pallet {
             // pallet_balances config of the runtime
             // ensure!(fee > T::Currency::minimum_balance(), Error::<T>::InsufficientFee);
 
-            // NOTE: this might not be necessary since it seems that reserved tokens are only
-            //	 	moved from the `free` balance of an account and it is not stored in a totally new
-            // account 		However, a minimum amount of fee is a good idea to disincentivize spam
-            // requests
+            // NOTE: this might not be necessary since it seems that reserved
+            // tokens are only moved from the `free` balance of an account and
+            // it is not stored in a totally new account However, a minimum
+            // amount of fee is a good idea to disincentivize spam requests
             ensure!(
                 fee >= T::MinimumFee::get().into(),
                 Error::<T>::InsufficientFee
@@ -250,7 +241,7 @@ pub mod pallet {
             NextRequestIdentifier::<T>::put(request_id.wrapping_add(1));
 
             // NOTE: This does not validate the request for any block number.
-            //		It only serves as a timestamp for the ValidityPeriod check.
+            // It only serves as a timestamp for the ValidityPeriod check.
             let now = frame_system::Pallet::<T>::block_number();
 
             Requests::<T>::insert(
@@ -288,7 +279,7 @@ pub mod pallet {
         pub fn callback(
             origin: OriginFor<T>,
             request_id: RequestIdentifier,
-            result: Vec<u8>,
+            mut result: Vec<u8>,
         ) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
@@ -319,7 +310,8 @@ pub mod pallet {
                 BalanceStatus::Free,
             )?;
 
-            let prepended_response = prepend_request_id(result, request_id);
+            let mut prepended_response = request_id.encode();
+            prepended_response.append(&mut result);
 
             // Dispatch the result to the original callback registered by the caller
             let callback = request

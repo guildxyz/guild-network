@@ -23,5 +23,3 @@ benchmarks! {
     verify {
     }
 }
-
-//impl_benchmark_test_suite!(Guild, crate::mock::new_test_ext(), crate::mock::Test);

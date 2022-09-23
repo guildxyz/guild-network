@@ -80,6 +80,7 @@ macro_rules! test_runtime {
             type Callback = $pallet::Call<TestRuntime>;
             type ValidityPeriod = ValidityPeriod;
             type MinimumFee = MinimumFee;
+            type WeightInfo = ();
         }
 
         impl $pallet::Config for TestRuntime {

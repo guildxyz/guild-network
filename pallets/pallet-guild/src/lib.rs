@@ -170,7 +170,7 @@ pub mod pallet {
         pub fn join_guild(
             origin: OriginFor<T>,
             guild_id: GuildId,
-            eth_address: Vec<u8>, // TODO could this be a fixed length array?
+            request_parameters: Vec<u8>, // an eth address for now
             operator: T::AccountId,
         ) -> DispatchResult {
             let sender = ensure_signed(origin.clone())?;
@@ -195,7 +195,6 @@ pub mod pallet {
                 },
             );
 
-            let parameters = eth_address;
             let call: <T as ChainlinkConfig>::Callback = Call::callback { result: vec![] };
             let spec_id = vec![0];
 
@@ -207,7 +206,7 @@ pub mod pallet {
                 operator,
                 spec_id,
                 0,
-                parameters.encode(),
+                request_parameters.encode(),
                 fee,
                 call,
             )?;

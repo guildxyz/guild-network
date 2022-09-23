@@ -26,6 +26,7 @@ benchmarks! {
     }: _(RawOrigin::Signed(caller))
     verify {
     }
+    // TODO it's hard to benchmark these as they are taking dynamic inputs
     //initiate_request {
     //    let caller: T::AccountId = whitelisted_caller();
     //    let operator: T::AccountId = account("operator", 1, 123);
@@ -39,12 +40,14 @@ benchmarks! {
     //}: _(RawOrigin::Signed(caller), operator, spec_index, data_version, data, fee,
     //verify {
     //}
-    callback {
-        let caller: T::AccountId = whitelisted_caller();
-        let request_id = 128_u64;
-    }: _(RawOrigin::Signed(caller), request_id, vec![0; 128])
-    verify {
-    }
-}
+    //callback {
+    //    let caller: T::AccountId = whitelisted_caller();
+    //    let request_id = 128_u64;
+    //    let operator: T::AccountId = account("operator", 1, 123);
 
-//impl_benchmark_test_suite!(Guild, crate::mock::new_test_ext(), crate::mock::Test);
+    //    Chainlink::<T>::register_operator(RawOrigin::Signed(operator.clone()).into())?;
+
+    //}: _(RawOrigin::Signed(caller), request_id, vec![0; 128])
+    //verify {
+    //}
+}
