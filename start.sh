@@ -39,17 +39,16 @@ elif [ $1 = "clean" ]; then
 elif [ $1 = "benchmark" ]; then
 	pallet=$2
 
-	[ -z "$pallet" ] && pallet="template"
-
 	./target/release/node-template benchmark pallet \
-		--pallet pallet-$pallet \
+		--chain dev \
+		--pallet pallet_$pallet \
 		--extrinsic "*" \
 		--execution=wasm \
 		--wasm-execution=compiled \
 		--steps 50 \
 		--repeat 20 \
 		--template frame-weight-template.hbs \
-		--output ./pallets/$pallet/src/weights.rs
+		--output ./pallets/pallet-$pallet/src/weights.rs
 else
   echo "Invalid command"
 fi

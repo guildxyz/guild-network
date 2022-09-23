@@ -21,6 +21,7 @@ std = [
 	"frame-support/std",
 	"frame-system-rpc-runtime-api/std",
 	"frame-system/std",
+	"frame-try-runtime/std",
 	"pallet-aura/std",
 	"pallet-balances/std",
 	"pallet-chainlink/std",
@@ -51,6 +52,7 @@ runtime-benchmarks = [
 	"frame-system/runtime-benchmarks",
 	"hex-literal",
 	"pallet-balances/runtime-benchmarks",
+	"pallet-chainlink/runtime-benchmarks",
 	"pallet-grandpa/runtime-benchmarks",
 	"pallet-guild/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
@@ -63,6 +65,7 @@ try-runtime = [
 	"pallet-aura/try-runtime",
 	"pallet-balances/try-runtime",
 	"pallet-grandpa/try-runtime",
+	"pallet-guild/try-runtime",
 	"pallet-randomness-collective-flip/try-runtime",
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
@@ -84,9 +87,9 @@ hex-literal = { version = "0.3.4", optional = true }
 
 pallet-aura = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
 pallet-balances = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
-pallet-chainlink = { version = "3.0.0-alpha", default-features = false, path = "../pallets/chainlink" }
+pallet-chainlink = { version = "3.0.0-alpha", default-features = false, path = "../pallets/pallet-chainlink" }
 pallet-grandpa = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
-pallet-guild = { version = "0.1.0-alpha", default-features = false, path = "../pallets/guild" }
+pallet-guild = { version = "0.1.0-alpha", default-features = false, path = "../pallets/pallet-guild" }
 pallet-nicks = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
 pallet-randomness-collective-flip = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
 pallet-sudo = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }

@@ -274,10 +274,10 @@ impl pallet_sudo::Config for Runtime {
 impl pallet_guild::Config for Runtime {
     type Event = Event;
     type WeightInfo = pallet_guild::weights::SubstrateWeight<Runtime>;
-    type Callback = OracleCallback<Runtime>;
 }
 
 impl pallet_chainlink::Config for Runtime {
+    type WeightInfo = ();
     type Event = Event;
     type Currency = Balances;
     type Callback = OracleCallback<Runtime>;
@@ -482,8 +482,6 @@ impl_runtime_apis! {
         }
     }
 
-    // TODO
-    /*
     #[cfg(feature = "runtime-benchmarks")]
     impl frame_benchmarking::Benchmark<Block> for Runtime {
         fn benchmark_metadata(extra: bool) -> (
@@ -529,8 +527,6 @@ impl_runtime_apis! {
 
             add_benchmark!(params, batches, pallet_guild, Guild);
             add_benchmark!(params, batches, pallet_chainlink, Chainlink);
-            ///add_benchmark!(params, batches, pallet_example_request, ExampleRequest);
-
             Ok(batches)
         }
     }
@@ -549,5 +545,4 @@ impl_runtime_apis! {
             Executive::execute_block_no_check(block)
         }
     }
-    */
 }

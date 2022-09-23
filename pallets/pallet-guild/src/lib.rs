@@ -4,9 +4,10 @@
 
 pub use pallet::*;
 
-// TODO
-//#[cfg(feature = "runtime-benchmarks")]
-//mod benchmarking;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+#[cfg(test)]
+mod test;
 pub mod weights;
 
 #[frame_support::pallet]
@@ -17,7 +18,7 @@ pub mod pallet {
         traits::Currency,
     };
     use frame_system::pallet_prelude::*;
-    use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkTrait, RequestIdentifier};
+    use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig, RequestIdentifier};
     use sp_std::prelude::*;
 
     type BalanceOf<T> = <<T as pallet_chainlink::Config>::Currency as Currency<
@@ -64,11 +65,11 @@ pub mod pallet {
     pub(super) type JoinRequests<T: Config> =
         StorageMap<_, Blake2_128Concat, RequestIdentifier, JoinRequest<T::AccountId>, OptionQuery>;
 
+    // NOTE Self here refers to the Runtime (i think)
     #[pallet::config]
-    pub trait Config: ChainlinkTrait + frame_system::Config {
+    pub trait Config: ChainlinkConfig<Callback = Call<Self>> + frame_system::Config {
         type WeightInfo: WeightInfo;
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-        type Callback: From<Call<Self>> + Into<<Self as ChainlinkTrait>::Callback>;
     }
 
     #[pallet::event]
@@ -95,11 +96,11 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        #[pallet::weight(T::WeightInfo::create_guild())]
+        #[pallet::weight(1000)] //T::WeightInfo::create_guild())]
         pub fn create_guild(
             origin: OriginFor<T>,
             guild_id: GuildId,
-            minimum_balance: u64,
+            minimum_balance: u64, // TODO this should be u128 (because of gwei)
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(
@@ -165,11 +166,11 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(T::WeightInfo::join_guild())]
+        #[pallet::weight(1000)] //T::WeightInfo::join_guild())]
         pub fn join_guild(
             origin: OriginFor<T>,
             guild_id: GuildId,
-            eth_address: Vec<u8>,
+            request_parameters: Vec<u8>, // an eth address for now
             operator: T::AccountId,
         ) -> DispatchResult {
             let sender = ensure_signed(origin.clone())?;
@@ -194,20 +195,16 @@ pub mod pallet {
                 },
             );
 
-            let parameters = eth_address;
-            let call: <T as Config>::Callback = Call::callback { result: vec![] }.into();
-            let spec_id = vec![0];
-
+            let call: <T as ChainlinkConfig>::Callback = Call::callback { result: vec![] };
+            // TODO set unique fee
             let fee = BalanceOf::<T>::unique_saturated_from(100_000_000u32);
-
             <pallet_chainlink::Pallet<T>>::initiate_request(
                 origin,
                 operator,
-                spec_id,
                 0,
-                parameters.encode(),
+                request_parameters.encode(),
                 fee,
-                call.into(),
+                call,
             )?;
 
             Ok(())
@@ -223,109 +220,3 @@ pub mod pallet {
         }
     }
 }
-
-/*
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate as pallet_guild;
-
-    use sp_core::H256;
-    use sp_runtime::{
-        testing::Header,
-        traits::{BlakeTwo256, IdentityLookup},
-    };
-
-    use frame_support::{
-        assert_noop, assert_ok,
-        traits::{ConstU32, ConstU64},
-    };
-
-    type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
-    type Block = frame_system::mocking::MockBlock<Test>;
-
-    frame_support::construct_runtime!(
-        pub enum Test where
-            Block = Block,
-            NodeBlock = Block,
-            UncheckedExtrinsic = UncheckedExtrinsic,
-        {
-            System: frame_system,
-            Guild: pallet_guild,
-        }
-    );
-
-    impl frame_system::Config for Test {
-        type BaseCallFilter = frame_support::traits::Everything;
-        type BlockWeights = ();
-        type BlockLength = ();
-        type DbWeight = ();
-        type Origin = Origin;
-        type Index = u64;
-        type BlockNumber = u64;
-        type Hash = H256;
-        type Call = Call;
-        type Hashing = BlakeTwo256;
-        type AccountId = u64;
-        type Lookup = IdentityLookup<Self::AccountId>;
-        type Header = Header;
-        type Event = Event;
-        type BlockHashCount = ConstU64<250>;
-        type Version = ();
-        type PalletInfo = PalletInfo;
-        type AccountData = ();
-        type OnNewAccount = ();
-        type OnKilledAccount = ();
-        type SystemWeightInfo = ();
-        type SS58Prefix = ();
-        type OnSetCode = ();
-        type MaxConsumers = ConstU32<16>;
-    }
-
-    impl Config for Test {
-        type Event = Event;
-        type WeightInfo = ();
-    }
-
-
-    #[test]
-    fn guild_interactions_work() {
-        let mut ext: sp_io::TestExternalities =
-            frame_system::GenesisConfig::default().build_storage::<Test>().unwrap().into();
-        ext.execute_with(|| {
-            assert_ok!(Guild::create_guild(Origin::signed(4), 444));
-            assert!(Guild::guilds(444).is_some());
-            assert_ok!(Guild::join_guild(Origin::signed(4), 444));
-            assert_eq!(Guild::guilds(444).unwrap().members().len(), 1);
-            assert_eq!(Guild::guilds(444).unwrap().members()[0], 4);
-            assert_noop!(
-                Guild::create_guild(Origin::signed(4), 444),
-                Error::<Test>::GuildAlreadyExists
-            );
-            assert_noop!(
-                Guild::create_guild(Origin::signed(5), 444),
-                Error::<Test>::GuildAlreadyExists
-            );
-            assert_noop!(
-                Guild::join_guild(Origin::signed(4), 444),
-                Error::<Test>::SignerAlreadyJoined
-            );
-            assert_ok!(Guild::join_guild(Origin::signed(5), 444));
-            assert_ok!(Guild::join_guild(Origin::signed(6), 444));
-            assert_ok!(Guild::join_guild(Origin::signed(7), 444));
-            assert_ok!(Guild::join_guild(Origin::signed(8), 444));
-            assert_eq!(Guild::guilds(444).unwrap().members().len(), 5);
-            assert_noop!(
-                Guild::join_guild(Origin::signed(7), 444),
-                Error::<Test>::SignerAlreadyJoined
-            );
-            assert_noop!(
-                Guild::join_guild(Origin::signed(8), 446),
-                Error::<Test>::GuildDoesNotExist
-            );
-            assert_ok!(Guild::create_guild(Origin::signed(1), 446));
-            assert_ok!(Guild::join_guild(Origin::signed(8), 446));
-        });
-    }
-}
-*/

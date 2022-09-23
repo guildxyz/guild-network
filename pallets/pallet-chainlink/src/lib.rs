@@ -20,31 +20,48 @@
 #![deny(clippy::all)]
 #![deny(clippy::dbg_macro)]
 
-#[cfg(test)]
-mod tests;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+mod weights;
 
 pub use pallet::*;
 
+use codec::Codec;
+use frame_support::{
+    dispatch::DispatchResult,
+    traits::{BalanceStatus, Currency, Get, ReservableCurrency, UnfilteredDispatchable},
+    Parameter,
+};
+use sp_std::{prelude::*, vec::Vec as SpVec};
+use weights::WeightInfo;
+
 #[frame_support::pallet]
 pub mod pallet {
-    use codec::Codec;
-    use frame_support::{
-        dispatch::DispatchResult,
-        ensure,
-        pallet_prelude::*,
-        traits::{BalanceStatus, Currency, Get, ReservableCurrency, UnfilteredDispatchable},
-        Parameter,
-    };
+    use super::*;
+    use frame_support::{ensure, pallet_prelude::*};
     use frame_system::{ensure_signed, pallet_prelude::*};
-    use sp_std::{prelude::*, vec::Vec as SpVec};
 
-    use sp_std::convert::TryInto;
+    #[pallet::config]
+    pub trait Config: frame_system::Config {
+        type WeightInfo: WeightInfo;
+        type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+        type Currency: ReservableCurrency<Self::AccountId>;
+        // A reference to an Extrinsic that can have a result injected. Used as Chainlink callback
+        type Callback: Parameter
+            + UnfilteredDispatchable<Origin = Self::Origin>
+            + Codec
+            + Eq
+            + CallbackWithParameter;
+
+        // NOTE: The following two types could be `const`
+        // Period during which a request is valid
+        type ValidityPeriod: Get<Self::BlockNumber>;
+        // Minimum fee paid for all requests to disincentivize spam requests
+        type MinimumFee: Get<u32>;
+    }
 
     pub type BalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-
-    // Uniquely identify a request's specification understood by an Operator
-    pub type SpecIndex = SpVec<u8>;
     // Uniquely identify a request for a considered Operator
     pub type RequestIdentifier = u64;
     // The version of the serialized data format
@@ -57,53 +74,32 @@ pub mod pallet {
             Self: core::marker::Sized;
     }
 
-    #[pallet::config]
-    pub trait Config: frame_system::Config {
-        type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-        type Currency: ReservableCurrency<Self::AccountId>;
-
-        // A reference to an Extrinsic that can have a result injected. Used as Chainlink callback
-        type Callback: Parameter
-            + UnfilteredDispatchable<Origin = Self::Origin>
-            + Codec
-            + Eq
-            + CallbackWithParameter;
-
-        // NOTE: The following two types could be `const`
-        // Period during which a request is valid
-        type ValidityPeriod: Get<Self::BlockNumber>;
-
-        // Minimum fee paid for all requests to disincentivize spam requests
-        type MinimumFee: Get<u32>;
-    }
-
     #[pallet::error]
     pub enum Error<T> {
-        // Manipulating an unknown operator
+        /// Manipulating an unknown operator
         UnknownOperator,
-        // Manipulating an unknown request
+        /// Manipulating an unknown request
         UnknownRequest,
-        // Not the expected operator
+        /// Not the expected operator
         WrongOperator,
-        // An operator is already registered.
+        /// An operator is already registered.
         OperatorAlreadyRegistered,
-        // Callback cannot be deserialized
+        /// Callback cannot be deserialized
         UnknownCallback,
-        // Fee provided does not match minimum required fee
+        /// Fee provided does not match minimum required fee
         InsufficientFee,
-        // Request has already been served by the operator
+        /// Request has already been served by the operator
         RequestAlreadyServed,
-        // Reserved balance is less than the specified fee for the request
+        /// Reserved balance is less than the specified fee for the request
         InsufficientReservedBalance,
     }
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        // A request has been accepted. Corresponding fee payment is reserved
+        /// A request has been accepted. Corresponding fee payment is reserved
         OracleRequest(
             T::AccountId,
-            SpecIndex,
             RequestIdentifier,
             T::AccountId,
             DataVersion,
@@ -111,17 +107,13 @@ pub mod pallet {
             SpVec<u8>,
             BalanceOf<T>,
         ),
-
-        // A request has been answered. Corresponding fee payment is transferred
+        /// A request has been answered. Corresponding fee payment is transferred
         OracleAnswer(T::AccountId, RequestIdentifier, SpVec<u8>, BalanceOf<T>),
-
-        // A new operator has been registered
+        /// A new operator has been registered
         OperatorRegistered(T::AccountId),
-
-        // An existing operator has been unregistered
-        OperatorUnregistered(T::AccountId),
-
-        // A request didn't receive any result in time
+        /// An existing operator has been unregistered
+        OperatorDeregistered(T::AccountId),
+        /// A request didn't receive any result in time
         KillRequest(RequestIdentifier),
     }
 
@@ -136,7 +128,7 @@ pub mod pallet {
         StorageValue<_, RequestIdentifier, ValueQuery>;
 
     #[derive(Encode, Decode, Clone, TypeInfo)]
-    pub struct RequestGeneric<AccountId, Callback, BlockNumber, BalanceOf> {
+    pub struct GenericRequest<AccountId, Callback, BlockNumber, BalanceOf> {
         requester: AccountId,
         operator: AccountId,
         callback: Callback,
@@ -144,7 +136,7 @@ pub mod pallet {
         fee: BalanceOf,
     }
 
-    pub(super) type Request<T> = RequestGeneric<
+    pub(super) type Request<T> = GenericRequest<
         <T as frame_system::Config>::AccountId,
         <T as Config>::Callback,
         <T as frame_system::Config>::BlockNumber,
@@ -164,9 +156,10 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         /// Register a new Operator.
-        /// Fails with `OperatorAlreadyRegistered` if this Operator (identified by `origin`) has
-        /// already been registered.
-        #[pallet::weight(10_000)]
+        ///
+        /// Fails with `OperatorAlreadyRegistered` if this Operator (identified
+        /// by `origin`) has already been registered.
+        #[pallet::weight(T::WeightInfo::register_operator())]
         pub fn register_operator(origin: OriginFor<T>) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
@@ -182,35 +175,36 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Unregisters an existing Operator
-        // TODO check weight
-        #[pallet::weight(10_000)]
-        pub fn unregister_operator(origin: OriginFor<T>) -> DispatchResult {
+        /// Deregisters an already registered Operator
+        #[pallet::weight(T::WeightInfo::deregister_operator())]
+        pub fn deregister_operator(origin: OriginFor<T>) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
             if Operators::<T>::take(&who) {
-                Self::deposit_event(Event::OperatorUnregistered(who));
+                Self::deposit_event(Event::OperatorDeregistered(who));
                 Ok(())
             } else {
                 Err(Error::<T>::UnknownOperator.into())
             }
         }
 
-        /// Hint specified Operator (via its `AccountId`) of a request to be performed.
-        /// Request details are encapsulated in `data` and identified by `spec_index`.
-        /// `data` must be SCALE encoded.
-        /// If provided fee is sufficient, Operator must send back the request result in `callback`
-        /// Extrinsic which then will dispatch back to the request originator callback identified by
-        /// `callback`. The fee is `reserved` and only actually transferred when the result is
-        /// provided in the callback. Operators are expected to listen to `OracleRequest` events.
-        /// This event contains all the required information to perform the request and provide back
+        /// Hint specified Operator (via its `AccountId`) of a request to be
+        /// performed.
+        ///
+        /// Request details are encapsulated in `data` which must be
+        /// SCALE encoded. If provided fee is sufficient, Operator must send
+        /// back the request result in `callback` Extrinsic which then will
+        /// dispatch back to the request originator callback identified by
+        /// `callback`. The fee is `reserved` and only actually transferred
+        /// when the result is provided in the callback. Operators are expected
+        /// to listen to `OracleRequest` events. This event contains all the
+        /// required information to perform the request and provide back
         /// the result.
         // TODO check weight
-        #[pallet::weight(10_000)]
+        #[pallet::weight(50_000)]
         pub fn initiate_request(
             origin: OriginFor<T>,
             operator: T::AccountId,
-            spec_index: SpecIndex,
             data_version: DataVersion,
             data: Vec<u8>,
             fee: BalanceOf<T>,
@@ -223,10 +217,10 @@ pub mod pallet {
             // pallet_balances config of the runtime
             // ensure!(fee > T::Currency::minimum_balance(), Error::<T>::InsufficientFee);
 
-            // NOTE: this might not be necessary since it seems that reserved tokens are only
-            //	 	moved from the `free` balance of an account and it is not stored in a totally new
-            // account 		However, a minimum amount of fee is a good idea to disincentivize spam
-            // requests
+            // NOTE: this might not be necessary since it seems that reserved
+            // tokens are only moved from the `free` balance of an account and
+            // it is not stored in a totally new account However, a minimum
+            // amount of fee is a good idea to disincentivize spam requests
             ensure!(
                 fee >= T::MinimumFee::get().into(),
                 Error::<T>::InsufficientFee
@@ -242,7 +236,7 @@ pub mod pallet {
             NextRequestIdentifier::<T>::put(request_id.wrapping_add(1));
 
             // NOTE: This does not validate the request for any block number.
-            //		It only serves as a timestamp for the ValidityPeriod check.
+            // It only serves as a timestamp for the ValidityPeriod check.
             let now = frame_system::Pallet::<T>::block_number();
 
             Requests::<T>::insert(
@@ -258,7 +252,6 @@ pub mod pallet {
 
             Self::deposit_event(Event::OracleRequest(
                 operator,
-                spec_index,
                 request_id,
                 who,
                 data_version,
@@ -271,12 +264,13 @@ pub mod pallet {
         }
 
         /// The callback used to be notified of all Operators results.
-        /// Only the Operator responsible for an identified request can notify back the result.
-        /// Result is then dispatched back to the originator's callback.
-        /// The fee reserved during `initiate_request` is transferred as soon as this callback is
-        /// called.
+        ///
+        /// Only the Operator responsible for an identified request can notify
+        /// back the result. Result is then dispatched back to the originator's
+        /// callback. The fee reserved during `initiate_request` is transferred
+        /// as soon as this callback is called.
         //TODO check weight
-        #[pallet::weight(10_000)]
+        #[pallet::weight(50_000)]
         pub fn callback(
             origin: OriginFor<T>,
             request_id: RequestIdentifier,
@@ -298,11 +292,12 @@ pub mod pallet {
                 Error::<T>::InsufficientReservedBalance
             );
 
-            // NOTE: While `repatriate_reserved only moves UP TO the amount passed, the currency
-            // cannot be moved 		by a different pallet and we made sure to reserve the exact same
-            // amount of balance in the 		initiate_request call so I believe this is fine.
-            // NOTE: BalanceStatus::Free means that it is transferred to the Free balance of the
-            // operator
+            // NOTE: While `repatriate_reserved` only moves UP TO the amount
+            // passed, the currency cannot be moved by a different pallet and
+            // we made sure to reserve the exact same amount of balance in the
+            // initiate_request call so I believe this is fine.
+            // NOTE: BalanceStatus::Free means that it is transferred to the
+            // Free balance of the operator
             T::Currency::repatriate_reserved(
                 &request.requester,
                 &request.operator,
@@ -310,7 +305,8 @@ pub mod pallet {
                 BalanceStatus::Free,
             )?;
 
-            let prepended_response = Self::prepend_request_id(&mut result, request_id);
+            let mut prepended_response = request_id.encode();
+            prepended_response.append(&mut result);
 
             // Dispatch the result to the original callback registered by the caller
             let callback = request
@@ -332,14 +328,6 @@ pub mod pallet {
             ));
 
             Ok(())
-        }
-    }
-
-    impl<T: Config> Pallet<T> {
-        pub fn prepend_request_id(result: &mut Vec<u8>, request_id: u64) -> Vec<u8> {
-            let mut request_bytes = request_id.encode();
-            request_bytes.append(result);
-            request_bytes
         }
     }
 
