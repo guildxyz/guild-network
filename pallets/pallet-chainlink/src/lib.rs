@@ -62,9 +62,6 @@ pub mod pallet {
 
     pub type BalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-
-    // Uniquely identify a request's specification understood by an Operator
-    pub type SpecIndex = SpVec<u8>;
     // Uniquely identify a request for a considered Operator
     pub type RequestIdentifier = u64;
     // The version of the serialized data format
@@ -79,31 +76,30 @@ pub mod pallet {
 
     #[pallet::error]
     pub enum Error<T> {
-        // Manipulating an unknown operator
+        /// Manipulating an unknown operator
         UnknownOperator,
-        // Manipulating an unknown request
+        /// Manipulating an unknown request
         UnknownRequest,
-        // Not the expected operator
+        /// Not the expected operator
         WrongOperator,
-        // An operator is already registered.
+        /// An operator is already registered.
         OperatorAlreadyRegistered,
-        // Callback cannot be deserialized
+        /// Callback cannot be deserialized
         UnknownCallback,
-        // Fee provided does not match minimum required fee
+        /// Fee provided does not match minimum required fee
         InsufficientFee,
-        // Request has already been served by the operator
+        /// Request has already been served by the operator
         RequestAlreadyServed,
-        // Reserved balance is less than the specified fee for the request
+        /// Reserved balance is less than the specified fee for the request
         InsufficientReservedBalance,
     }
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        // A request has been accepted. Corresponding fee payment is reserved
+        /// A request has been accepted. Corresponding fee payment is reserved
         OracleRequest(
             T::AccountId,
-            SpecIndex,
             RequestIdentifier,
             T::AccountId,
             DataVersion,
@@ -111,17 +107,13 @@ pub mod pallet {
             SpVec<u8>,
             BalanceOf<T>,
         ),
-
-        // A request has been answered. Corresponding fee payment is transferred
+        /// A request has been answered. Corresponding fee payment is transferred
         OracleAnswer(T::AccountId, RequestIdentifier, SpVec<u8>, BalanceOf<T>),
-
-        // A new operator has been registered
+        /// A new operator has been registered
         OperatorRegistered(T::AccountId),
-
-        // An existing operator has been unregistered
-        OperatorUnregistered(T::AccountId),
-
-        // A request didn't receive any result in time
+        /// An existing operator has been unregistered
+        OperatorDeregistered(T::AccountId),
+        /// A request didn't receive any result in time
         KillRequest(RequestIdentifier),
     }
 
@@ -164,8 +156,9 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         /// Register a new Operator.
-        /// Fails with `OperatorAlreadyRegistered` if this Operator (identified by `origin`) has
-        /// already been registered.
+        ///
+        /// Fails with `OperatorAlreadyRegistered` if this Operator (identified
+        /// by `origin`) has already been registered.
         #[pallet::weight(T::WeightInfo::register_operator())]
         pub fn register_operator(origin: OriginFor<T>) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
@@ -183,33 +176,35 @@ pub mod pallet {
         }
 
         /// Deregisters an already registered Operator
-        #[pallet::weight(10000)] //T::WeightInfo::deregister_operator())]
+        #[pallet::weight(T::WeightInfo::deregister_operator())]
         pub fn deregister_operator(origin: OriginFor<T>) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
             if Operators::<T>::take(&who) {
-                Self::deposit_event(Event::OperatorUnregistered(who));
+                Self::deposit_event(Event::OperatorDeregistered(who));
                 Ok(())
             } else {
                 Err(Error::<T>::UnknownOperator.into())
             }
         }
 
-        /// Hint specified Operator (via its `AccountId`) of a request to be performed.
-        /// Request details are encapsulated in `data` and identified by `spec_index`.
-        /// `data` must be SCALE encoded.
-        /// If provided fee is sufficient, Operator must send back the request result in `callback`
-        /// Extrinsic which then will dispatch back to the request originator callback identified by
-        /// `callback`. The fee is `reserved` and only actually transferred when the result is
-        /// provided in the callback. Operators are expected to listen to `OracleRequest` events.
-        /// This event contains all the required information to perform the request and provide back
+        /// Hint specified Operator (via its `AccountId`) of a request to be
+        /// performed.
+        ///
+        /// Request details are encapsulated in `data` which must be
+        /// SCALE encoded. If provided fee is sufficient, Operator must send
+        /// back the request result in `callback` Extrinsic which then will
+        /// dispatch back to the request originator callback identified by
+        /// `callback`. The fee is `reserved` and only actually transferred
+        /// when the result is provided in the callback. Operators are expected
+        /// to listen to `OracleRequest` events. This event contains all the
+        /// required information to perform the request and provide back
         /// the result.
         // TODO check weight
         #[pallet::weight(10_000)]
         pub fn initiate_request(
             origin: OriginFor<T>,
             operator: T::AccountId,
-            spec_index: SpecIndex,
             data_version: DataVersion,
             data: Vec<u8>,
             fee: BalanceOf<T>,
@@ -257,7 +252,6 @@ pub mod pallet {
 
             Self::deposit_event(Event::OracleRequest(
                 operator,
-                spec_index,
                 request_id,
                 who,
                 data_version,
@@ -270,10 +264,11 @@ pub mod pallet {
         }
 
         /// The callback used to be notified of all Operators results.
-        /// Only the Operator responsible for an identified request can notify back the result.
-        /// Result is then dispatched back to the originator's callback.
-        /// The fee reserved during `initiate_request` is transferred as soon as this callback is
-        /// called.
+        ///
+        /// Only the Operator responsible for an identified request can notify
+        /// back the result. Result is then dispatched back to the originator's
+        /// callback. The fee reserved during `initiate_request` is transferred
+        /// as soon as this callback is called.
         //TODO check weight
         #[pallet::weight(10_000)]
         pub fn callback(

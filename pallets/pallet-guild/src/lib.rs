@@ -196,15 +196,11 @@ pub mod pallet {
             );
 
             let call: <T as ChainlinkConfig>::Callback = Call::callback { result: vec![] };
-            let spec_id = vec![0];
-
             // TODO set unique fee
             let fee = BalanceOf::<T>::unique_saturated_from(100_000_000u32);
-
             <pallet_chainlink::Pallet<T>>::initiate_request(
                 origin,
                 operator,
-                spec_id,
                 0,
                 request_parameters.encode(),
                 fee,

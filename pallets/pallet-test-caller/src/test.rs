@@ -64,7 +64,7 @@ fn operator_unregistration_valid() {
 
         assert_eq!(
             last_event(),
-            Event::Chainlink(pallet_chainlink::Event::OperatorUnregistered(1))
+            Event::Chainlink(pallet_chainlink::Event::OperatorDeregistered(1))
         );
     });
 }
@@ -93,7 +93,6 @@ fn initiate_requests_valid() {
         assert!(<Chainlink>::initiate_request(
             Origin::signed(2),
             1,
-            vec![],
             1,
             data.clone(),
             get_minimum_fee(),
@@ -104,7 +103,6 @@ fn initiate_requests_valid() {
             last_event(),
             Event::Chainlink(pallet_chainlink::Event::OracleRequest(
                 1,
-                vec![],
                 0,
                 2,
                 1,
@@ -144,7 +142,6 @@ fn initiate_requests_invalid_unknown_operator() {
         assert!(<Chainlink>::initiate_request(
             Origin::signed(2),
             1,
-            vec![],
             1,
             vec![],
             get_minimum_fee(),
@@ -162,7 +159,6 @@ fn initiate_requests_invalid_insufficient_fee() {
         assert!(<Chainlink>::initiate_request(
             Origin::signed(2),
             1,
-            vec![],
             1,
             vec![],
             get_minimum_fee() - 1,
@@ -181,7 +177,6 @@ fn initiate_requests_invalid_insufficient_balance_for_fee() {
         assert!(<Chainlink>::initiate_request(
             Origin::signed(2),
             1,
-            vec![],
             1,
             vec![],
             GENESIS_BALANCE + 1,
@@ -198,7 +193,6 @@ fn initiate_requests_invalid_wrong_operator() {
         assert!(<Chainlink>::initiate_request(
             Origin::signed(2),
             1,
-            vec![],
             1,
             vec![],
             get_minimum_fee(),
@@ -225,7 +219,6 @@ fn kill_request() {
         assert!(<Chainlink>::initiate_request(
             Origin::signed(2),
             1,
-            vec![],
             1,
             vec![],
             get_minimum_fee(),
