@@ -1,0 +1,9 @@
+[package]
+name = "benchmark-utils"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+client = { package = "substrate-api-client", git = "https://github.com/scs/substrate-api-client.git", branch = "master" }
+log = "0.4.17"
+#sp-keyring = { version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master", default-features = false }
