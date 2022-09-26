@@ -2,7 +2,7 @@
 if [ $1 = "boot" ]; then
 	./target/release/node-template purge-chain \
 		--base-path /tmp/mynode \
-		--chain local -y
+		--chain chain-spec-raw.json -y
 	
 	./target/release/node-template \
 		--base-path /tmp/mynode \
@@ -18,7 +18,7 @@ if [ $1 = "boot" ]; then
 elif [ $1 = "node" ]; then
 	./target/release/node-template purge-chain \
 		--base-path /tmp/mynode \
-		--chain local -y
+		--chain chain-spec-raw.json -y
 	
 	./target/release/node-template \
 		--base-path /tmp/mynode \
@@ -31,6 +31,8 @@ elif [ $1 = "node" ]; then
 		--rpc-external \
 		--ws-external \
 		--rpc-cors=all
+elif [ $1 = "dev" ]; then
+	./target/release/node-template --dev
 elif [ $1 = "build-spec" ]; then
 	./target/release/node-template build-spec --disable-default-bootnode > chain-spec.json
 	./target/release/node-template build-spec --chain=chain-spec.json --raw --disable-default-bootnode > chain-spec-raw.json

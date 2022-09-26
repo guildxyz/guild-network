@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "benchmark-utils",
     "node",
     "pallets/pallet-chainlink",
     "pallets/pallet-guild",
