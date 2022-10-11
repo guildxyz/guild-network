@@ -46,19 +46,30 @@ pub fn development_config() -> Result<ChainSpec, String> {
         "dev",
         ChainType::Development,
         move || {
+            let mut pre_funded_accounts = vec![
+                get_account_id_from_seed::<sr25519::Public>("Alice"),
+                get_account_id_from_seed::<sr25519::Public>("Bob"),
+                get_account_id_from_seed::<sr25519::Public>("Charlie"),
+            ];
+
+            for i in 0..100 {
+                pre_funded_accounts.push(get_account_id_from_seed::<sr25519::Public>(&format!(
+                    "bot_{}",
+                    i
+                )));
+            }
             testnet_genesis(
                 wasm_binary,
                 // Initial PoA authorities
-                vec![authority_keys_from_seed("Alice")],
+                vec![
+                    authority_keys_from_seed("Alice"),
+                    authority_keys_from_seed("Bob"),
+                    authority_keys_from_seed("Charlie"),
+                ],
                 // Sudo account
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 // Pre-funded accounts
-                vec![
-                    get_account_id_from_seed::<sr25519::Public>("Alice"),
-                    get_account_id_from_seed::<sr25519::Public>("Bob"),
-                    get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-                ],
+                pre_funded_accounts,
                 true,
             )
         },
@@ -145,7 +156,7 @@ fn testnet_genesis(
             balances: endowed_accounts
                 .iter()
                 .cloned()
-                .map(|k| (k, 1 << 60))
+                .map(|k| (k, 1 << 30))
                 .collect(),
         },
         aura: AuraConfig {
