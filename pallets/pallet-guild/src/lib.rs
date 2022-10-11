@@ -77,7 +77,7 @@ pub mod pallet {
     pub enum Event<T: Config> {
         GuildCreated(T::AccountId, GuildId),
         GuildJoined(T::AccountId, GuildId),
-        DecodingComplete(u128, RequestIdentifier, u64),
+        DecodingComplete(u128, RequestIdentifier, bool),
     }
 
     #[pallet::error]
@@ -126,9 +126,9 @@ pub mod pallet {
             let everything: u128 =
                 u128::decode(&mut &result[..]).map_err(|_| Error::<T>::DecodingFailed)?;
             let request_id: RequestIdentifier = everything as u64;
-            let eth_balance: u64 = (everything >> 64) as u64;
+            let access: bool = (everything >> 64) != 0;
 
-            Self::deposit_event(Event::DecodingComplete(everything, request_id, eth_balance));
+            Self::deposit_event(Event::DecodingComplete(everything, request_id, access));
 
             ensure!(
                 <JoinRequests<T>>::contains_key(request_id),
@@ -141,10 +141,8 @@ pub mod pallet {
                 <Guilds<T>>::contains_key(request.guild_id),
                 Error::<T>::GuildDoesNotExist
             );
-            // Unwrap is fine here because we check its existence previously
-            let guild = <Guilds<T>>::get(request.guild_id).unwrap();
 
-            if eth_balance >= guild.minimum_balance {
+            if access {
                 Guilds::<T>::try_mutate(request.guild_id, |value| {
                     if let Some(guild) = value {
                         if guild.members.binary_search(&request.requester).is_ok() {
