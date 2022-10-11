@@ -38,7 +38,7 @@ pub fn main() {
         })
         .collect::<Vec<SrPair>>();
 
-    let amount = 1000u128;
+    let amount = 100_000u128;
     for operator in &operators {
         fund_account(&api, operator, amount).expect("failed to fund account");
     }
