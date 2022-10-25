@@ -131,16 +131,16 @@ pub mod pallet {
     /// anticipated to be much less frequent than user request events.
     #[pallet::storage]
     #[pallet::getter(fn operators)]
-    pub(super) type Operators<T: Config> = StorageValue<_, SpVec<T::AccountId>, ValueQuery>;
+    pub type Operators<T: Config> = StorageValue<_, SpVec<T::AccountId>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn request_identifier)]
-    pub(super) type NextRequestIdentifier<T: Config> =
+    pub type NextRequestIdentifier<T: Config> =
         StorageValue<_, RequestIdentifier, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn next_operator)]
-    pub(super) type NextOperator<T: Config> = StorageValue<_, OperatorIdentifier, ValueQuery>;
+    pub type NextOperator<T: Config> = StorageValue<_, OperatorIdentifier, ValueQuery>;
 
     #[derive(Encode, Decode, Clone, TypeInfo)]
     pub struct GenericRequest<AccountId, Callback, BlockNumber, BalanceOf> {
@@ -151,7 +151,7 @@ pub mod pallet {
         fee: BalanceOf,
     }
 
-    pub(super) type Request<T> = GenericRequest<
+    pub type Request<T> = GenericRequest<
         <T as frame_system::Config>::AccountId,
         <T as Config>::Callback,
         <T as frame_system::Config>::BlockNumber,
@@ -160,7 +160,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn request)]
-    pub(super) type Requests<T: Config> =
+    pub type Requests<T: Config> =
         StorageMap<_, Blake2_128Concat, RequestIdentifier, Request<T>, OptionQuery>;
 
     #[pallet::pallet]

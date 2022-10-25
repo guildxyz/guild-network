@@ -87,6 +87,7 @@ pub mod pallet {
         JoinRequestDoesNotExist,
         SignerAlreadyJoined,
         InvalidResultLength,
+        InvalidRequest,
         DecodingFailed,
     }
 
@@ -120,6 +121,8 @@ pub mod pallet {
 
         #[pallet::weight(0)]
         pub fn callback(origin: OriginFor<T>, result: Vec<u8>) -> DispatchResult {
+            // NOTE this ensures that only the root can call this function via
+            // a callback, see `frame_system::RawOrigin`
             ensure_root(origin)?;
 
             // NOTE The result is expected to be the request identifier (u64)
@@ -133,17 +136,11 @@ pub mod pallet {
 
             Self::deposit_event(Event::DecodingComplete(request_id, access));
 
-            ensure!(
-                <JoinRequests<T>>::contains_key(request_id),
-                Error::<T>::JoinRequestDoesNotExist
-            );
-            // Unwrap is fine here because we check its existence previously
-            let request = <JoinRequests<T>>::get(request_id).unwrap();
-
-            ensure!(
-                <Guilds<T>>::contains_key(request.guild_id),
-                Error::<T>::GuildDoesNotExist
-            );
+            let request = if let Some(request) = JoinRequests::<T>::get(&request_id) {
+                request
+            } else {
+                return Err(Error::<T>::JoinRequestDoesNotExist.into());
+            };
 
             if access {
                 Guilds::<T>::try_mutate(request.guild_id, |value| {
@@ -171,7 +168,7 @@ pub mod pallet {
         pub fn join_guild(
             origin: OriginFor<T>,
             guild_id: GuildId,
-            request_parameters: Vec<u8>, // an eth address for now
+            request_parameters: Vec<u8>,
         ) -> DispatchResult {
             let sender = ensure_signed(origin.clone())?;
 
