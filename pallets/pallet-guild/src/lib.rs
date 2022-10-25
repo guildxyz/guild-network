@@ -77,7 +77,7 @@ pub mod pallet {
     pub enum Event<T: Config> {
         GuildCreated(T::AccountId, GuildId),
         GuildJoined(T::AccountId, GuildId),
-        DecodingComplete(u128, RequestIdentifier, bool),
+        DecodingComplete(RequestIdentifier, bool),
     }
 
     #[pallet::error]
@@ -86,6 +86,7 @@ pub mod pallet {
         GuildDoesNotExist,
         JoinRequestDoesNotExist,
         SignerAlreadyJoined,
+        InvalidResultLength,
         DecodingFailed,
     }
 
@@ -121,14 +122,16 @@ pub mod pallet {
         pub fn callback(origin: OriginFor<T>, result: Vec<u8>) -> DispatchResult {
             ensure_root(origin)?;
 
-            // The result is expected to be two SCALE encoded `u64`s
-            // NOTE: if this does not work, decode a single u128 and segment it
-            let everything: u128 =
-                u128::decode(&mut &result[..]).map_err(|_| Error::<T>::DecodingFailed)?;
-            let request_id: RequestIdentifier = everything as u64;
-            let access: bool = (everything >> 64) != 0;
+            // NOTE The result is expected to be the request identifier (u64)
+            // and a single boolean
+            if result.len() != 5 {
+                return Err(Error::<T>::InvalidResultLength.into());
+            }
+            let request_id = RequestIdentifier::decode(&mut &result[0..4])
+                .map_err(|_| Error::<T>::DecodingFailed)?;
+            let access = result[result.len() - 1] != 0; // if last byte is 0 then access = false
 
-            Self::deposit_event(Event::DecodingComplete(everything, request_id, access));
+            Self::deposit_event(Event::DecodingComplete(request_id, access));
 
             ensure!(
                 <JoinRequests<T>>::contains_key(request_id),
