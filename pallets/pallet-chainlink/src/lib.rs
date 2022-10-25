@@ -135,8 +135,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn request_identifier)]
-    pub type NextRequestIdentifier<T: Config> =
-        StorageValue<_, RequestIdentifier, ValueQuery>;
+    pub type NextRequestIdentifier<T: Config> = StorageValue<_, RequestIdentifier, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn next_operator)]
