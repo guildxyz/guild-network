@@ -169,7 +169,6 @@ pub mod pallet {
             origin: OriginFor<T>,
             guild_id: GuildId,
             request_parameters: Vec<u8>, // an eth address for now
-            operator: T::AccountId,
         ) -> DispatchResult {
             let sender = ensure_signed(origin.clone())?;
 
@@ -198,7 +197,6 @@ pub mod pallet {
             let fee = BalanceOf::<T>::unique_saturated_from(100_000_000u32);
             <pallet_chainlink::Pallet<T>>::initiate_request(
                 origin,
-                operator,
                 0,
                 request_parameters.encode(),
                 fee,

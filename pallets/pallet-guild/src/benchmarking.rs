@@ -19,7 +19,7 @@ benchmarks! {
         T::Currency::make_free_balance_be(&caller, T::Currency::minimum_balance() + 2_000_000_000u32.into());
         Guild::<T>::create_guild(RawOrigin::Signed(caller.clone()).into(), 69, 123)?;
         Chainlink::<T>::register_operator(RawOrigin::Signed(operator.clone()).into())?;
-    }: _(RawOrigin::Signed(caller), 69, sp_std::vec![128; 40], operator)
+    }: _(RawOrigin::Signed(caller), 69, sp_std::vec![128; 40])
     verify {
     }
 }
