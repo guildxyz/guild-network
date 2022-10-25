@@ -87,8 +87,6 @@ pub mod pallet {
         JoinRequestDoesNotExist,
         SignerAlreadyJoined,
         InvalidResultLength,
-        InvalidRequest,
-        DecodingFailed,
     }
 
     #[pallet::pallet]
@@ -138,7 +136,7 @@ pub mod pallet {
 
             Self::deposit_event(Event::DecodingComplete(request_id, access));
 
-            let request = if let Some(request) = JoinRequests::<T>::get(&request_id) {
+            let request = if let Some(request) = JoinRequests::<T>::get(request_id) {
                 request
             } else {
                 return Err(Error::<T>::JoinRequestDoesNotExist.into());
