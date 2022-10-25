@@ -65,7 +65,6 @@ pub mod pallet {
     pub(super) type JoinRequests<T: Config> =
         StorageMap<_, Blake2_128Concat, RequestIdentifier, JoinRequest<T::AccountId>, OptionQuery>;
 
-    // NOTE Self here refers to the Runtime (i think)
     #[pallet::config]
     pub trait Config: ChainlinkConfig<Callback = Call<Self>> + frame_system::Config {
         type WeightInfo: WeightInfo;
@@ -77,6 +76,7 @@ pub mod pallet {
     pub enum Event<T: Config> {
         GuildCreated(T::AccountId, GuildId),
         GuildJoined(T::AccountId, GuildId),
+        FailedJoinRequest(T::AccountId, GuildId),
         DecodingComplete(RequestIdentifier, bool),
     }
 
@@ -127,11 +127,13 @@ pub mod pallet {
 
             // NOTE The result is expected to be the request identifier (u64)
             // and a single boolean
-            if result.len() != 5 {
+            if result.len() != 9 {
                 return Err(Error::<T>::InvalidResultLength.into());
             }
-            let request_id = RequestIdentifier::decode(&mut &result[0..4])
-                .map_err(|_| Error::<T>::DecodingFailed)?;
+            // NOTE unwrap is fine because an u64 can always be decoded from 8
+            // bytes and we have already checked the length of the result
+            // vector
+            let request_id = RequestIdentifier::decode(&mut &result[0..8]).unwrap();
             let access = result[result.len() - 1] != 0; // if last byte is 0 then access = false
 
             Self::deposit_event(Event::DecodingComplete(request_id, access));
@@ -156,6 +158,10 @@ pub mod pallet {
                             Ok::<(), DispatchError>(())
                         }
                     } else {
+                        Self::deposit_event(Event::FailedJoinRequest(
+                            request.requester,
+                            request.guild_id,
+                        ));
                         Err(Error::<T>::GuildDoesNotExist.into())
                     }
                 })?;
