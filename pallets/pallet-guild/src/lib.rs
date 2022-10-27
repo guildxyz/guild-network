@@ -28,19 +28,20 @@ pub mod pallet {
 
     #[derive(Encode, Decode, Clone, TypeInfo)]
     pub struct Guild<AccountId> {
-        owner: AccountId,
-        metadata: SpVec<u8>,
+        pub owner: AccountId,
+        pub metadata: SpVec<u8>,
     }
 
     #[derive(Encode, Decode, Clone, TypeInfo)]
     pub struct JoinRequest<AccountId> {
-        requester: AccountId,
-        requester_identities: SpVec<u8>,
-        guild_id: MapId,
-        role_id: MapId,
+        pub requester: AccountId,
+        pub requester_identities: SpVec<u8>,
+        pub guild_id: MapId,
+        pub role_id: MapId,
     }
 
     #[pallet::storage]
+    #[pallet::getter(fn next_request_id)]
     pub(super) type NextRequestIdentifier<T: Config> =
         StorageValue<_, RequestIdentifier, ValueQuery>;
 
@@ -75,7 +76,7 @@ pub mod pallet {
     >;
 
     #[pallet::storage]
-    #[pallet::getter(fn join_requests)]
+    #[pallet::getter(fn join_request)]
     pub(super) type JoinRequests<T: Config> =
         StorageMap<_, Blake2_128Concat, RequestIdentifier, JoinRequest<T::AccountId>, OptionQuery>;
 
@@ -96,6 +97,7 @@ pub mod pallet {
         GuildCreated(T::AccountId, MapId),
         GuildJoined(T::AccountId, MapId, MapId),
         JoinRequestFailed(T::AccountId, MapId, MapId),
+        OracleResult(RequestIdentifier, bool),
     }
 
     #[pallet::error]
@@ -145,9 +147,9 @@ pub mod pallet {
             // a callback, see `frame_system::RawOrigin`
             ensure_root(origin)?;
 
-            // NOTE The result is expected to be the request identifier (u64) a
-            // boolean and encoded user data
-            if result.len() < 9 {
+            // NOTE The result is expected to be the request identifier (u64)
+            // and a single boolean
+            if result.len() != 9 {
                 return Err(Error::<T>::InvalidResultLength.into());
             }
             // NOTE unwrap is fine because an u64 can always be decoded from 8
@@ -155,6 +157,8 @@ pub mod pallet {
             // vector
             let request_id = RequestIdentifier::decode(&mut &result[0..8]).unwrap();
             let access = result[result.len() - 1] != 0; // if last byte is 0 then access = false
+
+            Self::deposit_event(Event::OracleResult(request_id, access));
 
             let request = if let Some(request) = JoinRequests::<T>::take(request_id) {
                 request
