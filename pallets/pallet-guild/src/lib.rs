@@ -42,17 +42,16 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn next_request_id)]
-    pub(super) type NextRequestIdentifier<T: Config> =
-        StorageValue<_, RequestIdentifier, ValueQuery>;
+    pub type NextRequestIdentifier<T: Config> = StorageValue<_, RequestIdentifier, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn guild)]
-    pub(super) type Guilds<T: Config> =
+    pub type Guilds<T: Config> =
         StorageMap<_, Blake2_128Concat, MapId, Guild<T::AccountId>, OptionQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn role)]
-    pub(super) type Roles<T: Config> = StorageDoubleMap<
+    pub type Roles<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
         MapId,
@@ -64,7 +63,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn member)]
-    pub(super) type Members<T: Config> = StorageNMap<
+    pub type Members<T: Config> = StorageNMap<
         _,
         (
             NMapKey<Blake2_128Concat, MapId>,
@@ -77,12 +76,12 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn join_request)]
-    pub(super) type JoinRequests<T: Config> =
+    pub type JoinRequests<T: Config> =
         StorageMap<_, Blake2_128Concat, RequestIdentifier, JoinRequest<T::AccountId>, OptionQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn user_data)]
-    pub(super) type UserData<T: Config> =
+    pub type UserData<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, SpVec<u8>, OptionQuery>;
 
     #[pallet::config]
