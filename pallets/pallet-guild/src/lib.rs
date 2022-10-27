@@ -140,7 +140,7 @@ pub mod pallet {
         }
 
         #[pallet::weight(0)]
-        pub fn callback(origin: OriginFor<T>, result: Vec<u8>) -> DispatchResult {
+        pub fn callback(origin: OriginFor<T>, result: SpVec<u8>) -> DispatchResult {
             // NOTE this ensures that only the root can call this function via
             // a callback, see `frame_system::RawOrigin`
             ensure_root(origin)?;
@@ -236,7 +236,9 @@ pub mod pallet {
                 },
             );
 
-            let call: <T as ChainlinkConfig>::Callback = Call::callback { result: vec![] };
+            let call: <T as ChainlinkConfig>::Callback = Call::callback {
+                result: SpVec::new(),
+            };
             // TODO set unique fee
             let fee = BalanceOf::<T>::unique_saturated_from(100_000_000u32);
             <pallet_chainlink::Pallet<T>>::initiate_request(
@@ -252,7 +254,7 @@ pub mod pallet {
     }
 
     impl<T: Config> CallbackWithParameter for Call<T> {
-        fn with_result(&self, result: Vec<u8>) -> Option<Self> {
+        fn with_result(&self, result: SpVec<u8>) -> Option<Self> {
             match *self {
                 Call::callback { result: _ } => Some(Call::callback { result }),
                 _ => None,
