@@ -94,15 +94,14 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
+        AccessDenied(T::AccountId, MapId, MapId),
         GuildCreated(T::AccountId, MapId),
         GuildJoined(T::AccountId, MapId, MapId),
-        JoinRequestFailed(T::AccountId, MapId, MapId),
         OracleResult(RequestIdentifier, bool),
     }
 
     #[pallet::error]
     pub enum Error<T> {
-        AccessDenied,
         GuildAlreadyExists,
         InvalidResultLength,
         InvalidGuildRole,
@@ -167,12 +166,15 @@ pub mod pallet {
             };
 
             if !access {
-                Self::deposit_event(Event::JoinRequestFailed(
+                Self::deposit_event(Event::AccessDenied(
                     request.requester,
                     request.guild_id,
                     request.role_id,
                 ));
-                return Err(Error::<T>::AccessDenied.into());
+                // NOTE if we return with an error, all previous computations
+                // are reverted it seems, because the join request is not
+                // removed
+                return Ok(());
             }
 
             // NOTE request has already been through a filter in `join_request`, i.e.

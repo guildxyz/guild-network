@@ -174,7 +174,190 @@ fn valid_join_guild_request() {
 }
 
 #[test]
-fn joining_a_guild() {}
+fn joining_a_guild() {
+    new_test_runtime().execute_with(|| {
+        System::set_block_number(1);
+        let guild_id = [0u8; 32];
+        let role_1_id = [1u8; 32];
+        let role_2_id = [2u8; 32];
+
+        let signer = 1;
+        let user_data = vec![1, 2, 3];
+
+        <Chainlink>::register_operator(Origin::signed(signer)).unwrap();
+        <Guild>::create_guild(
+            Origin::signed(signer),
+            guild_id,
+            vec![],
+            vec![(role_1_id, vec![]), (role_2_id, vec![])],
+        )
+        .unwrap();
+        // join first role
+        <Guild>::join_guild(
+            Origin::signed(signer),
+            guild_id,
+            role_1_id,
+            user_data.clone(),
+            vec![],
+        )
+        .unwrap();
+
+        assert!(<Guild>::user_data(signer).is_none());
+
+        // access = true
+        <Chainlink>::callback(Origin::signed(signer), 0, vec![1]).unwrap();
+
+        assert_eq!(
+            last_event(),
+            Event::Guild(pallet_guild::Event::GuildJoined(
+                signer, guild_id, role_1_id
+            ))
+        );
+
+        assert!(<Guild>::join_request(0).is_none());
+        assert!(<Guild>::member((guild_id, role_1_id, signer)).is_some());
+        assert!(<Guild>::member((guild_id, role_2_id, signer)).is_none());
+        assert_eq!(<Guild>::user_data(signer).unwrap(), user_data);
+
+        // try join second role
+        <Guild>::join_guild(
+            Origin::signed(signer),
+            guild_id,
+            role_2_id,
+            user_data.clone(),
+            vec![],
+        )
+        .unwrap();
+        assert!(<Guild>::join_request(0).is_none());
+        assert!(<Guild>::join_request(1).is_some());
+
+        // access = false
+        <Chainlink>::callback(Origin::signed(signer), 1, vec![0]).unwrap();
+        assert!(<Guild>::join_request(1).is_none());
+        assert!(<Guild>::member((guild_id, role_1_id, signer)).is_some());
+        assert!(<Guild>::member((guild_id, role_2_id, signer)).is_none());
+
+        assert_eq!(
+            last_event(),
+            Event::Guild(pallet_guild::Event::AccessDenied(
+                signer, guild_id, role_2_id
+            ))
+        );
+
+        // try join second role again
+        <Guild>::join_guild(
+            Origin::signed(signer),
+            guild_id,
+            role_2_id,
+            user_data.clone(),
+            vec![],
+        )
+        .unwrap();
+        assert!(<Guild>::join_request(1).is_none());
+        assert!(<Guild>::join_request(2).is_some());
+
+        // access = true
+        <Chainlink>::callback(Origin::signed(signer), 2, vec![1]).unwrap();
+        assert!(<Guild>::join_request(1).is_none());
+        assert!(<Guild>::member((guild_id, role_1_id, signer)).is_some());
+        assert!(<Guild>::member((guild_id, role_2_id, signer)).is_some());
+
+        assert_eq!(
+            last_event(),
+            Event::Guild(pallet_guild::Event::GuildJoined(
+                signer, guild_id, role_2_id
+            ))
+        );
+
+        assert_eq!(<Guild>::user_data(signer).unwrap(), user_data);
+    });
+}
 
 #[test]
-fn joining_multiple_guilds() {}
+fn joining_multiple_guilds() {
+    new_test_runtime().execute_with(|| {
+        System::set_block_number(1);
+        let guild_1_id = [1u8; 32];
+        let guild_2_id = [2u8; 32];
+        let role_1_id = [1u8; 32];
+        let role_2_id = [2u8; 32];
+        let role_3_id = [3u8; 32];
+        let role_4_id = [4u8; 32];
+        let signer_1 = 1;
+        let signer_2 = 2;
+
+        let user_1_data = vec![1, 2, 3];
+        let user_2_data = vec![4, 5, 6];
+
+        <Chainlink>::register_operator(Origin::signed(signer_1)).unwrap();
+        // create first guild
+        <Guild>::create_guild(
+            Origin::signed(signer_1),
+            guild_1_id,
+            vec![],
+            vec![(role_1_id, vec![]), (role_2_id, vec![])],
+        )
+        .unwrap();
+        // create second guild
+        <Guild>::create_guild(
+            Origin::signed(signer_2),
+            guild_2_id,
+            vec![],
+            vec![(role_3_id, vec![]), (role_4_id, vec![])],
+        )
+        .unwrap();
+        // signer 1 wants to join both guilds
+        <Guild>::join_guild(
+            Origin::signed(signer_1),
+            guild_1_id,
+            role_2_id,
+            user_1_data.clone(),
+            vec![],
+        )
+        .unwrap();
+        <Guild>::join_guild(
+            Origin::signed(signer_1),
+            guild_2_id,
+            role_3_id,
+            user_1_data.clone(),
+            vec![],
+        )
+        .unwrap();
+        // signer 2 wants to join both guilds
+        <Guild>::join_guild(
+            Origin::signed(signer_2),
+            guild_2_id,
+            role_4_id,
+            user_2_data.clone(),
+            vec![],
+        )
+        .unwrap();
+        <Guild>::join_guild(
+            Origin::signed(signer_2),
+            guild_1_id,
+            role_1_id,
+            user_2_data.clone(),
+            vec![],
+        )
+        .unwrap();
+
+        assert_eq!(<Guild>::next_request_id(), 4);
+
+        <Chainlink>::callback(Origin::signed(signer_1), 3, vec![1]).unwrap();
+        <Chainlink>::callback(Origin::signed(signer_1), 0, vec![1]).unwrap();
+        <Chainlink>::callback(Origin::signed(signer_1), 2, vec![0]).unwrap();
+        <Chainlink>::callback(Origin::signed(signer_1), 1, vec![1]).unwrap();
+
+        // 0th request passes
+        assert!(<Guild>::member((guild_1_id, role_2_id, signer_1)).is_some());
+        // 1st request passes
+        assert!(<Guild>::member((guild_2_id, role_3_id, signer_1)).is_some());
+        // 2nd request fails
+        assert!(<Guild>::member((guild_2_id, role_4_id, signer_2)).is_none());
+        // 3rd request passes
+        assert!(<Guild>::member((guild_1_id, role_1_id, signer_2)).is_some());
+
+        assert_eq!(<Guild>::user_data(signer_1).unwrap(), user_1_data);
+        assert_eq!(<Guild>::user_data(signer_2).unwrap(), user_2_data);
+    });
+}
