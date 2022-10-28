@@ -96,6 +96,7 @@ pub mod pallet {
         AccessDenied(T::AccountId, MapId, MapId),
         GuildCreated(T::AccountId, MapId),
         GuildJoined(T::AccountId, MapId, MapId),
+        JoinRequestExpired(RequestIdentifier),
         OracleResult(RequestIdentifier, bool),
         SignerAlreadyJoined(T::AccountId, MapId, MapId),
     }
@@ -154,7 +155,16 @@ pub mod pallet {
             // bytes and we have already checked the length of the result
             // vector
             let request_id = RequestIdentifier::decode(&mut &result[0..8]).unwrap();
-            let access = result[result.len() - 1] != 0; // if last byte is 0 then access = false
+            let access_byte = result[result.len() - 1];
+            let access = if access_byte == 0 {
+                false
+            } else if access_byte == 1 {
+                true
+            } else {
+                JoinRequests::<T>::remove(request_id);
+                Self::deposit_event(Event::JoinRequestExpired(request_id));
+                return Ok(());
+            };
 
             Self::deposit_event(Event::OracleResult(request_id, access));
 

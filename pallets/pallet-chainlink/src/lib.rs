@@ -119,6 +119,7 @@ pub mod pallet {
         OperatorDeregistered(T::AccountId),
         /// A request didn't receive any result in time
         KillRequest(RequestIdentifier),
+        KillRequestFailed(RequestIdentifier),
     }
 
     /// Stores registered operator addresses in a Vector.
@@ -357,12 +358,24 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         // Identify requests that are considered dead and remove them
         fn on_finalize(n: T::BlockNumber) {
-            for (request_identifier, request) in Requests::<T>::iter() {
+            for (request_id, request) in Requests::<T>::iter() {
                 if n > request.block_number + T::ValidityPeriod::get() {
-                    // No result has been received in time
-                    Requests::<T>::remove(request_identifier);
+                    // No result has been received in time (unwrap is fine)
+                    let request = Requests::<T>::take(request_id).unwrap();
+                    let mut prepended_response = request_id.encode();
+                    prepended_response.push(u8::MAX);
 
-                    Self::deposit_event(Event::KillRequest(request_identifier));
+                    if let Some(callback) = request.callback.with_result(prepended_response.clone())
+                    {
+                        if callback
+                            .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
+                            .is_ok()
+                        {
+                            Self::deposit_event(Event::KillRequest(request_id));
+                        } else {
+                            Self::deposit_event(Event::KillRequestFailed(request_id));
+                        }
+                    }
                 }
             }
         }

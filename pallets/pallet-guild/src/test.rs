@@ -1,8 +1,9 @@
 use crate as pallet_guild;
-use test_runtime::test_runtime;
 
+use frame_support::traits::OnFinalize;
 use sp_runtime::DispatchError;
 
+use test_runtime::test_runtime;
 test_runtime!(Guild, pallet_guild);
 
 pub fn last_event() -> Event {
@@ -393,3 +394,32 @@ fn joining_multiple_guilds() {
         assert_eq!(<Guild>::user_data(signer_2).unwrap(), user_2_data);
     });
 }
+
+/*
+#[test]
+fn kill_request() {
+    new_test_runtime().execute_with(|| {
+        System::set_block_number(1);
+        let guild_id = [0u8; 32];
+        let role_id = [1u8; 32];
+        let signer = 1;
+
+        <Chainlink>::register_operator(Origin::signed(signer)).unwrap();
+        // create first guild
+        <Guild>::create_guild(Origin::signed(signer), guild_id, vec![], vec![(role_id, vec![])])
+            .unwrap();
+
+        <Guild>::join_guild(Origin::signed(signer), guild_id, role_id, vec![], vec![]).unwrap();
+        assert!(<Guild>::join_request(0).is_some());
+
+        <Chainlink as OnFinalize<u64>>::on_finalize(
+            <TestRuntime as pallet_chainlink::Config>::ValidityPeriod::get() + 1,
+        );
+
+        //assert!(<Guild>::join_request(0).is_none());
+        assert!(<Guild>::member((guild_id, role_id, signer)).is_none());
+        assert_eq!(last_event(),
+            Event::Guild(pallet_guild::Event::JoinRequestExpired(0)));
+    });
+}
+*/
