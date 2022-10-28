@@ -97,6 +97,7 @@ pub mod pallet {
         GuildCreated(T::AccountId, MapId),
         GuildJoined(T::AccountId, MapId, MapId),
         OracleResult(RequestIdentifier, bool),
+        SignerAlreadyJoined(T::AccountId, MapId, MapId),
     }
 
     #[pallet::error]
@@ -105,7 +106,6 @@ pub mod pallet {
         InvalidResultLength,
         InvalidGuildRole,
         JoinRequestDoesNotExist,
-        SignerAlreadyJoined,
     }
 
     #[pallet::pallet]
@@ -179,14 +179,15 @@ pub mod pallet {
             // NOTE request has already been through a filter in `join_request`, i.e.
             // at this point it is safe to assume that the given role id exists within
             // an existing guild
-            ensure!(
-                !Members::<T>::contains_key((
-                    &request.guild_id,
-                    &request.role_id,
-                    &request.requester
-                )),
-                Error::<T>::SignerAlreadyJoined
-            );
+            if Members::<T>::contains_key((&request.guild_id, &request.role_id, &request.requester))
+            {
+                Self::deposit_event(Event::SignerAlreadyJoined(
+                    request.requester,
+                    request.guild_id,
+                    request.role_id,
+                ));
+                return Ok(());
+            }
 
             Members::<T>::insert(
                 (&request.guild_id, &request.role_id, &request.requester),
@@ -222,10 +223,11 @@ pub mod pallet {
             );
 
             let request_id = NextRequestIdentifier::<T>::get();
-            // Using `wrapping_add` to start at 0 when it reaches `u64::max_value()`.
-            // This means that requests may be overwritten but it requires that at some point
-            // at least 2^64 requests are waiting to be served. Since requests also time out
-            // after a while this seems extremely unlikely.
+            // NOTE Using `wrapping_add` to start at 0 when it reaches
+            // `u64::max_value()`. This means that requests may be overwritten
+            // but it requires that at some point at least 2^64 requests are
+            // waiting to be served. Since requests also time out after a while
+            // this seems extremely unlikely.
             NextRequestIdentifier::<T>::put(request_id.wrapping_add(1));
 
             let mut request_parameters = requester_identities.clone();
