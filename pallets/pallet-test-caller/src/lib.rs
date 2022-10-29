@@ -20,9 +20,7 @@ pub mod pallet {
         #[pallet::weight(1_000_000)]
         pub fn callback(origin: OriginFor<T>, result: Vec<u8>) -> DispatchResult {
             ensure_root(origin)?;
-            let full_response: u128 =
-                u128::decode(&mut &result[..]).map_err(|_| Error::<T>::DecodingFailed)?;
-            let res: u64 = (full_response >> 64) as u64;
+            let res = result[8] as u64;
             Result::<T>::put(res);
             Ok(())
         }

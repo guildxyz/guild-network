@@ -358,10 +358,17 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         // Identify requests that are considered dead and remove them
         fn on_finalize(n: T::BlockNumber) {
-            for (request_id, request) in Requests::<T>::iter() {
+            // NOTE according to the docs of storage maps if a map is modified
+            // while iterating over it, we get undefined behaviour, thus we need
+            // to iterate over it first, collect expired request_ids and iterate
+            // over them while removing the respective requests from the map.
+            let request_ids = Requests::<T>::iter()
+                .map(|(id, _)| id)
+                .collect::<Vec<RequestIdentifier>>();
+            for request_id in &request_ids {
+                // NOTE unwrap is fine here because we collected existing keys
+                let request = Requests::<T>::take(request_id).unwrap();
                 if n > request.block_number + T::ValidityPeriod::get() {
-                    // No result has been received in time (unwrap is fine)
-                    let request = Requests::<T>::take(request_id).unwrap();
                     let mut prepended_response = request_id.encode();
                     prepended_response.push(u8::MAX);
 
@@ -371,9 +378,9 @@ pub mod pallet {
                             .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
                             .is_ok()
                         {
-                            Self::deposit_event(Event::KillRequest(request_id));
+                            Self::deposit_event(Event::KillRequest(*request_id));
                         } else {
-                            Self::deposit_event(Event::KillRequestFailed(request_id));
+                            Self::deposit_event(Event::KillRequestFailed(*request_id));
                         }
                     }
                 }

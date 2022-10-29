@@ -395,19 +395,22 @@ fn joining_multiple_guilds() {
     });
 }
 
-/*
 #[test]
 fn kill_request() {
     new_test_runtime().execute_with(|| {
-        System::set_block_number(1);
         let guild_id = [0u8; 32];
         let role_id = [1u8; 32];
         let signer = 1;
 
         <Chainlink>::register_operator(Origin::signed(signer)).unwrap();
         // create first guild
-        <Guild>::create_guild(Origin::signed(signer), guild_id, vec![], vec![(role_id, vec![])])
-            .unwrap();
+        <Guild>::create_guild(
+            Origin::signed(signer),
+            guild_id,
+            vec![],
+            vec![(role_id, vec![])],
+        )
+        .unwrap();
 
         <Guild>::join_guild(Origin::signed(signer), guild_id, role_id, vec![], vec![]).unwrap();
         assert!(<Guild>::join_request(0).is_some());
@@ -416,10 +419,7 @@ fn kill_request() {
             <TestRuntime as pallet_chainlink::Config>::ValidityPeriod::get() + 1,
         );
 
-        //assert!(<Guild>::join_request(0).is_none());
+        assert!(<Guild>::join_request(0).is_none());
         assert!(<Guild>::member((guild_id, role_id, signer)).is_none());
-        assert_eq!(last_event(),
-            Event::Guild(pallet_guild::Event::JoinRequestExpired(0)));
     });
 }
-*/

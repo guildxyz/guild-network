@@ -362,5 +362,6 @@ fn kill_request() {
         // Request has been killed, too old
         // Unknown request error
         assert!(<Chainlink>::callback(Origin::signed(1), 0, 10.encode()).is_err());
+        assert!(<Chainlink>::request(0).is_none());
     });
 }
