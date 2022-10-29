@@ -71,7 +71,7 @@ pub mod pallet {
 
     // A trait allowing to inject Operator results back into the specified Call
     pub trait CallbackWithParameter {
-        fn with_result(&self, result: SpVec<u8>) -> Option<Self>
+        fn with_result(&self, expired: bool, result: SpVec<u8>) -> Option<Self>
         where
             Self: core::marker::Sized;
     }
@@ -334,7 +334,7 @@ pub mod pallet {
             // Dispatch the result to the original callback registered by the caller
             let callback = request
                 .callback
-                .with_result(prepended_response.clone())
+                .with_result(false, prepended_response.clone())
                 .ok_or(Error::<T>::UnknownCallback)?;
             callback
                 .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
@@ -372,7 +372,9 @@ pub mod pallet {
                     let mut prepended_response = request_id.encode();
                     prepended_response.push(u8::MAX);
 
-                    if let Some(callback) = request.callback.with_result(prepended_response.clone())
+                    if let Some(callback) = request
+                        .callback
+                        .with_result(true, prepended_response.clone())
                     {
                         if callback
                             .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())

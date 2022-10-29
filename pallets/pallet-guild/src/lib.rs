@@ -141,7 +141,7 @@ pub mod pallet {
         }
 
         #[pallet::weight(0)]
-        pub fn callback(origin: OriginFor<T>, result: SpVec<u8>) -> DispatchResult {
+        pub fn callback(origin: OriginFor<T>, expired: bool, result: SpVec<u8>) -> DispatchResult {
             // NOTE this ensures that only the root can call this function via
             // a callback, see `frame_system::RawOrigin`
             ensure_root(origin)?;
@@ -155,16 +155,13 @@ pub mod pallet {
             // bytes and we have already checked the length of the result
             // vector
             let request_id = RequestIdentifier::decode(&mut &result[0..8]).unwrap();
-            let access_byte = result[result.len() - 1];
-            let access = if access_byte == 0 {
-                false
-            } else if access_byte == 1 {
-                true
-            } else {
+            let access = result[result.len() - 1] != 0;
+
+            if expired {
                 JoinRequests::<T>::remove(request_id);
                 Self::deposit_event(Event::JoinRequestExpired(request_id));
                 return Ok(());
-            };
+            }
 
             Self::deposit_event(Event::OracleResult(request_id, access));
 
@@ -254,6 +251,7 @@ pub mod pallet {
             );
 
             let call: <T as ChainlinkConfig>::Callback = Call::callback {
+                expired: false,
                 result: SpVec::new(),
             };
             // TODO set unique fee
@@ -271,9 +269,9 @@ pub mod pallet {
     }
 
     impl<T: Config> CallbackWithParameter for Call<T> {
-        fn with_result(&self, result: SpVec<u8>) -> Option<Self> {
-            match *self {
-                Call::callback { result: _ } => Some(Call::callback { result }),
+        fn with_result(&self, expired: bool, result: SpVec<u8>) -> Option<Self> {
+            match self {
+                Call::callback { .. } => Some(Call::callback { expired, result }),
                 _ => None,
             }
         }

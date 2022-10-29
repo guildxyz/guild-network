@@ -8,9 +8,8 @@ test_runtime!(TestCaller, pallet_test_caller);
 pub fn last_event() -> Event {
     System::events()
         .into_iter()
-        .map(|r| r.event)
         .filter_map(|e| {
-            if let Event::Chainlink(inner) = e {
+            if let Event::Chainlink(inner) = e.event {
                 Some(Event::Chainlink(inner))
             } else {
                 None
@@ -95,7 +94,10 @@ fn initiate_requests_valid() {
             1,
             data.clone(),
             get_minimum_fee(),
-            pallet_test_caller::Call::<TestRuntime>::callback { result: vec![] }
+            pallet_test_caller::Call::<TestRuntime>::callback {
+                expired: false,
+                result: vec![]
+            }
         )
         .is_ok());
         assert_eq!(
@@ -159,7 +161,10 @@ fn linear_request_delegation() {
             data_version,
             data.clone(),
             get_minimum_fee(),
-            pallet_test_caller::Call::<TestRuntime>::callback { result: vec![] }
+            pallet_test_caller::Call::<TestRuntime>::callback {
+                expired: false,
+                result: vec![]
+            }
         )
         .is_ok());
 
@@ -182,7 +187,10 @@ fn linear_request_delegation() {
             data_version,
             data.clone(),
             get_minimum_fee(),
-            pallet_test_caller::Call::<TestRuntime>::callback { result: vec![] }
+            pallet_test_caller::Call::<TestRuntime>::callback {
+                expired: false,
+                result: vec![]
+            }
         )
         .is_ok());
 
@@ -205,7 +213,10 @@ fn linear_request_delegation() {
             data_version,
             data.clone(),
             get_minimum_fee(),
-            pallet_test_caller::Call::<TestRuntime>::callback { result: vec![] }
+            pallet_test_caller::Call::<TestRuntime>::callback {
+                expired: false,
+                result: vec![]
+            }
         )
         .is_ok());
 
@@ -228,7 +239,10 @@ fn linear_request_delegation() {
             data_version,
             data.clone(),
             get_minimum_fee(),
-            pallet_test_caller::Call::<TestRuntime>::callback { result: vec![] }
+            pallet_test_caller::Call::<TestRuntime>::callback {
+                expired: false,
+                result: vec![]
+            }
         )
         .is_ok());
 
@@ -251,7 +265,10 @@ fn linear_request_delegation() {
             data_version,
             data.clone(),
             get_minimum_fee(),
-            pallet_test_caller::Call::<TestRuntime>::callback { result: vec![] }
+            pallet_test_caller::Call::<TestRuntime>::callback {
+                expired: false,
+                result: vec![]
+            }
         )
         .is_ok());
 
@@ -279,7 +296,10 @@ fn initiate_requests_invalid_unknown_operator() {
             1,
             vec![],
             get_minimum_fee(),
-            pallet_test_caller::Call::<TestRuntime>::callback { result: vec![] }
+            pallet_test_caller::Call::<TestRuntime>::callback {
+                expired: false,
+                result: vec![]
+            }
         )
         .is_err());
     });
@@ -295,7 +315,10 @@ fn initiate_requests_invalid_insufficient_fee() {
             1,
             vec![],
             get_minimum_fee() - 1,
-            pallet_test_caller::Call::<TestRuntime>::callback { result: vec![] }
+            pallet_test_caller::Call::<TestRuntime>::callback {
+                expired: false,
+                result: vec![]
+            }
         )
         .is_err());
     });
@@ -312,7 +335,10 @@ fn initiate_requests_invalid_insufficient_balance_for_fee() {
             1,
             vec![],
             GENESIS_BALANCE + 1,
-            pallet_test_caller::Call::<TestRuntime>::callback { result: vec![] }
+            pallet_test_caller::Call::<TestRuntime>::callback {
+                expired: false,
+                result: vec![]
+            }
         )
         .is_err());
     });
@@ -327,7 +353,10 @@ fn initiate_requests_invalid_wrong_operator() {
             1,
             vec![],
             get_minimum_fee(),
-            pallet_test_caller::Call::<TestRuntime>::callback { result: vec![] }
+            pallet_test_caller::Call::<TestRuntime>::callback {
+                expired: false,
+                result: vec![]
+            }
         )
         .is_ok());
         // Wrong operator error
@@ -352,7 +381,10 @@ fn kill_request() {
             1,
             vec![],
             get_minimum_fee(),
-            pallet_test_caller::Call::<TestRuntime>::callback { result: vec![] }
+            pallet_test_caller::Call::<TestRuntime>::callback {
+                expired: false,
+                result: vec![]
+            }
         )
         .is_ok());
 

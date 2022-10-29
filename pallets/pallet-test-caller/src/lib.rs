@@ -18,11 +18,15 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::weight(1_000_000)]
-        pub fn callback(origin: OriginFor<T>, result: Vec<u8>) -> DispatchResult {
+        pub fn callback(origin: OriginFor<T>, expired: bool, result: Vec<u8>) -> DispatchResult {
             ensure_root(origin)?;
-            let res = result[8] as u64;
-            Result::<T>::put(res);
-            Ok(())
+            if expired {
+                Err("EXPIRED".into())
+            } else {
+                let res = result[8] as u64;
+                Result::<T>::put(res);
+                Ok(())
+            }
         }
     }
 
@@ -44,9 +48,9 @@ pub mod pallet {
     pub enum Event<T: Config> {}
 
     impl<T: Config> CallbackWithParameter for Call<T> {
-        fn with_result(&self, result: Vec<u8>) -> Option<Self> {
-            match *self {
-                Call::callback { result: _ } => Some(Call::callback { result }),
+        fn with_result(&self, expired: bool, result: Vec<u8>) -> Option<Self> {
+            match self {
+                Call::callback { .. } => Some(Call::callback { expired, result }),
                 _ => None,
             }
         }

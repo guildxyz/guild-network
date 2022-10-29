@@ -9,9 +9,8 @@ test_runtime!(Guild, pallet_guild);
 pub fn last_event() -> Event {
     System::events()
         .into_iter()
-        .map(|r| r.event)
         .filter_map(|e| {
-            if let Event::Guild(inner) = e {
+            if let Event::Guild(inner) = e.event {
                 Some(Event::Guild(inner))
             } else {
                 None
@@ -79,14 +78,19 @@ fn create_guild() {
 fn callback_can_only_be_called_by_root() {
     new_test_runtime().execute_with(|| {
         System::set_block_number(1);
-        let error = <Guild>::callback(Origin::signed(1), vec![]).err().unwrap();
+        let error = <Guild>::callback(Origin::signed(1), false, vec![])
+            .err()
+            .unwrap();
         assert_eq!(error, DispatchError::BadOrigin,);
 
-        let error = <Guild>::callback(Origin::root(), vec![]).err().unwrap();
+        let error = <Guild>::callback(Origin::root(), false, vec![])
+            .err()
+            .unwrap();
         assert_eq!(error_msg(error), "InvalidResultLength");
 
         let error = <Guild>::callback(
             Origin::root(),
+            false,
             vec![255, 255, 255, 255, 255, 255, 255, 255, 1],
         )
         .err()
@@ -98,13 +102,21 @@ fn callback_can_only_be_called_by_root() {
             Event::Guild(pallet_guild::Event::OracleResult(u64::MAX, true))
         );
 
-        let error = <Guild>::callback(Origin::root(), vec![0, 0, 0, 0, 0, 0, 0, 0, 0])
+        let error = <Guild>::callback(Origin::root(), false, vec![0, 0, 0, 0, 0, 0, 0, 0, 0])
             .err()
             .unwrap();
         assert_eq!(error_msg(error), "JoinRequestDoesNotExist");
         assert_eq!(
             last_event(),
             Event::Guild(pallet_guild::Event::OracleResult(0, false))
+        );
+
+        // expired requests don't even check whether the join request exits, it simply
+        // attempts to remove it
+        <Guild>::callback(Origin::root(), true, vec![0, 0, 0, 0, 0, 0, 0, 0, 0]).unwrap();
+        assert_eq!(
+            last_event(),
+            Event::Guild(pallet_guild::Event::JoinRequestExpired(0))
         );
     });
 }
