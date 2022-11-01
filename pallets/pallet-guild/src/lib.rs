@@ -19,51 +19,70 @@ pub mod pallet {
     };
     use frame_system::pallet_prelude::*;
     use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig, RequestIdentifier};
-    use sp_std::prelude::*;
+    use sp_std::vec::Vec as SpVec;
 
     type BalanceOf<T> = <<T as pallet_chainlink::Config>::Currency as Currency<
         <T as frame_system::Config>::AccountId,
     >>::Balance;
+    type MapId = [u8; 32];
 
     #[derive(Encode, Decode, Clone, TypeInfo)]
     pub struct Guild<AccountId> {
-        owner: AccountId,
-        members: Vec<AccountId>,
-        minimum_balance: u64,
+        pub owner: AccountId,
+        pub metadata: SpVec<u8>,
     }
-
-    impl<AccountId> Guild<AccountId> {
-        pub fn owner(&self) -> &AccountId {
-            &self.owner
-        }
-
-        pub fn members(&self) -> &[AccountId] {
-            &self.members
-        }
-    }
-
-    type GuildId = u64;
 
     #[derive(Encode, Decode, Clone, TypeInfo)]
     pub struct JoinRequest<AccountId> {
-        requester: AccountId,
-        guild_id: GuildId,
+        pub requester: AccountId,
+        pub requester_identities: SpVec<u8>,
+        pub guild_id: MapId,
+        pub role_id: MapId,
     }
 
     #[pallet::storage]
-    #[pallet::getter(fn request_identifier)]
-    pub(super) type NextRequestIdentifier<T: Config> =
-        StorageValue<_, RequestIdentifier, ValueQuery>;
+    #[pallet::getter(fn next_request_id)]
+    pub type NextRequestIdentifier<T: Config> = StorageValue<_, RequestIdentifier, ValueQuery>;
 
     #[pallet::storage]
-    #[pallet::getter(fn guilds)]
-    pub(super) type Guilds<T: Config> =
-        StorageMap<_, Blake2_128Concat, GuildId, Guild<T::AccountId>, OptionQuery>;
+    #[pallet::getter(fn guild)]
+    pub type Guilds<T: Config> =
+        StorageMap<_, Blake2_128Concat, MapId, Guild<T::AccountId>, OptionQuery>;
 
     #[pallet::storage]
-    #[pallet::getter(fn join_requests)]
-    pub(super) type JoinRequests<T: Config> =
+    #[pallet::getter(fn role)]
+    pub type Roles<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        MapId,
+        Blake2_128Concat,
+        MapId,
+        SpVec<u8>, // role metadata
+        OptionQuery,
+    >;
+
+    #[pallet::storage]
+    #[pallet::getter(fn member)]
+    pub type Members<T: Config> = StorageNMap<
+        _,
+        (
+            NMapKey<Blake2_128Concat, MapId>,
+            NMapKey<Blake2_128Concat, MapId>,
+            NMapKey<Blake2_128Concat, T::AccountId>,
+        ),
+        bool,
+        OptionQuery,
+    >;
+
+    #[pallet::storage]
+    #[pallet::getter(fn join_request)]
+    pub type JoinRequests<T: Config> =
         StorageMap<_, Blake2_128Concat, RequestIdentifier, JoinRequest<T::AccountId>, OptionQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn user_data)]
+    pub type UserData<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, SpVec<u8>, OptionQuery>;
 
     #[pallet::config]
     pub trait Config: ChainlinkConfig<Callback = Call<Self>> + frame_system::Config {
@@ -74,19 +93,19 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        GuildCreated(T::AccountId, GuildId),
-        GuildJoined(T::AccountId, GuildId),
-        FailedJoinRequest(T::AccountId, GuildId),
-        DecodingComplete(RequestIdentifier, bool),
+        AccessDenied(T::AccountId, MapId, MapId),
+        GuildCreated(T::AccountId, MapId),
+        GuildJoined(T::AccountId, MapId, MapId),
+        OracleResult(RequestIdentifier, bool),
+        SignerAlreadyJoined(T::AccountId, MapId, MapId),
     }
 
     #[pallet::error]
     pub enum Error<T> {
         GuildAlreadyExists,
-        GuildDoesNotExist,
-        JoinRequestDoesNotExist,
-        SignerAlreadyJoined,
         InvalidResultLength,
+        InvalidGuildRole,
+        JoinRequestDoesNotExist,
     }
 
     #[pallet::pallet]
@@ -99,8 +118,9 @@ pub mod pallet {
         #[pallet::weight(1000)] //T::WeightInfo::create_guild())]
         pub fn create_guild(
             origin: OriginFor<T>,
-            guild_id: GuildId,
-            minimum_balance: u64, // TODO this should be u128 (because of gwei)
+            guild_id: MapId,
+            metadata: SpVec<u8>,
+            roles: SpVec<(MapId, SpVec<u8>)>,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(
@@ -109,16 +129,18 @@ pub mod pallet {
             );
             let guild = Guild {
                 owner: sender.clone(),
-                members: Vec::new(),
-                minimum_balance,
+                metadata,
             };
-            Guilds::<T>::insert(guild_id, &guild);
+            Guilds::<T>::insert(guild_id, guild);
+            for (role_id, role_metadata) in roles.into_iter() {
+                Roles::<T>::insert(guild_id, role_id, role_metadata);
+            }
             Self::deposit_event(Event::GuildCreated(sender, guild_id));
             Ok(())
         }
 
         #[pallet::weight(0)]
-        pub fn callback(origin: OriginFor<T>, result: Vec<u8>) -> DispatchResult {
+        pub fn callback(origin: OriginFor<T>, result: SpVec<u8>) -> DispatchResult {
             // NOTE this ensures that only the root can call this function via
             // a callback, see `frame_system::RawOrigin`
             ensure_root(origin)?;
@@ -134,36 +156,53 @@ pub mod pallet {
             let request_id = RequestIdentifier::decode(&mut &result[0..8]).unwrap();
             let access = result[result.len() - 1] != 0; // if last byte is 0 then access = false
 
-            Self::deposit_event(Event::DecodingComplete(request_id, access));
+            Self::deposit_event(Event::OracleResult(request_id, access));
 
-            let request = if let Some(request) = JoinRequests::<T>::get(request_id) {
+            let request = if let Some(request) = JoinRequests::<T>::take(request_id) {
                 request
             } else {
                 return Err(Error::<T>::JoinRequestDoesNotExist.into());
             };
 
-            if access {
-                Guilds::<T>::try_mutate(request.guild_id, |value| {
-                    if let Some(guild) = value {
-                        if guild.members.binary_search(&request.requester).is_ok() {
-                            Err(Error::<T>::SignerAlreadyJoined.into())
-                        } else {
-                            guild.members.push(request.requester.clone());
-                            Self::deposit_event(Event::GuildJoined(
-                                request.requester,
-                                request.guild_id,
-                            ));
-                            Ok::<(), DispatchError>(())
-                        }
-                    } else {
-                        Self::deposit_event(Event::FailedJoinRequest(
-                            request.requester,
-                            request.guild_id,
-                        ));
-                        Err(Error::<T>::GuildDoesNotExist.into())
-                    }
-                })?;
+            if !access {
+                Self::deposit_event(Event::AccessDenied(
+                    request.requester,
+                    request.guild_id,
+                    request.role_id,
+                ));
+                // NOTE if we return with an error, all previous computations
+                // are reverted it seems, because the join request is not
+                // removed
+                return Ok(());
             }
+
+            // NOTE request has already been through a filter in `join_request`, i.e.
+            // at this point it is safe to assume that the given role id exists within
+            // an existing guild
+            if Members::<T>::contains_key((&request.guild_id, &request.role_id, &request.requester))
+            {
+                Self::deposit_event(Event::SignerAlreadyJoined(
+                    request.requester,
+                    request.guild_id,
+                    request.role_id,
+                ));
+                return Ok(());
+            }
+
+            Members::<T>::insert(
+                (&request.guild_id, &request.role_id, &request.requester),
+                true,
+            );
+
+            if !UserData::<T>::contains_key(&request.requester) {
+                UserData::<T>::insert(&request.requester, &request.requester_identities);
+            }
+
+            Self::deposit_event(Event::GuildJoined(
+                request.requester,
+                request.guild_id,
+                request.role_id,
+            ));
 
             Ok(())
         }
@@ -171,38 +210,48 @@ pub mod pallet {
         #[pallet::weight(1000)] //T::WeightInfo::join_guild())]
         pub fn join_guild(
             origin: OriginFor<T>,
-            guild_id: GuildId,
-            request_parameters: Vec<u8>,
+            guild_id: MapId,
+            role_id: MapId,
+            requester_identities: SpVec<u8>,
+            mut request_data: SpVec<u8>,
         ) -> DispatchResult {
-            let sender = ensure_signed(origin.clone())?;
+            let requester = ensure_signed(origin.clone())?;
 
             ensure!(
-                <Guilds<T>>::contains_key(guild_id),
-                Error::<T>::GuildDoesNotExist
+                <Roles<T>>::contains_key(guild_id, role_id),
+                Error::<T>::InvalidGuildRole
             );
 
             let request_id = NextRequestIdentifier::<T>::get();
-            // Using `wrapping_add` to start at 0 when it reaches `u64::max_value()`.
-            // This means that requests may be overwritten but it requires that at some point
-            // at least 2^64 requests are waiting to be served. Since requests also time out
-            // after a while this seems extremely unlikely.
+            // NOTE Using `wrapping_add` to start at 0 when it reaches
+            // `u64::max_value()`. This means that requests may be overwritten
+            // but it requires that at some point at least 2^64 requests are
+            // waiting to be served. Since requests also time out after a while
+            // this seems extremely unlikely.
             NextRequestIdentifier::<T>::put(request_id.wrapping_add(1));
+
+            let mut request_parameters = requester_identities.clone();
+            request_parameters.append(&mut request_data);
 
             JoinRequests::<T>::insert(
                 request_id,
                 JoinRequest::<T::AccountId> {
-                    requester: sender,
+                    requester,
+                    requester_identities,
                     guild_id,
+                    role_id,
                 },
             );
 
-            let call: <T as ChainlinkConfig>::Callback = Call::callback { result: vec![] };
+            let call: <T as ChainlinkConfig>::Callback = Call::callback {
+                result: SpVec::new(),
+            };
             // TODO set unique fee
             let fee = BalanceOf::<T>::unique_saturated_from(100_000_000u32);
             <pallet_chainlink::Pallet<T>>::initiate_request(
                 origin,
                 0,
-                request_parameters.encode(),
+                request_parameters,
                 fee,
                 call,
             )?;
@@ -212,7 +261,7 @@ pub mod pallet {
     }
 
     impl<T: Config> CallbackWithParameter for Call<T> {
-        fn with_result(&self, result: Vec<u8>) -> Option<Self> {
+        fn with_result(&self, result: SpVec<u8>) -> Option<Self> {
             match *self {
                 Call::callback { result: _ } => Some(Call::callback { result }),
                 _ => None,
