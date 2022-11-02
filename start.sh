@@ -36,6 +36,8 @@ elif [ $1 = "dev" ]; then
 elif [ $1 = "build-spec" ]; then
 	./target/release/node-template build-spec --disable-default-bootnode > chain-spec.json
 	./target/release/node-template build-spec --chain=chain-spec.json --raw --disable-default-bootnode > chain-spec-raw.json
+elif [ $1 = "dev" ]; then
+	./target/release/node-template --dev
 elif [ $1 = "clean" ]; then
 	./target/release/node-template purge-chain --base-path /tmp/$2 -y
 elif [ $1 = "benchmark" ]; then

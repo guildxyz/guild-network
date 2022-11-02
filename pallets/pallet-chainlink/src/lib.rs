@@ -62,6 +62,8 @@ pub mod pallet {
 
     pub type BalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+    // Uniquely identify an operator among the registered Operators
+    pub type OperatorIdentifier = u64;
     // Uniquely identify a request for a considered Operator
     pub type RequestIdentifier = u64;
     // The version of the serialized data format
@@ -69,13 +71,15 @@ pub mod pallet {
 
     // A trait allowing to inject Operator results back into the specified Call
     pub trait CallbackWithParameter {
-        fn with_result(&self, result: SpVec<u8>) -> Option<Self>
+        fn with_result(&self, expired: bool, result: SpVec<u8>) -> Option<Self>
         where
             Self: core::marker::Sized;
     }
 
     #[pallet::error]
     pub enum Error<T> {
+        /// No oracle operator has registered yet
+        NoRegisteredOperators,
         /// Manipulating an unknown operator
         UnknownOperator,
         /// Manipulating an unknown request
@@ -115,17 +119,28 @@ pub mod pallet {
         OperatorDeregistered(T::AccountId),
         /// A request didn't receive any result in time
         KillRequest(RequestIdentifier),
+        KillRequestFailed(RequestIdentifier),
     }
 
+    /// Stores registered operator addresses in a Vector.
+    ///
+    /// These could be stored in either a Vector or a Map and the reason why a
+    /// Vector was implemented is the following: it is easier to delegate
+    /// operator addresses randomly from a Vector than from a Map. The
+    /// trade-off is that the storage vector has to be iterated over whenever
+    /// an operator registers/deregisters. However, these events are
+    /// anticipated to be much less frequent than user request events.
     #[pallet::storage]
-    #[pallet::getter(fn operator)]
-    pub(super) type Operators<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::AccountId, bool, ValueQuery>;
+    #[pallet::getter(fn operators)]
+    pub type Operators<T: Config> = StorageValue<_, SpVec<T::AccountId>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn request_identifier)]
-    pub(super) type NextRequestIdentifier<T: Config> =
-        StorageValue<_, RequestIdentifier, ValueQuery>;
+    pub type NextRequestIdentifier<T: Config> = StorageValue<_, RequestIdentifier, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn next_operator)]
+    pub type NextOperator<T: Config> = StorageValue<_, OperatorIdentifier, ValueQuery>;
 
     #[derive(Encode, Decode, Clone, TypeInfo)]
     pub struct GenericRequest<AccountId, Callback, BlockNumber, BalanceOf> {
@@ -136,7 +151,7 @@ pub mod pallet {
         fee: BalanceOf,
     }
 
-    pub(super) type Request<T> = GenericRequest<
+    pub type Request<T> = GenericRequest<
         <T as frame_system::Config>::AccountId,
         <T as Config>::Callback,
         <T as frame_system::Config>::BlockNumber,
@@ -145,7 +160,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn request)]
-    pub(super) type Requests<T: Config> =
+    pub type Requests<T: Config> =
         StorageMap<_, Blake2_128Concat, RequestIdentifier, Request<T>, OptionQuery>;
 
     #[pallet::pallet]
@@ -163,16 +178,15 @@ pub mod pallet {
         pub fn register_operator(origin: OriginFor<T>) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
-            ensure!(
-                !<Operators<T>>::get(&who),
-                Error::<T>::OperatorAlreadyRegistered
-            );
-
-            Operators::<T>::insert(&who, true);
-
-            Self::deposit_event(Event::OperatorRegistered(who));
-
-            Ok(())
+            Operators::<T>::try_mutate(|operators| {
+                if operators.binary_search(&who).is_ok() {
+                    Err(Error::<T>::OperatorAlreadyRegistered.into())
+                } else {
+                    operators.push(who.clone());
+                    Self::deposit_event(Event::OperatorRegistered(who));
+                    Ok(())
+                }
+            })
         }
 
         /// Deregisters an already registered Operator
@@ -180,12 +194,14 @@ pub mod pallet {
         pub fn deregister_operator(origin: OriginFor<T>) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
-            if Operators::<T>::take(&who) {
-                Self::deposit_event(Event::OperatorDeregistered(who));
-                Ok(())
-            } else {
-                Err(Error::<T>::UnknownOperator.into())
-            }
+            Operators::<T>::try_mutate(|operators| {
+                if let Ok(index) = operators.binary_search(&who) {
+                    Self::deposit_event(Event::OperatorDeregistered(operators.remove(index)));
+                    Ok(())
+                } else {
+                    Err(Error::<T>::UnknownOperator.into())
+                }
+            })
         }
 
         /// Hint specified Operator (via its `AccountId`) of a request to be
@@ -204,7 +220,6 @@ pub mod pallet {
         #[pallet::weight(50_000)]
         pub fn initiate_request(
             origin: OriginFor<T>,
-            operator: T::AccountId,
             data_version: DataVersion,
             data: Vec<u8>,
             fee: BalanceOf<T>,
@@ -212,7 +227,15 @@ pub mod pallet {
         ) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
-            ensure!(<Operators<T>>::get(&operator), Error::<T>::UnknownOperator);
+            let operators = Operators::<T>::get();
+            if operators.is_empty() {
+                return Err(Error::<T>::NoRegisteredOperators.into());
+            }
+            let next_operator = NextOperator::<T>::get();
+            let operator = operators[next_operator as usize % operators.len()].clone();
+
+            NextOperator::<T>::put(next_operator.wrapping_add(1));
+
             // Currency::minimum_balance() is equivalent to ExistentialDeposit in the
             // pallet_balances config of the runtime
             // ensure!(fee > T::Currency::minimum_balance(), Error::<T>::InsufficientFee);
@@ -311,7 +334,7 @@ pub mod pallet {
             // Dispatch the result to the original callback registered by the caller
             let callback = request
                 .callback
-                .with_result(prepended_response.clone())
+                .with_result(false, prepended_response.clone())
                 .ok_or(Error::<T>::UnknownCallback)?;
             callback
                 .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
@@ -335,12 +358,33 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         // Identify requests that are considered dead and remove them
         fn on_finalize(n: T::BlockNumber) {
-            for (request_identifier, request) in Requests::<T>::iter() {
+            // NOTE according to the docs of storage maps if a map is modified
+            // while iterating over it, we get undefined behaviour, thus we need
+            // to iterate over it first, collect expired request_ids and iterate
+            // over them while removing the respective requests from the map.
+            let request_ids = Requests::<T>::iter()
+                .map(|(id, _)| id)
+                .collect::<Vec<RequestIdentifier>>();
+            for request_id in &request_ids {
+                // NOTE unwrap is fine here because we collected existing keys
+                let request = Requests::<T>::take(request_id).unwrap();
                 if n > request.block_number + T::ValidityPeriod::get() {
-                    // No result has been received in time
-                    Requests::<T>::remove(request_identifier);
+                    let mut prepended_response = request_id.encode();
+                    prepended_response.push(u8::MAX);
 
-                    Self::deposit_event(Event::KillRequest(request_identifier));
+                    if let Some(callback) = request
+                        .callback
+                        .with_result(true, prepended_response.clone())
+                    {
+                        if callback
+                            .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
+                            .is_ok()
+                        {
+                            Self::deposit_event(Event::KillRequest(*request_id));
+                        } else {
+                            Self::deposit_event(Event::KillRequestFailed(*request_id));
+                        }
+                    }
                 }
             }
         }
