@@ -1,78 +1,70 @@
-use client::{
-    compose_extrinsic, rpc::WsRpcClient, AccountId, Api, MultiAddress, Pair,
-    PlainTipExtrinsicParams, UncheckedExtrinsicV4, XtStatus,
-};
-//use codec::alloc::sync::mpsc::channel;
 use codec::Encode;
+use futures::future::try_join_all;
 use log::{error, info, warn};
-use sp_keyring::sr25519::sr25519::Pair as SrPair;
+use sp_core::crypto::Pair as TraitPair;
+use sp_keyring::sr25519::sr25519::Pair as Keypair;
 use sp_keyring::AccountKeyring;
+use subxt::tx::PairSigner;
+use subxt::{OnlineClient, PolkadotConfig};
 
-type TestApi = Api<SrPair, WsRpcClient, PlainTipExtrinsicParams>;
-//const PALLET: &str = "Guild";
-//const METHOD: &str = "create_guild";
-const CHAINLINK_PALLET: &str = "Chainlink";
-const CHAINLINK_METHOD: &str = "register_operator";
+use std::sync::Arc;
 
-pub fn main() {
+const URL: &str = "ws://127.0.0.1:9944";
+type Client = OnlineClient<PolkadotConfig>;
+
+#[tokio::main]
+async fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
-    let url = "ws://127.0.0.1:9944";
-    let ws_client = WsRpcClient::new(url);
-    let mut api = Api::new(ws_client).expect("failed to initialize client");
+    let client = Client::from_url(URL)
+        .await
+        .expect("failed to initialize client");
+    let faucet = Arc::new(PairSigner::new(AccountKeyring::Alice.pair()));
 
-    // let (events_in, events_out) = channel();
-    // api.subscribe_events(events_in)
-    //     .expect("falied to subscribe to events");
-
-    // TODO this will be an external function
-    // where signers are randomly changed
-    let signer = AccountKeyring::Alice.pair();
-    api = api.set_signer(signer);
     // generate new keypairs
     let mut seed = [10u8; 32];
     let operators = (0..10)
         .map(|_| {
-            let (keypair, _secret_seed) = SrPair::from_entropy(&seed, None);
+            let keypair = Keypair::from_seed(&seed);
             seed[0] += 1;
             keypair
         })
-        .collect::<Vec<SrPair>>();
+        .collect::<Vec<Keypair>>();
 
     let amount = 100_000u128;
-    for operator in &operators {
-        fund_account(&api, operator, amount).expect("failed to fund account");
-    }
+    let fund_futures = operators
+        .iter()
+        .map(|operator| {
+            fund_account(
+                client.clone(),
+                Arc::clone(&faucet),
+                operator.public(),
+                amount,
+            )
+        })
+        .collect::<Vec<_>>();
 
-    for operator in &operators {
-        api = api.set_signer(operator.clone());
-        if let Err(e) = register_operator(&api) {
-            error!("{}", e);
-        }
-    }
+    try_join_all(fund_futures)
+        .await
+        .expect("failed to fund accounts");
 }
 
-fn register_operator(api: &TestApi) -> Result<(), anyhow::Error> {
-    let tx: UncheckedExtrinsicV4<_, _> =
-        compose_extrinsic!(api, CHAINLINK_PALLET, CHAINLINK_METHOD);
-    send_tx(api, tx, XtStatus::Ready)
+async fn register_operator(client: Client) -> Result<(), anyhow::Error> {
+    todo!();
 }
 
-fn fund_account(api: &TestApi, recipient: &SrPair, amount: u128) -> Result<(), anyhow::Error> {
-    let recipient_account_id = AccountId::new(*recipient.public().as_ref());
-    let tx = api.balance_transfer(MultiAddress::Id(recipient_account_id), amount);
-    send_tx(api, tx, XtStatus::InBlock)
-}
-
-fn send_tx<Call: Encode, SignedExtra: Encode>(
-    api: &TestApi,
-    tx: UncheckedExtrinsicV4<Call, SignedExtra>,
-    status: XtStatus,
+async fn fund_account(
+    client: Client,
+    from: Arc<PairSigner<PolkadotConfig, Keypair>>,
+    to: <Keypair as TraitPair>::Public,
+    amount: u128,
 ) -> Result<(), anyhow::Error> {
-    if let Some(tx_hash) = api.send_extrinsic(tx.hex_encode(), status)? {
-        info!("blockhash: {}", tx_hash)
-    } else {
-        warn!("transaction not yet finalized")
-    }
+    todo!();
+}
 
-    Ok(())
+async fn create_guild() {
+    todo!();
+}
+
+async fn join_guild() {
+    todo!();
 }

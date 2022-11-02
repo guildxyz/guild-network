@@ -5,8 +5,11 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
-client = { package = "substrate-api-client", git = "https://github.com/scs/substrate-api-client.git", branch = "master" }
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false }
 env_logger = "0.9.0"
+futures = "0.3.25"
 log = "0.4.17"
-sp-keyring = { version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master", default-features = false }
+sp-core = { version = "6.0.0", default-features = false }
+sp-keyring = { version = "6.0.0", default-features = false }
+subxt = "0.24.0"
+tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
