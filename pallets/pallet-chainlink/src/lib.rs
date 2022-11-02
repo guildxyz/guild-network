@@ -71,7 +71,7 @@ pub mod pallet {
 
     // A trait allowing to inject Operator results back into the specified Call
     pub trait CallbackWithParameter {
-        fn with_result(&self, result: SpVec<u8>) -> Option<Self>
+        fn with_result(&self, expired: bool, result: SpVec<u8>) -> Option<Self>
         where
             Self: core::marker::Sized;
     }
@@ -119,6 +119,7 @@ pub mod pallet {
         OperatorDeregistered(T::AccountId),
         /// A request didn't receive any result in time
         KillRequest(RequestIdentifier),
+        KillRequestFailed(RequestIdentifier),
     }
 
     /// Stores registered operator addresses in a Vector.
@@ -333,7 +334,7 @@ pub mod pallet {
             // Dispatch the result to the original callback registered by the caller
             let callback = request
                 .callback
-                .with_result(prepended_response.clone())
+                .with_result(false, prepended_response.clone())
                 .ok_or(Error::<T>::UnknownCallback)?;
             callback
                 .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
@@ -357,12 +358,33 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         // Identify requests that are considered dead and remove them
         fn on_finalize(n: T::BlockNumber) {
-            for (request_identifier, request) in Requests::<T>::iter() {
+            // NOTE according to the docs of storage maps if a map is modified
+            // while iterating over it, we get undefined behaviour, thus we need
+            // to iterate over it first, collect expired request_ids and iterate
+            // over them while removing the respective requests from the map.
+            let request_ids = Requests::<T>::iter()
+                .map(|(id, _)| id)
+                .collect::<Vec<RequestIdentifier>>();
+            for request_id in &request_ids {
+                // NOTE unwrap is fine here because we collected existing keys
+                let request = Requests::<T>::take(request_id).unwrap();
                 if n > request.block_number + T::ValidityPeriod::get() {
-                    // No result has been received in time
-                    Requests::<T>::remove(request_identifier);
+                    let mut prepended_response = request_id.encode();
+                    prepended_response.push(u8::MAX);
 
-                    Self::deposit_event(Event::KillRequest(request_identifier));
+                    if let Some(callback) = request
+                        .callback
+                        .with_result(true, prepended_response.clone())
+                    {
+                        if callback
+                            .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
+                            .is_ok()
+                        {
+                            Self::deposit_event(Event::KillRequest(*request_id));
+                        } else {
+                            Self::deposit_event(Event::KillRequestFailed(*request_id));
+                        }
+                    }
                 }
             }
         }

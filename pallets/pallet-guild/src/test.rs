@@ -1,16 +1,16 @@
 use crate as pallet_guild;
-use test_runtime::test_runtime;
 
+use frame_support::traits::OnFinalize;
 use sp_runtime::DispatchError;
 
+use test_runtime::test_runtime;
 test_runtime!(Guild, pallet_guild);
 
 pub fn last_event() -> Event {
     System::events()
         .into_iter()
-        .map(|r| r.event)
         .filter_map(|e| {
-            if let Event::Guild(inner) = e {
+            if let Event::Guild(inner) = e.event {
                 Some(Event::Guild(inner))
             } else {
                 None
@@ -78,14 +78,19 @@ fn create_guild() {
 fn callback_can_only_be_called_by_root() {
     new_test_runtime().execute_with(|| {
         System::set_block_number(1);
-        let error = <Guild>::callback(Origin::signed(1), vec![]).err().unwrap();
+        let error = <Guild>::callback(Origin::signed(1), false, vec![])
+            .err()
+            .unwrap();
         assert_eq!(error, DispatchError::BadOrigin,);
 
-        let error = <Guild>::callback(Origin::root(), vec![]).err().unwrap();
+        let error = <Guild>::callback(Origin::root(), false, vec![])
+            .err()
+            .unwrap();
         assert_eq!(error_msg(error), "InvalidResultLength");
 
         let error = <Guild>::callback(
             Origin::root(),
+            false,
             vec![255, 255, 255, 255, 255, 255, 255, 255, 1],
         )
         .err()
@@ -97,13 +102,21 @@ fn callback_can_only_be_called_by_root() {
             Event::Guild(pallet_guild::Event::OracleResult(u64::MAX, true))
         );
 
-        let error = <Guild>::callback(Origin::root(), vec![0, 0, 0, 0, 0, 0, 0, 0, 0])
+        let error = <Guild>::callback(Origin::root(), false, vec![0, 0, 0, 0, 0, 0, 0, 0, 0])
             .err()
             .unwrap();
         assert_eq!(error_msg(error), "JoinRequestDoesNotExist");
         assert_eq!(
             last_event(),
             Event::Guild(pallet_guild::Event::OracleResult(0, false))
+        );
+
+        // expired requests don't even check whether the join request exits, it simply
+        // attempts to remove it
+        <Guild>::callback(Origin::root(), true, vec![0, 0, 0, 0, 0, 0, 0, 0, 0]).unwrap();
+        assert_eq!(
+            last_event(),
+            Event::Guild(pallet_guild::Event::JoinRequestExpired(0))
         );
     });
 }
@@ -391,5 +404,34 @@ fn joining_multiple_guilds() {
 
         assert_eq!(<Guild>::user_data(signer_1).unwrap(), user_1_data);
         assert_eq!(<Guild>::user_data(signer_2).unwrap(), user_2_data);
+    });
+}
+
+#[test]
+fn kill_request() {
+    new_test_runtime().execute_with(|| {
+        let guild_id = [0u8; 32];
+        let role_id = [1u8; 32];
+        let signer = 1;
+
+        <Chainlink>::register_operator(Origin::signed(signer)).unwrap();
+        // create first guild
+        <Guild>::create_guild(
+            Origin::signed(signer),
+            guild_id,
+            vec![],
+            vec![(role_id, vec![])],
+        )
+        .unwrap();
+
+        <Guild>::join_guild(Origin::signed(signer), guild_id, role_id, vec![], vec![]).unwrap();
+        assert!(<Guild>::join_request(0).is_some());
+
+        <Chainlink as OnFinalize<u64>>::on_finalize(
+            <TestRuntime as pallet_chainlink::Config>::ValidityPeriod::get() + 1,
+        );
+
+        assert!(<Guild>::join_request(0).is_none());
+        assert!(<Guild>::member((guild_id, role_id, signer)).is_none());
     });
 }
