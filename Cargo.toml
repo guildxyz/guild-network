@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "benchmark-utils",
+    "cli-utils",
     "node",
     "pallets/pallet-chainlink",
     "pallets/pallet-guild",
