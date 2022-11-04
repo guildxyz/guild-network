@@ -1,4 +1,3 @@
-use codec::Encode;
 use futures::future::try_join_all;
 use log::{error, info, warn};
 use sp_core::crypto::Pair as TraitPair;
@@ -12,7 +11,11 @@ use subxt::{OnlineClient, PolkadotConfig};
 use std::sync::Arc;
 
 const URL: &str = "ws://127.0.0.1:9944";
+const ORACLE_PALLET: &str = "Chainlink";
+const GUILD_PALLET: &str = "Guild";
+
 type Api = OnlineClient<PolkadotConfig>;
+type Signer = PairSigner<PolkadotConfig, Keypair>;
 
 #[subxt::subxt(runtime_metadata_path = "./artifacts/metadata.scale")]
 pub mod node {}
@@ -23,17 +26,18 @@ async fn main() {
     let api = Api::from_url(URL)
         .await
         .expect("failed to initialize client");
-    let faucet = Arc::new(PairSigner::new(AccountKeyring::Alice.pair()));
+    let faucet = Arc::new(Signer::new(AccountKeyring::Alice.pair()));
 
     // generate new keypairs
     let mut seed = [10u8; 32];
     let operators = (0..10)
         .map(|_| {
-            let keypair = PairSigner::new(Keypair::from_seed(&seed));
+            let keypair = Arc::new(Signer::new(Keypair::from_seed(&seed)));
             seed[0] += 1;
             keypair
         })
-        .collect::<Vec<PairSigner<PolkadotConfig, Keypair>>>();
+        .inspect(|x| println!("{:?}", x.as_ref().account_id()))
+        .collect::<Vec<Arc<Signer>>>();
 
     let amount = 100_000u128;
     let fund_futures = operators
@@ -42,7 +46,7 @@ async fn main() {
             fund_account(
                 api.clone(),
                 Arc::clone(&faucet),
-                operator.account_id(),
+                operator.as_ref().account_id(),
                 amount,
             )
         })
@@ -51,15 +55,35 @@ async fn main() {
     try_join_all(fund_futures)
         .await
         .expect("failed to fund accounts");
+
+    let register_operator_futures = operators
+        .iter()
+        .map(|operator| register_operator(api.clone(), Arc::clone(operator)))
+        .collect::<Vec<_>>();
+
+    try_join_all(register_operator_futures)
+        .await
+        .expect("failed to fund accounts");
+
+    let registered_operators = subxt::dynamic::storage_root(ORACLE_PALLET, "operators");
+    let mut iter = api
+        .storage()
+        .iter(registered_operators, 10, None)
+        .await
+        .unwrap();
+    while let Some((address, _boolean)) = iter.next().await.unwrap() {
+        println!("{:?}", address);
+    }
 }
 
-async fn register_operator(api: Api) -> Result<(), anyhow::Error> {
-    todo!();
+async fn register_operator(api: Api, signer: Arc<Signer>) -> Result<TxHash, subxt::Error> {
+    let tx = subxt::dynamic::tx(ORACLE_PALLET, "register_operator", vec![]);
+    api.tx().sign_and_submit_default(&tx, signer.as_ref()).await
 }
 
 async fn fund_account(
     api: Api,
-    from: Arc<PairSigner<PolkadotConfig, Keypair>>,
+    from: Arc<Signer>,
     to: &sp_core::crypto::AccountId32,
     amount: u128,
 ) -> Result<TxHash, subxt::Error> {
