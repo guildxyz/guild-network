@@ -25,6 +25,15 @@ pallet-chainlink = {version = "3.0.0-alpha", default-features = false, path = ".
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
 sp-std = {default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25"}
 
+[dependencies.uuid]
+default-features = false
+features = [
+  "v4", # Lets you generate random UUIDs
+  "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
+  "js", # for webassembly
+]
+version = "1.2.1"
+
 [dev-dependencies]
 pallet-balances = {version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25"}
 sp-core = {default-features = false, version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25"}

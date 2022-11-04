@@ -19,12 +19,18 @@ pub mod pallet {
     };
     use frame_system::pallet_prelude::*;
     use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig, RequestIdentifier};
+    use sp_std::borrow::ToOwned;
     use sp_std::vec::Vec as SpVec;
+    use uuid::Uuid;
 
     type BalanceOf<T> = <<T as pallet_chainlink::Config>::Currency as Currency<
         <T as frame_system::Config>::AccountId,
     >>::Balance;
     type MapId = [u8; 32];
+    type GuildName = [u8; 32];
+    type UUID = [u8; 16];
+    type GuildUUID = UUID;
+    type RoleUUID = UUID;
 
     #[derive(Encode, Decode, Clone, TypeInfo)]
     pub struct Guild<AccountId> {
@@ -36,8 +42,8 @@ pub mod pallet {
     pub struct JoinRequest<AccountId> {
         pub requester: AccountId,
         pub requester_identities: SpVec<u8>,
-        pub guild_id: MapId,
-        pub role_id: MapId,
+        pub guild_name: MapId,
+        pub role_name: MapId,
     }
 
     #[pallet::storage]
@@ -45,31 +51,45 @@ pub mod pallet {
     pub type NextRequestIdentifier<T: Config> = StorageValue<_, RequestIdentifier, ValueQuery>;
 
     #[pallet::storage]
+    #[pallet::getter(fn guild_id)]
+    pub type GuildIdMap<T: Config> =
+        StorageMap<_, Blake2_128Concat, GuildName, GuildUUID, OptionQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn role_id)]
+    pub type RoleIdMap<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        GuildUUID,
+        Blake2_128Concat,
+        MapId,
+        RoleUUID,
+        OptionQuery,
+    >;
+
+    #[pallet::storage]
     #[pallet::getter(fn guild)]
     pub type Guilds<T: Config> =
-        StorageMap<_, Blake2_128Concat, MapId, Guild<T::AccountId>, OptionQuery>;
+        StorageMap<_, Blake2_128Concat, UUID, Guild<T::AccountId>, OptionQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn role)]
-    pub type Roles<T: Config> = StorageDoubleMap<
+    pub type Roles<T: Config> = StorageMap<
         _,
         Blake2_128Concat,
-        MapId,
-        Blake2_128Concat,
-        MapId,
+        RoleUUID,
         SpVec<u8>, // role metadata
         OptionQuery,
     >;
 
     #[pallet::storage]
     #[pallet::getter(fn member)]
-    pub type Members<T: Config> = StorageNMap<
+    pub type Members<T: Config> = StorageDoubleMap<
         _,
-        (
-            NMapKey<Blake2_128Concat, MapId>,
-            NMapKey<Blake2_128Concat, MapId>,
-            NMapKey<Blake2_128Concat, T::AccountId>,
-        ),
+        Blake2_128Concat,
+        RoleUUID,
+        Blake2_128Concat,
+        T::AccountId,
         bool,
         OptionQuery,
     >;
@@ -119,24 +139,32 @@ pub mod pallet {
         #[pallet::weight(1000)] //T::WeightInfo::create_guild())]
         pub fn create_guild(
             origin: OriginFor<T>,
-            guild_id: MapId,
+            guild_name: MapId,
             metadata: SpVec<u8>,
             roles: SpVec<(MapId, SpVec<u8>)>,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(
-                !Guilds::<T>::contains_key(guild_id),
+                !GuildIdMap::<T>::contains_key(guild_name),
                 Error::<T>::GuildAlreadyExists
             );
+
+            let guild_id = Uuid::new_v4().as_bytes().to_owned();
+            GuildIdMap::<T>::insert(guild_name, guild_id);
+
             let guild = Guild {
                 owner: sender.clone(),
                 metadata,
             };
             Guilds::<T>::insert(guild_id, guild);
-            for (role_id, role_metadata) in roles.into_iter() {
-                Roles::<T>::insert(guild_id, role_id, role_metadata);
+
+            for (role_name, role_metadata) in roles.into_iter() {
+                let role_id = Uuid::new_v4().as_bytes().to_owned();
+                RoleIdMap::<T>::insert(guild_id, role_name, role_id);
+                Roles::<T>::insert(role_id, role_metadata);
             }
-            Self::deposit_event(Event::GuildCreated(sender, guild_id));
+
+            Self::deposit_event(Event::GuildCreated(sender, guild_name));
             Ok(())
         }
 
@@ -174,8 +202,8 @@ pub mod pallet {
             if !access {
                 Self::deposit_event(Event::AccessDenied(
                     request.requester,
-                    request.guild_id,
-                    request.role_id,
+                    request.guild_name,
+                    request.role_name,
                 ));
                 // NOTE if we return with an error, all previous computations
                 // are reverted it seems, because the join request is not
@@ -186,20 +214,18 @@ pub mod pallet {
             // NOTE request has already been through a filter in `join_request`, i.e.
             // at this point it is safe to assume that the given role id exists within
             // an existing guild
-            if Members::<T>::contains_key((&request.guild_id, &request.role_id, &request.requester))
-            {
+            let guild_id = Self::guild_id(&request.guild_name).unwrap();
+            let role_id = Self::role_id(guild_id, &request.role_name).unwrap();
+            if Members::<T>::contains_key(role_id, &request.requester) {
                 Self::deposit_event(Event::SignerAlreadyJoined(
                     request.requester,
-                    request.guild_id,
-                    request.role_id,
+                    request.guild_name,
+                    request.role_name,
                 ));
                 return Ok(());
             }
 
-            Members::<T>::insert(
-                (&request.guild_id, &request.role_id, &request.requester),
-                true,
-            );
+            Members::<T>::insert(role_id, &request.requester, true);
 
             if !UserData::<T>::contains_key(&request.requester) {
                 UserData::<T>::insert(&request.requester, &request.requester_identities);
@@ -207,8 +233,8 @@ pub mod pallet {
 
             Self::deposit_event(Event::GuildJoined(
                 request.requester,
-                request.guild_id,
-                request.role_id,
+                request.guild_name,
+                request.role_name,
             ));
 
             Ok(())
@@ -217,15 +243,18 @@ pub mod pallet {
         #[pallet::weight(1000)] //T::WeightInfo::join_guild())]
         pub fn join_guild(
             origin: OriginFor<T>,
-            guild_id: MapId,
-            role_id: MapId,
+            guild_name: MapId,
+            role_name: MapId,
             requester_identities: SpVec<u8>,
             mut request_data: SpVec<u8>,
         ) -> DispatchResult {
             let requester = ensure_signed(origin.clone())?;
 
+            let guild_id = Self::guild_id(guild_name).unwrap();
+            let role_id = Self::role_id(guild_id, role_name).unwrap();
+
             ensure!(
-                <Roles<T>>::contains_key(guild_id, role_id),
+                <Roles<T>>::contains_key(role_id),
                 Error::<T>::InvalidGuildRole
             );
 
@@ -245,8 +274,8 @@ pub mod pallet {
                 JoinRequest::<T::AccountId> {
                     requester,
                     requester_identities,
-                    guild_id,
-                    role_id,
+                    guild_name,
+                    role_name,
                 },
             );
 
