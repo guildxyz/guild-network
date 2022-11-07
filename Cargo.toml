@@ -1,12 +1,14 @@
 [workspace]
 members = [
-    "cli-utils",
-    "node",
-    "pallets/pallet-chainlink",
-    "pallets/pallet-guild",
-    "pallets/pallet-test-caller",
-    "runtime",
-    "test-runtime",
+    "guild-network-client",
+    "guild-network-common",
+    #"guild-network-node",
+    #"guild-network-oracle",
+    #"guild-network-pallets/pallet-chainlink",
+    #"guild-network-pallets/pallet-guild",
+    #"guild-network-pallets/pallet-test-caller",
+    #"guild-network-runtime",
+    #"guild-network-test-runtime",
 ]
 [profile.release]
 panic = "abort"

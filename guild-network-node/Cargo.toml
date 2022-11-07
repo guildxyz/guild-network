@@ -1,5 +1,5 @@
 [package]
-name = "node-template"
+name = "guild-network-node"
 version = "4.0.0-dev"
 description = "A fresh FRAME-based Substrate node, ready for hacking."
 authors = ["Substrate DevHub <https://github.com/substrate-developer-hub>"]
@@ -46,15 +46,15 @@ runtime-benchmarks = [
     "frame-benchmarking",
     "frame-benchmarking-cli",
     "frame-system",
-    "node-template-runtime/runtime-benchmarks",
+    "guild-network-runtime/runtime-benchmarks",
     "pallet-transaction-payment",
     "sp-inherents",
     "sp-keyring",
 ]
-try-runtime = ["node", "node-template-runtime/try-runtime", "try-runtime-cli"]
+try-runtime = ["node", "guild-network-runtime/try-runtime", "try-runtime-cli"]
 
 [dependencies]
-node-template-runtime = { version = "4.0.0-dev", path = "../runtime" }
+guild-network-runtime = { version = "4.0.0-dev", path = "../guild-network-runtime" }
 
 clap = { version = "3.1.18", features = ["derive"] }
 frame-benchmarking = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25", optional = true }

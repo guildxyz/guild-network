@@ -1,0 +1,8 @@
+[package]
+name = "guild-network-common"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ethers = "0.17.0"
+serde = { version = "1", features = ["derive"] }

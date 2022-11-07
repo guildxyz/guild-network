@@ -1,0 +1,45 @@
+[package]
+authors = ["Shronk <ureshpohar@gmail.com>"]
+edition = "2021"
+name = "guild-oracle"
+version = "0.1.0"
+
+[[bin]]
+bench = false
+name = "guild_oracle"
+path = "src/main.rs"
+test = false
+
+[lib]
+name = "guild_oracle"
+path = "src/lib.rs"
+
+[features]
+benchmarking = []
+flood-tests = []
+
+[dependencies]
+anyhow = { version = "1.0", default-features = false }
+codec = { package = "parity-scale-codec", features = ["derive"], version = "3.0.0", default-features = false }
+env_logger = "0.9.0"
+ethers = "0.17"
+futures = "0.3.25"
+hex = { version = "0.4.3", default-features = false }
+log = { version = "0.4.17", default-features = false }
+reqwest = { version = "0.11.11", features = ["json"] }
+serde = { version = "1.0.144", features = ["derive"] }
+serde-aux = { version = "4.0.0", default-features = false }
+sp-keyring = { version = "6.0.0", default-features = false }
+structopt = { version = "0.3", default-features = false }
+subxt = "0.24.0"
+tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
+
+[dev-dependencies]
+criterion = { version = "0.4.0", features = ["async_futures", "async_tokio"] }
+ethock = { git = "https://github.com/agoraxyz/ethock", branch = "I5-websocket-substrate" }
+
+[[bench]]
+harness = false
+name = "bench_extrinsic"
+path = "benches/extrinsic.rs"
+required-features = ["benchmarking"]
