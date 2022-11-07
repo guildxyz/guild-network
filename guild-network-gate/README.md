@@ -1,3 +1,4 @@
+**NOTE** Outdated, will be updated soon.
 # Substrate oracle client
 
 This is a CLI client which connects to the specified Substrate node and listens

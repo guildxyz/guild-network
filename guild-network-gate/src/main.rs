@@ -1,3 +1,5 @@
+fn main() {}
+/*
 use ethers::types::U256;
 use futures::StreamExt;
 use log::{error, info, trace};
@@ -137,3 +139,4 @@ where
 
     Ok(())
 }
+*/

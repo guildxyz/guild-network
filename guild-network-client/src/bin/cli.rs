@@ -3,7 +3,7 @@ use futures::StreamExt;
 use guild_network_client::{
     api, AccountId, Api, BlockSubscription, Keypair, Signer, TransactionProgress,
 };
-use guild_network_common::requirements::Requirement;
+use guild_network_gate::requirements::Requirement;
 use sp_keyring::AccountKeyring;
 use subxt::ext::sp_core::crypto::Pair as TraitPair;
 use subxt::ext::sp_core::H256 as TxHash;

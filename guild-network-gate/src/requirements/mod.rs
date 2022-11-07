@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 pub mod allowlist;
 pub mod balance;
+#[cfg(feature = "with-checks")]
+mod check;
 
 use allowlist::Allowlist;
 use balance::RequiredBalance;

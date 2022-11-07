@@ -1,6 +1,9 @@
 use ethereum_types::{Address, Signature as EvmSignature};
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "with-checks")]
+mod verify;
+
 #[derive(Serialize, Deserialize)]
 pub enum Identity {
     EvmChain(Address),

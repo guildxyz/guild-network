@@ -1,8 +1,0 @@
-[package]
-name = "guild-network-common"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-ethereum-types = "0.14.0"
-serde = { version = "1", features = ["derive"] }
