@@ -13,6 +13,8 @@ pub mod weights;
 #[frame_support::pallet]
 pub mod pallet {
     use super::weights::WeightInfo;
+    use frame_support::inherent::Vec;
+    use frame_support::traits::Randomness;
     use frame_support::{
         dispatch::DispatchResult, pallet_prelude::*, sp_runtime::traits::UniqueSaturatedFrom,
         traits::Currency,
@@ -21,16 +23,18 @@ pub mod pallet {
     use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig, RequestIdentifier};
     use sp_std::borrow::ToOwned;
     use sp_std::vec::Vec as SpVec;
-    use uuid::Uuid;
 
     type BalanceOf<T> = <<T as pallet_chainlink::Config>::Currency as Currency<
         <T as frame_system::Config>::AccountId,
     >>::Balance;
     type MapId = [u8; 32];
     type GuildName = [u8; 32];
-    type UUID = [u8; 16];
-    type GuildUUID = UUID;
-    type RoleUUID = UUID;
+    type GuildUUID = uuid::Bytes;
+    type RoleUUID = uuid::Bytes;
+
+    #[pallet::storage]
+    #[pallet::getter(fn nonce)]
+    pub type Nonce<T: Config> = StorageValue<_, i32, ValueQuery>;
 
     #[derive(Encode, Decode, Clone, TypeInfo)]
     pub struct Guild<AccountId> {
@@ -70,7 +74,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn guild)]
     pub type Guilds<T: Config> =
-        StorageMap<_, Blake2_128Concat, UUID, Guild<T::AccountId>, OptionQuery>;
+        StorageMap<_, Blake2_128Concat, GuildUUID, Guild<T::AccountId>, OptionQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn role)]
@@ -108,6 +112,7 @@ pub mod pallet {
     pub trait Config: ChainlinkConfig<Callback = Call<Self>> + frame_system::Config {
         type WeightInfo: WeightInfo;
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+        type MyRandomness: Randomness<Self::Hash, Self::BlockNumber>;
     }
 
     #[pallet::event]
@@ -134,6 +139,24 @@ pub mod pallet {
     #[pallet::generate_store(pub(super) trait Store)]
     pub struct Pallet<T>(_);
 
+    impl<T: Config> Pallet<T> {
+        fn get_and_increment_nonce() -> Vec<u8> {
+            let nonce = Nonce::<T>::get();
+            Nonce::<T>::put(nonce.wrapping_add(1));
+            nonce.encode()
+        }
+
+        fn get_random_uuid() -> uuid::Bytes {
+            let nonce = Self::get_and_increment_nonce();
+            let (random_value, _) = T::MyRandomness::random(&nonce);
+            let seed = random_value.as_ref().try_into().unwrap();
+            uuid::Builder::from_random_bytes(seed)
+                .into_uuid()
+                .as_bytes()
+                .to_owned()
+        }
+    }
+
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::weight(1000)] //T::WeightInfo::create_guild())]
@@ -149,7 +172,7 @@ pub mod pallet {
                 Error::<T>::GuildAlreadyExists
             );
 
-            let guild_id = Uuid::new_v4().as_bytes().to_owned();
+            let guild_id = Self::get_random_uuid();
             GuildIdMap::<T>::insert(guild_name, guild_id);
 
             let guild = Guild {
@@ -159,7 +182,7 @@ pub mod pallet {
             Guilds::<T>::insert(guild_id, guild);
 
             for (role_name, role_metadata) in roles.into_iter() {
-                let role_id = Uuid::new_v4().as_bytes().to_owned();
+                let role_id = Self::get_random_uuid();
                 RoleIdMap::<T>::insert(guild_id, role_name, role_id);
                 Roles::<T>::insert(role_id, role_metadata);
             }

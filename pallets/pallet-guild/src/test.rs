@@ -1,4 +1,4 @@
-use crate::{self as pallet_guild, GuildIdMap, RoleIdMap};
+use crate::{self as pallet_guild};
 
 use frame_support::traits::OnFinalize;
 use sp_runtime::DispatchError;
