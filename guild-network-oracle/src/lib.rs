@@ -22,9 +22,9 @@ pub async fn check_requirement(
     client: &ReqwestClient,
     requriement: &Requirement,
     user_identity: &Identity,
-) -> Result<bool, anyhow::Error> {
-    match (requirement, user_identity) {
-        (Self::Free, _) => Ok(true),
+) -> Result<(), anyhow::Error> {
+    let is_valid = match (requirement, user_identity) {
+        (Self::Free, _) => Ok(()),
         (Self::EthereumBalance(req_balance), Identity::EvmChain(user_address)) => {
             let balance = get_evm_balance(
                 client,
@@ -33,18 +33,18 @@ pub async fn check_requirement(
                 Chain::Ethereum,
             )
             .await?;
-            Ok(req_balance.relation.assert(&balance, &req_balance.amount))
+            req_balance.relation.assert(&balance, &req_balance.amount))
         }
         (Self::BscBalance(req_balance), Identity::EvmChain(user_address)) => {
             let balance =
                 get_evm_balance(client, &req_balance.token_type, user_address, Chain::Bsc).await?;
-            Ok(req_balance.relation.assert(&balance, &req_balance.amount))
+            req_balance.relation.assert(&balance, &req_balance.amount)
         }
         (Self::GnosisBalance(req_balance), Identity::EvmChain(user_address)) => {
             let balance =
                 get_evm_balance(client, &req_balance.token_type, user_address, Chain::Gnosis)
                     .await?;
-            Ok(req_balance.relation.assert(&balance, &req_balance.amount))
+            req_balance.relation.assert(&balance, &req_balance.amount)
         }
         (Self::PolygonBalance(req_balance), Identity::EvmChain(user_address)) => {
             let balance = get_evm_balance(
@@ -54,14 +54,85 @@ pub async fn check_requirement(
                 Chain::Polygon,
             )
             .await?;
-            Ok(req_balance.relation.assert(&balance, &req_balance.amount))
+            req_balance.relation.assert(&balance, &req_balance.amount)
         }
         (Self::EvmAllowlist(allowlist), Identity::EvmChain(user_address)) => {
-            Ok(allowlist.is_member(user_address))
+            allowlist.is_member(user_address)
         }
-        _ => Ok(false),
+        _ => false,
+    };
+
+    anyhow::ensure!(is_valid, "requirement check failed");
+    Ok(())
+}
+
+    pub fn verify_identity(identity: &Identity, auth: &IdentityAuth) -> Result<(), anyhow::Error> {
+        let is_valid = match (self, auth) {
+            (Self::EvmChain(address), IdentityAuth::EvmChain { signature, msg }) => {
+                let msg = std::str::from_utf8(msg)?;
+                signature.verify(msg, *address)?;
+                true
+            }
+            (Self::Discord(_), _) => true, 
+            (Self::Telegram(_), _) => true,
+            // could return an error if we want but this arm means a platform
+            // mismatch between the identity and the verification data
+            _ => false,
+        };
+        
+        anyhow::ensure!(is_valid, "invalid identity");
+        Ok(())
+    }
+
+/*
+#[cfg(test)]
+mod test {
+    use super::*;
+    use ethers::prelude::k256::elliptic_curve::rand_core;
+    use ethers::prelude::LocalWallet;
+
+    use ethers::signers::Signer;
+
+    #[tokio::test]
+    async fn valid_evm_signature() {
+        let wallet = LocalWallet::new(&mut rand_core::OsRng);
+        let msg = "requiem aeternam dona eis";
+        let signature = wallet.sign_message(msg).await.unwrap();
+        let identity = Identity::EvmChain(wallet.address());
+        let identity_auth = IdentityAuth::EvmChain {
+            signature,
+            msg: msg.as_bytes().to_owned(),
+        };
+        assert!(identity.verify(&identity_auth));
+    }
+
+    #[tokio::test]
+    async fn invalid_evm_signature() {
+        let wallet = LocalWallet::new(&mut rand_core::OsRng);
+        let msg = "requiem aeternam dona eis";
+        let signature = wallet.sign_message(msg).await.unwrap();
+        let identity = Identity::EvmChain(wallet.address());
+
+        let identity_auth = IdentityAuth::EvmChain {
+            signature,
+            msg: "invalid".as_bytes().to_owned(),
+        };
+        assert!(!identity.verify(&identity_auth));
+    }
+
+    #[tokio::test]
+    async fn verify_off_chain_platforms() {
+        let discord_id = Identity::Discord(vec![]);
+        let telegram_id = Identity::Telegram(vec![]);
+
+        let discord_auth = IdentityAuth::Discord;
+        let telegram_auth = IdentityAuth::Telegram;
+
+        assert!(discord_id.verify(&discord_auth));
+        assert!(telegram_id.verify(&telegram_auth));
     }
 }
+*/
 
 pub async fn process_request<'a>(
     request_id: u64,

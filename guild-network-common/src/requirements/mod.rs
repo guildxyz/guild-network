@@ -1,4 +1,4 @@
-use ethers::types::{Address, U256};
+use ethereum_types::{Address, U256};
 use serde::{Deserialize, Serialize};
 
 pub mod allowlist;

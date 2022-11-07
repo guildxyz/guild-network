@@ -63,8 +63,7 @@ async fn main() {
     // balances transfers, so we get a tx progress handle to the
     // last tx in the queue
     let mut last_tx: Option<TransactionProgress> = None;
-    let mut operators_iter = operators.iter();
-    while let Some(operator) = operators_iter.next() {
+    for operator in &operators {
         last_tx = Some(
             fund_account(
                 api.clone(),
