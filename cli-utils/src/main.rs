@@ -1,6 +1,7 @@
 use futures::future::try_join_all;
 use futures::StreamExt;
 use log::{error, info, warn};
+use oracle::requirements::Requirement;
 use sp_core::crypto::Pair as TraitPair;
 use sp_core::H256 as TxHash;
 use sp_keyring::sr25519::sr25519::Pair as Keypair;
@@ -142,10 +143,26 @@ async fn fund_account(
         .await
 }
 
-async fn create_guild() {
-    todo!();
-}
+async fn create_guild(api: Api, signer: Arc<Signer>, guild: Guild) {}
 
 async fn join_guild() {
     todo!();
+}
+
+fn pad_to_32_bytes(name: &[u8]) -> Result<[u8; 32], anyhow::Error> {
+    let mut output = [0u8; 32];
+    anyhow::ensure!(name.len() <= output.len(), "name too long");
+    output.copy_from_slice(name);
+    Ok(output)
+}
+
+struct Guild {
+    name: String,
+    metadata: Vec<u8>,
+    roles: Vec<Role>,
+}
+
+struct Role {
+    name: String,
+    requirements: Vec<Requirement>,
 }
