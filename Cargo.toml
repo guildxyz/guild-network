@@ -2,12 +2,12 @@
 members = [
     "guild-network-client",
     "guild-network-gate",
-    #"guild-network-node",
-    #"guild-network-pallets/pallet-chainlink",
-    #"guild-network-pallets/pallet-guild",
-    #"guild-network-pallets/pallet-test-caller",
-    #"guild-network-runtime",
-    #"guild-network-test-runtime",
+    "guild-network-node",
+    "guild-network-pallets/pallet-chainlink",
+    "guild-network-pallets/pallet-guild",
+    "guild-network-pallets/pallet-test-caller",
+    "guild-network-runtime",
+    "guild-network-test-runtime",
 ]
 [profile.release]
 panic = "abort"

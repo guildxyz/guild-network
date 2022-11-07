@@ -11,7 +11,7 @@ use crate::service;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 #[cfg(feature = "node")]
-use node_template_runtime::Block;
+use guild_network_runtime::Block;
 use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
 #[cfg(feature = "node")]
 use sc_service::PartialComponents;
@@ -52,7 +52,7 @@ impl SubstrateCli for Cli {
     }
 
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &node_template_runtime::VERSION
+        &guild_network_runtime::VERSION
     }
 }
 

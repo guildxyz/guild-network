@@ -7,8 +7,8 @@
 
 use std::sync::Arc;
 
+use guild_network_runtime::{opaque::Block, AccountId, Balance, Index};
 use jsonrpsee::RpcModule;
-use node_template_runtime::{opaque::Block, AccountId, Balance, Index};
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
