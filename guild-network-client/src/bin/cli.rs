@@ -1,31 +1,21 @@
 use futures::future::try_join_all;
 use futures::StreamExt;
-use log::{error, info, warn};
-use oracle::requirements::Requirement;
-use sp_core::crypto::Pair as TraitPair;
-use sp_core::H256 as TxHash;
-use sp_keyring::sr25519::sr25519::Pair as Keypair;
+use guild_network_client::{
+    api, AccountId, Api, BlockSubscription, Keypair, Signer, TransactionProgress,
+};
+use guild_network_common::requirements::Requirement;
 use sp_keyring::AccountKeyring;
-use subxt::ext::sp_runtime::{generic::Header, traits::BlakeTwo256, MultiAddress};
-use subxt::rpc::Subscription;
-use subxt::tx::{PairSigner, TxProgress, TxStatus};
-use subxt::{OnlineClient, PolkadotConfig};
+use subxt::ext::sp_core::crypto::Pair as TraitPair;
+use subxt::ext::sp_core::H256 as TxHash;
+use subxt::ext::sp_runtime::MultiAddress;
+use subxt::tx::TxStatus;
 
 use std::sync::Arc;
 
 const URL: &str = "ws://127.0.0.1:9944";
 
-type Api = OnlineClient<PolkadotConfig>;
-type BlockSubscription = Subscription<Header<u32, BlakeTwo256>>;
-type Signer = PairSigner<PolkadotConfig, Keypair>;
-type TransactionProgress = TxProgress<PolkadotConfig, Api>;
-
-#[subxt::subxt(runtime_metadata_path = "./artifacts/metadata.scale")]
-pub mod node {}
-
 #[tokio::main]
 async fn main() {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
     let api = Api::from_url(URL)
         .await
         .expect("failed to initialize client");
@@ -112,7 +102,7 @@ async fn main() {
     // wait for next block
     while block_number >= blocks.next().await.unwrap().unwrap().number {}
 
-    let registered_operators = node::storage().chainlink().operators();
+    let registered_operators = api::storage().chainlink().operators();
     let on_chain_operators = api
         .storage()
         .fetch(&registered_operators, None)
@@ -125,17 +115,17 @@ async fn main() {
 }
 
 async fn register_operator(api: Api, signer: Arc<Signer>) -> Result<TxHash, subxt::Error> {
-    let tx = node::tx().chainlink().register_operator();
+    let tx = api::tx().chainlink().register_operator();
     api.tx().sign_and_submit_default(&tx, signer.as_ref()).await
 }
 
 async fn fund_account(
     api: Api,
     from: Arc<Signer>,
-    to: &sp_core::crypto::AccountId32,
+    to: &AccountId,
     amount: u128,
 ) -> Result<TransactionProgress, subxt::Error> {
-    let tx = node::tx()
+    let tx = api::tx()
         .balances()
         .transfer(MultiAddress::Id(to.clone()), amount);
     api.tx()
