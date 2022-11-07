@@ -12,15 +12,16 @@ benchmarks! {
         let r in 0..100;
 
         let caller: T::AccountId = whitelisted_caller();
-        let guild_id = [0u8; 32];
+        let guild_name = [0u8; 32];
         let guild_metadata = vec![155u8; 255];
         let mut roles = vec![];
         for i in 0 .. r {
             let role = ([i as u8; 32], vec![123u8; 500]);
             roles.push(role);
         }
-    }: _(RawOrigin::Signed(caller), guild_id, guild_metadata, roles)
+    }: _(RawOrigin::Signed(caller), guild_name, guild_metadata, roles)
     verify {
+        let guild_1_id = <Guild>::guild_id(guild_name).unwrap();
         assert!(Guild::<T>::guild(guild_id).is_some());
     }
 
@@ -28,7 +29,7 @@ benchmarks! {
         let caller: T::AccountId = whitelisted_caller();
         let operator: T::AccountId = whitelisted_caller();
 
-        let guild_id = [0u8; 32];
+        let guild_name = [0u8; 32];
         let guild_metadata = vec![155u8; 255];
         let mut roles = vec![];
         for i in 0..20 {
@@ -38,8 +39,8 @@ benchmarks! {
 
         T::Currency::make_free_balance_be(&caller, T::Currency::minimum_balance() + 2_000_000_000u32.into());
         Chainlink::<T>::register_operator(RawOrigin::Signed(operator).into())?;
-        Guild::<T>::create_guild(RawOrigin::Signed(caller.clone()).into(), guild_id, guild_metadata, roles)?;
-    }: _(RawOrigin::Signed(caller), guild_id, [10u8; 32], vec![0u8; 500], vec![0u8; 750])
+        Guild::<T>::create_guild(RawOrigin::Signed(caller.clone()).into(), guild_name, guild_metadata, roles)?;
+    }: _(RawOrigin::Signed(caller), guild_name, [10u8; 32], vec![0u8; 500], vec![0u8; 750])
     verify {
         assert!(Guild::<T>::join_request(0).is_some());
     }
