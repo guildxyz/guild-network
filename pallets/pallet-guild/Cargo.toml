@@ -24,13 +24,7 @@ frame-system = {default-features = false, version = "4.0.0-dev", git = "https://
 pallet-chainlink = {version = "3.0.0-alpha", default-features = false, path = "../pallet-chainlink"}
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
 sp-std = {default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25"}
-
-[dependencies.uuid]
-default-features = false
-features = [
-  "js", # for webassembly
-]
-version = "1.2.1"
+uuid = {default-features = false, version = "1.2.1", features = ["js"]}
 
 [dev-dependencies]
 pallet-balances = {version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25"}
