@@ -3,6 +3,7 @@ members = [
     "guild-network-client",
     "guild-network-gate",
     "guild-network-node",
+    "guild-network-oracle",
     "guild-network-pallets/pallet-chainlink",
     "guild-network-pallets/pallet-guild",
     "guild-network-pallets/pallet-test-caller",
