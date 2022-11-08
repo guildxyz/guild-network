@@ -1,6 +1,6 @@
 use futures::StreamExt;
 use guild_network_client::{
-    api::chainlink::events::OracleRequest, ClientConfig, Api, FilteredEvents, Signer, TxSignerTrait,
+    api::chainlink::events::OracleRequest, Api, ClientConfig, FilteredEvents, Signer, TxSignerTrait,
 };
 use log::{error, info, trace};
 use sp_keyring::AccountKeyring;

@@ -4,7 +4,9 @@ use subxt::{
     events::{EventSubscription, FilterEvents},
     ext::sp_runtime::{generic::Header, traits::BlakeTwo256, AccountId32},
     rpc::Subscription,
-    tx::{BaseExtrinsicParams, PairSigner, PlainTip, TxProgress, TxStatus as SubTxStatus, TxInBlock},
+    tx::{
+        BaseExtrinsicParams, PairSigner, PlainTip, TxInBlock, TxProgress, TxStatus as SubTxStatus,
+    },
     OnlineClient,
 };
 
@@ -43,11 +45,27 @@ impl TxStatus {
     pub fn reached(self, status: &TransactionStatus) -> bool {
         let mut reached = false;
         match status {
-            TransactionStatus::Future => {},
-            TransactionStatus::Ready => if self == Self::Ready { reached = true },
-            TransactionStatus::Broadcast(_) => if self <= Self::Broadcast { reached = true },
-            TransactionStatus::InBlock(_) => if self <= Self::InBlock { reached = true },
-            TransactionStatus::Finalized(_) => if self <= Self::Finalized { reached = true },
+            TransactionStatus::Future => {}
+            TransactionStatus::Ready => {
+                if self == Self::Ready {
+                    reached = true
+                }
+            }
+            TransactionStatus::Broadcast(_) => {
+                if self <= Self::Broadcast {
+                    reached = true
+                }
+            }
+            TransactionStatus::InBlock(_) => {
+                if self <= Self::InBlock {
+                    reached = true
+                }
+            }
+            TransactionStatus::Finalized(_) => {
+                if self <= Self::Finalized {
+                    reached = true
+                }
+            }
             _ => reached = true, // these arms represent failed transactions which won't advance
         }
         reached
@@ -74,7 +92,7 @@ pub struct Role {
 
 #[cfg(test)]
 mod test {
-    use super::{TxStatus, TransactionStatus};
+    use super::{TransactionStatus, TxStatus};
     use subxt::ext::sp_core::H256;
 
     #[test]
