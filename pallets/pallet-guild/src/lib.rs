@@ -237,8 +237,8 @@ pub mod pallet {
             // NOTE request has already been through a filter in `join_request`, i.e.
             // at this point it is safe to assume that the given role id exists within
             // an existing guild
-            let guild_id = Self::guild_id(&request.guild_name).unwrap();
-            let role_id = Self::role_id(guild_id, &request.role_name).unwrap();
+            let guild_id = Self::guild_id(request.guild_name).unwrap();
+            let role_id = Self::role_id(guild_id, request.role_name).unwrap();
             if Members::<T>::contains_key(role_id, &request.requester) {
                 Self::deposit_event(Event::SignerAlreadyJoined(
                     request.requester,

@@ -1,0 +1,32 @@
+diff --cc pallets/pallet-guild/Cargo.toml
+index c97731d,750e615..0000000
+--- a/pallets/pallet-guild/Cargo.toml
++++ b/pallets/pallet-guild/Cargo.toml
+diff --git a/pallets/pallet-guild/src/benchmarking.rs b/pallets/pallet-guild/src/benchmarking.rs
+index 214e0e6..9c5cf78 100644
+--- a/pallets/pallet-guild/src/benchmarking.rs
++++ b/pallets/pallet-guild/src/benchmarking.rs
+@@ -21,7 +21,7 @@ benchmarks! {
+         }
+     }: _(RawOrigin::Signed(caller), guild_name, guild_metadata, roles)
+     verify {
+-        let guild_id = <Guild>::guild_id(guild_name).unwrap();
++        let guild_id = Guild::<T>::guild_id(guild_name).unwrap();
+         assert!(Guild::<T>::guild(guild_id).is_some());
+     }
+
+diff --git a/pallets/pallet-guild/src/lib.rs b/pallets/pallet-guild/src/lib.rs
+index 8e48a41..e500030 100644
+--- a/pallets/pallet-guild/src/lib.rs
++++ b/pallets/pallet-guild/src/lib.rs
+@@ -237,8 +237,8 @@ pub mod pallet {
+             // NOTE request has already been through a filter in `join_request`, i.e.
+             // at this point it is safe to assume that the given role id exists within
+             // an existing guild
+-            let guild_id = Self::guild_id(&request.guild_name).unwrap();
+-            let role_id = Self::role_id(guild_id, &request.role_name).unwrap();
++            let guild_id = Self::guild_id(request.guild_name).unwrap();
++            let role_id = Self::role_id(guild_id, request.role_name).unwrap();
+             if Members::<T>::contains_key(role_id, &request.requester) {
+                 Self::deposit_event(Event::SignerAlreadyJoined(
+                     request.requester,
