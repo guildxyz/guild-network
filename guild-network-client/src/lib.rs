@@ -1,12 +1,9 @@
 use guild_network_gate::requirements::Requirement;
 use subxt::{
-    config::{SubstrateConfig, WithExtrinsicParams},
     events::{EventSubscription, FilterEvents},
     ext::sp_runtime::{generic::Header, traits::BlakeTwo256, AccountId32},
     rpc::Subscription,
-    tx::{
-        BaseExtrinsicParams, PairSigner, PlainTip, TxInBlock, TxProgress, TxStatus as SubTxStatus,
-    },
+    tx::{PairSigner, TxProgress, TxStatus as SubTxStatus},
     OnlineClient,
 };
 
