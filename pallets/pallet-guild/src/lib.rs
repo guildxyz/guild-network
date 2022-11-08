@@ -21,20 +21,17 @@ pub mod pallet {
     };
     use frame_system::pallet_prelude::*;
     use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig, RequestIdentifier};
-    use sp_std::borrow::ToOwned;
     use sp_std::vec::Vec as SpVec;
 
     type BalanceOf<T> = <<T as pallet_chainlink::Config>::Currency as Currency<
         <T as frame_system::Config>::AccountId,
     >>::Balance;
     type MapId = [u8; 32];
-    type GuildName = [u8; 32];
-    type GuildUUID = uuid::Bytes;
-    type RoleUUID = uuid::Bytes;
+    type GuildName = MapId;
 
     #[pallet::storage]
     #[pallet::getter(fn nonce)]
-    pub type Nonce<T: Config> = StorageValue<_, i32, ValueQuery>;
+    pub type Nonce<T: Config> = StorageValue<_, u64, ValueQuery>;
 
     #[derive(Encode, Decode, Clone, TypeInfo)]
     pub struct Guild<AccountId> {
@@ -57,31 +54,31 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn guild_id)]
     pub type GuildIdMap<T: Config> =
-        StorageMap<_, Blake2_128Concat, GuildName, GuildUUID, OptionQuery>;
+        StorageMap<_, Blake2_128Concat, GuildName, T::Hash, OptionQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn role_id)]
     pub type RoleIdMap<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
-        GuildUUID,
+        T::Hash, // Guild id
         Blake2_128Concat,
-        MapId,
-        RoleUUID,
+        MapId,   // Role name
+        T::Hash, // Role id
         OptionQuery,
     >;
 
     #[pallet::storage]
     #[pallet::getter(fn guild)]
     pub type Guilds<T: Config> =
-        StorageMap<_, Blake2_128Concat, GuildUUID, Guild<T::AccountId>, OptionQuery>;
+        StorageMap<_, Blake2_128Concat, T::Hash, Guild<T::AccountId>, OptionQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn role)]
     pub type Roles<T: Config> = StorageMap<
         _,
         Blake2_128Concat,
-        RoleUUID,
+        T::Hash,
         SpVec<u8>, // role metadata
         OptionQuery,
     >;
@@ -91,7 +88,7 @@ pub mod pallet {
     pub type Members<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
-        RoleUUID,
+        T::Hash,
         Blake2_128Concat,
         T::AccountId,
         bool,
@@ -146,14 +143,10 @@ pub mod pallet {
             nonce.encode()
         }
 
-        fn get_random_uuid() -> uuid::Bytes {
+        fn get_random_uuid() -> T::Hash {
             let nonce = Self::get_and_increment_nonce();
             let (random_value, _) = T::MyRandomness::random(&nonce);
-            let seed = random_value.as_ref().try_into().unwrap();
-            uuid::Builder::from_random_bytes(seed)
-                .into_uuid()
-                .as_bytes()
-                .to_owned()
+            random_value
         }
     }
 
@@ -273,11 +266,13 @@ pub mod pallet {
         ) -> DispatchResult {
             let requester = ensure_signed(origin.clone())?;
 
-            let guild_id = Self::guild_id(guild_name).unwrap();
-            let role_id = Self::role_id(guild_id, role_name).unwrap();
-
             ensure!(
-                <Roles<T>>::contains_key(role_id),
+                <GuildIdMap<T>>::contains_key(guild_name),
+                Error::<T>::InvalidGuildRole
+            );
+            let guild_id = Self::guild_id(guild_name).unwrap();
+            ensure!(
+                <RoleIdMap<T>>::contains_key(guild_id, role_name),
                 Error::<T>::InvalidGuildRole
             );
 
