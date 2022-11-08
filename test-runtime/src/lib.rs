@@ -13,13 +13,17 @@ macro_rules! test_runtime {
                 Block = Block,
                 NodeBlock = Block,
                 UncheckedExtrinsic = UncheckedExtrinsic,
-            {
+                {
                 Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
                 Chainlink: pallet_chainlink::{Pallet, Call, Storage, Event<T>},
                 $name: $pallet::{Pallet, Call, Storage, Event<T>},
                 System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+                RandomnessCollectiveFlip: pallet_randomness_collective_flip,
             }
+
         );
+
+        impl pallet_randomness_collective_flip::Config for TestRuntime {}
 
         pub type AccountId = u128;
         pub type Balance = u64;
@@ -62,6 +66,7 @@ macro_rules! test_runtime {
             type MaxConsumers = frame_support::traits::ConstU32<16>;
         }
 
+
         impl pallet_balances::Config for TestRuntime {
             type MaxLocks = ();
             type Balance = Balance;
@@ -83,9 +88,11 @@ macro_rules! test_runtime {
             type WeightInfo = ();
         }
 
+
         impl $pallet::Config for TestRuntime {
             type WeightInfo = ();
             type Event = Event;
+            type MyRandomness = RandomnessCollectiveFlip;
         }
 
         pub const GENESIS_BALANCE: u64 = 1_000_000_000;

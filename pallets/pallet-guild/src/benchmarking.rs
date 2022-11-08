@@ -21,7 +21,7 @@ benchmarks! {
         }
     }: _(RawOrigin::Signed(caller), guild_name, guild_metadata, roles)
     verify {
-        let guild_1_id = <Guild>::guild_id(guild_name).unwrap();
+        let guild_id = <Guild>::guild_id(guild_name).unwrap();
         assert!(Guild::<T>::guild(guild_id).is_some());
     }
 

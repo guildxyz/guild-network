@@ -28,6 +28,7 @@ uuid = {default-features = false, version = "1.2.1", features = ["js"]}
 
 [dev-dependencies]
 pallet-balances = {version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25"}
+pallet-randomness-collective-flip = {version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25"}
 sp-core = {default-features = false, version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25"}
 sp-io = {default-features = false, version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25"}
 sp-runtime = {default-features = false, version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25"}
