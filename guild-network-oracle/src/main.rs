@@ -1,7 +1,7 @@
 use futures::StreamExt;
-use guild_network_client::{
-    api::chainlink::events::OracleRequest, Api, ClientConfig, FilteredEvents, Signer, TxSignerTrait,
-};
+use guild_network_client::api::chainlink::events::OracleRequest;
+use guild_network_client::transactions::{oracle_callback, send_tx_in_block};
+use guild_network_client::{Api, FilteredEvents, Signer};
 use log::{error, info, trace};
 use sp_keyring::AccountKeyring;
 use structopt::StructOpt;
@@ -71,14 +71,11 @@ async fn main() -> ! {
     }
 }
 
-async fn try_main<T>(
+async fn try_main(
     api: Api,
-    signer: Arc<T>,
+    signer: Arc<Signer>,
     events: &mut FilteredEvents<'_, (OracleRequest,)>,
-) -> Result<(), anyhow::Error>
-where
-    T: TxSignerTrait<ClientConfig> + Send + Sync + 'static,
-{
+) -> Result<(), anyhow::Error> {
     trace!("[+] Listening for events");
     if let Some(event) = events.next().await {
         match event?.event {
@@ -89,38 +86,19 @@ where
                     return Ok(());
                 }
 
-                /*
-                            let mut guild_id_bytes = [0u8; 8];
-                            guild_id_bytes.copy_from_slice(&data[0..8]);
-                            let guild_id = u64::from_le_bytes(guild_id_bytes);
+                tokio::spawn(async move {
+                    // TODO storage query
+                    // TODO verify user identities
+                    // TODO retrieve balances and check requirements
+                    let requirement_check = true;
+                    let mut result = request_id.to_le_bytes().to_vec();
+                    result.push(requirement_check as u8);
 
-                            tokio::spawn(async move {
-                                let storage_query = subxt::dynamic::storage(
-                                    "Guild",
-                                    "Guilds",
-                                    vec![Value::u128(guild_id as u128)],
-                                );
-                                let minimum_balance = api
-                                    .storage()
-                                    .fetch_or_default(&storage_query, None)
-                                    .await?
-                                    .as_u128()
-                                    .unwrap_or_default()
-                                    .to_string();
-                                let tx = process_request(
-                                    request_id,
-                                    U256::from_dec_str(&minimum_balance)?,
-                                    &data[8..],
-                                )
-                                .await?;
-                                let hash = api
-                                    .tx()
-                                    .sign_and_submit_default(&tx, signer.as_ref())
-                                    .await?;
-                                info!("oracle answer submitted, hash: {}", hash);
-                                Ok::<(), anyhow::Error>(())
-                            });
-                */
+                    let tx = oracle_callback(request_id, result);
+                    let hash = send_tx_in_block(api, tx, signer).await?;
+                    info!("oracle answer submitted, hash: {}", hash);
+                    Ok::<(), anyhow::Error>(())
+                });
             }
         }
     }

@@ -1,4 +1,4 @@
-use crate::{api, AccountId, Api, Guild, Signer, TxStatus};
+use crate::{api, AccountId, Api, Guild, Signer, TxHash, TxStatus};
 use futures::StreamExt;
 use guild_network_gate::identities::{Identity, IdentityAuth};
 use subxt::ext::sp_runtime::MultiAddress;
@@ -50,7 +50,7 @@ pub async fn send_tx(
     tx: impl TxPayload,
     signer: Arc<Signer>,
     status: TxStatus,
-) -> Result<(), subxt::Error> {
+) -> Result<Option<TxHash>, subxt::Error> {
     let mut progress = api
         .tx()
         .sign_and_submit_then_watch_default(&tx, signer.as_ref())
@@ -58,12 +58,52 @@ pub async fn send_tx(
 
     while let Some(try_event) = progress.next().await {
         let tx_progress_status = try_event?;
-        let reached = status.reached(&tx_progress_status);
+        let (reached, tx_hash) = status.reached(&tx_progress_status);
         if reached {
-            log::info!("transaction status {:?} reached", tx_progress_status);
-            break;
+            log::info!(
+                "transaction status {:?} reached, hash: {:?}",
+                tx_progress_status,
+                tx_hash
+            );
+            return Ok(tx_hash);
         }
     }
 
-    Ok(())
+    Ok(None)
+}
+
+pub async fn send_tx_ready(
+    api: Api,
+    tx: impl TxPayload,
+    signer: Arc<Signer>,
+) -> Result<(), subxt::Error> {
+    send_tx(api, tx, signer, TxStatus::Ready).await.map(|_| ())
+}
+
+pub async fn send_tx_broadcast(
+    api: Api,
+    tx: impl TxPayload,
+    signer: Arc<Signer>,
+) -> Result<(), subxt::Error> {
+    send_tx(api, tx, signer, TxStatus::Broadcast)
+        .await
+        .map(|_| ())
+}
+
+pub async fn send_tx_in_block(
+    api: Api,
+    tx: impl TxPayload,
+    signer: Arc<Signer>,
+) -> Result<TxHash, subxt::Error> {
+    let hash = send_tx(api, tx, signer, TxStatus::InBlock).await?;
+    hash.ok_or_else(|| subxt::Error::Other("transaction hash is None".into()))
+}
+
+pub async fn send_tx_finalized(
+    api: Api,
+    tx: impl TxPayload,
+    signer: Arc<Signer>,
+) -> Result<TxHash, subxt::Error> {
+    let hash = send_tx(api, tx, signer, TxStatus::Finalized).await?;
+    hash.ok_or_else(|| subxt::Error::Other("transaction hash is None".into()))
 }

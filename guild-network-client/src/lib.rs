@@ -9,11 +9,13 @@ use subxt::{
 
 // re-exports
 pub use sp_keyring::sr25519::sr25519::Pair as Keypair;
+pub use subxt::ext::sp_core::H256 as TxHash;
 pub use subxt::tx::Signer as TxSignerTrait;
 pub use subxt::PolkadotConfig as ClientConfig;
 
 #[subxt::subxt(runtime_metadata_path = "./artifacts/metadata.scale")]
 pub mod api {}
+pub mod queries;
 pub mod transactions;
 
 pub type AccountId = AccountId32;
@@ -39,8 +41,9 @@ pub enum TxStatus {
 }
 
 impl TxStatus {
-    pub fn reached(self, status: &TransactionStatus) -> bool {
+    pub fn reached(self, status: &TransactionStatus) -> (bool, Option<TxHash>) {
         let mut reached = false;
+        let mut tx_hash = None;
         match status {
             TransactionStatus::Future => {}
             TransactionStatus::Ready => {
@@ -53,19 +56,21 @@ impl TxStatus {
                     reached = true
                 }
             }
-            TransactionStatus::InBlock(_) => {
+            TransactionStatus::InBlock(in_block) => {
                 if self <= Self::InBlock {
-                    reached = true
+                    reached = true;
+                    tx_hash = Some(in_block.block_hash())
                 }
             }
-            TransactionStatus::Finalized(_) => {
+            TransactionStatus::Finalized(in_block) => {
                 if self <= Self::Finalized {
-                    reached = true
+                    reached = true;
+                    tx_hash = Some(in_block.block_hash());
                 }
             }
             _ => reached = true, // these arms represent failed transactions which won't advance
         }
-        reached
+        (reached, tx_hash)
     }
 }
 
@@ -89,31 +94,42 @@ pub struct Role {
 
 #[cfg(test)]
 mod test {
-    use super::{TransactionStatus, TxStatus};
-    use subxt::ext::sp_core::H256;
+    use super::{TransactionStatus, TxHash, TxStatus};
 
     #[test]
     fn tx_status_reached() {
         let flag = TxStatus::Ready;
 
         let status = TransactionStatus::Future;
-        assert!(!flag.reached(&status));
+        let (reached, opt) = flag.reached(&status);
+        assert!(!reached);
+        assert!(opt.is_none());
         let status = TransactionStatus::Ready;
-        assert!(flag.reached(&status));
+        let (reached, opt) = flag.reached(&status);
+        assert!(reached);
+        assert!(opt.is_none());
 
         let flag = TxStatus::Broadcast;
 
-        assert!(!flag.reached(&status));
+        let (reached, opt) = flag.reached(&status);
+        assert!(!reached);
+        assert!(opt.is_none());
+
         let status = TransactionStatus::Broadcast(vec![]);
-        assert!(flag.reached(&status));
+        let (reached, opt) = flag.reached(&status);
+        assert!(reached);
+        assert!(opt.is_none());
 
         let flag = TxStatus::InBlock;
 
-        let status = TransactionStatus::Usurped(H256::default());
-        assert!(flag.reached(&status));
-        let status = TransactionStatus::Retracted(H256::default());
-        assert!(flag.reached(&status));
-        let status = TransactionStatus::FinalityTimeout(H256::default());
-        assert!(flag.reached(&status));
+        let status = TransactionStatus::Usurped(TxHash::default());
+        let (reached, _) = flag.reached(&status);
+        assert!(reached);
+        let status = TransactionStatus::Retracted(TxHash::default());
+        let (reached, _) = flag.reached(&status);
+        assert!(reached);
+        let status = TransactionStatus::FinalityTimeout(TxHash::default());
+        let (reached, _) = flag.reached(&status);
+        assert!(reached);
     }
 }

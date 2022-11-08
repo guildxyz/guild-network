@@ -1,9 +1,7 @@
 use futures::future::try_join_all;
-use futures::StreamExt;
+use guild_network_client::queries::*;
 use guild_network_client::transactions::*;
-use guild_network_client::{
-    api, AccountId, Api, BlockSubscription, Keypair, Signer, TransactionProgress, TxStatus,
-};
+use guild_network_client::{Api, Keypair, Signer, TxStatus};
 use sp_keyring::AccountKeyring;
 use subxt::ext::sp_core::crypto::Pair as TraitPair;
 
@@ -33,13 +31,13 @@ async fn main() {
 
     for operator in operators.iter().skip(1) {
         // skip first
-        let tx = fund_account(operator.account_id(), amount).expect("fund tx failure");
+        let tx = fund_account(operator.account_id(), amount);
         send_tx(api.clone(), tx, Arc::clone(&faucet), TxStatus::Ready)
             .await
             .unwrap();
     }
     // wait for the skipped one to be included in a block
-    let tx = fund_account(operators[0].account_id(), amount).expect("fund tx failure");
+    let tx = fund_account(operators[0].account_id(), amount);
     send_tx(api.clone(), tx, Arc::clone(&faucet), TxStatus::InBlock)
         .await
         .unwrap();
@@ -49,7 +47,7 @@ async fn main() {
     let register_operator_futures = operators
         .iter()
         .map(|operator| {
-            let tx = register_operator().expect("register operator failure");
+            let tx = register_operator();
             send_tx(api.clone(), tx, Arc::clone(&operator), TxStatus::InBlock)
         })
         .collect::<Vec<_>>();
@@ -60,15 +58,9 @@ async fn main() {
 
     println!("Operator registrations in block!");
 
-    let registered_operators = api::storage().chainlink().operators();
-    let on_chain_operators = api
-        .storage()
-        .fetch(&registered_operators, None)
-        .await
-        .unwrap()
-        .unwrap();
+    let registered_operators = registered_operators(api).await.unwrap();
 
-    for operator in &on_chain_operators {
+    for operator in &registered_operators {
         println!("{}", operator);
     }
 }
