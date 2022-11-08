@@ -1,6 +1,6 @@
 use crate::{self as pallet_guild};
 
-use frame_support::traits::OnFinalize;
+use frame_support::traits::{OnFinalize, OnInitialize};
 use sp_runtime::DispatchError;
 
 use test_runtime::test_runtime;
@@ -20,6 +20,18 @@ pub fn last_event() -> Event {
         .unwrap()
 }
 
+fn init_chain() -> u64 {
+    // System::set_block_number(1);
+    // <RandomnessCollectiveFlip as OnFinalize<u64>>::on_finalize(1);
+    let current_block_num = 2;
+    for i in 0..current_block_num {
+        System::set_block_number(i);
+        <RandomnessCollectiveFlip as OnInitialize<u64>>::on_initialize(i);
+        <RandomnessCollectiveFlip as OnFinalize<u64>>::on_finalize(i);
+    }
+    current_block_num
+}
+
 fn error_msg<'a>(error: DispatchError) -> &'a str {
     match error {
         DispatchError::Module(module_error) => module_error.message.unwrap(),
@@ -31,7 +43,7 @@ fn error_msg<'a>(error: DispatchError) -> &'a str {
 #[test]
 fn create_guild() {
     new_test_runtime().execute_with(|| {
-        System::set_block_number(1);
+        init_chain();
         let signer = 4;
         let guild_name = [0u8; 32];
         let metadata = vec![1, 2, 3, 4, 5];
@@ -81,7 +93,7 @@ fn create_guild() {
 #[test]
 fn callback_can_only_be_called_by_root() {
     new_test_runtime().execute_with(|| {
-        System::set_block_number(1);
+        init_chain();
         let error = <Guild>::callback(Origin::signed(1), false, vec![])
             .err()
             .unwrap();
@@ -128,7 +140,7 @@ fn callback_can_only_be_called_by_root() {
 #[test]
 fn invalid_join_guild_request() {
     new_test_runtime().execute_with(|| {
-        System::set_block_number(1);
+        init_chain();
         let guild_id = [0u8; 32];
         let role_id = [1u8; 32];
 
@@ -151,7 +163,7 @@ fn invalid_join_guild_request() {
 #[test]
 fn valid_join_guild_request() {
     new_test_runtime().execute_with(|| {
-        System::set_block_number(1);
+        init_chain();
         let guild_id = [0u8; 32];
         let role_id = [1u8; 32];
 
@@ -193,7 +205,7 @@ fn valid_join_guild_request() {
 #[test]
 fn joining_a_guild() {
     new_test_runtime().execute_with(|| {
-        System::set_block_number(1);
+        init_chain();
         let guild_name = [0u8; 32];
         let role_1_name = [1u8; 32];
         let role_2_name = [2u8; 32];
@@ -302,7 +314,7 @@ fn joining_a_guild() {
 #[test]
 fn joining_a_guild_twice() {
     new_test_runtime().execute_with(|| {
-        System::set_block_number(1);
+        init_chain();
         let guild_name = [0u8; 32];
         let role_name = [1u8; 32];
         let user_data = vec![1, 2, 3];
@@ -351,7 +363,7 @@ fn joining_a_guild_twice() {
 #[test]
 fn joining_multiple_guilds() {
     new_test_runtime().execute_with(|| {
-        System::set_block_number(1);
+        init_chain();
         let guild_1_name = [1u8; 32];
         let guild_2_name = [2u8; 32];
         let role_1_name = [1u8; 32];
@@ -426,9 +438,9 @@ fn joining_multiple_guilds() {
         let guild_1_id = <Guild>::guild_id(guild_1_name).unwrap();
         let guild_2_id = <Guild>::guild_id(guild_2_name).unwrap();
         let role_1_id = <Guild>::role_id(guild_1_id, role_1_name).unwrap();
-        let role_2_id = <Guild>::role_id(guild_2_id, role_2_name).unwrap();
+        let role_2_id = <Guild>::role_id(guild_1_id, role_2_name).unwrap();
         let role_3_id = <Guild>::role_id(guild_2_id, role_3_name).unwrap();
-        let role_4_id = <Guild>::role_id(guild_1_id, role_4_name).unwrap();
+        let role_4_id = <Guild>::role_id(guild_2_id, role_4_name).unwrap();
 
         // 0th request passes
         assert!(<Guild>::member(role_2_id, signer_1).is_some());
@@ -447,6 +459,7 @@ fn joining_multiple_guilds() {
 #[test]
 fn kill_request() {
     new_test_runtime().execute_with(|| {
+        let current_block_num = init_chain();
         let guild_name = [0u8; 32];
         let role_name = [1u8; 32];
         let signer = 1;
@@ -472,7 +485,7 @@ fn kill_request() {
         assert!(<Guild>::join_request(0).is_some());
 
         <Chainlink as OnFinalize<u64>>::on_finalize(
-            <TestRuntime as pallet_chainlink::Config>::ValidityPeriod::get() + 1,
+            <TestRuntime as pallet_chainlink::Config>::ValidityPeriod::get() + current_block_num,
         );
 
         assert!(<Guild>::join_request(0).is_none());
