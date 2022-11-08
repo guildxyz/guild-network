@@ -12,7 +12,7 @@ on:
     #  - 'main'
     tags:
       - v*
-#  pull_request:
+  pull_request:
 
 env:
   DIVE_VERSION: v0.10
