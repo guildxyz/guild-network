@@ -1,5 +1,5 @@
 use futures::StreamExt;
-use guild_network_client::api::chainlink::events::OracleRequest;
+use guild_network_client::runtime::chainlink::events::OracleRequest;
 use guild_network_client::transactions::{oracle_callback, send_tx_in_block};
 use guild_network_client::{Api, FilteredEvents, Signer};
 use log::{error, info, trace};

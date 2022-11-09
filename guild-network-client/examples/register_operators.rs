@@ -48,7 +48,7 @@ async fn main() {
         .iter()
         .map(|operator| {
             let tx = register_operator();
-            send_tx(api.clone(), tx, Arc::clone(&operator), TxStatus::InBlock)
+            send_tx(api.clone(), tx, Arc::clone(operator), TxStatus::InBlock)
         })
         .collect::<Vec<_>>();
 

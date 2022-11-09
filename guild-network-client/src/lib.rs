@@ -14,7 +14,7 @@ pub use subxt::tx::Signer as TxSignerTrait;
 pub use subxt::PolkadotConfig as ClientConfig;
 
 #[subxt::subxt(runtime_metadata_path = "./artifacts/metadata.scale")]
-pub mod api {}
+pub mod runtime {}
 pub mod queries;
 pub mod transactions;
 
@@ -77,7 +77,7 @@ impl TxStatus {
 pub fn pad_to_32_bytes(name: &[u8]) -> Result<[u8; 32], anyhow::Error> {
     let mut output = [0u8; 32];
     anyhow::ensure!(name.len() <= output.len(), "name too long");
-    output.copy_from_slice(name);
+    output[..name.len()].copy_from_slice(name);
     Ok(output)
 }
 
@@ -95,6 +95,7 @@ pub struct Role {
 #[cfg(test)]
 mod test {
     use super::{TransactionStatus, TxHash, TxStatus};
+    use super::pad_to_32_bytes;
 
     #[test]
     fn tx_status_reached() {
@@ -131,5 +132,20 @@ mod test {
         let status = TransactionStatus::FinalityTimeout(TxHash::default());
         let (reached, _) = flag.reached(&status);
         assert!(reached);
+    }
+
+    #[test]
+    fn pad_bytes() {
+        let bytes = b"hello";
+        let padded = pad_to_32_bytes(bytes).unwrap();
+        assert_eq!(&padded[..5], bytes);
+        assert_eq!(&padded[5..], &[0u8; 27]);
+
+        let bytes = &[123; 32];
+        let padded = pad_to_32_bytes(bytes).unwrap();
+        assert_eq!(&padded, bytes);
+
+        let bytes = &[12; 33];
+        assert!(pad_to_32_bytes(bytes).is_err());
     }
 }
