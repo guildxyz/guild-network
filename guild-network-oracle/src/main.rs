@@ -91,8 +91,7 @@ async fn try_main(
                     // TODO verify user identities
                     // TODO retrieve balances and check requirements
                     let requirement_check = true;
-                    let mut result = request_id.to_le_bytes().to_vec();
-                    result.push(requirement_check as u8);
+                    let result = vec![requirement_check as u8];
 
                     let tx = oracle_callback(request_id, result);
                     let hash = send_tx_in_block(api, tx, signer).await?;

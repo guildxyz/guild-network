@@ -1,6 +1,6 @@
 use guild_network_client::queries::*;
 use guild_network_client::transactions::*;
-use guild_network_client::{Api, Signer, Role, Guild, pad_to_32_bytes};
+use guild_network_client::{runtime, Api, Signer, Role, Guild, pad_to_32_bytes};
 use guild_network_gate::requirements::Requirement;
 use sp_keyring::AccountKeyring;
 
@@ -41,8 +41,19 @@ async fn main() {
     let hash = send_tx_in_block(api.clone(), tx, Arc::clone(&signer)).await.unwrap();
     println!("Join request submitted: {}", hash);
 
+    join_requests(api.clone()).await.unwrap();
+    let tx = register_operator();
+    let hash = send_tx_in_block(api.clone(), tx, Arc::clone(&signer)).await.unwrap();
+    println!("Tried to register again the same operator");
+
+    oracle_requests(api.clone()).await.unwrap();
+
+    let tx = oracle_callback(0, vec![1]);
+    let hash = send_tx_in_block(api.clone(), tx, Arc::clone(&signer)).await.unwrap();
+    println!("Oracle callback sent: {}", hash);
+
     //while !is_member(api.clone(), guild_name, role_name, signer.account_id()).await.is_ok() {}
     //println!("Guild joined");
-    let members = members(api, None, None).await.unwrap();
+    let members = members(api).await.unwrap();
     println!("{:?}", members);
 }
