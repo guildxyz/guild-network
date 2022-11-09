@@ -13,7 +13,7 @@ macro_rules! test_runtime {
                 Block = Block,
                 NodeBlock = Block,
                 UncheckedExtrinsic = UncheckedExtrinsic,
-                {
+            {
                 Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
                 Chainlink: pallet_chainlink::{Pallet, Call, Storage, Event<T>},
                 $name: $pallet::{Pallet, Call, Storage, Event<T>},
@@ -66,7 +66,6 @@ macro_rules! test_runtime {
             type MaxConsumers = frame_support::traits::ConstU32<16>;
         }
 
-
         impl pallet_balances::Config for TestRuntime {
             type MaxLocks = ();
             type Balance = Balance;
@@ -87,7 +86,6 @@ macro_rules! test_runtime {
             type MinimumFee = MinimumFee;
             type WeightInfo = ();
         }
-
 
         impl $pallet::Config for TestRuntime {
             type WeightInfo = ();

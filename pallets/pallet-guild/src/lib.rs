@@ -13,7 +13,6 @@ pub mod weights;
 #[frame_support::pallet]
 pub mod pallet {
     use super::weights::WeightInfo;
-    use frame_support::inherent::Vec;
     use frame_support::traits::Randomness;
     use frame_support::{
         dispatch::DispatchResult, pallet_prelude::*, sp_runtime::traits::UniqueSaturatedFrom,
@@ -137,7 +136,7 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     impl<T: Config> Pallet<T> {
-        fn get_and_increment_nonce() -> Vec<u8> {
+        fn get_and_increment_nonce() -> SpVec<u8> {
             let nonce = Nonce::<T>::get();
             Nonce::<T>::put(nonce.wrapping_add(1));
             nonce.encode()

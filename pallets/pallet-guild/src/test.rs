@@ -20,16 +20,14 @@ pub fn last_event() -> Event {
         .unwrap()
 }
 
-fn init_chain() -> u64 {
-    // System::set_block_number(1);
-    // <RandomnessCollectiveFlip as OnFinalize<u64>>::on_finalize(1);
-    let current_block_num = 2;
-    for i in 0..current_block_num {
+const STARTING_BLOCK_NUM: u64 = 2;
+
+fn init_chain() {
+    for i in 0..STARTING_BLOCK_NUM {
         System::set_block_number(i);
         <RandomnessCollectiveFlip as OnInitialize<u64>>::on_initialize(i);
         <RandomnessCollectiveFlip as OnFinalize<u64>>::on_finalize(i);
     }
-    current_block_num
 }
 
 fn error_msg<'a>(error: DispatchError) -> &'a str {
@@ -164,16 +162,21 @@ fn invalid_join_guild_request() {
 fn valid_join_guild_request() {
     new_test_runtime().execute_with(|| {
         init_chain();
-        let guild_id = [0u8; 32];
-        let role_id = [1u8; 32];
+        let guild_name = [0u8; 32];
+        let role_name = [1u8; 32];
 
         <Chainlink>::register_operator(Origin::signed(1)).unwrap();
-        <Guild>::create_guild(Origin::signed(1), guild_id, vec![], vec![(role_id, vec![])])
-            .unwrap();
+        <Guild>::create_guild(
+            Origin::signed(1),
+            guild_name,
+            vec![],
+            vec![(role_name, vec![])],
+        )
+        .unwrap();
         <Guild>::join_guild(
             Origin::signed(1),
-            guild_id,
-            role_id,
+            guild_name,
+            role_name,
             vec![1, 2, 3],
             vec![4, 5, 6],
         )
@@ -182,13 +185,13 @@ fn valid_join_guild_request() {
         let join_request = <Guild>::join_request(0).unwrap();
         assert_eq!(join_request.requester, 1);
         assert_eq!(join_request.requester_identities, vec![1, 2, 3]);
-        assert_eq!(join_request.guild_name, guild_id);
-        assert_eq!(join_request.role_name, role_id);
+        assert_eq!(join_request.guild_name, guild_name);
+        assert_eq!(join_request.role_name, role_name);
 
         <Guild>::join_guild(
             Origin::signed(2),
-            guild_id,
-            role_id,
+            guild_name,
+            role_name,
             vec![1, 2, 3],
             vec![4, 5, 6],
         )
@@ -197,8 +200,8 @@ fn valid_join_guild_request() {
         let join_request = <Guild>::join_request(1).unwrap();
         assert_eq!(join_request.requester, 2);
         assert_eq!(join_request.requester_identities, vec![1, 2, 3]);
-        assert_eq!(join_request.guild_name, guild_id);
-        assert_eq!(join_request.role_name, role_id);
+        assert_eq!(join_request.guild_name, guild_name);
+        assert_eq!(join_request.role_name, role_name);
     });
 }
 
@@ -459,7 +462,7 @@ fn joining_multiple_guilds() {
 #[test]
 fn kill_request() {
     new_test_runtime().execute_with(|| {
-        let current_block_num = init_chain();
+        init_chain();
         let guild_name = [0u8; 32];
         let role_name = [1u8; 32];
         let signer = 1;
@@ -485,7 +488,7 @@ fn kill_request() {
         assert!(<Guild>::join_request(0).is_some());
 
         <Chainlink as OnFinalize<u64>>::on_finalize(
-            <TestRuntime as pallet_chainlink::Config>::ValidityPeriod::get() + current_block_num,
+            <TestRuntime as pallet_chainlink::Config>::ValidityPeriod::get() + STARTING_BLOCK_NUM,
         );
 
         assert!(<Guild>::join_request(0).is_none());
