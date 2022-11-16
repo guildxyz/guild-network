@@ -30,8 +30,7 @@ pub async fn members(api: Api, page_size: u32) -> Result<Vec<bool>, subxt::Error
 
     let mut members_iter = api.storage().iter(members_root, page_size, None).await?;
     let mut members_vec = Vec::with_capacity(page_size as usize);
-    while let Some((key, value)) = members_iter.next().await? {
-        println!("key: {:?}\tvalue: {:?}", key, value);
+    while let Some((_key, value)) = members_iter.next().await? {
         members_vec.push(value);
     }
     Ok(members_vec)

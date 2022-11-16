@@ -73,7 +73,7 @@ pub async fn send_tx(
         if reached {
             log::info!(
                 "transaction status {:?} reached, hash: {:?}",
-                tx_progress_status,
+                status,
                 tx_hash
             );
             return Ok(tx_hash);

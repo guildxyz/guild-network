@@ -32,7 +32,7 @@ pub type FilteredEvents<'a, T> = FilterEvents<
     T,
 >;
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TxStatus {
     Ready,
     Broadcast,

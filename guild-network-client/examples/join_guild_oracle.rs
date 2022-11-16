@@ -1,6 +1,6 @@
 use guild_network_client::queries::*;
 use guild_network_client::transactions::*;
-use guild_network_client::{pad_to_32_bytes, runtime, Api, Guild, Role, Signer};
+use guild_network_client::{pad_to_32_bytes, Api, Guild, Role, Signer};
 use guild_network_gate::requirements::Requirement;
 use sp_keyring::AccountKeyring;
 
@@ -49,15 +49,12 @@ async fn main() {
 
     join_requests(api.clone(), PAGE_SIZE).await.unwrap();
 
-    println!("ORACLE REQUESTS");
-    oracle_requests(api.clone(), PAGE_SIZE).await.unwrap();
-    let tx = oracle_callback(0, vec![1]);
-    let hash = send_tx_in_block(api.clone(), tx, Arc::clone(&signer))
-        .await
-        .unwrap();
-    println!("Oracle callback sent: {}", hash);
-
-    println!("MEMBERS");
-    let members = members(api, PAGE_SIZE).await.unwrap();
-    println!("{:?}", members);
+    loop {
+        let members = members(api.clone(), PAGE_SIZE).await.unwrap();
+        if !members.is_empty() {
+            println!("MEMBERS");
+            println!("{:?}", members);
+            break;
+        }
+    }
 }
