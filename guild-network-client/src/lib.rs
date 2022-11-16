@@ -94,8 +94,8 @@ pub struct Role {
 
 #[cfg(test)]
 mod test {
-    use super::{TransactionStatus, TxHash, TxStatus};
     use super::pad_to_32_bytes;
+    use super::{TransactionStatus, TxHash, TxStatus};
 
     #[test]
     fn tx_status_reached() {

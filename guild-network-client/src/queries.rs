@@ -25,12 +25,9 @@ pub async fn is_member(
         .ok_or_else(|| subxt::Error::Other("not a member".into())) // turn Some(()) to Ok(()) and None to Err(..)
 }
 
-pub async fn members(
-    api: Api,
-) -> Result<Vec<bool>, subxt::Error> {
+pub async fn members(api: Api, page_size: u32) -> Result<Vec<bool>, subxt::Error> {
     let members_root = runtime::storage().guild().members_root();
 
-    let page_size = 10;
     let mut members_iter = api.storage().iter(members_root, page_size, None).await?;
     let mut members_vec = Vec::with_capacity(page_size as usize);
     while let Some((key, value)) = members_iter.next().await? {
@@ -40,12 +37,9 @@ pub async fn members(
     Ok(members_vec)
 }
 
-pub async fn join_requests(
-    api: Api,
-) -> Result<(), subxt::Error> {
+pub async fn join_requests(api: Api, page_size: u32) -> Result<(), subxt::Error> {
     let root = runtime::storage().guild().join_requests_root();
 
-    let page_size = 10;
     let mut iter = api.storage().iter(root, page_size, None).await?;
     while let Some((key, value)) = iter.next().await? {
         println!("key: {:?}\tvalue: {:?}", key, value);
@@ -53,12 +47,9 @@ pub async fn join_requests(
     Ok(())
 }
 
-pub async fn oracle_requests(
-    api: Api,
-) -> Result<(), subxt::Error> {
+pub async fn oracle_requests(api: Api, page_size: u32) -> Result<(), subxt::Error> {
     let root = runtime::storage().chainlink().requests_root();
 
-    let page_size = 10;
     let mut iter = api.storage().iter(root, page_size, None).await?;
     while let Some((key, value)) = iter.next().await? {
         println!("key: {:?}\tvalue: {:?}", key, value);

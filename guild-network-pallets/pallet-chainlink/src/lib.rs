@@ -302,11 +302,11 @@ pub mod pallet {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
             ensure!(
-                <Requests<T>>::contains_key(request_id),
+                Requests::<T>::contains_key(request_id),
                 Error::<T>::UnknownRequest
             );
             // Unwrap is fine here because we check its existence in the previous line
-            let request = <Requests<T>>::get(request_id).unwrap();
+            let request = Requests::<T>::get(request_id).unwrap();
             ensure!(request.operator == who, Error::<T>::WrongOperator);
 
             // NOTE: This should not be possible technically but it is here to be safe
@@ -367,8 +367,9 @@ pub mod pallet {
                 .collect::<Vec<RequestIdentifier>>();
             for request_id in &request_ids {
                 // NOTE unwrap is fine here because we collected existing keys
-                let request = Requests::<T>::take(request_id).unwrap();
+                let request = Requests::<T>::get(request_id).unwrap();
                 if n > request.block_number + T::ValidityPeriod::get() {
+                    Requests::<T>::remove(request_id);
                     let mut prepended_response = request_id.encode();
                     prepended_response.push(u8::MAX);
 
