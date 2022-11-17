@@ -389,6 +389,12 @@ fn kill_request() {
         .is_ok());
 
         <Chainlink as OnFinalize<u64>>::on_finalize(
+            <TestRuntime as pallet_chainlink::Config>::ValidityPeriod::get() - 1,
+        );
+
+        assert!(<Chainlink>::request(0).is_some());
+
+        <Chainlink as OnFinalize<u64>>::on_finalize(
             <TestRuntime as pallet_chainlink::Config>::ValidityPeriod::get() + 1,
         );
         // Request has been killed, too old
