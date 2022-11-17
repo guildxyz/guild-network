@@ -18,8 +18,12 @@ macro_rules! test_runtime {
                 Chainlink: pallet_chainlink::{Pallet, Call, Storage, Event<T>},
                 $name: $pallet::{Pallet, Call, Storage, Event<T>},
                 System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+                RandomnessCollectiveFlip: pallet_randomness_collective_flip,
             }
+
         );
+
+        impl pallet_randomness_collective_flip::Config for TestRuntime {}
 
         pub type AccountId = u128;
         pub type Balance = u64;
@@ -86,6 +90,7 @@ macro_rules! test_runtime {
         impl $pallet::Config for TestRuntime {
             type WeightInfo = ();
             type Event = Event;
+            type MyRandomness = RandomnessCollectiveFlip;
         }
 
         pub const GENESIS_BALANCE: u64 = 1_000_000_000;

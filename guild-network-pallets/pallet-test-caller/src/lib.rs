@@ -5,6 +5,7 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
+    use frame_support::traits::Randomness;
     use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
     use frame_system::{ensure_root, pallet_prelude::*};
     use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig};
@@ -13,6 +14,7 @@ pub mod pallet {
     pub trait Config: ChainlinkConfig<Callback = Call<Self>> + frame_system::Config {
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         type WeightInfo: Sized;
+        type MyRandomness: Randomness<Self::Hash, Self::BlockNumber>;
     }
 
     #[pallet::call]

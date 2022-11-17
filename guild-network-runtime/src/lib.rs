@@ -274,6 +274,7 @@ impl pallet_sudo::Config for Runtime {
 impl pallet_guild::Config for Runtime {
     type Event = Event;
     type WeightInfo = pallet_guild::weights::SubstrateWeight<Runtime>;
+    type MyRandomness = RandomnessCollectiveFlip;
 }
 
 impl pallet_chainlink::Config for Runtime {
