@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum TokenType<T, U> {
     Fungible { address: T },
     NonFungible { address: T, id: U },
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 pub enum Relation {
     Equal,
     Greater,
@@ -27,7 +27,7 @@ impl Relation {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct RequiredBalance<T, U> {
     pub token_type: Option<TokenType<T, U>>,
     pub relation: Relation,

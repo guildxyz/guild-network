@@ -18,7 +18,7 @@ async fn main() {
 
     // register signer as oracle operator
     let tx = register_operator();
-    let hash = send_tx_in_block(api.clone(), tx, Arc::clone(&signer))
+    let hash = send_tx_in_block(api.clone(), &tx, Arc::clone(&signer))
         .await
         .unwrap();
     println!("Operator registered: {}", hash);
@@ -36,13 +36,13 @@ async fn main() {
         roles: vec![role],
     };
 
-    let hash = send_tx_in_block(api.clone(), create_guild(guild), Arc::clone(&signer))
+    let hash = send_tx_in_block(api.clone(), &create_guild(guild), Arc::clone(&signer))
         .await
         .unwrap();
     println!("Guild created: {}", hash);
 
     let tx = join_guild(guild_name, role_name, vec![], vec![]);
-    let hash = send_tx_in_block(api.clone(), tx, Arc::clone(&signer))
+    let hash = send_tx_in_block(api.clone(), &tx, Arc::clone(&signer))
         .await
         .unwrap();
     println!("Join request submitted: {}", hash);

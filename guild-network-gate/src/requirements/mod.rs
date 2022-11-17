@@ -9,7 +9,7 @@ mod check;
 use allowlist::Allowlist;
 use balance::RequiredBalance;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum Requirement {
     Free,
     EthereumBalance(RequiredBalance<Address, U256>),

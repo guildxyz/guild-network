@@ -81,12 +81,14 @@ pub fn pad_to_32_bytes(name: &[u8]) -> Result<[u8; 32], anyhow::Error> {
     Ok(output)
 }
 
+#[derive(Debug, Clone)]
 pub struct Guild {
     pub name: [u8; 32],
     pub metadata: Vec<u8>,
     pub roles: Vec<Role>,
 }
 
+#[derive(Debug, Clone)]
 pub struct Role {
     pub name: [u8; 32],
     pub requirements: Vec<Requirement>,

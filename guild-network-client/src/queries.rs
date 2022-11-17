@@ -1,4 +1,5 @@
 use crate::{runtime, AccountId, Api};
+use std::collections::HashMap;
 
 pub async fn registered_operators(api: Api) -> Result<Vec<AccountId>, subxt::Error> {
     let operators = runtime::storage().chainlink().operators();
@@ -46,12 +47,17 @@ pub async fn join_requests(api: Api, page_size: u32) -> Result<(), subxt::Error>
     Ok(())
 }
 
-pub async fn oracle_requests(api: Api, page_size: u32) -> Result<(), subxt::Error> {
+pub async fn oracle_requests(
+    api: Api,
+    page_size: u32,
+) -> Result<HashMap<u64, AccountId>, subxt::Error> {
     let root = runtime::storage().chainlink().requests_root();
 
+    let mut map = HashMap::new();
     let mut iter = api.storage().iter(root, page_size, None).await?;
     while let Some((key, value)) = iter.next().await? {
-        println!("key: {:?}\tvalue: {:?}", key, value);
+        let key_bytes = (&key.0[48..]).try_into().unwrap();
+        map.insert(u64::from_le_bytes(key_bytes), value.operator);
     }
-    Ok(())
+    Ok(map)
 }

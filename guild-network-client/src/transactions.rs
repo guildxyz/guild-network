@@ -56,15 +56,24 @@ pub fn join_guild(
         .join_guild(guild_name, role_name, vec![0], vec![1])
 }
 
-pub async fn send_tx(
+pub async fn send_owned_tx<T: TxPayload>(
     api: Api,
-    tx: impl TxPayload,
+    tx: T,
+    signer: Arc<Signer>,
+    status: TxStatus,
+) -> Result<Option<TxHash>, subxt::Error> {
+    send_tx(api, &tx, signer, status).await
+}
+
+pub async fn send_tx<T: TxPayload>(
+    api: Api,
+    tx: &T,
     signer: Arc<Signer>,
     status: TxStatus,
 ) -> Result<Option<TxHash>, subxt::Error> {
     let mut progress = api
         .tx()
-        .sign_and_submit_then_watch_default(&tx, signer.as_ref())
+        .sign_and_submit_then_watch_default(tx, signer.as_ref())
         .await?;
 
     while let Some(try_event) = progress.next().await {
@@ -83,17 +92,17 @@ pub async fn send_tx(
     Ok(None)
 }
 
-pub async fn send_tx_ready(
+pub async fn send_tx_ready<T: TxPayload>(
     api: Api,
-    tx: impl TxPayload,
+    tx: &T,
     signer: Arc<Signer>,
 ) -> Result<(), subxt::Error> {
     send_tx(api, tx, signer, TxStatus::Ready).await.map(|_| ())
 }
 
-pub async fn send_tx_broadcast(
+pub async fn send_tx_broadcast<T: TxPayload>(
     api: Api,
-    tx: impl TxPayload,
+    tx: &T,
     signer: Arc<Signer>,
 ) -> Result<(), subxt::Error> {
     send_tx(api, tx, signer, TxStatus::Broadcast)
@@ -101,18 +110,18 @@ pub async fn send_tx_broadcast(
         .map(|_| ())
 }
 
-pub async fn send_tx_in_block(
+pub async fn send_tx_in_block<T: TxPayload>(
     api: Api,
-    tx: impl TxPayload,
+    tx: &T,
     signer: Arc<Signer>,
 ) -> Result<TxHash, subxt::Error> {
     let hash = send_tx(api, tx, signer, TxStatus::InBlock).await?;
     hash.ok_or_else(|| subxt::Error::Other("transaction hash is None".into()))
 }
 
-pub async fn send_tx_finalized(
+pub async fn send_tx_finalized<T: TxPayload>(
     api: Api,
-    tx: impl TxPayload,
+    tx: &T,
     signer: Arc<Signer>,
 ) -> Result<TxHash, subxt::Error> {
     let hash = send_tx(api, tx, signer, TxStatus::Finalized).await?;
