@@ -17,6 +17,8 @@ std = [
 try-runtime = ["frame-support/try-runtime"]
 
 [dependencies]
+guild-network-common = { path = "../../guild-network-common" }
+
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 frame-benchmarking = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25", optional = true }
 frame-support = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }

@@ -2,18 +2,19 @@ use futures::future::try_join_all;
 use guild_network_client::queries::*;
 use guild_network_client::transactions::*;
 use guild_network_client::{AccountId, Api, Guild, Keypair, Role, Signer, TxStatus};
+use guild_network_common::{GuildName, RoleName};
 use guild_network_gate::requirements::Requirement;
 use sp_keyring::AccountKeyring;
 use subxt::ext::sp_core::crypto::Pair as TraitPair;
 
-use std::collections::{hash_map, HashMap};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 const URL: &str = "ws://127.0.0.1:9944";
-pub const FIRST_ROLE: [u8; 32] = [0; 32];
-pub const SECOND_ROLE: [u8; 32] = [1; 32];
-pub const FIRST_GUILD: [u8; 32] = [2; 32];
-pub const SECOND_GUILD: [u8; 32] = [3; 32];
+pub const FIRST_ROLE: RoleName = [0; 32];
+pub const SECOND_ROLE: RoleName = [1; 32];
+pub const FIRST_GUILD: GuildName = [2; 32];
+pub const SECOND_GUILD: GuildName = [3; 32];
 pub const PAGE_SIZE: u32 = 10;
 
 pub async fn api_with_alice() -> (Api, Arc<Signer>) {
@@ -25,9 +26,12 @@ pub async fn api_with_alice() -> (Api, Arc<Signer>) {
     (api, alice)
 }
 
-pub async fn prefunded_accounts(api: Api, faucet: Arc<Signer>) -> HashMap<AccountId, Arc<Signer>> {
+pub async fn prefunded_accounts(
+    api: Api,
+    faucet: Arc<Signer>,
+    num_accounts: usize,
+) -> BTreeMap<AccountId, Arc<Signer>> {
     let mut seed = [10u8; 32];
-    let num_accounts = 10;
     let accounts = (0..num_accounts)
         .map(|_| {
             let keypair = Arc::new(Signer::new(Keypair::from_seed(&seed)));
@@ -35,7 +39,7 @@ pub async fn prefunded_accounts(api: Api, faucet: Arc<Signer>) -> HashMap<Accoun
             (keypair.as_ref().account_id().clone(), keypair)
         })
         .inspect(|(id, _)| println!("new account: {}", id))
-        .collect::<HashMap<AccountId, Arc<Signer>>>();
+        .collect::<BTreeMap<AccountId, Arc<Signer>>>();
 
     let amount = 1_000_000_000_000_000u128;
     let mut keys = accounts.keys();
@@ -53,13 +57,14 @@ pub async fn prefunded_accounts(api: Api, faucet: Arc<Signer>) -> HashMap<Accoun
         .await
         .expect("failed to fund account");
 
-    println!("Balance transfers in block!");
+    println!("balance transfers in block");
 
     accounts
 }
 
-pub async fn register_operators(api: Api, operators: hash_map::Values<'_, AccountId, Arc<Signer>>) {
+pub async fn register_operators(api: Api, operators: &BTreeMap<AccountId, Arc<Signer>>) {
     let register_operator_futures = operators
+        .values()
         .map(|operator| {
             send_owned_tx(
                 api.clone(),
@@ -74,7 +79,7 @@ pub async fn register_operators(api: Api, operators: hash_map::Values<'_, Accoun
         .await
         .expect("failed to register operators");
 
-    println!("Operator registrations in block!");
+    println!("operator registrations in block");
 }
 
 pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>) {
@@ -109,7 +114,7 @@ pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>) {
         .expect("failed to create guild");
 }
 
-pub async fn join_guilds(api: Api, mut operators: hash_map::Values<'_, AccountId, Arc<Signer>>) {
+pub async fn join_guilds(api: Api, operators: &BTreeMap<AccountId, Arc<Signer>>) {
     let join_request_txns = [
         join_guild(FIRST_GUILD, FIRST_ROLE, vec![], vec![]),
         join_guild(FIRST_GUILD, SECOND_ROLE, vec![], vec![]),
@@ -117,37 +122,25 @@ pub async fn join_guilds(api: Api, mut operators: hash_map::Values<'_, AccountId
         join_guild(SECOND_GUILD, SECOND_ROLE, vec![], vec![]),
     ];
 
-    // next() returns an arbitrary signer
-    let first_joiner = operators.next().unwrap();
+    let join_request_futures = operators
+        .values()
+        .enumerate()
+        .map(|(i, signer)| {
+            send_tx_in_block(api.clone(), &join_request_txns[i % 4], Arc::clone(&signer))
+        })
+        .collect::<Vec<_>>();
 
-    for (i, signer) in operators.enumerate() {
-        send_tx_ready(api.clone(), &join_request_txns[i % 4], Arc::clone(&signer))
-            .await
-            .expect("failed to submit join request");
-    }
+    try_join_all(join_request_futures)
+        .await
+        .expect("failed to submit oracle answers");
 
-    // first joiner will join all guilds
-    for join_request_tx in join_request_txns.iter().skip(1) {
-        send_tx_ready(api.clone(), join_request_tx, Arc::clone(&first_joiner))
-            .await
-            .expect("failed to submit join request");
-    }
-
-    send_tx_in_block(
-        api.clone(),
-        &join_request_txns[0],
-        Arc::clone(&first_joiner),
-    )
-    .await
-    .expect("failed to submit join request");
+    println!("join requests successfully submitted");
 }
 
-pub async fn send_dummy_oracle_answers(api: Api, operators: &HashMap<AccountId, Arc<Signer>>) {
-    println!("ORACLE REQUESTS");
+pub async fn send_dummy_oracle_answers(api: Api, operators: &BTreeMap<AccountId, Arc<Signer>>) {
     let oracle_requests = oracle_requests(api.clone(), PAGE_SIZE)
         .await
         .expect("failed to fetch oracle requests");
-    println!("{:#?}", oracle_requests);
 
     let oracle_answer_futures = oracle_requests
         .into_iter()
@@ -162,5 +155,5 @@ pub async fn send_dummy_oracle_answers(api: Api, operators: &HashMap<AccountId, 
         .await
         .expect("failed to submit oracle answers");
 
-    println!("Join guild requests in block!");
+    println!("join requests successfully answered");
 }

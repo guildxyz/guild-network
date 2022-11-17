@@ -94,7 +94,7 @@ async fn try_main(
                     let result = vec![requirement_check as u8];
 
                     let tx = oracle_callback(request_id, result);
-                    let hash = send_tx_in_block(api, tx, signer).await?;
+                    let hash = send_tx_in_block(api, &tx, signer).await?;
                     info!("oracle answer submitted, hash: {}", hash);
                     Ok::<(), anyhow::Error>(())
                 });

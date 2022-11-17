@@ -7,6 +7,7 @@ edition = "2021"
 anyhow = "1"
 futures = "0.3.25"
 log = { version = "0.4.17", default-features = false }
+guild-network-common = { path = "../guild-network-common" }
 guild-network-gate = { path = "../guild-network-gate", default-features = false }
 parity-scale-codec = { version = "3.0.0", default-features = false }
 sp-keyring = { version = "6.0.0", default-features = false }

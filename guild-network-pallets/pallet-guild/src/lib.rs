@@ -19,14 +19,13 @@ pub mod pallet {
         traits::Currency,
     };
     use frame_system::pallet_prelude::*;
+    use guild_network_common::{GuildName, RoleName};
     use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig, RequestIdentifier};
     use sp_std::vec::Vec as SpVec;
 
     type BalanceOf<T> = <<T as pallet_chainlink::Config>::Currency as Currency<
         <T as frame_system::Config>::AccountId,
     >>::Balance;
-    type MapId = [u8; 32];
-    type GuildName = MapId;
 
     #[pallet::storage]
     #[pallet::getter(fn nonce)]
@@ -42,8 +41,8 @@ pub mod pallet {
     pub struct JoinRequest<AccountId> {
         pub requester: AccountId,
         pub requester_identities: SpVec<u8>,
-        pub guild_name: MapId,
-        pub role_name: MapId,
+        pub guild_name: GuildName,
+        pub role_name: RoleName,
     }
 
     #[pallet::storage]
@@ -62,8 +61,8 @@ pub mod pallet {
         Blake2_128Concat,
         T::Hash, // Guild id
         Blake2_128Concat,
-        MapId,   // Role name
-        T::Hash, // Role id
+        RoleName, // Role name
+        T::Hash,  // Role id
         OptionQuery,
     >;
 
@@ -114,12 +113,12 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        AccessDenied(T::AccountId, MapId, MapId),
-        GuildCreated(T::AccountId, MapId),
-        GuildJoined(T::AccountId, MapId, MapId),
+        AccessDenied(T::AccountId, GuildName, RoleName),
+        GuildCreated(T::AccountId, GuildName),
+        GuildJoined(T::AccountId, GuildName, RoleName),
         JoinRequestExpired(RequestIdentifier),
         OracleResult(RequestIdentifier, bool),
-        SignerAlreadyJoined(T::AccountId, MapId, MapId),
+        SignerAlreadyJoined(T::AccountId, GuildName, RoleName),
     }
 
     #[pallet::error]
@@ -154,9 +153,9 @@ pub mod pallet {
         #[pallet::weight(1000)] //T::WeightInfo::create_guild())]
         pub fn create_guild(
             origin: OriginFor<T>,
-            guild_name: MapId,
+            guild_name: GuildName,
             metadata: SpVec<u8>,
-            roles: SpVec<(MapId, SpVec<u8>)>,
+            roles: SpVec<(RoleName, SpVec<u8>)>,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(
@@ -258,8 +257,8 @@ pub mod pallet {
         #[pallet::weight(1000)] //T::WeightInfo::join_guild())]
         pub fn join_guild(
             origin: OriginFor<T>,
-            guild_name: MapId,
-            role_name: MapId,
+            guild_name: GuildName,
+            role_name: RoleName,
             requester_identities: SpVec<u8>,
             mut request_data: SpVec<u8>,
         ) -> DispatchResult {

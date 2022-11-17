@@ -1,3 +1,4 @@
+use guild_network_common::{GuildName, RoleName};
 use guild_network_gate::requirements::Requirement;
 use subxt::{
     events::{EventSubscription, FilterEvents},
@@ -9,7 +10,7 @@ use subxt::{
 
 // re-exports
 pub use sp_keyring::sr25519::sr25519::Pair as Keypair;
-pub use subxt::ext::sp_core::H256 as TxHash;
+pub use subxt::ext::sp_core::H256 as Hash;
 pub use subxt::tx::Signer as TxSignerTrait;
 pub use subxt::PolkadotConfig as ClientConfig;
 
@@ -41,7 +42,7 @@ pub enum TxStatus {
 }
 
 impl TxStatus {
-    pub fn reached(self, status: &TransactionStatus) -> (bool, Option<TxHash>) {
+    pub fn reached(self, status: &TransactionStatus) -> (bool, Option<Hash>) {
         let mut reached = false;
         let mut tx_hash = None;
         match status {
@@ -83,21 +84,21 @@ pub fn pad_to_32_bytes(name: &[u8]) -> Result<[u8; 32], anyhow::Error> {
 
 #[derive(Debug, Clone)]
 pub struct Guild {
-    pub name: [u8; 32],
+    pub name: GuildName,
     pub metadata: Vec<u8>,
     pub roles: Vec<Role>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Role {
-    pub name: [u8; 32],
+    pub name: RoleName,
     pub requirements: Vec<Requirement>,
 }
 
 #[cfg(test)]
 mod test {
     use super::pad_to_32_bytes;
-    use super::{TransactionStatus, TxHash, TxStatus};
+    use super::{Hash, TransactionStatus, TxStatus};
 
     #[test]
     fn tx_status_reached() {
@@ -125,13 +126,13 @@ mod test {
 
         let flag = TxStatus::InBlock;
 
-        let status = TransactionStatus::Usurped(TxHash::default());
+        let status = TransactionStatus::Usurped(Hash::default());
         let (reached, _) = flag.reached(&status);
         assert!(reached);
-        let status = TransactionStatus::Retracted(TxHash::default());
+        let status = TransactionStatus::Retracted(Hash::default());
         let (reached, _) = flag.reached(&status);
         assert!(reached);
-        let status = TransactionStatus::FinalityTimeout(TxHash::default());
+        let status = TransactionStatus::FinalityTimeout(Hash::default());
         let (reached, _) = flag.reached(&status);
         assert!(reached);
     }
