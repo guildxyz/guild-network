@@ -114,6 +114,7 @@ pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>) {
         .expect("failed to create guild");
 }
 
+#[cfg(not(feature = "external-oracle"))]
 pub async fn join_guilds(api: Api, operators: &BTreeMap<AccountId, Arc<Signer>>) {
     let join_request_txns = [
         join_guild(FIRST_GUILD, FIRST_ROLE, vec![], vec![]),
@@ -126,7 +127,7 @@ pub async fn join_guilds(api: Api, operators: &BTreeMap<AccountId, Arc<Signer>>)
         .values()
         .enumerate()
         .map(|(i, signer)| {
-            send_tx_in_block(api.clone(), &join_request_txns[i % 4], Arc::clone(&signer))
+            send_tx_in_block(api.clone(), &join_request_txns[i % 4], Arc::clone(signer))
         })
         .collect::<Vec<_>>();
 
@@ -137,6 +138,7 @@ pub async fn join_guilds(api: Api, operators: &BTreeMap<AccountId, Arc<Signer>>)
     println!("join requests successfully submitted");
 }
 
+#[cfg(not(feature = "external-oracle"))]
 pub async fn send_dummy_oracle_answers(api: Api, operators: &BTreeMap<AccountId, Arc<Signer>>) {
     let oracle_requests = oracle_requests(api.clone(), PAGE_SIZE)
         .await

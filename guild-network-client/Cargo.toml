@@ -3,6 +3,9 @@ name = "guild-network-client"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+external-oracle = []
+
 [dependencies]
 anyhow = "1"
 futures = "0.3.25"
