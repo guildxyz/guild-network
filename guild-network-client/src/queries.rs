@@ -40,18 +40,20 @@ pub async fn members(
     api: Api,
     //filter: Option<GuildFilter>,
     page_size: u32,
-) -> Result<BTreeMap<Hash, AccountId>, subxt::Error> {
+) -> Result<Vec<AccountId>, subxt::Error> {
     let members_root = runtime::storage().guild().members_root();
 
     let mut members_iter = api.storage().iter(members_root, page_size, None).await?;
-    let mut members = BTreeMap::new();
+    let mut members = Vec::new();
+    println!("MEMBERS KEYS");
     while let Some((key, _value)) = members_iter.next().await? {
+        println!("{:?}", hex::encode(&key.0));
         // NOTE unwrap is fine because the input length is 32
-        let role_id_bytes: [u8; 32] = key.0[64..96].try_into().unwrap();
-        let role_id = Hash::from(role_id_bytes);
+        //let role_id_bytes: [u8; 32] = key.0[64..96].try_into().unwrap();
+        //let role_id = Hash::from(role_id_bytes);
         // NOTE unwrap is fine because the input length is 32
         let account_id = AccountId::try_from(&key.0[96..128]).unwrap();
-        members.insert(role_id, account_id);
+        members.push(account_id);
     }
     Ok(members)
 }
@@ -73,31 +75,47 @@ pub async fn role_id(
     let guild_id = guild_id(api.clone(), guild_name).await?;
     let mut query_key = runtime::storage()
         .guild()
+        .role_id_map_root();
+        //.to_root_bytes();
+    let mut role_ids = Vec::new();
+    let mut role_id_iter = api.storage().iter(query_key, page_size, None).await?;
+    println!("ROLE IDS");
+    while let Some((key, value)) = role_id_iter.next().await? {
+        println!("key: {:?}\t value: {:?}", key, value);
+        role_ids.push(value);
+    }
+
+    let mut query_key = runtime::storage()
+        .guild()
         .role_id_map_root()
         .to_root_bytes();
-    StorageMapKey::new(guild_id, StorageHasher::Blake2_128).to_bytes(&mut query_key);
-    if let Some(rn) = role_name {
-        StorageMapKey::new(rn, StorageHasher::Blake2_128).to_bytes(&mut query_key);
-    }
+   StorageMapKey::new(guild_id, StorageHasher::Blake2_128).to_bytes(&mut query_key);
+   query_key.append(&mut guild_id.0.to_vec());
+   if let Some(rn) = role_name {
+       StorageMapKey::new(rn, StorageHasher::Blake2_128).to_bytes(&mut query_key);
+   }
 
-    let keys = api
-        .storage()
-        .fetch_keys(&query_key, page_size, None, None)
-        .await?;
+   println!("LOL");
+   println!("{:?}", hex::encode(&query_key));
+   let keys = api
+       .storage()
+       .fetch_keys(&query_key, page_size, None, None)
+       .await?;
 
-    let mut role_ids = Vec::new();
-    for key in keys.iter() {
-        let role_id_bytes_vec = api
-            .storage()
-            .fetch_raw(&key.0, None)
-            .await?
-            .ok_or_else(|| subxt::Error::Other(format!("invalid key {:?}", key)))?;
-        let role_id_bytes: [u8; 32] = role_id_bytes_vec
-            .as_slice()
-            .try_into()
-            .map_err(|_| subxt::error::DecodeError::InvalidChar(9999))?;
-        role_ids.push(role_id_bytes.into());
-    }
+   // let mut role_ids = Vec::new();
+   for key in keys.iter() {
+        println!("{:?}", hex::encode(key));
+   //     let role_id_bytes_vec = api
+   //         .storage()
+   //         .fetch_raw(&key.0, None)
+   //         .await?
+   //         .ok_or_else(|| subxt::Error::Other(format!("invalid key {:?}", key)))?;
+   //     let role_id_bytes: [u8; 32] = role_id_bytes_vec
+   //         .as_slice()
+   //         .try_into()
+   //         .map_err(|_| subxt::error::DecodeError::InvalidChar(9999))?;
+   //     role_ids.push(role_id_bytes.into());
+   }
     Ok(role_ids)
 }
 
