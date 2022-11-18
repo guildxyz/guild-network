@@ -1,6 +1,6 @@
 use futures::StreamExt;
 use guild_network_client::runtime::chainlink::events::OracleRequest;
-use guild_network_client::transactions::{oracle_callback, send_tx_in_block};
+use guild_network_client::transactions::{oracle_callback, send_tx_ready};
 use guild_network_client::{Api, FilteredEvents, Signer};
 use log::{error, info, trace};
 use sp_keyring::AccountKeyring;
@@ -86,18 +86,20 @@ async fn try_main(
                     return Ok(());
                 }
 
-                tokio::spawn(async move {
-                    // TODO storage query
-                    // TODO verify user identities
-                    // TODO retrieve balances and check requirements
-                    let requirement_check = true;
-                    let result = vec![requirement_check as u8];
+                // TODO spawn does not work for multiple calls
+                // when I send 10 requests it only responds to one
+                //tokio::spawn(async move {
+                // TODO storage query
+                // TODO verify user identities
+                // TODO retrieve balances and check requirements
+                let requirement_check = true;
+                let result = vec![requirement_check as u8];
 
-                    let tx = oracle_callback(request_id, result);
-                    let hash = send_tx_in_block(api, &tx, signer).await?;
-                    info!("oracle answer submitted, hash: {}", hash);
-                    Ok::<(), anyhow::Error>(())
-                });
+                let tx = oracle_callback(request_id, result);
+                send_tx_ready(api, &tx, signer).await?;
+                info!("oracle answer ({}) submitted", request_id);
+                //   Ok::<(), anyhow::Error>(())
+                //});
             }
         }
     }

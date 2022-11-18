@@ -1,4 +1,5 @@
 use futures::future::try_join_all;
+#[cfg(not(feature = "external-oracle"))]
 use guild_network_client::queries::*;
 use guild_network_client::transactions::*;
 use guild_network_client::{AccountId, Api, Guild, Keypair, Role, Signer, TxStatus};
@@ -62,9 +63,8 @@ pub async fn prefunded_accounts(
     accounts
 }
 
-pub async fn register_operators(api: Api, operators: &BTreeMap<AccountId, Arc<Signer>>) {
+pub async fn register_operators(api: Api, operators: impl Iterator<Item = &Arc<Signer>>) {
     let register_operator_futures = operators
-        .values()
         .map(|operator| {
             send_owned_tx(
                 api.clone(),
@@ -114,7 +114,6 @@ pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>) {
         .expect("failed to create guild");
 }
 
-#[cfg(not(feature = "external-oracle"))]
 pub async fn join_guilds(api: Api, operators: &BTreeMap<AccountId, Arc<Signer>>) {
     let join_request_txns = [
         join_guild(FIRST_GUILD, FIRST_ROLE, vec![], vec![]),

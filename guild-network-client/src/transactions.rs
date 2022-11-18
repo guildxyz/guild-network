@@ -7,8 +7,6 @@ use subxt::tx::TxPayload;
 
 use std::sync::Arc;
 
-use runtime::runtime_types::pallet_guild::pallet::Call as GuildCall;
-
 pub fn fund_account(account: &AccountId, amount: u128) -> impl TxPayload {
     runtime::tx()
         .balances()
@@ -21,17 +19,6 @@ pub fn register_operator() -> impl TxPayload {
 
 pub fn oracle_callback(request_id: u64, data: Vec<u8>) -> impl TxPayload {
     runtime::tx().chainlink().callback(request_id, data)
-}
-
-pub fn oracle_init_request(
-    data_version: u64,
-    data: Vec<u8>,
-    fee: u128,
-    callback: GuildCall,
-) -> impl TxPayload {
-    runtime::tx()
-        .chainlink()
-        .initiate_request(data_version, data, fee, callback)
 }
 
 pub fn create_guild(guild: Guild) -> impl TxPayload {
