@@ -41,6 +41,7 @@ pub mod pallet {
     pub struct JoinRequest<AccountId> {
         pub requester: AccountId,
         pub requester_identities: SpVec<u8>,
+        pub request_data: SpVec<u8>,
         pub guild_name: GuildName,
         pub role_name: RoleName,
     }
@@ -260,7 +261,7 @@ pub mod pallet {
             guild_name: GuildName,
             role_name: RoleName,
             requester_identities: SpVec<u8>,
-            mut request_data: SpVec<u8>,
+            request_data: SpVec<u8>,
         ) -> DispatchResult {
             let requester = ensure_signed(origin.clone())?;
 
@@ -282,14 +283,12 @@ pub mod pallet {
             // this seems extremely unlikely.
             NextRequestIdentifier::<T>::put(request_id.wrapping_add(1));
 
-            let mut request_parameters = requester_identities.clone();
-            request_parameters.append(&mut request_data);
-
             JoinRequests::<T>::insert(
                 request_id,
                 JoinRequest::<T::AccountId> {
                     requester,
                     requester_identities,
+                    request_data,
                     guild_name,
                     role_name,
                 },
@@ -303,8 +302,7 @@ pub mod pallet {
             let fee = BalanceOf::<T>::unique_saturated_from(100_000_000u32);
             <pallet_chainlink::Pallet<T>>::initiate_request(
                 origin,
-                0,
-                request_parameters,
+                request_id.to_le_bytes().to_vec(),
                 fee,
                 call,
             )?;

@@ -66,8 +66,6 @@ pub mod pallet {
     pub type OperatorIdentifier = u64;
     // Uniquely identify a request for a considered Operator
     pub type RequestIdentifier = u64;
-    // The version of the serialized data format
-    pub type DataVersion = u64;
 
     // A trait allowing to inject Operator results back into the specified Call
     pub trait CallbackWithParameter {
@@ -102,17 +100,20 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// A request has been accepted. Corresponding fee payment is reserved
-        OracleRequest(
-            T::AccountId,
-            RequestIdentifier,
-            T::AccountId,
-            DataVersion,
-            SpVec<u8>,
-            SpVec<u8>,
-            BalanceOf<T>,
-        ),
+        OracleRequest {
+            id: RequestIdentifier,
+            operator: T::AccountId,
+            callback: T::Callback,
+            data: SpVec<u8>,
+            fee: BalanceOf<T>,
+        },
         /// A request has been answered. Corresponding fee payment is transferred
-        OracleAnswer(T::AccountId, RequestIdentifier, SpVec<u8>, BalanceOf<T>),
+        OracleAnswer {
+            id: RequestIdentifier,
+            operator: T::AccountId,
+            response: SpVec<u8>,
+            fee: BalanceOf<T>,
+        },
         /// A new operator has been registered
         OperatorRegistered(T::AccountId),
         /// An existing operator has been unregistered
@@ -147,8 +148,9 @@ pub mod pallet {
         requester: AccountId,
         operator: AccountId,
         callback: Callback,
-        block_number: BlockNumber,
+        data: SpVec<u8>,
         fee: BalanceOf,
+        block_number: BlockNumber,
     }
 
     pub type Request<T> = GenericRequest<
@@ -220,10 +222,9 @@ pub mod pallet {
         #[pallet::weight(50_000)]
         pub fn initiate_request(
             origin: OriginFor<T>,
-            data_version: DataVersion,
+            callback: <T as Config>::Callback,
             data: Vec<u8>,
             fee: BalanceOf<T>,
-            callback: <T as Config>::Callback,
         ) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
@@ -262,26 +263,23 @@ pub mod pallet {
             // It only serves as a timestamp for the ValidityPeriod check.
             let now = frame_system::Pallet::<T>::block_number();
 
-            Requests::<T>::insert(
-                request_id,
-                Request::<T> {
-                    requester: who.clone(),
-                    operator: operator.clone(),
-                    callback,
-                    block_number: now,
-                    fee,
-                },
-            );
-
-            Self::deposit_event(Event::OracleRequest(
-                operator,
-                request_id,
-                who,
-                data_version,
-                data,
-                "Chainlink.callback".into(),
+            let request = Request::<T> {
+                requester: who,
+                operator: operator.clone(),
+                callback: callback.clone(),
+                data: data.clone(),
                 fee,
-            ));
+                block_number: now,
+            };
+            Requests::<T>::insert(request_id, request);
+
+            Self::deposit_event(Event::OracleRequest {
+                id: request_id,
+                operator,
+                callback,
+                data,
+                fee,
+            });
 
             Ok(())
         }
@@ -328,13 +326,13 @@ pub mod pallet {
                 BalanceStatus::Free,
             )?;
 
-            let mut prepended_response = request_id.encode();
-            prepended_response.append(&mut result);
+            let mut response = request_id.encode();
+            response.append(&mut result);
 
             // Dispatch the result to the original callback registered by the caller
             let callback = request
                 .callback
-                .with_result(false, prepended_response.clone())
+                .with_result(false, response.clone())
                 .ok_or(Error::<T>::UnknownCallback)?;
             callback
                 .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
@@ -343,12 +341,12 @@ pub mod pallet {
             // Remove the request from the queue
             Requests::<T>::remove(request_id);
 
-            Self::deposit_event(Event::OracleAnswer(
-                request.operator,
-                request_id,
-                prepended_response,
-                request.fee,
-            ));
+            Self::deposit_event(Event::OracleAnswer {
+                id: request_id,
+                operator: request.operator,
+                response,
+                fee: request.fee,
+            });
 
             Ok(())
         }
@@ -369,13 +367,15 @@ pub mod pallet {
                 // NOTE unwrap is fine here because we collected existing keys
                 let request = Requests::<T>::get(request_id).unwrap();
                 if n > request.block_number + T::ValidityPeriod::get() {
+                    let mut response = request.data; // request data is the request id
+                    response.push(0);
+
+                    // remove request from this pallet's storage
                     Requests::<T>::remove(request_id);
-                    let mut prepended_response = request_id.encode();
-                    prepended_response.push(u8::MAX);
 
                     if let Some(callback) = request
                         .callback
-                        .with_result(true, prepended_response.clone())
+                        .with_result(true, response.clone())
                     {
                         if callback
                             .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
