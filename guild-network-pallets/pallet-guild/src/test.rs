@@ -315,7 +315,7 @@ fn joining_a_guild() {
 }
 
 #[test]
-fn joining_a_guild_twice() {
+fn joining_the_same_role_in_a_guild_twice_fails() {
     new_test_runtime().execute_with(|| {
         init_chain();
         let guild_name = [0u8; 32];
@@ -477,6 +477,23 @@ fn kill_request() {
         )
         .unwrap();
 
+        // initiate another oracle request from a hypothetical pallet so that
+        // chainlink will have 2 requests in the queue with the next
+        // join_guild, but guild will only have 1 request in the queue
+        <Chainlink>::initiate_request(
+            Origin::signed(signer),
+            pallet_guild::Call::<TestRuntime>::callback {
+                expired: false,
+                result: vec![],
+            },
+            vec![1, 2, 3],
+            1_000_000,
+        )
+        .unwrap();
+
+        assert!(<Chainlink>::request(0).is_some());
+        assert!(<Chainlink>::request(1).is_none());
+
         <Guild>::join_guild(
             Origin::signed(signer),
             guild_name,
@@ -485,12 +502,17 @@ fn kill_request() {
             vec![],
         )
         .unwrap();
+
+        assert!(<Chainlink>::request(0).is_some());
+        assert!(<Chainlink>::request(1).is_some());
         assert!(<Guild>::join_request(0).is_some());
 
         <Chainlink as OnFinalize<u64>>::on_finalize(
             <TestRuntime as pallet_chainlink::Config>::ValidityPeriod::get() + STARTING_BLOCK_NUM,
         );
 
+        assert!(<Chainlink>::request(0).is_none());
+        assert!(<Chainlink>::request(1).is_none());
         assert!(<Guild>::join_request(0).is_none());
 
         let guild_id = <Guild>::guild_id(guild_name).unwrap();

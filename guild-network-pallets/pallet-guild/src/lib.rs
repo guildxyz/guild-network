@@ -302,9 +302,9 @@ pub mod pallet {
             let fee = BalanceOf::<T>::unique_saturated_from(100_000_000u32);
             <pallet_chainlink::Pallet<T>>::initiate_request(
                 origin,
+                call,
                 request_id.to_le_bytes().to_vec(),
                 fee,
-                call,
             )?;
 
             Ok(())

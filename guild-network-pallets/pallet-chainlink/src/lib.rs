@@ -373,10 +373,7 @@ pub mod pallet {
                     // remove request from this pallet's storage
                     Requests::<T>::remove(request_id);
 
-                    if let Some(callback) = request
-                        .callback
-                        .with_result(true, response.clone())
-                    {
+                    if let Some(callback) = request.callback.with_result(true, response.clone()) {
                         if callback
                             .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
                             .is_ok()
