@@ -1,12 +1,17 @@
 use futures::StreamExt;
+use guild_network_client::queries::join_request;
 use guild_network_client::runtime::chainlink::events::OracleRequest;
+use guild_network_client::runtime::runtime_types::pallet_guild::pallet::Call as GuildCall;
 use guild_network_client::transactions::{oracle_callback, send_tx_ready};
 use guild_network_client::{Api, FilteredEvents, Signer};
+use guild_network_common::RequestIdentifier;
 use log::{error, info, trace};
 use sp_keyring::AccountKeyring;
 use structopt::StructOpt;
 
 use std::sync::Arc;
+
+const DATA_LEN: usize = RequestIdentifier::BITS as usize / 8;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -78,31 +83,69 @@ async fn try_main(
 ) -> Result<(), anyhow::Error> {
     trace!("[+] Listening for events");
     if let Some(event) = events.next().await {
-        match event?.event {
-            OracleRequest(operator_id, request_id, _, _, data, _, _) => {
-                info!("OracleRequest: {}, {}, {:?}", operator_id, request_id, data);
-                if &operator_id != signer.account_id() {
-                    // request wasn't delegated to us so return
-                    return Ok(());
-                }
-
-                // TODO spawn does not work for multiple calls
-                // when I send 10 requests it only responds to one
-                //tokio::spawn(async move {
-                // TODO storage query
-                // TODO verify user identities
-                // TODO retrieve balances and check requirements
-                let requirement_check = true;
-                let result = vec![requirement_check as u8];
-
-                let tx = oracle_callback(request_id, result);
-                send_tx_ready(api, &tx, signer).await?;
-                info!("oracle answer ({}) submitted", request_id);
-                //   Ok::<(), anyhow::Error>(())
-                //});
-            }
+        let OracleRequest {
+            request_id,
+            operator,
+            callback,
+            data,
+            fee,
+        } = event?.event;
+        info!(
+            "OracleRequest: {}, {}, {:?}, {:?}, {}",
+            request_id, operator, callback, data, fee
+        );
+        if &operator != signer.account_id() {
+            // request wasn't delegated to us so return
+            return Ok(());
         }
+
+        // check whether the incoming request originates from the guild
+        // pallet just for testing basically
+        if !matches_variant(
+            &callback,
+            &GuildCall::callback {
+                expired: false,
+                result: vec![],
+            },
+        ) {
+            return Ok(());
+        }
+
+        // TODO spawn does not work for multiple calls
+        // when I send 10 requests it only responds to one
+        //tokio::spawn(async move {
+        // TODO storage query
+        // TODO verify user identities
+        anyhow::ensure!(
+            data.len() == DATA_LEN,
+            "invalid request data length: {}, expected: {}",
+            data.len(),
+            DATA_LEN
+        );
+        // NOTE unwrap is fine because data has the correct length and
+        // will always fit
+        let join_request_id = RequestIdentifier::from_le_bytes(data.clone().try_into().unwrap());
+        let join_request = join_request(api.clone(), join_request_id).await?;
+        info!(
+            "guild: {:?}, role: {:?}",
+            join_request.guild_name, join_request.role_name
+        );
+
+        // TODO retrieve balances and check requirements
+        let requirement_check = true;
+        let mut result = data;
+        result.push(u8::from(requirement_check));
+
+        let tx = oracle_callback(request_id, result.clone());
+        send_tx_ready(api, &tx, signer).await?;
+        info!("oracle answer ({}) submitted: {:?}", request_id, result);
+        //   Ok::<(), anyhow::Error>(())
+        //});
     }
 
     Ok(())
+}
+
+fn matches_variant<T>(a: &T, b: &T) -> bool {
+    std::mem::discriminant(a) == std::mem::discriminant(b)
 }

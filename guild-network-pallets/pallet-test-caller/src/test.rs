@@ -109,7 +109,7 @@ fn initiate_requests_valid() {
         assert_eq!(
             last_event(),
             Event::Chainlink(pallet_chainlink::Event::OracleRequest {
-                id: request_id,
+                request_id,
                 operator,
                 callback,
                 data: data.clone(),
@@ -121,9 +121,9 @@ fn initiate_requests_valid() {
         assert_eq!("a", std::str::from_utf8(&r).unwrap());
 
         let result: u64 = 10;
-        assert!(
-            <Chainlink>::callback(Origin::signed(operator), request_id, result.encode()).is_ok()
-        );
+        let mut result_vec = request_id.encode();
+        result_vec.append(&mut result.encode());
+        assert!(<Chainlink>::callback(Origin::signed(operator), request_id, result_vec).is_ok());
 
         // u64 = 8 zeros
         let expected_answer = vec![0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0];
@@ -131,9 +131,9 @@ fn initiate_requests_valid() {
         assert_eq!(
             last_event(),
             Event::Chainlink(pallet_chainlink::Event::OracleAnswer {
-                id: request_id,
+                request_id,
                 operator,
-                response: expected_answer,
+                result: expected_answer,
                 fee,
             })
         );
@@ -176,7 +176,7 @@ fn linear_request_delegation() {
         assert_eq!(
             last_event(),
             Event::Chainlink(pallet_chainlink::Event::OracleRequest {
-                id: request_id,
+                request_id,
                 operator: operator_0,
                 callback: callback.clone(),
                 data: data.clone(),
@@ -196,7 +196,7 @@ fn linear_request_delegation() {
         assert_eq!(
             last_event(),
             Event::Chainlink(pallet_chainlink::Event::OracleRequest {
-                id: request_id,
+                request_id,
                 operator: operator_1,
                 callback: callback.clone(),
                 data: data.clone(),
@@ -216,7 +216,7 @@ fn linear_request_delegation() {
         assert_eq!(
             last_event(),
             Event::Chainlink(pallet_chainlink::Event::OracleRequest {
-                id: request_id,
+                request_id,
                 operator: operator_2,
                 callback: callback.clone(),
                 data: data.clone(),
@@ -236,7 +236,7 @@ fn linear_request_delegation() {
         assert_eq!(
             last_event(),
             Event::Chainlink(pallet_chainlink::Event::OracleRequest {
-                id: request_id,
+                request_id,
                 operator: operator_3,
                 callback: callback.clone(),
                 data: data.clone(),
@@ -256,7 +256,7 @@ fn linear_request_delegation() {
         assert_eq!(
             last_event(),
             Event::Chainlink(pallet_chainlink::Event::OracleRequest {
-                id: request_id,
+                request_id,
                 operator: operator_0,
                 callback,
                 data,

@@ -19,8 +19,8 @@ pub mod pallet {
         traits::Currency,
     };
     use frame_system::pallet_prelude::*;
-    use guild_network_common::{GuildName, RoleName};
-    use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig, RequestIdentifier};
+    use guild_network_common::{GuildName, RequestIdentifier, RoleName};
+    use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig};
     use sp_std::vec::Vec as SpVec;
 
     type BalanceOf<T> = <<T as pallet_chainlink::Config>::Currency as Currency<

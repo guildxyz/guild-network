@@ -22,6 +22,7 @@ pub mod transactions;
 pub type AccountId = AccountId32;
 pub type Api = OnlineClient<ClientConfig>;
 pub type BlockSubscription = Subscription<Header<u32, BlakeTwo256>>;
+pub type JoinRequest = runtime::runtime_types::pallet_guild::pallet::JoinRequest<AccountId>;
 pub type Signer = PairSigner<ClientConfig, Keypair>;
 pub type TransactionProgress = TxProgress<ClientConfig, Api>;
 pub type TransactionStatus = SubTxStatus<ClientConfig, Api>;

@@ -40,6 +40,7 @@ pub mod pallet {
     use super::*;
     use frame_support::{ensure, pallet_prelude::*};
     use frame_system::{ensure_signed, pallet_prelude::*};
+    use guild_network_common::{OperatorIdentifier, RequestIdentifier};
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
@@ -62,10 +63,6 @@ pub mod pallet {
 
     pub type BalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-    // Uniquely identify an operator among the registered Operators
-    pub type OperatorIdentifier = u64;
-    // Uniquely identify a request for a considered Operator
-    pub type RequestIdentifier = u64;
 
     // A trait allowing to inject Operator results back into the specified Call
     pub trait CallbackWithParameter {
@@ -101,7 +98,7 @@ pub mod pallet {
     pub enum Event<T: Config> {
         /// A request has been accepted. Corresponding fee payment is reserved
         OracleRequest {
-            id: RequestIdentifier,
+            request_id: RequestIdentifier,
             operator: T::AccountId,
             callback: T::Callback,
             data: SpVec<u8>,
@@ -109,9 +106,9 @@ pub mod pallet {
         },
         /// A request has been answered. Corresponding fee payment is transferred
         OracleAnswer {
-            id: RequestIdentifier,
+            request_id: RequestIdentifier,
             operator: T::AccountId,
-            response: SpVec<u8>,
+            result: SpVec<u8>,
             fee: BalanceOf<T>,
         },
         /// A new operator has been registered
@@ -274,7 +271,7 @@ pub mod pallet {
             Requests::<T>::insert(request_id, request);
 
             Self::deposit_event(Event::OracleRequest {
-                id: request_id,
+                request_id,
                 operator,
                 callback,
                 data,
@@ -295,7 +292,7 @@ pub mod pallet {
         pub fn callback(
             origin: OriginFor<T>,
             request_id: RequestIdentifier,
-            mut result: Vec<u8>,
+            result: Vec<u8>,
         ) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
 
@@ -326,13 +323,10 @@ pub mod pallet {
                 BalanceStatus::Free,
             )?;
 
-            let mut response = request_id.encode();
-            response.append(&mut result);
-
             // Dispatch the result to the original callback registered by the caller
             let callback = request
                 .callback
-                .with_result(false, response.clone())
+                .with_result(false, result.clone())
                 .ok_or(Error::<T>::UnknownCallback)?;
             callback
                 .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
@@ -342,9 +336,9 @@ pub mod pallet {
             Requests::<T>::remove(request_id);
 
             Self::deposit_event(Event::OracleAnswer {
-                id: request_id,
+                request_id,
                 operator: request.operator,
-                response,
+                result,
                 fee: request.fee,
             });
 
