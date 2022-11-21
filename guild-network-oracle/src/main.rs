@@ -1,7 +1,3 @@
-use anyhow::anyhow;
-use ethereum_types::{Address, Signature as EvmSignature};
-use ethers_core::types::Signature as EthSignature;
-
 use futures::StreamExt;
 use guild_network_client::runtime::chainlink::events::OracleRequest;
 use guild_network_client::transactions::{oracle_callback, send_tx_ready};
@@ -73,21 +69,6 @@ async fn main() -> ! {
             error!("{e}");
         }
     }
-}
-
-// TODO: Substitute address's type after restructuring
-pub fn verify(
-    substr_addr: &Vec<u8>,
-    eth_address: Address,
-    signature: EvmSignature,
-) -> Result<(), anyhow::Error> {
-    let msg = std::str::from_utf8(substr_addr).map_err(|e| anyhow!(e))?;
-    let ethers_signature = EthSignature::try_from(signature.as_bytes()).map_err(|e| anyhow!(e))?;
-    ethers_signature
-        .verify(msg, eth_address.to_fixed_bytes())
-        .map_err(|e| anyhow!(e))?;
-
-    Ok(())
 }
 
 async fn try_main(
