@@ -46,7 +46,7 @@ RUN cargo build --release
 FROM alpine:3.16.2
 
 RUN apk add --no-cache ca-certificates
-COPY --from=build /opt/app/target/release/node-template /usr/local/bin/substrate-node
+COPY --from=build /opt/app/target/release/guild-network-node /usr/local/bin/guild-network-node
 
 EXPOSE 30333 30333/udp 9944 9933 
 ENTRYPOINT ["substrate-node"]
