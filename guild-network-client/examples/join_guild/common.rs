@@ -146,7 +146,9 @@ pub async fn send_dummy_oracle_answers(api: Api, operators: &BTreeMap<AccountId,
     let oracle_answer_futures = oracle_requests
         .into_iter()
         .map(|(request_id, account_id)| {
-            let tx = oracle_callback(request_id, vec![u8::from(true)]);
+            let mut result = request_id.to_le_bytes().to_vec();
+            result.push(u8::from(true));
+            let tx = oracle_callback(request_id, result);
             let signer = operators.get(&account_id).unwrap();
             send_owned_tx(api.clone(), tx, Arc::clone(signer), TxStatus::InBlock)
         })
