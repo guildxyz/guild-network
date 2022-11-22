@@ -81,58 +81,64 @@ fn operator_unregistration_invalid_unknown_operator() {
 fn initiate_requests_valid() {
     new_test_runtime().execute_with(|| {
         System::set_block_number(1);
-        assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
+        let operator = 1;
+        let requester = 2;
+        let callback = pallet_test_caller::Call::<TestRuntime>::callback {
+            expired: false,
+            result: vec![],
+        };
+        let fee = get_minimum_fee();
+
+        assert!(<Chainlink>::register_operator(Origin::signed(operator)).is_ok());
         assert_eq!(
             last_event(),
-            Event::Chainlink(pallet_chainlink::Event::OperatorRegistered(1))
+            Event::Chainlink(pallet_chainlink::Event::OperatorRegistered(operator))
         );
 
         let parameters = ("a", "b");
         let data = parameters.encode();
         assert!(<Chainlink>::initiate_request(
-            Origin::signed(2),
-            1,
+            Origin::signed(requester),
+            callback.clone(),
             data.clone(),
-            get_minimum_fee(),
-            pallet_test_caller::Call::<TestRuntime>::callback {
-                expired: false,
-                result: vec![]
-            }
+            fee,
         )
         .is_ok());
+
+        let request_id = 0;
         assert_eq!(
             last_event(),
-            Event::Chainlink(pallet_chainlink::Event::OracleRequest(
-                1,
-                0,
-                2,
-                1,
-                data.clone(),
-                "Chainlink.callback".into(),
-                get_minimum_fee()
-            ))
+            Event::Chainlink(pallet_chainlink::Event::OracleRequest {
+                request_id,
+                operator,
+                callback,
+                data: data.clone(),
+                fee,
+            })
         );
 
         let r = <(Vec<u8>, Vec<u8>)>::decode(&mut &data[..]).unwrap().0;
         assert_eq!("a", std::str::from_utf8(&r).unwrap());
 
         let result: u64 = 10;
-        assert!(<Chainlink>::callback(Origin::signed(1), 0, result.encode()).is_ok());
+        let mut result_vec = request_id.encode();
+        result_vec.append(&mut result.encode());
+        assert!(<Chainlink>::callback(Origin::signed(operator), request_id, result_vec).is_ok());
 
         // u64 = 8 zeros
         let expected_answer = vec![0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0];
 
         assert_eq!(
             last_event(),
-            Event::Chainlink(pallet_chainlink::Event::OracleAnswer(
-                1,
-                0,
-                expected_answer,
-                get_minimum_fee()
-            ))
+            Event::Chainlink(pallet_chainlink::Event::OracleAnswer {
+                request_id,
+                operator,
+                result: expected_answer,
+                fee,
+            })
         );
 
-        assert_eq!(<pallet_test_caller::Result<TestRuntime>>::get(), 10);
+        assert_eq!(<pallet_test_caller::Result<TestRuntime>>::get(), result);
     });
 }
 
@@ -146,10 +152,13 @@ fn linear_request_delegation() {
         let operator_1 = 2;
         let operator_2 = 3;
         let operator_3 = 5;
-        let mut request_id = 0;
-
-        let data_version = 127;
         let data = vec![];
+        let callback = pallet_test_caller::Call::<TestRuntime>::callback {
+            expired: false,
+            result: vec![],
+        };
+        let fee = get_minimum_fee();
+        let mut request_id = 0;
 
         assert!(<Chainlink>::register_operator(Origin::signed(operator_0)).is_ok());
         assert!(<Chainlink>::register_operator(Origin::signed(operator_1)).is_ok());
@@ -158,131 +167,101 @@ fn linear_request_delegation() {
 
         assert!(<Chainlink>::initiate_request(
             Origin::signed(signer),
-            data_version,
+            callback.clone(),
             data.clone(),
-            get_minimum_fee(),
-            pallet_test_caller::Call::<TestRuntime>::callback {
-                expired: false,
-                result: vec![]
-            }
+            fee,
         )
         .is_ok());
 
         assert_eq!(
             last_event(),
-            Event::Chainlink(pallet_chainlink::Event::OracleRequest(
-                operator_0,
+            Event::Chainlink(pallet_chainlink::Event::OracleRequest {
                 request_id,
-                signer,
-                data_version,
-                data.clone(),
-                "Chainlink.callback".into(),
-                get_minimum_fee()
-            ))
+                operator: operator_0,
+                callback: callback.clone(),
+                data: data.clone(),
+                fee,
+            })
         );
         request_id += 1;
 
         assert!(<Chainlink>::initiate_request(
             Origin::signed(signer),
-            data_version,
+            callback.clone(),
             data.clone(),
-            get_minimum_fee(),
-            pallet_test_caller::Call::<TestRuntime>::callback {
-                expired: false,
-                result: vec![]
-            }
+            fee,
         )
         .is_ok());
 
         assert_eq!(
             last_event(),
-            Event::Chainlink(pallet_chainlink::Event::OracleRequest(
-                operator_1,
+            Event::Chainlink(pallet_chainlink::Event::OracleRequest {
                 request_id,
-                signer,
-                data_version,
-                data.clone(),
-                "Chainlink.callback".into(),
-                get_minimum_fee()
-            ))
+                operator: operator_1,
+                callback: callback.clone(),
+                data: data.clone(),
+                fee,
+            })
         );
         request_id += 1;
 
         assert!(<Chainlink>::initiate_request(
             Origin::signed(signer),
-            data_version,
+            callback.clone(),
             data.clone(),
-            get_minimum_fee(),
-            pallet_test_caller::Call::<TestRuntime>::callback {
-                expired: false,
-                result: vec![]
-            }
+            fee,
         )
         .is_ok());
 
         assert_eq!(
             last_event(),
-            Event::Chainlink(pallet_chainlink::Event::OracleRequest(
-                operator_2,
+            Event::Chainlink(pallet_chainlink::Event::OracleRequest {
                 request_id,
-                signer,
-                data_version,
-                data.clone(),
-                "Chainlink.callback".into(),
-                get_minimum_fee()
-            ))
+                operator: operator_2,
+                callback: callback.clone(),
+                data: data.clone(),
+                fee,
+            })
         );
         request_id += 1;
 
         assert!(<Chainlink>::initiate_request(
             Origin::signed(signer),
-            data_version,
+            callback.clone(),
             data.clone(),
-            get_minimum_fee(),
-            pallet_test_caller::Call::<TestRuntime>::callback {
-                expired: false,
-                result: vec![]
-            }
+            fee,
         )
         .is_ok());
 
         assert_eq!(
             last_event(),
-            Event::Chainlink(pallet_chainlink::Event::OracleRequest(
-                operator_3,
+            Event::Chainlink(pallet_chainlink::Event::OracleRequest {
                 request_id,
-                signer,
-                data_version,
-                data.clone(),
-                "Chainlink.callback".into(),
-                get_minimum_fee()
-            ))
+                operator: operator_3,
+                callback: callback.clone(),
+                data: data.clone(),
+                fee,
+            })
         );
         request_id += 1;
 
         assert!(<Chainlink>::initiate_request(
             Origin::signed(signer),
-            data_version,
+            callback.clone(),
             data.clone(),
-            get_minimum_fee(),
-            pallet_test_caller::Call::<TestRuntime>::callback {
-                expired: false,
-                result: vec![]
-            }
+            fee,
         )
         .is_ok());
 
         assert_eq!(
             last_event(),
-            Event::Chainlink(pallet_chainlink::Event::OracleRequest(
-                operator_0,
+            Event::Chainlink(pallet_chainlink::Event::OracleRequest {
                 request_id,
-                signer,
-                data_version,
+                operator: operator_0,
+                callback,
                 data,
-                "Chainlink.callback".into(),
-                get_minimum_fee()
-            ))
+                fee,
+            })
         );
     });
 }
@@ -293,13 +272,12 @@ fn initiate_requests_invalid_unknown_operator() {
         // No operator registered error
         assert!(<Chainlink>::initiate_request(
             Origin::signed(2),
-            1,
-            vec![],
-            get_minimum_fee(),
             pallet_test_caller::Call::<TestRuntime>::callback {
                 expired: false,
                 result: vec![]
-            }
+            },
+            vec![],
+            get_minimum_fee(),
         )
         .is_err());
     });
@@ -312,13 +290,12 @@ fn initiate_requests_invalid_insufficient_fee() {
         // Insufficient fee error
         assert!(<Chainlink>::initiate_request(
             Origin::signed(2),
-            1,
-            vec![],
-            get_minimum_fee() - 1,
             pallet_test_caller::Call::<TestRuntime>::callback {
                 expired: false,
                 result: vec![]
-            }
+            },
+            vec![],
+            get_minimum_fee() - 1,
         )
         .is_err());
     });
@@ -332,13 +309,12 @@ fn initiate_requests_invalid_insufficient_balance_for_fee() {
         // Insufficient balance error (System error)
         assert!(<Chainlink>::initiate_request(
             Origin::signed(2),
-            1,
-            vec![],
-            GENESIS_BALANCE + 1,
             pallet_test_caller::Call::<TestRuntime>::callback {
                 expired: false,
                 result: vec![]
-            }
+            },
+            vec![],
+            GENESIS_BALANCE + 1,
         )
         .is_err());
     });
@@ -350,13 +326,12 @@ fn initiate_requests_invalid_wrong_operator() {
         assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
         assert!(<Chainlink>::initiate_request(
             Origin::signed(2),
-            1,
-            vec![],
-            get_minimum_fee(),
             pallet_test_caller::Call::<TestRuntime>::callback {
                 expired: false,
                 result: vec![]
-            }
+            },
+            vec![],
+            get_minimum_fee(),
         )
         .is_ok());
         // Wrong operator error
@@ -378,13 +353,12 @@ fn kill_request() {
         assert!(<Chainlink>::register_operator(Origin::signed(1)).is_ok());
         assert!(<Chainlink>::initiate_request(
             Origin::signed(2),
-            1,
-            vec![],
-            get_minimum_fee(),
             pallet_test_caller::Call::<TestRuntime>::callback {
                 expired: false,
                 result: vec![]
-            }
+            },
+            vec![],
+            get_minimum_fee(),
         )
         .is_ok());
 

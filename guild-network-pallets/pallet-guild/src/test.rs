@@ -224,6 +224,20 @@ fn joining_a_guild() {
             vec![(role_1_name, vec![]), (role_2_name, vec![])],
         )
         .unwrap();
+
+        // initiate dummy request as if it was coming from another
+        // pallet to check that request_ids are not garbled
+        <Chainlink>::initiate_request(
+            Origin::signed(signer),
+            pallet_guild::Call::<TestRuntime>::callback {
+                expired: false,
+                result: vec![],
+            },
+            vec![1, 2, 3],
+            1_000_000,
+        )
+        .unwrap();
+
         // join first role
         <Guild>::join_guild(
             Origin::signed(signer),
@@ -237,7 +251,9 @@ fn joining_a_guild() {
         assert!(<Guild>::user_data(signer).is_none());
 
         // access = true
-        <Chainlink>::callback(Origin::signed(signer), 0, vec![1]).unwrap();
+        let mut result = 0u64.to_le_bytes().to_vec();
+        result.push(1);
+        <Chainlink>::callback(Origin::signed(signer), 1, result).unwrap();
 
         assert_eq!(
             last_event(),
@@ -269,7 +285,9 @@ fn joining_a_guild() {
         assert!(<Guild>::join_request(1).is_some());
 
         // access = false
-        <Chainlink>::callback(Origin::signed(signer), 1, vec![0]).unwrap();
+        let mut result = 1u64.to_le_bytes().to_vec();
+        result.push(0);
+        <Chainlink>::callback(Origin::signed(signer), 2, result).unwrap();
         assert!(<Guild>::join_request(1).is_none());
         assert!(<Guild>::member(role_1_id, signer).is_some());
         assert!(<Guild>::member(role_2_id, signer).is_none());
@@ -296,7 +314,9 @@ fn joining_a_guild() {
         assert!(<Guild>::join_request(2).is_some());
 
         // access = true
-        <Chainlink>::callback(Origin::signed(signer), 2, vec![1]).unwrap();
+        let mut result = 2u64.to_le_bytes().to_vec();
+        result.push(1);
+        <Chainlink>::callback(Origin::signed(signer), 3, result).unwrap();
         assert!(<Guild>::join_request(1).is_none());
         assert!(<Guild>::member(role_1_id, signer).is_some());
         assert!(<Guild>::member(role_2_id, signer).is_some());
@@ -315,7 +335,7 @@ fn joining_a_guild() {
 }
 
 #[test]
-fn joining_a_guild_twice() {
+fn joining_the_same_role_in_a_guild_twice_fails() {
     new_test_runtime().execute_with(|| {
         init_chain();
         let guild_name = [0u8; 32];
@@ -340,7 +360,11 @@ fn joining_a_guild_twice() {
             vec![],
         )
         .unwrap();
-        <Chainlink>::callback(Origin::signed(signer), 0, vec![1]).unwrap();
+
+        let request_id = 0u64;
+        let mut result = request_id.to_le_bytes().to_vec();
+        result.push(1);
+        <Chainlink>::callback(Origin::signed(signer), request_id, result).unwrap();
 
         let guild_id = <Guild>::guild_id(guild_name).unwrap();
         let role_id = <Guild>::role_id(guild_id, role_name).unwrap();
@@ -355,7 +379,11 @@ fn joining_a_guild_twice() {
             vec![],
         )
         .unwrap();
-        <Chainlink>::callback(Origin::signed(signer), 1, vec![1]).unwrap();
+
+        let request_id = 1u64;
+        let mut result = request_id.to_le_bytes().to_vec();
+        result.push(1);
+        <Chainlink>::callback(Origin::signed(signer), request_id, result).unwrap();
         assert!(<Guild>::member(role_id, signer).is_some());
         assert!(<Guild>::join_request(0).is_none());
         assert!(<Guild>::join_request(1).is_none());
@@ -433,10 +461,14 @@ fn joining_multiple_guilds() {
 
         assert_eq!(<Guild>::next_request_id(), 4);
 
-        <Chainlink>::callback(Origin::signed(signer_1), 3, vec![1]).unwrap();
-        <Chainlink>::callback(Origin::signed(signer_1), 0, vec![1]).unwrap();
-        <Chainlink>::callback(Origin::signed(signer_1), 2, vec![0]).unwrap();
-        <Chainlink>::callback(Origin::signed(signer_1), 1, vec![1]).unwrap();
+        <Chainlink>::callback(Origin::signed(signer_1), 3, vec![3, 0, 0, 0, 0, 0, 0, 0, 1])
+            .unwrap();
+        <Chainlink>::callback(Origin::signed(signer_1), 0, vec![0, 0, 0, 0, 0, 0, 0, 0, 1])
+            .unwrap();
+        <Chainlink>::callback(Origin::signed(signer_1), 2, vec![2, 0, 0, 0, 0, 0, 0, 0, 0])
+            .unwrap();
+        <Chainlink>::callback(Origin::signed(signer_1), 1, vec![1, 0, 0, 0, 0, 0, 0, 0, 1])
+            .unwrap();
 
         let guild_1_id = <Guild>::guild_id(guild_1_name).unwrap();
         let guild_2_id = <Guild>::guild_id(guild_2_name).unwrap();
@@ -477,6 +509,23 @@ fn kill_request() {
         )
         .unwrap();
 
+        // initiate another oracle request from a hypothetical pallet so that
+        // chainlink will have 2 requests in the queue with the next
+        // join_guild, but guild will only have 1 request in the queue
+        <Chainlink>::initiate_request(
+            Origin::signed(signer),
+            pallet_guild::Call::<TestRuntime>::callback {
+                expired: false,
+                result: vec![],
+            },
+            vec![1, 2, 3],
+            1_000_000,
+        )
+        .unwrap();
+
+        assert!(<Chainlink>::request(0).is_some());
+        assert!(<Chainlink>::request(1).is_none());
+
         <Guild>::join_guild(
             Origin::signed(signer),
             guild_name,
@@ -485,12 +534,17 @@ fn kill_request() {
             vec![],
         )
         .unwrap();
+
+        assert!(<Chainlink>::request(0).is_some());
+        assert!(<Chainlink>::request(1).is_some());
         assert!(<Guild>::join_request(0).is_some());
 
         <Chainlink as OnFinalize<u64>>::on_finalize(
             <TestRuntime as pallet_chainlink::Config>::ValidityPeriod::get() + STARTING_BLOCK_NUM,
         );
 
+        assert!(<Chainlink>::request(0).is_none());
+        assert!(<Chainlink>::request(1).is_none());
         assert!(<Guild>::join_request(0).is_none());
 
         let guild_id = <Guild>::guild_id(guild_name).unwrap();

@@ -1,5 +1,5 @@
-use crate::{runtime, AccountId, Api, Hash};
-use guild_network_common::{GuildName, RoleName};
+use crate::{runtime, AccountId, Api, Hash, JoinRequest};
+use guild_network_common::{GuildName, RequestIdentifier, RoleName};
 use subxt::storage::address::{StorageHasher, StorageMapKey};
 
 use std::collections::BTreeMap;
@@ -98,14 +98,15 @@ pub async fn role_id(
     Ok(role_ids)
 }
 
-pub async fn join_requests(api: Api, page_size: u32) -> Result<(), subxt::Error> {
-    let root = runtime::storage().guild().join_requests_root();
+pub async fn join_request(api: Api, id: RequestIdentifier) -> Result<JoinRequest, subxt::Error> {
+    let key = runtime::storage().guild().join_requests(id);
+    let join_request = api
+        .storage()
+        .fetch(&key, None)
+        .await?
+        .ok_or_else(|| subxt::Error::Other(format!("no Guild join request with id: {}", id)))?;
 
-    let mut iter = api.storage().iter(root, page_size, None).await?;
-    while let Some((key, value)) = iter.next().await? {
-        println!("key: {:?}\tvalue: {:?}", key, value);
-    }
-    Ok(())
+    Ok(join_request)
 }
 
 pub async fn oracle_requests(
