@@ -117,7 +117,9 @@ fn initiate_requests_valid() {
         assert_eq!("a", std::str::from_utf8(&r).unwrap());
 
         let result: u64 = 10;
-        assert!(<Chainlink>::callback(Origin::signed(operator), request_id, result.encode()).is_ok());
+        assert!(
+            <Chainlink>::callback(Origin::signed(operator), request_id, result.encode()).is_ok()
+        );
 
         assert_eq!(
             last_event(),

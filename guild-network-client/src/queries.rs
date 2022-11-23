@@ -1,5 +1,6 @@
-use crate::{runtime, AccountId, Api, GuildData, Hash, JoinRequest};
+use crate::{runtime, AccountId, Api, GuildData, Hash, JoinRequest, OracleRequest};
 use guild_network_common::{GuildName, RequestIdentifier, RoleName};
+use subxt::ext::codec::Decode;
 use subxt::storage::address::{StorageHasher, StorageMapKey};
 
 use std::collections::BTreeMap;
@@ -99,12 +100,14 @@ pub async fn role_id(
 }
 
 pub async fn join_request(api: Api, id: RequestIdentifier) -> Result<JoinRequest, subxt::Error> {
-    let key = runtime::storage().guild().join_requests(id);
-    let join_request = api
+    let key = runtime::storage().chainlink().requests(id);
+    let request = api
         .storage()
         .fetch(&key, None)
         .await?
-        .ok_or_else(|| subxt::Error::Other(format!("no Guild join request with id: {}", id)))?;
+        .ok_or_else(|| subxt::Error::Other(format!("no request with id: {}", id)))?;
+
+    let join_request = JoinRequest::decode(&mut request.data.as_slice())?;
 
     Ok(join_request)
 }
@@ -112,14 +115,14 @@ pub async fn join_request(api: Api, id: RequestIdentifier) -> Result<JoinRequest
 pub async fn oracle_requests(
     api: Api,
     page_size: u32,
-) -> Result<BTreeMap<u64, AccountId>, subxt::Error> {
+) -> Result<BTreeMap<RequestIdentifier, OracleRequest>, subxt::Error> {
     let root = runtime::storage().chainlink().requests_root();
 
     let mut map = BTreeMap::new();
     let mut iter = api.storage().iter(root, page_size, None).await?;
     while let Some((key, value)) = iter.next().await? {
         let key_bytes = (&key.0[48..]).try_into().unwrap();
-        map.insert(u64::from_le_bytes(key_bytes), value.operator);
+        map.insert(RequestIdentifier::from_le_bytes(key_bytes), value);
     }
     Ok(map)
 }

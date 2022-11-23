@@ -19,7 +19,7 @@ pub mod pallet {
         traits::Currency,
     };
     use frame_system::pallet_prelude::*;
-    use guild_network_common::{GuildName, RequestIdentifier, RoleName};
+    use guild_network_common::*;
     use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig};
     use sp_std::vec::Vec as SpVec;
 
@@ -35,21 +35,6 @@ pub mod pallet {
     pub struct Guild<AccountId> {
         pub owner: AccountId,
         pub metadata: SpVec<u8>,
-    }
-
-    #[derive(Encode, Decode, Clone, TypeInfo)]
-    pub struct JoinRequest<AccountId> {
-        pub requester: AccountId,
-        pub guild_name: GuildName,
-        pub role_name: RoleName,
-        pub requester_identities: SpVec<u8>,
-        pub request_data: SpVec<u8>,
-    }
-
-    #[derive(Encode, Decode, Clone, TypeInfo)]
-    pub struct JoinRequestWithAccess<AccountId> {
-        pub access: bool,
-        pub request: JoinRequest<AccountId>,
     }
 
     #[pallet::storage]

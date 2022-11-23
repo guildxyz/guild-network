@@ -3,6 +3,5 @@ name = "guild-network-common"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+codec = { package = "parity-scale-codec", version = "3.2.1", default-features = false }

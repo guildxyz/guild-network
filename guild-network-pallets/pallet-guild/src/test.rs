@@ -2,6 +2,7 @@ use crate::{self as pallet_guild};
 
 use codec::{Decode, Encode};
 use frame_support::traits::{OnFinalize, OnInitialize};
+use guild_network_common::*;
 use sp_runtime::DispatchError;
 
 use test_runtime::test_runtime;
@@ -40,13 +41,13 @@ fn error_msg<'a>(error: DispatchError) -> &'a str {
 
 fn dummy_answer(
     requester: AccountId,
-    guild_name: guild_network_common::GuildName,
-    role_name: guild_network_common::RoleName,
+    guild_name: GuildName,
+    role_name: RoleName,
     access: bool,
-) -> crate::JoinRequestWithAccess<AccountId> {
-    crate::JoinRequestWithAccess {
+) -> JoinRequestWithAccess<AccountId> {
+    JoinRequestWithAccess {
         access,
-        request: crate::JoinRequest {
+        request: JoinRequest {
             requester,
             guild_name,
             role_name,
@@ -185,8 +186,7 @@ fn valid_join_guild_request() {
         let request = <Chainlink>::request(0).unwrap();
         assert_eq!(request.requester, signer);
         assert_eq!(request.operator, signer);
-        let request_data =
-            crate::JoinRequest::<AccountId>::decode(&mut request.data.as_slice()).unwrap();
+        let request_data = JoinRequest::<AccountId>::decode(&mut request.data.as_slice()).unwrap();
         assert_eq!(request_data.requester_identities, identity);
         assert_eq!(request_data.request_data, auth);
     });
@@ -421,17 +421,13 @@ fn joining_multiple_guilds() {
         let mut answer_3 = dummy_answer(signer_2, guild_1_name, role_1_name, true);
         answer_3.request.requester_identities = user_2_data.clone();
 
-        <Chainlink>::callback(Origin::signed(signer_1), 3, answer_3.encode())
-            .unwrap();
-        <Chainlink>::callback(Origin::signed(signer_1), 0, answer_0.encode())
-            .unwrap();
-        <Chainlink>::callback(Origin::signed(signer_1), 1, answer_1.encode())
-            .unwrap();
+        <Chainlink>::callback(Origin::signed(signer_1), 3, answer_3.encode()).unwrap();
+        <Chainlink>::callback(Origin::signed(signer_1), 0, answer_0.encode()).unwrap();
+        <Chainlink>::callback(Origin::signed(signer_1), 1, answer_1.encode()).unwrap();
         let error = <Chainlink>::callback(Origin::signed(signer_1), 2, answer_2.encode())
             .err()
             .unwrap();
         assert_eq!(error_msg(error), "AccessDenied");
-
 
         let guild_1_id = <Guild>::guild_id(guild_1_name).unwrap();
         let guild_2_id = <Guild>::guild_id(guild_2_name).unwrap();
