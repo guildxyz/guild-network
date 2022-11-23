@@ -1,8 +1,9 @@
 use futures::future::try_join_all;
+use guild_network_client::data::*;
 #[cfg(not(feature = "external-oracle"))]
 use guild_network_client::queries::*;
 use guild_network_client::transactions::*;
-use guild_network_client::{AccountId, Api, Guild, Keypair, Role, Signer, TxStatus};
+use guild_network_client::{AccountId, Api, Keypair, Signer, TxStatus};
 use guild_network_common::{GuildName, RoleName};
 use guild_network_gate::requirements::Requirement;
 use sp_keyring::AccountKeyring;
@@ -87,11 +88,17 @@ pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>) {
     let roles = vec![
         Role {
             name: FIRST_ROLE,
-            requirements: vec![Requirement::Free],
+            requirements: RequirementsLogic {
+                logic: "".to_string(),
+                requirements: vec![Requirement::Free],
+            },
         },
         Role {
             name: SECOND_ROLE,
-            requirements: vec![Requirement::Free],
+            requirements: RequirementsLogic {
+                logic: "".to_string(),
+                requirements: vec![Requirement::Free],
+            },
         },
     ];
 
@@ -106,20 +113,28 @@ pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>) {
         roles,
     };
 
-    send_tx_ready(api.clone(), &create_guild(first_guild), Arc::clone(&signer))
-        .await
-        .expect("failed to create guild");
-    send_tx_in_block(api.clone(), &create_guild(second_guild), signer)
-        .await
-        .expect("failed to create guild");
+    send_tx_ready(
+        api.clone(),
+        &create_guild(first_guild).expect("Failed to serialize requirements"),
+        Arc::clone(&signer),
+    )
+    .await
+    .expect("failed to create guild");
+    send_tx_in_block(
+        api.clone(),
+        &create_guild(second_guild).expect("Failed to serialize requirements"),
+        signer,
+    )
+    .await
+    .expect("failed to create guild");
 }
 
 pub async fn join_guilds(api: Api, operators: &BTreeMap<AccountId, Arc<Signer>>) {
     let join_request_txns = [
-        join_guild(FIRST_GUILD, FIRST_ROLE, vec![], vec![]),
-        join_guild(FIRST_GUILD, SECOND_ROLE, vec![], vec![]),
-        join_guild(SECOND_GUILD, FIRST_ROLE, vec![], vec![]),
-        join_guild(SECOND_GUILD, SECOND_ROLE, vec![], vec![]),
+        join_guild(FIRST_GUILD, FIRST_ROLE, vec![], vec![]).expect("Failed to serialize data"),
+        join_guild(FIRST_GUILD, SECOND_ROLE, vec![], vec![]).expect("Failed to serialize data"),
+        join_guild(SECOND_GUILD, FIRST_ROLE, vec![], vec![]).expect("Failed to serialize data"),
+        join_guild(SECOND_GUILD, SECOND_ROLE, vec![], vec![]).expect("Failed to serialize data"),
     ];
 
     let join_request_futures = operators

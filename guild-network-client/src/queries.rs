@@ -1,4 +1,4 @@
-use crate::{runtime, AccountId, Api, Hash, JoinRequest};
+use crate::{runtime, AccountId, Api, GuildData, Hash, JoinRequest};
 use guild_network_common::{GuildName, RequestIdentifier, RoleName};
 use subxt::storage::address::{StorageHasher, StorageMapKey};
 
@@ -122,4 +122,30 @@ pub async fn oracle_requests(
         map.insert(u64::from_le_bytes(key_bytes), value.operator);
     }
     Ok(map)
+}
+
+pub async fn guild(
+    api: Api,
+    filter: Option<GuildName>,
+    page_size: u32,
+) -> Result<Vec<GuildData>, subxt::Error> {
+    let mut guilds: Vec<GuildData> = Vec::new();
+    if let Some(name) = filter {
+        let guild_id = guild_id(api.clone(), name).await?;
+        let guild_addr = runtime::storage().guild().guilds(guild_id);
+        let guild = api
+            .storage()
+            .fetch(&guild_addr, None)
+            .await?
+            .ok_or_else(|| subxt::Error::Other(format!("no Guild with name: {:#?}", name)))?;
+        guilds.push(guild);
+    } else {
+        let root = runtime::storage().guild().guilds_root();
+        let mut iter = api.storage().iter(root, page_size, None).await?;
+        while let Some((_guild_uuid, guild_data)) = iter.next().await? {
+            // we don't care about guild_uuid in this case
+            guilds.push(guild_data);
+        }
+    }
+    Ok(guilds)
 }
