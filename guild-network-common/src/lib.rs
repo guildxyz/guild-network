@@ -12,14 +12,17 @@ pub type RequestIdentifier = u64;
 #[derive(Encode, Decode, Clone)]
 pub struct JoinRequest<T> {
     pub requester: T,
-    pub guild_name: GuildName,
-    pub role_name: RoleName,
     pub requester_identities: Vec<u8>,
     pub request_data: Vec<u8>,
+    pub guild_name: GuildName,
+    pub role_name: RoleName,
 }
 
 #[derive(Encode, Decode, Clone)]
 pub struct JoinRequestWithAccess<T> {
     pub access: bool,
-    pub request: JoinRequest<T>,
+    pub requester: T,
+    pub requester_identities: Vec<u8>,
+    pub guild_name: GuildName,
+    pub role_name: GuildName,
 }

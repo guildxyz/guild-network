@@ -176,34 +176,33 @@ pub mod pallet {
 
             // cannot wrap codec::Error in this error type because
             // it doesn't implement the required traits
-            let JoinRequestWithAccess { access, request } =
-                JoinRequestWithAccess::<T::AccountId>::decode(&mut result.as_slice())
-                    .map_err(|_| Error::<T>::CodecError)?;
+            let answer = JoinRequestWithAccess::<T::AccountId>::decode(&mut result.as_slice())
+                .map_err(|_| Error::<T>::CodecError)?;
 
             // if we deposit and event here, it does not appear if an error is
             // returned
-            ensure!(access, Error::<T>::AccessDenied);
+            ensure!(answer.access, Error::<T>::AccessDenied);
 
             let guild_id =
-                Self::guild_id(request.guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
+                Self::guild_id(answer.guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
             let role_id =
-                Self::role_id(guild_id, request.role_name).ok_or(Error::<T>::RoleDoesNotExist)?;
+                Self::role_id(guild_id, answer.role_name).ok_or(Error::<T>::RoleDoesNotExist)?;
 
             ensure!(
-                !Members::<T>::contains_key(role_id, &request.requester),
+                !Members::<T>::contains_key(role_id, &answer.requester),
                 Error::<T>::UserAlreadyJoined
             );
 
-            Members::<T>::insert(role_id, &request.requester, true);
+            Members::<T>::insert(role_id, &answer.requester, true);
 
-            if !UserData::<T>::contains_key(&request.requester) {
-                UserData::<T>::insert(&request.requester, &request.requester_identities);
+            if !UserData::<T>::contains_key(&answer.requester) {
+                UserData::<T>::insert(&answer.requester, &answer.requester_identities);
             }
 
             Self::deposit_event(Event::GuildJoined(
-                request.requester,
-                request.guild_name,
-                request.role_name,
+                answer.requester,
+                answer.guild_name,
+                answer.role_name,
             ));
 
             Ok(())

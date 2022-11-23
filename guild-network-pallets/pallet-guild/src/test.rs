@@ -47,13 +47,10 @@ fn dummy_answer(
 ) -> JoinRequestWithAccess<AccountId> {
     JoinRequestWithAccess {
         access,
-        request: JoinRequest {
-            requester,
-            guild_name,
-            role_name,
-            requester_identities: vec![1, 2, 3],
-            request_data: vec![4, 5, 6],
-        },
+        requester,
+        requester_identities: vec![1, 2, 3],
+        guild_name,
+        role_name,
     }
 }
 
@@ -419,7 +416,7 @@ fn joining_multiple_guilds() {
         )
         .unwrap();
         let mut answer_3 = dummy_answer(signer_2, guild_1_name, role_1_name, true);
-        answer_3.request.requester_identities = user_2_data.clone();
+        answer_3.requester_identities = user_2_data.clone();
 
         <Chainlink>::callback(Origin::signed(signer_1), 3, answer_3.encode()).unwrap();
         <Chainlink>::callback(Origin::signed(signer_1), 0, answer_0.encode()).unwrap();
