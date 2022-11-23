@@ -1,5 +1,3 @@
-use guild_network_common::{GuildName, RoleName};
-use guild_network_gate::requirements::Requirement;
 use subxt::{
     events::{EventSubscription, FilterEvents},
     ext::sp_runtime::{generic::Header, traits::BlakeTwo256, AccountId32},
@@ -16,6 +14,7 @@ pub use subxt::PolkadotConfig as ClientConfig;
 
 #[subxt::subxt(runtime_metadata_path = "./artifacts/metadata.scale")]
 pub mod runtime {}
+pub mod data;
 pub mod queries;
 pub mod transactions;
 
@@ -81,19 +80,6 @@ pub fn pad_to_32_bytes(name: &[u8]) -> Result<[u8; 32], anyhow::Error> {
     anyhow::ensure!(name.len() <= output.len(), "name too long");
     output[..name.len()].copy_from_slice(name);
     Ok(output)
-}
-
-#[derive(Debug, Clone)]
-pub struct Guild {
-    pub name: GuildName,
-    pub metadata: Vec<u8>,
-    pub roles: Vec<Role>,
-}
-
-#[derive(Debug, Clone)]
-pub struct Role {
-    pub name: RoleName,
-    pub requirements: Vec<Requirement>,
 }
 
 #[cfg(test)]

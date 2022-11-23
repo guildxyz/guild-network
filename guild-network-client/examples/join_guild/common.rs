@@ -1,8 +1,9 @@
 use futures::future::try_join_all;
+use guild_network_client::data::*;
 #[cfg(not(feature = "external-oracle"))]
 use guild_network_client::queries::*;
 use guild_network_client::transactions::*;
-use guild_network_client::{AccountId, Api, Guild, Keypair, Role, Signer, TxStatus};
+use guild_network_client::{AccountId, Api, Keypair, Signer, TxStatus};
 use guild_network_common::{GuildName, RoleName};
 use guild_network_gate::requirements::Requirement;
 use sp_keyring::AccountKeyring;
@@ -87,11 +88,17 @@ pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>) {
     let roles = vec![
         Role {
             name: FIRST_ROLE,
-            requirements: vec![Requirement::Free],
+            requirements: RequirementsLogic {
+                logic: "".to_string(),
+                requirements: vec![Requirement::Free],
+            },
         },
         Role {
             name: SECOND_ROLE,
-            requirements: vec![Requirement::Free],
+            requirements: RequirementsLogic {
+                logic: "".to_string(),
+                requirements: vec![Requirement::Free],
+            },
         },
     ];
 

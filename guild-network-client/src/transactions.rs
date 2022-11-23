@@ -1,4 +1,5 @@
-use crate::{runtime, AccountId, Api, Guild, Hash, Signer, TxStatus};
+use crate::{data::Guild, runtime, AccountId, Api, Hash, Signer, TxStatus};
+use ciborium::ser::into_writer;
 use futures::StreamExt;
 use guild_network_common::{GuildName, RoleName};
 use guild_network_gate::identities::{Identity, IdentityAuth};
@@ -25,7 +26,11 @@ pub fn create_guild(guild: Guild) -> impl TxPayload {
     let roles = guild
         .roles
         .into_iter()
-        .map(|role| (role.name, vec![0])) // TODO serialize requirements
+        .map(|role| {
+            let mut ser_requirements = Vec::new();
+            into_writer(&role.requirements, &mut ser_requirements).unwrap();
+            (role.name, ser_requirements)
+        })
         .collect();
     runtime::tx()
         .guild()
@@ -35,13 +40,16 @@ pub fn create_guild(guild: Guild) -> impl TxPayload {
 pub fn join_guild(
     guild_name: GuildName,
     role_name: RoleName,
-    _identities: Vec<Identity>,
-    _auth: Vec<IdentityAuth>,
+    identities: Vec<Identity>,
+    auth: Vec<IdentityAuth>,
 ) -> impl TxPayload {
-    // TODO serialize identities
+    let mut ser_identities = Vec::new();
+    let mut ser_auth = Vec::new();
+    into_writer(&identities, &mut ser_identities).unwrap(); // TODO: error handling
+    into_writer(&auth, &mut ser_auth).unwrap();
     runtime::tx()
         .guild()
-        .join_guild(guild_name, role_name, vec![0], vec![1])
+        .join_guild(guild_name, role_name, ser_identities, ser_auth)
 }
 
 pub async fn send_owned_tx<T: TxPayload>(
