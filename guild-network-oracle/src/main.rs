@@ -3,7 +3,7 @@ use guild_network_client::queries::join_request;
 use guild_network_client::runtime::chainlink::events::OracleRequest;
 use guild_network_client::transactions::{oracle_callback, send_tx_ready};
 use guild_network_client::{Api, FilteredEvents, GuildCall, Signer};
-use log::{error, info, trace};
+use log::{error, info};
 use sp_keyring::AccountKeyring;
 use structopt::StructOpt;
 
@@ -66,68 +66,76 @@ async fn main() -> ! {
         .filter_events::<(OracleRequest,)>();
 
     loop {
-        if let Err(e) = try_main(api.clone(), Arc::clone(&signer), &mut events).await {
-            error!("{e}");
+        match next_event(&mut events).await {
+            Ok(oracle_request) => submit_answer(api.clone(), Arc::clone(&signer), oracle_request),
+            Err(e) => error!("{e}"),
         }
     }
 }
 
-async fn try_main(
+fn submit_answer(api: Api, signer: Arc<Signer>, request: OracleRequest) {
+    tokio::spawn(async move {
+        if let Err(e) = try_submit_answer(api, signer, request).await {
+            error!("{e}");
+        }
+    });
+}
+
+async fn try_submit_answer(
     api: Api,
     signer: Arc<Signer>,
-    events: &mut FilteredEvents<'_, (OracleRequest,)>,
+    request: OracleRequest,
 ) -> Result<(), anyhow::Error> {
-    trace!("[+] Listening for events");
-    if let Some(event) = events.next().await {
-        let OracleRequest {
-            request_id,
-            operator,
-            callback,
-            fee,
-        } = event?.event;
-        info!(
-            "OracleRequest: {}, {}, {:?}, {}",
-            request_id, operator, callback, fee
-        );
-        if &operator != signer.account_id() {
-            // request wasn't delegated to us so return
-            return Ok(());
-        }
-
-        // check whether the incoming request originates from the guild
-        // pallet just for testing basically
-        if !matches_variant(&callback, &GuildCall::callback { result: vec![] }) {
-            return Ok(());
-        }
-
-        // TODO spawn does not work for multiple calls
-        // when I send 10 requests it only responds to one
-        //tokio::spawn(async move {
-        // TODO storage query
-        // TODO verify user identities
-        // NOTE unwrap is fine because data has the correct length and
-        // will always fit
-        let join_request = join_request(api.clone(), request_id).await?;
-        info!(
-            "guild: {:?}, role: {:?}",
-            join_request.guild_name, join_request.role_name
-        );
-
-        // TODO retrieve balances and check requirements
-        let requirement_check = true;
-        let result = vec![u8::from(requirement_check)];
-
-        let tx = oracle_callback(request_id, result);
-        send_tx_ready(api, &tx, signer).await?;
-        info!(
-            "oracle answer ({}) submitted: {}",
-            request_id, requirement_check
-        );
-        //   Ok::<(), anyhow::Error>(())
-        //});
+    let OracleRequest {
+        request_id,
+        operator,
+        callback,
+        fee,
+    } = request;
+    info!(
+        "OracleRequest: {}, {}, {:?}, {}",
+        request_id, operator, callback, fee
+    );
+    if &operator != signer.account_id() {
+        // request wasn't delegated to us so return
+        return Ok(());
     }
 
+    // check whether the incoming request originates from the guild
+    // pallet just for testing basically
+    if !matches_variant(&callback, &GuildCall::callback { result: vec![] }) {
+        return Ok(());
+    }
+
+    // TODO storage query for requirements
+    let join_request = join_request(api.clone(), request_id).await?;
+    info!(
+        "guild: {:?}, role: {:?}",
+        join_request.guild_name, join_request.role_name
+    );
+    // TODO verify user identities
+    // TODO retrieve balances and check requirements
+    tokio::time::sleep(tokio::time::Duration::from_millis(request_id * 10)).await;
+    let requirement_check = true;
+    let result = vec![u8::from(requirement_check)];
+    let tx = oracle_callback(request_id, result);
+    send_tx_ready(api, &tx, signer).await?;
+    info!(
+        "oracle answer ({}) submitted: {}",
+        request_id, requirement_check
+    );
     Ok(())
+}
+
+async fn next_event(
+    events: &mut FilteredEvents<'_, (OracleRequest,)>,
+) -> Result<OracleRequest, anyhow::Error> {
+    if let Some(event) = events.next().await {
+        let oracle_request = event?.event;
+        Ok(oracle_request)
+    } else {
+        Err(anyhow::anyhow!("next event is None"))
+    }
 }
 
 fn matches_variant<T>(a: &T, b: &T) -> bool {
