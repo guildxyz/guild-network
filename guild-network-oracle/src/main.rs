@@ -5,8 +5,9 @@ use guild_network_client::transactions::{oracle_callback, send_tx_ready};
 use guild_network_client::{Api, FilteredEvents, GuildCall, Signer};
 use log::{error, info};
 use sp_keyring::AccountKeyring;
-use std::sync::Arc;
 use structopt::StructOpt;
+
+use std::sync::Arc;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
