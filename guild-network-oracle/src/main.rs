@@ -1,9 +1,8 @@
 use futures::StreamExt;
 use guild_network_client::queries::join_request;
 use guild_network_client::runtime::chainlink::events::OracleRequest;
-use guild_network_client::runtime::runtime_types::pallet_guild::pallet::Call as GuildCall;
 use guild_network_client::transactions::{oracle_callback, send_tx_ready};
-use guild_network_client::{Api, FilteredEvents, Signer};
+use guild_network_client::{Api, FilteredEvents, GuildCall, Signer};
 use log::{error, info};
 use sp_keyring::AccountKeyring;
 use std::sync::Arc;
