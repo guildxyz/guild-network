@@ -66,7 +66,7 @@ pub mod pallet {
 
     // A trait allowing to inject Operator results back into the specified Call
     pub trait CallbackWithParameter {
-        fn with_result(&self, expired: bool, result: SpVec<u8>) -> Option<Self>
+        fn with_result(&self, result: SpVec<u8>) -> Option<Self>
         where
             Self: core::marker::Sized;
     }
@@ -101,15 +101,14 @@ pub mod pallet {
             request_id: RequestIdentifier,
             operator: T::AccountId,
             callback: T::Callback,
-            data: SpVec<u8>,
             fee: BalanceOf<T>,
         },
         /// A request has been answered. Corresponding fee payment is transferred
         OracleAnswer {
             request_id: RequestIdentifier,
             operator: T::AccountId,
-            result: SpVec<u8>,
             fee: BalanceOf<T>,
+            result: SpVec<u8>,
         },
         /// A new operator has been registered
         OperatorRegistered(T::AccountId),
@@ -142,15 +141,21 @@ pub mod pallet {
 
     #[derive(Encode, Decode, Clone, TypeInfo)]
     pub struct GenericRequest<AccountId, Callback, BlockNumber, BalanceOf> {
-        requester: AccountId,
-        operator: AccountId,
-        callback: Callback,
-        data: SpVec<u8>,
-        fee: BalanceOf,
-        block_number: BlockNumber,
+        pub requester: AccountId,
+        pub operator: AccountId,
+        pub callback: Callback,
+        pub data: SpVec<u8>,
+        pub fee: BalanceOf,
+        pub block_number: BlockNumber,
     }
 
-    pub type Request<T> = GenericRequest<
+    #[derive(Encode, Decode, Clone)]
+    pub struct OracleAnswer {
+        pub data: SpVec<u8>,
+        pub result: SpVec<u8>,
+    }
+
+    pub type OracleRequest<T> = GenericRequest<
         <T as frame_system::Config>::AccountId,
         <T as Config>::Callback,
         <T as frame_system::Config>::BlockNumber,
@@ -160,7 +165,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn request)]
     pub type Requests<T: Config> =
-        StorageMap<_, Blake2_128Concat, RequestIdentifier, Request<T>, OptionQuery>;
+        StorageMap<_, Blake2_128Concat, RequestIdentifier, OracleRequest<T>, OptionQuery>;
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
@@ -260,11 +265,11 @@ pub mod pallet {
             // It only serves as a timestamp for the ValidityPeriod check.
             let now = frame_system::Pallet::<T>::block_number();
 
-            let request = Request::<T> {
+            let request = OracleRequest::<T> {
                 requester: who,
                 operator: operator.clone(),
                 callback: callback.clone(),
-                data: data.clone(),
+                data,
                 fee,
                 block_number: now,
             };
@@ -274,7 +279,6 @@ pub mod pallet {
                 request_id,
                 operator,
                 callback,
-                data,
                 fee,
             });
 
@@ -323,10 +327,15 @@ pub mod pallet {
                 BalanceStatus::Free,
             )?;
 
+            let answer = OracleAnswer {
+                data: request.data,
+                result: result.clone(),
+            };
+
             // Dispatch the result to the original callback registered by the caller
             let callback = request
                 .callback
-                .with_result(false, result.clone())
+                .with_result(answer.encode())
                 .ok_or(Error::<T>::UnknownCallback)?;
             callback
                 .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
@@ -338,8 +347,8 @@ pub mod pallet {
             Self::deposit_event(Event::OracleAnswer {
                 request_id,
                 operator: request.operator,
-                result,
                 fee: request.fee,
+                result,
             });
 
             Ok(())
@@ -361,22 +370,7 @@ pub mod pallet {
                 // NOTE unwrap is fine here because we collected existing keys
                 let request = Requests::<T>::get(request_id).unwrap();
                 if n > request.block_number + T::ValidityPeriod::get() {
-                    let mut response = request.data; // request data is the request id
-                    response.push(0);
-
-                    // remove request from this pallet's storage
                     Requests::<T>::remove(request_id);
-
-                    if let Some(callback) = request.callback.with_result(true, response.clone()) {
-                        if callback
-                            .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
-                            .is_ok()
-                        {
-                            Self::deposit_event(Event::KillRequest(*request_id));
-                        } else {
-                            Self::deposit_event(Event::KillRequestFailed(*request_id));
-                        }
-                    }
                 }
             }
         }

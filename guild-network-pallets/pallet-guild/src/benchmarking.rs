@@ -42,6 +42,6 @@ benchmarks! {
         Guild::<T>::create_guild(RawOrigin::Signed(caller.clone()).into(), guild_name, guild_metadata, roles)?;
     }: _(RawOrigin::Signed(caller), guild_name, [10u8; 32], vec![0u8; 500], vec![0u8; 750])
     verify {
-        assert!(Guild::<T>::join_request(0).is_some());
+        assert!(Chainlink::<T>::request(0).is_some());
     }
 }

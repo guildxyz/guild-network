@@ -1,7 +1,8 @@
-use crate::{runtime, AccountId, Api, Guild, Hash, Signer, TxStatus};
+use crate::{data::Guild, runtime, AccountId, Api, Hash, Signer, TxStatus};
 use futures::StreamExt;
 use guild_network_common::{GuildName, RoleName};
 use guild_network_gate::identities::{Identity, IdentityAuth};
+use serde_cbor::to_vec;
 use subxt::ext::sp_runtime::MultiAddress;
 use subxt::tx::TxPayload;
 
@@ -21,27 +22,29 @@ pub fn oracle_callback(request_id: u64, data: Vec<u8>) -> impl TxPayload {
     runtime::tx().chainlink().callback(request_id, data)
 }
 
-pub fn create_guild(guild: Guild) -> impl TxPayload {
-    let roles = guild
-        .roles
-        .into_iter()
-        .map(|role| (role.name, vec![0])) // TODO serialize requirements
-        .collect();
-    runtime::tx()
+pub fn create_guild(guild: Guild) -> Result<impl TxPayload, serde_cbor::Error> {
+    let mut roles = Vec::new();
+    for role in guild.roles.into_iter() {
+        let ser_requirements = to_vec(&role.requirements)?;
+        roles.push((role.name, ser_requirements));
+    }
+
+    Ok(runtime::tx()
         .guild()
-        .create_guild(guild.name, guild.metadata, roles)
+        .create_guild(guild.name, guild.metadata, roles))
 }
 
 pub fn join_guild(
     guild_name: GuildName,
     role_name: RoleName,
-    _identities: Vec<Identity>,
-    _auth: Vec<IdentityAuth>,
-) -> impl TxPayload {
-    // TODO serialize identities
-    runtime::tx()
+    identities: Vec<Identity>,
+    auth: Vec<IdentityAuth>,
+) -> Result<impl TxPayload, serde_cbor::Error> {
+    let ser_identities = to_vec(&identities)?;
+    let ser_auth = to_vec(&auth)?;
+    Ok(runtime::tx()
         .guild()
-        .join_guild(guild_name, role_name, vec![0], vec![1])
+        .join_guild(guild_name, role_name, ser_identities, ser_auth))
 }
 
 pub async fn send_owned_tx<T: TxPayload>(

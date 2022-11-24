@@ -1,19 +1,13 @@
 use futures::StreamExt;
-use guild_network_client::{
-    queries::join_request,
-    runtime::{
-        chainlink::events::OracleRequest, runtime_types::pallet_guild::pallet::Call as GuildCall,
-    },
-    transactions::{oracle_callback, send_tx_ready},
-    Api, FilteredEvents, Signer,
-};
-use guild_network_common::RequestIdentifier;
+use guild_network_client::queries::join_request;
+use guild_network_client::runtime::chainlink::events::OracleRequest;
+use guild_network_client::runtime::runtime_types::pallet_guild::pallet::Call as GuildCall;
+use guild_network_client::transactions::{oracle_callback, send_tx_ready};
+use guild_network_client::{Api, FilteredEvents, Signer};
 use log::{error, info, trace};
 use sp_keyring::AccountKeyring;
 use std::sync::Arc;
 use structopt::StructOpt;
-
-const DATA_LEN: usize = RequestIdentifier::BITS as usize / 8;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -89,12 +83,11 @@ async fn try_main(
             request_id,
             operator,
             callback,
-            data,
             fee,
         } = event?.event;
         info!(
-            "OracleRequest: {}, {}, {:?}, {:?}, {}",
-            request_id, operator, callback, data, fee
+            "OracleRequest: {}, {}, {:?}, {}",
+            request_id, operator, callback, fee
         );
         if &operator != signer.account_id() {
             // request wasn't delegated to us so return
@@ -103,50 +96,34 @@ async fn try_main(
 
         // check whether the incoming request originates from the guild
         // pallet just for testing basically
-        if !matches_variant(
-            &callback,
-            &GuildCall::callback {
-                expired: false,
-                result: vec![],
-            },
-        ) {
+        if !matches_variant(&callback, &GuildCall::callback { result: vec![] }) {
             return Ok(());
         }
 
         // TODO spawn does not work for multiple calls
         // when I send 10 requests it only responds to one
-        tokio::spawn(async move {
-            // TODO storage query
-            // TODO verify user identities
-            anyhow::ensure!(
-                data.len() == DATA_LEN,
-                "invalid request data length: {}, expected: {}",
-                data.len(),
-                DATA_LEN
-            );
-            // NOTE unwrap is fine because data has the correct length and
-            // will always fit
-            let join_request_id =
-                RequestIdentifier::from_le_bytes(data.clone().try_into().unwrap());
-            let join_request = join_request(api.clone(), join_request_id).await?;
-            info!(
-                "guild: {:?}, role: {:?}",
-                join_request.guild_name, join_request.role_name
-            );
-
-            // TODO check role access
-            let requirement_check = true;
-            let mut result = data;
-            result.push(u8::from(requirement_check));
-
-            let tx = oracle_callback(request_id, result.clone());
-            send_tx_ready(api, &tx, signer).await?;
-            info!("send_tx_ready");
-            info!("oracle answer ({}) submitted: {:?}", request_id, result);
-            Ok::<(), anyhow::Error>(())
-        }).await??;
-    };
-
+        //tokio::spawn(async move {
+        // TODO storage query
+        // TODO verify user identities
+        // NOTE unwrap is fine because data has the correct length and
+        // will always fit
+        let join_request = join_request(api.clone(), request_id).await?;
+        info!(
+            "guild: {:?}, role: {:?}",
+            join_request.guild_name, join_request.role_name
+        );
+        // TODO retrieve balances and check requirements
+        let requirement_check = true;
+        let result = vec![u8::from(requirement_check)];
+        let tx = oracle_callback(request_id, result);
+        send_tx_ready(api, &tx, signer).await?;
+        info!(
+            "oracle answer ({}) submitted: {}",
+            request_id, requirement_check
+        );
+        //   Ok::<(), anyhow::Error>(())
+        //});
+    }
     Ok(())
 }
 
