@@ -25,7 +25,7 @@ macro_rules! test_runtime {
 
         impl pallet_randomness_collective_flip::Config for TestRuntime {}
 
-        pub type AccountId = u128;
+        pub type AccountId = u64;
         pub type Balance = u64;
         pub type Block = frame_system::mocking::MockBlock<TestRuntime>;
         pub type BlockNumber = u64;

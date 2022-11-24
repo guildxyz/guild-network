@@ -20,19 +20,25 @@ pub mod transactions;
 
 pub type AccountId = AccountId32;
 pub type Api = OnlineClient<ClientConfig>;
-pub type BlockSubscription = Subscription<Header<u32, BlakeTwo256>>;
-pub type JoinRequest = runtime::runtime_types::pallet_guild::pallet::JoinRequest<AccountId>;
+pub type BalanceOf = u128;
+pub type BlockHeader = Header<BlockNumber, BlakeTwo256>;
+pub type BlockNumber = u32;
+pub type BlockSubscription = Subscription<BlockHeader>;
+pub type JoinRequest = guild_network_common::JoinRequest<AccountId>;
+pub type GuildCall = runtime::runtime_types::pallet_guild::pallet::Call;
 pub type GuildData = runtime::runtime_types::pallet_guild::pallet::Guild<AccountId>;
+pub type OracleRequest = runtime::runtime_types::pallet_chainlink::pallet::GenericRequest<
+    AccountId,
+    GuildCall,
+    u32,
+    u128,
+>;
 pub type Signer = PairSigner<ClientConfig, Keypair>;
 pub type TransactionProgress = TxProgress<ClientConfig, Api>;
 pub type TransactionStatus = SubTxStatus<ClientConfig, Api>;
 
-pub type FilteredEvents<'a, T> = FilterEvents<
-    'a,
-    EventSubscription<ClientConfig, Api, Subscription<Header<u32, BlakeTwo256>>>,
-    ClientConfig,
-    T,
->;
+pub type FilteredEvents<'a, T> =
+    FilterEvents<'a, EventSubscription<ClientConfig, Api, BlockSubscription>, ClientConfig, T>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TxStatus {

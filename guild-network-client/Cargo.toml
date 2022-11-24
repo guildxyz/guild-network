@@ -13,7 +13,7 @@ log = { version = "0.4.17", default-features = false }
 guild-network-common = { path = "../guild-network-common" }
 guild-network-gate = { path = "../guild-network-gate", default-features = false }
 hex = "0.4.3"
-parity-scale-codec = { version = "3.0.0", default-features = false }
+parity-scale-codec = { version = "3.2.1", default-features = false } # required for the runtime subxt macro
 sp-keyring = { version = "6.0.0", default-features = false }
 subxt = "0.24.0"
 tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
