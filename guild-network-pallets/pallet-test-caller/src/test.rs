@@ -236,7 +236,7 @@ fn linear_request_delegation() {
         assert!(<Chainlink>::initiate_request(
             Origin::signed(signer),
             callback.clone(),
-            data.clone(),
+            data,
             fee,
         )
         .is_ok());
