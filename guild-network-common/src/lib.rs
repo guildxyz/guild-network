@@ -17,12 +17,3 @@ pub struct JoinRequest<T> {
     pub guild_name: GuildName,
     pub role_name: RoleName,
 }
-
-#[derive(Encode, Decode, Clone)]
-pub struct JoinRequestWithAccess<T> {
-    pub access: bool,
-    pub requester: T,
-    pub requester_identities: Vec<u8>,
-    pub guild_name: GuildName,
-    pub role_name: GuildName,
-}

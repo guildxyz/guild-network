@@ -22,12 +22,15 @@ pub mod pallet {
         #[pallet::weight(1_000_000)]
         pub fn callback(origin: OriginFor<T>, result: Vec<u8>) -> DispatchResult {
             ensure_root(origin)?;
-            let res = u64::from_le_bytes(
-                result[0..8]
+            let answer = pallet_chainlink::OracleAnswer::decode(&mut result.as_slice())
+                .map_err(|_| Error::<T>::DecodingFailed)?;
+            let num = u64::from_le_bytes(
+                answer
+                    .result
                     .try_into()
                     .map_err(|_| Error::<T>::DecodingFailed)?,
             );
-            OracleAnswer::<T>::put(res);
+            OracleAnswer::<T>::put(num);
             Ok(())
         }
     }

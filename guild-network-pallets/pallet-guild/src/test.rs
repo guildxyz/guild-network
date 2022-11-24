@@ -2,7 +2,6 @@ use crate::{self as pallet_guild};
 
 use codec::{Decode, Encode};
 use frame_support::traits::{OnFinalize, OnInitialize};
-use guild_network_common::*;
 use sp_runtime::DispatchError;
 
 use test_runtime::test_runtime;
@@ -39,19 +38,16 @@ fn error_msg<'a>(error: DispatchError) -> &'a str {
     }
 }
 
-fn dummy_answer(
-    requester: AccountId,
-    guild_name: GuildName,
-    role_name: RoleName,
-    access: bool,
-) -> JoinRequestWithAccess<AccountId> {
-    JoinRequestWithAccess {
-        access,
-        requester,
-        requester_identities: vec![1, 2, 3],
-        guild_name,
-        role_name,
+fn dummy_answer(result: Vec<u8>) -> pallet_chainlink::OracleAnswer {
+    let data = guild_network_common::JoinRequest::<AccountId> {
+        requester: 0,
+        requester_identities: Vec::new(),
+        request_data: Vec::new(),
+        guild_name: [0; 32],
+        role_name: [1; 32],
     }
+    .encode();
+    pallet_chainlink::OracleAnswer { data, result }
 }
 
 // TODO add more tests once guild functionalities are final
@@ -115,13 +111,13 @@ fn callback_can_only_be_called_by_root() {
         let error = <Guild>::callback(Origin::root(), vec![1]).err().unwrap();
         assert_eq!(error_msg(error), "CodecError");
 
-        let no_access = dummy_answer(1, [0; 32], [1; 32], false);
+        let no_access = dummy_answer(vec![u8::from(false)]);
         let error = <Guild>::callback(Origin::root(), no_access.encode())
             .err()
             .unwrap();
         assert_eq!(error_msg(error), "AccessDenied");
 
-        let access = dummy_answer(1, [0; 32], [1; 32], true);
+        let access = dummy_answer(vec![u8::from(true)]);
         let error = <Guild>::callback(Origin::root(), access.encode())
             .err()
             .unwrap();
@@ -183,7 +179,9 @@ fn valid_join_guild_request() {
         let request = <Chainlink>::request(0).unwrap();
         assert_eq!(request.requester, signer);
         assert_eq!(request.operator, signer);
-        let request_data = JoinRequest::<AccountId>::decode(&mut request.data.as_slice()).unwrap();
+        let request_data =
+            guild_network_common::JoinRequest::<AccountId>::decode(&mut request.data.as_slice())
+                .unwrap();
         assert_eq!(request_data.requester_identities, identity);
         assert_eq!(request_data.request_data, auth);
     });
@@ -222,8 +220,7 @@ fn joining_a_guild() {
         assert!(<Guild>::user_data(signer).is_none());
 
         // access = true
-        let answer = dummy_answer(signer, guild_name, role_1_name, true);
-        <Chainlink>::callback(Origin::signed(signer), 0, answer.encode()).unwrap();
+        <Chainlink>::callback(Origin::signed(signer), 0, vec![u8::from(true)]).unwrap();
 
         assert_eq!(
             last_event(),
@@ -252,8 +249,7 @@ fn joining_a_guild() {
         .unwrap();
 
         // access = false
-        let answer = dummy_answer(signer, guild_name, role_2_name, false);
-        let error = <Chainlink>::callback(Origin::signed(signer), 1, answer.encode())
+        let error = <Chainlink>::callback(Origin::signed(signer), 1, vec![u8::from(false)])
             .err()
             .unwrap();
         assert_eq!(error_msg(error), "AccessDenied");
@@ -272,8 +268,7 @@ fn joining_a_guild() {
         .unwrap();
 
         // access = true
-        let answer = dummy_answer(signer, guild_name, role_2_name, true);
-        <Chainlink>::callback(Origin::signed(signer), 2, answer.encode()).unwrap();
+        <Chainlink>::callback(Origin::signed(signer), 2, vec![u8::from(true)]).unwrap();
         assert!(<Guild>::member(role_1_id, signer).is_some());
         assert!(<Guild>::member(role_2_id, signer).is_some());
 
@@ -318,8 +313,7 @@ fn joining_the_same_role_in_a_guild_twice_fails() {
         .unwrap();
 
         let request_id = 0u64;
-        let answer = dummy_answer(signer, guild_name, role_name, true);
-        <Chainlink>::callback(Origin::signed(signer), request_id, answer.encode()).unwrap();
+        <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
 
         let guild_id = <Guild>::guild_id(guild_name).unwrap();
         let role_id = <Guild>::role_id(guild_id, role_name).unwrap();
@@ -336,8 +330,7 @@ fn joining_the_same_role_in_a_guild_twice_fails() {
         .unwrap();
 
         let request_id = 1u64;
-        let answer = dummy_answer(signer, guild_name, role_name, true);
-        let error = <Chainlink>::callback(Origin::signed(signer), request_id, answer.encode())
+        let error = <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)])
             .err()
             .unwrap();
         assert_eq!(error_msg(error), "UserAlreadyJoined");
@@ -387,7 +380,6 @@ fn joining_multiple_guilds() {
             vec![],
         )
         .unwrap();
-        let answer_0 = dummy_answer(signer_1, guild_1_name, role_2_name, true);
         <Guild>::join_guild(
             Origin::signed(signer_1),
             guild_2_name,
@@ -396,7 +388,6 @@ fn joining_multiple_guilds() {
             vec![],
         )
         .unwrap();
-        let answer_1 = dummy_answer(signer_1, guild_2_name, role_3_name, true);
         // signer 2 wants to join both guilds
         <Guild>::join_guild(
             Origin::signed(signer_2),
@@ -406,7 +397,6 @@ fn joining_multiple_guilds() {
             vec![],
         )
         .unwrap();
-        let answer_2 = dummy_answer(signer_2, guild_2_name, role_4_name, false);
         <Guild>::join_guild(
             Origin::signed(signer_2),
             guild_1_name,
@@ -415,13 +405,11 @@ fn joining_multiple_guilds() {
             vec![],
         )
         .unwrap();
-        let mut answer_3 = dummy_answer(signer_2, guild_1_name, role_1_name, true);
-        answer_3.requester_identities = user_2_data.clone();
 
-        <Chainlink>::callback(Origin::signed(signer_1), 3, answer_3.encode()).unwrap();
-        <Chainlink>::callback(Origin::signed(signer_1), 0, answer_0.encode()).unwrap();
-        <Chainlink>::callback(Origin::signed(signer_1), 1, answer_1.encode()).unwrap();
-        let error = <Chainlink>::callback(Origin::signed(signer_1), 2, answer_2.encode())
+        <Chainlink>::callback(Origin::signed(signer_1), 3, vec![u8::from(true)]).unwrap();
+        <Chainlink>::callback(Origin::signed(signer_1), 0, vec![u8::from(true)]).unwrap();
+        <Chainlink>::callback(Origin::signed(signer_1), 1, vec![u8::from(true)]).unwrap();
+        let error = <Chainlink>::callback(Origin::signed(signer_1), 2, vec![u8::from(false)])
             .err()
             .unwrap();
         assert_eq!(error_msg(error), "AccessDenied");

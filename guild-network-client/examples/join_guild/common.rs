@@ -160,11 +160,9 @@ pub async fn send_dummy_oracle_answers(api: Api, operators: &BTreeMap<AccountId,
 
     let oracle_answer_futures = oracle_requests
         .into_iter()
-        .map(|(request_id, mut request)| {
-            let mut result = vec![u8::from(true)];
-            result.append(&mut request.data);
-            let tx = oracle_callback(request_id, result);
-            let signer = operators.get(&request.operator).unwrap();
+        .map(|(request_id, operator)| {
+            let tx = oracle_callback(request_id, vec![u8::from(true)]);
+            let signer = operators.get(&operator).unwrap();
             send_owned_tx(api.clone(), tx, Arc::clone(signer), TxStatus::InBlock)
         })
         .collect::<Vec<_>>();

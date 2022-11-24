@@ -110,6 +110,7 @@ pub mod pallet {
         GuildAlreadyExists,
         GuildDoesNotExist,
         RoleDoesNotExist,
+        InvalidOracleAnswer,
         JoinRequestDoesNotExist,
         UserAlreadyJoined,
         CodecError,
@@ -176,33 +177,39 @@ pub mod pallet {
 
             // cannot wrap codec::Error in this error type because
             // it doesn't implement the required traits
-            let answer = JoinRequestWithAccess::<T::AccountId>::decode(&mut result.as_slice())
+            let answer = pallet_chainlink::OracleAnswer::decode(&mut result.as_slice())
                 .map_err(|_| Error::<T>::CodecError)?;
 
+            ensure!(answer.result.len() == 1, Error::<T>::InvalidOracleAnswer);
+
+            let access = answer.result[0] == 1;
             // if we deposit and event here, it does not appear if an error is
             // returned
-            ensure!(answer.access, Error::<T>::AccessDenied);
+            ensure!(access, Error::<T>::AccessDenied);
+
+            let join_request = JoinRequest::<T::AccountId>::decode(&mut answer.data.as_slice())
+                .map_err(|_| Error::<T>::CodecError)?;
 
             let guild_id =
-                Self::guild_id(answer.guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
-            let role_id =
-                Self::role_id(guild_id, answer.role_name).ok_or(Error::<T>::RoleDoesNotExist)?;
+                Self::guild_id(join_request.guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
+            let role_id = Self::role_id(guild_id, join_request.role_name)
+                .ok_or(Error::<T>::RoleDoesNotExist)?;
 
             ensure!(
-                !Members::<T>::contains_key(role_id, &answer.requester),
+                !Members::<T>::contains_key(role_id, &join_request.requester),
                 Error::<T>::UserAlreadyJoined
             );
 
-            Members::<T>::insert(role_id, &answer.requester, true);
+            Members::<T>::insert(role_id, &join_request.requester, true);
 
-            if !UserData::<T>::contains_key(&answer.requester) {
-                UserData::<T>::insert(&answer.requester, &answer.requester_identities);
+            if !UserData::<T>::contains_key(&join_request.requester) {
+                UserData::<T>::insert(&join_request.requester, &join_request.requester_identities);
             }
 
             Self::deposit_event(Event::GuildJoined(
-                answer.requester,
-                answer.guild_name,
-                answer.role_name,
+                join_request.requester,
+                join_request.guild_name,
+                join_request.role_name,
             ));
 
             Ok(())

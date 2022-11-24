@@ -25,7 +25,6 @@ pub type BlockHeader = Header<BlockNumber, BlakeTwo256>;
 pub type BlockNumber = u32;
 pub type BlockSubscription = Subscription<BlockHeader>;
 pub type JoinRequest = guild_network_common::JoinRequest<AccountId>;
-pub type JoinRequestWithAccess = guild_network_common::JoinRequestWithAccess<AccountId>;
 pub type GuildCall = runtime::runtime_types::pallet_guild::pallet::Call;
 pub type GuildData = runtime::runtime_types::pallet_guild::pallet::Guild<AccountId>;
 pub type OracleRequest = runtime::runtime_types::pallet_chainlink::pallet::GenericRequest<

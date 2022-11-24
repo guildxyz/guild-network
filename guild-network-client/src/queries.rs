@@ -1,4 +1,4 @@
-use crate::{runtime, AccountId, Api, GuildData, Hash, JoinRequest, OracleRequest};
+use crate::{runtime, AccountId, Api, GuildData, Hash, JoinRequest};
 use guild_network_common::{GuildName, RequestIdentifier, RoleName};
 use subxt::ext::codec::Decode;
 use subxt::storage::address::{StorageHasher, StorageMapKey};
@@ -115,14 +115,14 @@ pub async fn join_request(api: Api, id: RequestIdentifier) -> Result<JoinRequest
 pub async fn oracle_requests(
     api: Api,
     page_size: u32,
-) -> Result<BTreeMap<RequestIdentifier, OracleRequest>, subxt::Error> {
+) -> Result<BTreeMap<RequestIdentifier, AccountId>, subxt::Error> {
     let root = runtime::storage().chainlink().requests_root();
 
     let mut map = BTreeMap::new();
     let mut iter = api.storage().iter(root, page_size, None).await?;
     while let Some((key, value)) = iter.next().await? {
         let key_bytes = (&key.0[48..]).try_into().unwrap();
-        map.insert(RequestIdentifier::from_le_bytes(key_bytes), value);
+        map.insert(RequestIdentifier::from_le_bytes(key_bytes), value.operator);
     }
     Ok(map)
 }

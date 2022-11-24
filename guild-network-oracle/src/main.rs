@@ -1,10 +1,8 @@
-use codec::Encode;
 use futures::StreamExt;
 use guild_network_client::queries::join_request;
 use guild_network_client::runtime::chainlink::events::OracleRequest;
 use guild_network_client::transactions::{oracle_callback, send_tx_ready};
 use guild_network_client::{Api, FilteredEvents, GuildCall, Signer};
-use guild_network_common::JoinRequestWithAccess;
 use log::{error, info, trace};
 use sp_keyring::AccountKeyring;
 use structopt::StructOpt;
@@ -117,15 +115,9 @@ async fn try_main(
 
         // TODO retrieve balances and check requirements
         let requirement_check = true;
-        let result = JoinRequestWithAccess {
-            access: requirement_check,
-            requester: join_request.requester,
-            requester_identities: join_request.requester_identities,
-            guild_name: join_request.guild_name,
-            role_name: join_request.role_name,
-        };
+        let result = vec![u8::from(requirement_check)];
 
-        let tx = oracle_callback(request_id, result.encode());
+        let tx = oracle_callback(request_id, result);
         send_tx_ready(api, &tx, signer).await?;
         info!(
             "oracle answer ({}) submitted: {}",

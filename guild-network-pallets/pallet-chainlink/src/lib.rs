@@ -108,6 +108,7 @@ pub mod pallet {
             request_id: RequestIdentifier,
             operator: T::AccountId,
             fee: BalanceOf<T>,
+            result: SpVec<u8>,
         },
         /// A new operator has been registered
         OperatorRegistered(T::AccountId),
@@ -148,7 +149,13 @@ pub mod pallet {
         pub block_number: BlockNumber,
     }
 
-    pub type Request<T> = GenericRequest<
+    #[derive(Encode, Decode, Clone)]
+    pub struct OracleAnswer {
+        pub data: SpVec<u8>,
+        pub result: SpVec<u8>,
+    }
+
+    pub type OracleRequest<T> = GenericRequest<
         <T as frame_system::Config>::AccountId,
         <T as Config>::Callback,
         <T as frame_system::Config>::BlockNumber,
@@ -158,7 +165,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn request)]
     pub type Requests<T: Config> =
-        StorageMap<_, Blake2_128Concat, RequestIdentifier, Request<T>, OptionQuery>;
+        StorageMap<_, Blake2_128Concat, RequestIdentifier, OracleRequest<T>, OptionQuery>;
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
@@ -258,7 +265,7 @@ pub mod pallet {
             // It only serves as a timestamp for the ValidityPeriod check.
             let now = frame_system::Pallet::<T>::block_number();
 
-            let request = Request::<T> {
+            let request = OracleRequest::<T> {
                 requester: who,
                 operator: operator.clone(),
                 callback: callback.clone(),
@@ -320,10 +327,15 @@ pub mod pallet {
                 BalanceStatus::Free,
             )?;
 
+            let answer = OracleAnswer {
+                data: request.data,
+                result: result.clone(),
+            };
+
             // Dispatch the result to the original callback registered by the caller
             let callback = request
                 .callback
-                .with_result(result)
+                .with_result(answer.encode())
                 .ok_or(Error::<T>::UnknownCallback)?;
             callback
                 .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
@@ -336,6 +348,7 @@ pub mod pallet {
                 request_id,
                 operator: request.operator,
                 fee: request.fee,
+                result,
             });
 
             Ok(())

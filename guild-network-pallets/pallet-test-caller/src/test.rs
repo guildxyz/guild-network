@@ -127,6 +127,7 @@ fn initiate_requests_valid() {
                 request_id,
                 operator,
                 fee,
+                result: result.encode(),
             })
         );
 
