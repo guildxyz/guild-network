@@ -4,8 +4,17 @@ use serde::{Deserialize, Serialize};
 pub struct Allowlist<T>(Vec<T>);
 
 impl<T: PartialEq> Allowlist<T> {
+    pub fn new(list: Vec<T>) -> Self {
+        Self(list)
+    }
     pub fn is_member(&self, identifier: &T) -> bool {
         self.0.iter().any(|id| id == identifier)
+    }
+}
+
+impl<T> From<Vec<T>> for Allowlist<T> {
+    fn from(value: Vec<T>) -> Self {
+        Self(value)
     }
 }
 

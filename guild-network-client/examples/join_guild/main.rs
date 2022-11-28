@@ -4,8 +4,6 @@ use common::*;
 use guild_network_client::queries::*;
 use std::sync::Arc;
 
-const N_TEST_ACCOUNTS: usize = 10;
-
 #[tokio::main]
 async fn main() {
     let (api, alice) = api_with_alice().await;
@@ -15,7 +13,10 @@ async fn main() {
     #[cfg(not(feature = "external-oracle"))]
     let registering_operators = operators.values();
     #[cfg(feature = "external-oracle")]
-    let alice_vec = vec![Arc::clone(&alice)];
+    let alice_vec = vec![Accounts {
+        substrate: Arc::clone(&alice),
+        eth: ethers::signers::LocalWallet::new(&mut rand::rngs::OsRng),
+    }];
     #[cfg(feature = "external-oracle")]
     let registering_operators = alice_vec.iter();
 
@@ -31,7 +32,7 @@ async fn main() {
         assert!(operators.get(registered).is_some());
     }
 
-    create_dummy_guilds(api.clone(), alice).await;
+    create_dummy_guilds(api.clone(), alice, operators.values()).await;
 
     join_guilds(api.clone(), &operators).await;
 

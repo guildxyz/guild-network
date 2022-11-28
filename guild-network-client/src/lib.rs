@@ -1,3 +1,4 @@
+use guild_network_common::{GuildName, RoleName};
 use subxt::{
     events::{EventSubscription, FilterEvents},
     ext::sp_runtime::{generic::Header, traits::BlakeTwo256, AccountId32},
@@ -80,6 +81,13 @@ impl TxStatus {
         }
         (reached, tx_hash)
     }
+}
+
+pub fn signed_msg(id: &AccountId, guild_name: &GuildName, role_name: &RoleName) -> String {
+    format!(
+        "{} wanna join role {:?} of guild {:?}",
+        id, guild_name, role_name
+    )
 }
 
 pub fn pad_to_32_bytes(name: &[u8]) -> Result<[u8; 32], anyhow::Error> {
