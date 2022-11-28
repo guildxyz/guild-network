@@ -1,8 +1,7 @@
-use crate::{data::Guild, runtime, AccountId, Api, Hash, Signer, TxStatus};
+use crate::{cbor_serialize, data::Guild, runtime, AccountId, Api, Hash, Signer, TxStatus};
 use futures::StreamExt;
 use guild_network_common::{GuildName, RoleName};
 use guild_network_gate::identities::{Identity, IdentityAuth};
-use serde_cbor::to_vec;
 use subxt::ext::sp_runtime::MultiAddress;
 use subxt::tx::TxPayload;
 
@@ -25,7 +24,7 @@ pub fn oracle_callback(request_id: u64, data: Vec<u8>) -> impl TxPayload {
 pub fn create_guild(guild: Guild) -> Result<impl TxPayload, serde_cbor::Error> {
     let mut roles = Vec::new();
     for role in guild.roles.into_iter() {
-        let ser_requirements = to_vec(&role.requirements)?;
+        let ser_requirements = cbor_serialize(&role.requirements)?;
         roles.push((role.name, ser_requirements));
     }
 
@@ -40,8 +39,8 @@ pub fn join_guild(
     identities: Vec<Identity>,
     auth: Vec<IdentityAuth>,
 ) -> Result<impl TxPayload, serde_cbor::Error> {
-    let ser_identities = to_vec(&identities)?;
-    let ser_auth = to_vec(&auth)?;
+    let ser_identities = cbor_serialize(&identities)?;
+    let ser_auth = cbor_serialize(&auth)?;
     Ok(runtime::tx()
         .guild()
         .join_guild(guild_name, role_name, ser_identities, ser_auth))
