@@ -1,6 +1,7 @@
 use crate::{cbor_deserialize, runtime, AccountId, Api, GuildData, Hash, JoinRequest};
 use guild_network_common::{GuildName, RequestIdentifier, RoleName};
 use guild_network_gate::identities::Identity;
+use guild_network_gate::requirements::Requirement;
 use subxt::ext::codec::Decode;
 use subxt::storage::address::{StorageHasher, StorageMapKey};
 
@@ -170,4 +171,24 @@ pub async fn guild(
         }
     }
     Ok(guilds)
+}
+
+pub async fn requirements(
+    api: Api,
+    guild_name: GuildName,
+    role_name: RoleName,
+) -> Result<Vec<Requirement>, subxt::Error> {
+    let filter = GuildFilter {
+        name: guild_name,
+        role: Some(role_name),
+    };
+    let role_id = role_id(api.clone(), &filter, 1).await?;
+    let requirements_addr = runtime::storage().guild().roles(role_id[0]);
+    let requirements_vec = api
+        .storage()
+        .fetch(&requirements_addr, None)
+        .await?
+        .ok_or_else(|| subxt::Error::Other(format!("no role with name: {:#?}", role_name)))?;
+
+    cbor_deserialize(&requirements_vec).map_err(|e| subxt::Error::Other(e.to_string()))
 }

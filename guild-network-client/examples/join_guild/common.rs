@@ -104,7 +104,7 @@ pub async fn create_dummy_guilds(
     accounts: impl Iterator<Item = &Accounts>,
 ) {
     let allowlist: Vec<EvmAddress> = accounts
-        .map(|acc| EvmAddress::from_slice(&acc.eth.address().to_fixed_bytes()))
+        .map(|acc| EvmAddress::from_slice(acc.eth.address().as_bytes()))
         .collect();
     // create two guilds, each with 2 roles
     let roles = vec![
@@ -188,7 +188,7 @@ async fn join_request_tx(
         *guild_name,
         *role_name,
         vec![Identity::EvmChain(EvmAddress::from_slice(
-            &accounts.eth.address().to_fixed_bytes(),
+            accounts.eth.address().as_bytes(),
         ))],
         vec![IdentityAuth::EvmChain {
             signature: EvmSignature::from_slice(&signature.to_vec()),

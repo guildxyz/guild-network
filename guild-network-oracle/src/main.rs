@@ -1,11 +1,10 @@
 use futures::StreamExt;
-use guild_network_client::queries::join_request;
+use guild_network_client::queries::{join_request, requirements};
 use guild_network_client::runtime::chainlink::events::OracleRequest;
 use guild_network_client::transactions::{oracle_callback, send_tx_ready};
 use guild_network_client::{cbor_deserialize, signed_msg};
 use guild_network_client::{Api, FilteredEvents, GuildCall, Signer};
 use guild_network_gate::identities::{Identity, IdentityAuth};
-use guild_network_gate::requirements::Requirement;
 use log::{error, info, warn};
 use sp_keyring::AccountKeyring;
 use structopt::StructOpt;
@@ -110,13 +109,13 @@ async fn try_submit_answer(
         return Ok(());
     }
 
-    // TODO storage query for requirements
     let join_request = join_request(api.clone(), request_id).await?;
     info!(
         "guild: {:?}, role: {:?}",
         join_request.guild_name, join_request.role_name
     );
-    // TODO verify user identities
+
+    // verify user identities
     let mut identity_check = true;
     let identities: Vec<Identity> = cbor_deserialize(&join_request.requester_identities)?;
     let auths: Vec<IdentityAuth> = cbor_deserialize(&join_request.request_data)?;
@@ -131,8 +130,11 @@ async fn try_submit_answer(
             warn!("identity {:?} verification failed", identity);
         }
     }
+
     // TODO retrieve balances and check requirements
-    tokio::time::sleep(tokio::time::Duration::from_millis(request_id * 10)).await;
+    let requirements =
+        requirements(api.clone(), join_request.guild_name, join_request.role_name).await?;
+    tokio::time::sleep(tokio::time::Duration::from_millis(request_id)).await;
     let requirement_check = true;
     let access = identity_check && requirement_check;
     let result = vec![u8::from(access)];
