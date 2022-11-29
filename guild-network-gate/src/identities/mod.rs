@@ -2,7 +2,11 @@ use ethereum_types::{Address, Signature as EvmSignature};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "with-checks")]
-mod verify;
+mod impls;
+#[cfg(feature = "with-checks")]
+mod map;
+#[cfg(feature = "with-checks")]
+pub use map::*;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Identity {
@@ -12,11 +16,8 @@ pub enum Identity {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum IdentityAuth {
-    EvmChain {
-        signature: EvmSignature,
-        msg: Vec<u8>,
-    },
-    Discord,  // not authenticating for now
-    Telegram, // not authenticating for now
+pub enum IdentityWithAuth {
+    EvmChain(Address, EvmSignature),
+    Discord(Vec<u8>, ()),  // not authenticating for now
+    Telegram(Vec<u8>, ()), // not authenticating for now
 }
