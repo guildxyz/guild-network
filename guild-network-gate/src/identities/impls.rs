@@ -3,14 +3,13 @@ use anyhow::anyhow;
 use ethers_core::types::Signature as EthSignature;
 
 impl IdentityWithAuth {
-    pub fn verify(&self, maybe_msg: Option<&str>) -> Result<(), anyhow::Error> {
+    pub fn verify(&self, verification_msg: &str) -> Result<(), anyhow::Error> {
         let is_valid = match self {
             Self::EvmChain(address, signature) => {
-                let msg = maybe_msg.ok_or_else(|| anyhow!("expected Some(message)"))?;
                 let ethers_signature =
                     EthSignature::try_from(signature.as_bytes()).map_err(|e| anyhow!(e))?;
                 ethers_signature
-                    .verify(msg.as_bytes(), address.to_fixed_bytes())
+                    .verify(verification_msg.as_bytes(), address.to_fixed_bytes())
                     .map_err(|e| anyhow!(e))
                     .is_ok()
             }
@@ -49,20 +48,7 @@ mod test {
     use std::str::FromStr;
     fn valid_signature(msg: &str, signature: Signature, address: Address) -> bool {
         let identity = IdentityWithAuth::EvmChain(address, signature);
-        identity.verify(Some(msg)).is_ok()
-    }
-
-    #[test]
-    fn expected_msg_is_none() {
-        let _msg = "requiem aeternam dona eis";
-        let signature = Signature::from_str(
-"fa2759679db3b02dae5e3627572a282d20e98f2eb142b86edc70b10352a1a26e6249f5350f02e1210e9aa57c9a78e6ae3eb380f7b32ea144f12614baffba16711b").unwrap();
-        let address = address!("0x9d5eba47309d5ddbc0823a878c5960c2aad86fa6");
-        let identity = IdentityWithAuth::EvmChain(address, signature);
-        assert_eq!(
-            identity.verify(None).unwrap_err().to_string(),
-            "expected Some(message)"
-        );
+        identity.verify(msg).is_ok()
     }
 
     #[test]
@@ -106,7 +92,7 @@ mod test {
         let discord_id = IdentityWithAuth::Discord(vec![], ());
         let telegram_id = IdentityWithAuth::Telegram(vec![], ());
 
-        assert!(discord_id.verify(None).is_ok());
-        assert!(telegram_id.verify(None).is_ok());
+        assert!(discord_id.verify("").is_ok());
+        assert!(telegram_id.verify("").is_ok());
     }
 }
