@@ -28,19 +28,19 @@ impl Requirement {
                     Chain::Ethereum,
                 )
                 .await?;
-                req_balance.relation.assert(&balance, &req_balance.amount)
+                req_balance.relation.assert(&balance)
             }
             (Self::BscBalance(req_balance), Identity::EvmChain(user_address)) => {
                 let balance =
                     evm::get_balance(client, &req_balance.token_type, user_address, Chain::Bsc)
                         .await?;
-                req_balance.relation.assert(&balance, &req_balance.amount)
+                req_balance.relation.assert(&balance)
             }
             (Self::GnosisBalance(req_balance), Identity::EvmChain(user_address)) => {
                 let balance =
                     evm::get_balance(client, &req_balance.token_type, user_address, Chain::Gnosis)
                         .await?;
-                req_balance.relation.assert(&balance, &req_balance.amount)
+                req_balance.relation.assert(&balance)
             }
             (Self::PolygonBalance(req_balance), Identity::EvmChain(user_address)) => {
                 let balance = evm::get_balance(
@@ -50,7 +50,7 @@ impl Requirement {
                     Chain::Polygon,
                 )
                 .await?;
-                req_balance.relation.assert(&balance, &req_balance.amount)
+                req_balance.relation.assert(&balance)
             }
             (Self::EvmAllowlist(allowlist), Identity::EvmChain(user_address)) => {
                 allowlist.is_member(user_address)
