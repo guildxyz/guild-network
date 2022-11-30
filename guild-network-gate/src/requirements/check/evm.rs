@@ -1,10 +1,11 @@
 use super::super::balance::TokenType;
+use super::super::chains::EvmChain;
 use super::*;
 use ethereum_types::{Address, U256};
 
 async fn get_native_balance(
     _client: &ReqwestClient,
-    _chain: Chain,
+    _chain: EvmChain,
     _user_address: &Address,
 ) -> Result<U256, anyhow::Error> {
     Ok(U256::from_dec_str("1000").expect("This should be fine"))
@@ -12,7 +13,7 @@ async fn get_native_balance(
 
 async fn get_erc20_balance(
     _client: &ReqwestClient,
-    _chain: Chain,
+    _chain: EvmChain,
     _user_address: &Address,
     _token_address: &Address,
 ) -> Result<U256, anyhow::Error> {
@@ -21,7 +22,7 @@ async fn get_erc20_balance(
 
 async fn get_nft(
     _client: &ReqwestClient,
-    _chain: Chain,
+    _chain: EvmChain,
     _user_address: &Address,
     _token_address: &Address,
     _token_id: U256,
@@ -33,7 +34,7 @@ pub async fn get_balance(
     client: &ReqwestClient,
     token_type: &Option<TokenType<Address, U256>>,
     user_address: &Address,
-    chain: Chain,
+    chain: EvmChain,
 ) -> Result<U256, anyhow::Error> {
     match token_type {
         None => get_native_balance(client, chain, user_address).await,
@@ -50,7 +51,7 @@ pub async fn get_balance(
 #[cfg(test)]
 mod balance_tests {
     use super::{
-        get_balance, U256, {Chain, TokenType},
+        get_balance, U256, {EvmChain, TokenType},
     };
     use crate::address;
 
@@ -61,7 +62,7 @@ mod balance_tests {
         let client = reqwest::Client::new();
         let amount = U256::from_dec_str("1000").expect("This should be fine");
 
-        let balance = get_balance(&client, &None, &address!(ZERO_ADDR), Chain::Ethereum)
+        let balance = get_balance(&client, &None, &address!(ZERO_ADDR), EvmChain::Ethereum)
             .await
             .unwrap();
 
@@ -80,7 +81,7 @@ mod balance_tests {
             &client,
             &token_type,
             &address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
-            Chain::Bsc,
+            EvmChain::Bsc,
         )
         .await
         .unwrap();
@@ -104,7 +105,7 @@ mod balance_tests {
             &client,
             &token_type,
             &address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
-            Chain::Polygon,
+            EvmChain::Polygon,
         )
         .await
         .unwrap();

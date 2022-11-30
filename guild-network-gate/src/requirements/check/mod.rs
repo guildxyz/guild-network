@@ -4,14 +4,6 @@ use reqwest::Client as ReqwestClient;
 
 mod evm;
 
-#[derive(Clone, Copy)]
-pub enum Chain {
-    Ethereum = 1,
-    Bsc = 56,
-    Gnosis = 100,
-    Polygon = 137,
-}
-
 impl Requirement {
     pub async fn check(
         &self,
@@ -20,34 +12,12 @@ impl Requirement {
     ) -> Result<(), anyhow::Error> {
         let is_valid = match (self, user_identity) {
             (Self::Free, _) => true,
-            (Self::EthereumBalance(req_balance), Identity::EvmChain(user_address)) => {
+            (Self::EvmBalance(req_balance), Identity::EvmChain(user_address)) => {
                 let balance = evm::get_balance(
                     client,
                     &req_balance.token_type,
                     user_address,
-                    Chain::Ethereum,
-                )
-                .await?;
-                req_balance.relation.assert(&balance)
-            }
-            (Self::BscBalance(req_balance), Identity::EvmChain(user_address)) => {
-                let balance =
-                    evm::get_balance(client, &req_balance.token_type, user_address, Chain::Bsc)
-                        .await?;
-                req_balance.relation.assert(&balance)
-            }
-            (Self::GnosisBalance(req_balance), Identity::EvmChain(user_address)) => {
-                let balance =
-                    evm::get_balance(client, &req_balance.token_type, user_address, Chain::Gnosis)
-                        .await?;
-                req_balance.relation.assert(&balance)
-            }
-            (Self::PolygonBalance(req_balance), Identity::EvmChain(user_address)) => {
-                let balance = evm::get_balance(
-                    client,
-                    &req_balance.token_type,
-                    user_address,
-                    Chain::Polygon,
+                    req_balance.chain,
                 )
                 .await?;
                 req_balance.relation.assert(&balance)

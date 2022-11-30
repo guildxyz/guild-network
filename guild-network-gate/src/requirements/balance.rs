@@ -30,9 +30,10 @@ impl<T: PartialEq + PartialOrd> Relation<T> {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct RequiredBalance<T, U> {
+pub struct RequiredBalance<T, U, V> {
     pub token_type: Option<TokenType<T, U>>,
     pub relation: Relation<U>,
+    pub chain: V,
 }
 
 #[cfg(test)]
@@ -61,10 +62,10 @@ mod test {
         assert!(Relation::<u32>::LessOrEqualTo(23).assert(&23));
         assert!(!Relation::<u32>::LessOrEqualTo(23).assert(&42));
 
-        assert!(!Relation::<u32>::Between(0..100).assert(230));
-        assert!(!Relation::<u32>::Between(50..100).assert(15));
-        assert!(Relation::<u32>::Between(50..100).assert(77));
-        assert!(Relation::<u32>::Between(50..100).assert(100));
-        assert!(Relation::<u32>::Between(50..100).assert(50));
+        assert!(!Relation::<u32>::Between(0..100).assert(&230));
+        assert!(!Relation::<u32>::Between(50..100).assert(&15));
+        assert!(!Relation::<u32>::Between(50..100).assert(&100)); // upper bound is not included
+        assert!(Relation::<u32>::Between(50..100).assert(&77));
+        assert!(Relation::<u32>::Between(50..100).assert(&50));
     }
 }
