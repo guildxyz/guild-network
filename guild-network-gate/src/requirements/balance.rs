@@ -1,6 +1,13 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct RequiredBalance<T, U, V> {
+    pub token_type: Option<TokenType<T, U>>,
+    pub relation: Relation<U>,
+    pub chain: V,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum TokenType<T, U> {
     Fungible { address: T },
     NonFungible { address: T, id: U },
@@ -27,13 +34,6 @@ impl<T: PartialEq + PartialOrd> Relation<T> {
             Relation::Between(range) => range.contains(x),
         }
     }
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct RequiredBalance<T, U, V> {
-    pub token_type: Option<TokenType<T, U>>,
-    pub relation: Relation<U>,
-    pub chain: V,
 }
 
 #[cfg(test)]

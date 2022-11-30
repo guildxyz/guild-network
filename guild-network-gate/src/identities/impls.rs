@@ -1,3 +1,4 @@
+use super::map::Platform;
 use super::*;
 use anyhow::anyhow;
 use ethers_core::types::Signature as EthSignature;
@@ -21,21 +22,11 @@ impl IdentityWithAuth {
         Ok(())
     }
 
-    pub fn as_identity_type(&self) -> IdentityType {
+    pub fn into_platform_with_id(self) -> (Platform, Identity) {
         match self {
-            Self::EvmChain(_, _) => IdentityType::EvmChain,
-            Self::Discord(_, _) => IdentityType::Discord,
-            Self::Telegram(_, _) => IdentityType::Telegram,
-        }
-    }
-}
-
-impl From<IdentityWithAuth> for Identity {
-    fn from(value: IdentityWithAuth) -> Self {
-        match value {
-            IdentityWithAuth::EvmChain(address, _) => Self::EvmChain(address),
-            IdentityWithAuth::Discord(id, _) => Self::Discord(id),
-            IdentityWithAuth::Telegram(id, _) => Self::Telegram(id),
+            Self::EvmChain(address, _) => (Platform::EvmChain, Identity::EvmChain(address)),
+            Self::Discord(id, _) => (Platform::Discord, Identity::Discord(id)),
+            Self::Telegram(id, _) => (Platform::Telegram, Identity::Telegram(id)),
         }
     }
 }

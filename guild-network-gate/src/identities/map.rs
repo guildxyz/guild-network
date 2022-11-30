@@ -2,13 +2,15 @@ use super::{Identity, IdentityWithAuth};
 use std::collections::HashMap;
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
-pub enum IdentityType {
+pub enum Platform {
     EvmChain,
     Discord,
     Telegram,
 }
 
-pub struct IdentityMap(HashMap<IdentityType, Identity>);
+/// Stores the user's identities in a HashMap that allows
+/// `O(1)` access to platform-specific identities.
+pub struct IdentityMap(HashMap<Platform, Identity>);
 
 impl IdentityMap {
     pub fn from_verified_identities(
@@ -19,10 +21,7 @@ impl IdentityMap {
             .into_iter()
             .map(|id| {
                 id.verify(verification_msg)?;
-                Ok::<(IdentityType, Identity), anyhow::Error>((
-                    id.as_identity_type(),
-                    Identity::from(id),
-                ))
+                Ok::<(Platform, Identity), anyhow::Error>(id.into_platform_with_id())
             })
             .collect::<Result<_, _>>()?;
         Ok(Self(map))
@@ -32,7 +31,7 @@ impl IdentityMap {
         self.0.into_values().collect()
     }
 
-    pub fn inner(&self) -> &HashMap<IdentityType, Identity> {
+    pub fn inner(&self) -> &HashMap<Platform, Identity> {
         &self.0
     }
 }
