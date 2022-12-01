@@ -1,5 +1,5 @@
 use super::Requirement;
-use crate::identities::Identity;
+use crate::identities::IdentityMap;
 use reqwest::Client as ReqwestClient;
 
 mod evm;
@@ -8,24 +8,31 @@ impl Requirement {
     pub async fn check(
         &self,
         client: &ReqwestClient,
-        user_identity: &Identity,
+        identity_map: &IdentityMap,
     ) -> Result<(), anyhow::Error> {
-        let is_valid = match (self, user_identity) {
-            (Self::Free, _) => true,
-            (Self::EvmBalance(req_balance), Identity::EvmChain(user_address)) => {
-                let balance = evm::get_balance(
-                    client,
-                    &req_balance.token_type,
-                    user_address,
-                    req_balance.chain,
-                )
-                .await?;
-                req_balance.relation.assert(&balance)
+        let is_valid = match self {
+            Self::Free => true,
+            Self::EvmBalance(req_balance) => {
+                if let Some(address) = identity_map.evm_address() {
+                    let balance = evm::get_balance(
+                        client,
+                        &req_balance.token_type,
+                        address,
+                        req_balance.chain,
+                    )
+                    .await?;
+                    req_balance.relation.assert(&balance)
+                } else {
+                    return Err(anyhow::anyhow!("missing evm identity"));
+                }
             }
-            (Self::EvmAllowlist(allowlist), Identity::EvmChain(user_address)) => {
-                allowlist.is_member(user_address)
+            Self::EvmAllowlist(allowlist) => {
+                if let Some(address) = identity_map.evm_address() {
+                    allowlist.is_member(address)
+                } else {
+                    return Err(anyhow::anyhow!("missing evm identity"));
+                }
             }
-            _ => false,
         };
 
         anyhow::ensure!(is_valid, "requirement check failed");

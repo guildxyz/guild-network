@@ -1,4 +1,5 @@
 use super::{Identity, IdentityWithAuth};
+use ethereum_types::Address;
 use std::collections::HashMap;
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
@@ -33,5 +34,15 @@ impl IdentityMap {
 
     pub fn inner(&self) -> &HashMap<Platform, Identity> {
         &self.0
+    }
+
+    pub fn evm_address(&self) -> Option<&Address> {
+        match self.0.get(&Platform::EvmChain) {
+            Some(Identity::EvmChain(address)) => Some(address),
+            None => None,
+            // "identities cannot be messed up when building the map using
+            // "from_verified_identities"
+            _ => unreachable!(),
+        }
     }
 }
