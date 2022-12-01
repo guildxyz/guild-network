@@ -11,6 +11,7 @@ pub struct RequiredBalance<T, U, V> {
 pub enum TokenType<T, U> {
     Fungible { address: T },
     NonFungible { address: T, id: U },
+    Special { address: T, metadata: Vec<u8> },
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
