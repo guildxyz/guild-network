@@ -4,9 +4,9 @@ use guild_network_client::data::*;
 #[cfg(not(feature = "external-oracle"))]
 use guild_network_client::queries::*;
 use guild_network_client::transactions::*;
-use guild_network_client::{AccountId, Api, Hash, Keypair, Signer, TxStatus};
-use guild_network_common::{GuildName, RoleName};
-use guild_network_gate::identities::{Identity, IdentityAuth};
+use guild_network_client::{AccountId, Api, Hash, Keypair, Signer};
+use guild_network_common::{unpad_from_32_bytes, GuildName, RoleName};
+use guild_network_gate::identities::IdentityWithAuth;
 use guild_network_gate::requirements::Requirement;
 use guild_network_gate::{EvmAddress, EvmSignature};
 use rand::{rngs::StdRng, SeedableRng};
@@ -178,7 +178,11 @@ async fn join_request_tx(
     id: &AccountId,
     accounts: &Accounts,
 ) -> Result<Hash, subxt::Error> {
-    let msg = guild_network_client::signed_msg(id, guild_name, role_name);
+    let msg = guild_network_gate::verification_msg(
+        id,
+        unpad_from_32_bytes(guild_name),
+        unpad_from_32_bytes(role_name),
+    );
     let signature = accounts
         .eth
         .sign_message(&msg)
@@ -187,13 +191,10 @@ async fn join_request_tx(
     let tx_payload = join_guild(
         *guild_name,
         *role_name,
-        vec![Identity::EvmChain(EvmAddress::from_slice(
-            accounts.eth.address().as_bytes(),
-        ))],
-        vec![IdentityAuth::EvmChain {
-            signature: EvmSignature::from_slice(&signature.to_vec()),
-            msg: msg.as_bytes().to_vec(),
-        }],
+        vec![IdentityWithAuth::EvmChain(
+            EvmAddress::from_slice(accounts.eth.address().as_bytes()),
+            EvmSignature::from_slice(&signature.to_vec()),
+        )],
     )
     .expect("Failed to serialize data");
     send_tx_in_block(api, &tx_payload, Arc::clone(&accounts.substrate)).await

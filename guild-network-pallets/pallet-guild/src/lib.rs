@@ -221,7 +221,6 @@ pub mod pallet {
             guild_name: GuildName,
             role_name: RoleName,
             requester_identities: SpVec<u8>,
-            request_data: SpVec<u8>,
         ) -> DispatchResult {
             let requester = ensure_signed(origin.clone())?;
 
@@ -240,7 +239,6 @@ pub mod pallet {
                 guild_name,
                 role_name,
                 requester_identities,
-                request_data,
             };
 
             let call: <T as ChainlinkConfig>::Callback = Call::callback {

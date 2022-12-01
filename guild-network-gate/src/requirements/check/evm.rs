@@ -45,6 +45,7 @@ pub async fn get_balance(
             address: token_address,
             id: token_id,
         }) => get_nft(client, chain, user_address, token_address, *token_id).await,
+        Some(TokenType::Special { .. }) => todo!(),
     }
 }
 
