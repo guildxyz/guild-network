@@ -23,3 +23,9 @@ pub enum Requirement {
     EvmBalance(RequiredBalance<Address, U256, EvmChain>),
     EvmAllowlist(Allowlist<Address>),
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RequirementsWithLogic {
+    pub logic: String,
+    pub requirements: Vec<Requirement>,
+}

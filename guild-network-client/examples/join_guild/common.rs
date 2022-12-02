@@ -7,7 +7,7 @@ use guild_network_client::transactions::*;
 use guild_network_client::{AccountId, Api, Hash, Keypair, Signer};
 use guild_network_common::{unpad_from_32_bytes, GuildName, RoleName};
 use guild_network_gate::identities::IdentityWithAuth;
-use guild_network_gate::requirements::Requirement;
+use guild_network_gate::requirements::{Requirement, RequirementsWithLogic};
 use guild_network_gate::{EvmAddress, EvmSignature};
 use rand::{rngs::StdRng, SeedableRng};
 use sp_keyring::AccountKeyring;
@@ -110,15 +110,15 @@ pub async fn create_dummy_guilds(
     let roles = vec![
         Role {
             name: FIRST_ROLE,
-            requirements: RequirementsLogic {
-                logic: "".to_string(),
+            reqs: RequirementsWithLogic {
+                logic: "0".to_string(),
                 requirements: vec![Requirement::Free],
             },
         },
         Role {
             name: SECOND_ROLE,
-            requirements: RequirementsLogic {
-                logic: "".to_string(),
+            reqs: RequirementsWithLogic {
+                logic: "0".to_string(),
                 requirements: vec![Requirement::EvmAllowlist(allowlist.into())],
             },
         },

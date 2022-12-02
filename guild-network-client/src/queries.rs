@@ -1,7 +1,7 @@
 use crate::{cbor_deserialize, runtime, AccountId, Api, GuildData, Hash, JoinRequest};
 use guild_network_common::{GuildName, RequestIdentifier, RoleName};
 use guild_network_gate::identities::Identity;
-use guild_network_gate::requirements::Requirement;
+use guild_network_gate::requirements::RequirementsWithLogic;
 use subxt::ext::codec::Decode;
 use subxt::storage::address::{StorageHasher, StorageMapKey};
 
@@ -177,7 +177,7 @@ pub async fn requirements(
     api: Api,
     guild_name: GuildName,
     role_name: RoleName,
-) -> Result<Vec<Requirement>, subxt::Error> {
+) -> Result<RequirementsWithLogic, subxt::Error> {
     let filter = GuildFilter {
         name: guild_name,
         role: Some(role_name),

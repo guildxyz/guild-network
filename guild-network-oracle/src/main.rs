@@ -12,6 +12,7 @@ use sp_keyring::AccountKeyring;
 use structopt::StructOpt;
 
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::Arc;
 
 #[derive(Debug, StructOpt)]
@@ -73,15 +74,18 @@ async fn main() -> ! {
 
     loop {
         match next_event(&mut events).await {
-            Ok(oracle_request) => {
-                submit_answer(api.clone(), &client, Arc::clone(&signer), oracle_request)
-            }
+            Ok(oracle_request) => submit_answer(
+                api.clone(),
+                client.clone(),
+                Arc::clone(&signer),
+                oracle_request,
+            ),
             Err(e) => error!("{e}"),
         }
     }
 }
 
-fn submit_answer(api: Api, client: &ReqwestClient, signer: Arc<Signer>, request: OracleRequest) {
+fn submit_answer(api: Api, client: ReqwestClient, signer: Arc<Signer>, request: OracleRequest) {
     tokio::spawn(async move {
         if let Err(e) = try_submit_answer(api, client, signer, request).await {
             error!("{e}");
@@ -91,7 +95,7 @@ fn submit_answer(api: Api, client: &ReqwestClient, signer: Arc<Signer>, request:
 
 async fn try_submit_answer(
     api: Api,
-    client: &ReqwestClient,
+    client: ReqwestClient,
     signer: Arc<Signer>,
     request: OracleRequest,
 ) -> Result<(), anyhow::Error> {
@@ -131,8 +135,10 @@ async fn try_submit_answer(
     );
 
     // fetch requirements
-    let requirements =
+    let requirements_with_logic =
         requirements(api.clone(), join_request.guild_name, join_request.role_name).await?;
+
+    let requirement_tree = requiem::LogicTree::from_str(&requirements_with_logic.logic)?;
 
     // check identities and requirements
     let mut identity_check = false;
@@ -140,18 +146,25 @@ async fn try_submit_answer(
     match IdentityMap::from_verified_identities(identities, &expected_msg) {
         Ok(identity_map) => {
             identity_check = true;
-            // TODO requirement check into a HashMap<usize, bool>
-            let requirement_tree_result = futures::future::try_join_all(
-                requirements
-                    .into_iter()
-                    .enumerate()
-                    .map(async move |(i, req)| {
-                        let check = req.check(client, &identity_map).await;
-                        Ok::<(usize, bool)>(i, check.is_ok())
-                    })
-                    .collect::<Result<HashMap<usize, bool>, _>>(),
-            );
-            // TODO logic tree check use requiem for it
+            let requirement_futures = requirements_with_logic
+                .requirements
+                .iter()
+                .map(|req| req.check(&client, &identity_map))
+                .collect::<Vec<_>>();
+            // requirement checks
+            match futures::future::try_join_all(requirement_futures).await {
+                Ok(boolean_vec) => {
+                    let requirement_check_map: HashMap<u32, bool> = boolean_vec
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, b)| (i as u32, b))
+                        .collect();
+                    requirement_check = requirement_tree
+                        .evaluate(&requirement_check_map)
+                        .unwrap_or(false);
+                }
+                Err(error) => log::warn!("identity check failed: {}", error),
+            }
         }
         Err(error) => log::warn!("identity check failed: {}", error),
     }
