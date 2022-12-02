@@ -1,13 +1,6 @@
-use super::{Identity, IdentityWithAuth};
+use super::{Identity, IdentityWithAuth, Platform};
 use ethereum_types::Address;
 use std::collections::HashMap;
-
-#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
-pub enum Platform {
-    EvmChain,
-    Discord,
-    Telegram,
-}
 
 /// Stores the user's identities in a HashMap that allows
 /// `O(1)` access to platform-specific identities.

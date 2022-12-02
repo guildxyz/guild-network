@@ -6,7 +6,6 @@ use guild_network_client::{cbor_deserialize, Api, FilteredEvents, GuildCall, Sig
 use guild_network_common::unpad_from_32_bytes;
 use guild_network_gate::identities::{IdentityMap, IdentityWithAuth};
 use guild_network_gate::verification_msg;
-use log::{error, info};
 use reqwest::Client as ReqwestClient;
 use sp_keyring::AccountKeyring;
 use structopt::StructOpt;
@@ -14,6 +13,8 @@ use structopt::StructOpt;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
+
+const TX_RETRIES: u64 = 10;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -80,7 +81,7 @@ async fn main() -> ! {
                 Arc::clone(&signer),
                 oracle_request,
             ),
-            Err(e) => error!("{e}"),
+            Err(e) => log::error!("{e}"),
         }
     }
 }
@@ -88,7 +89,7 @@ async fn main() -> ! {
 fn submit_answer(api: Api, client: ReqwestClient, signer: Arc<Signer>, request: OracleRequest) {
     tokio::spawn(async move {
         if let Err(e) = try_submit_answer(api, client, signer, request).await {
-            error!("{e}");
+            log::error!("{e}");
         }
     });
 }
@@ -105,9 +106,12 @@ async fn try_submit_answer(
         callback,
         fee,
     } = request;
-    info!(
+    log::info!(
         "OracleRequest: {}, {}, {:?}, {}",
-        request_id, operator, callback, fee
+        request_id,
+        operator,
+        callback,
+        fee
     );
     if &operator != signer.account_id() {
         // request wasn't delegated to us so return
@@ -121,9 +125,10 @@ async fn try_submit_answer(
     }
 
     let join_request = join_request(api.clone(), request_id).await?;
-    info!(
+    log::info!(
         "guild: {:?}, role: {:?}",
-        join_request.guild_name, join_request.role_name
+        join_request.guild_name,
+        join_request.role_name
     );
 
     // deserialize user identities
@@ -172,11 +177,24 @@ async fn try_submit_answer(
     let access = identity_check && requirement_check;
     let result = vec![u8::from(access)];
     let tx = oracle_callback(request_id, result);
-    send_tx_ready(api, &tx, signer).await?;
-    info!(
-        "oracle answer ({}) submitted: {}",
-        request_id, requirement_check
-    );
+    let mut retries = 1;
+    while retries <= TX_RETRIES {
+        match send_tx_ready(api.clone(), &tx, Arc::clone(&signer)).await {
+            Ok(()) => {
+                log::info!(
+                    "oracle answer ({}) submitted: {}",
+                    request_id,
+                    requirement_check
+                );
+                break;
+            }
+            Err(error) => {
+                log::warn!("submitting transaction returned error: {}", error);
+                tokio::time::sleep(tokio::time::Duration::from_millis(retries)).await;
+                retries += 1;
+            }
+        }
+    }
     Ok(())
 }
 

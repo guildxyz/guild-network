@@ -1,4 +1,3 @@
-use super::map::Platform;
 use super::*;
 use anyhow::anyhow;
 use ethers_core::types::Signature as EthSignature;
@@ -20,14 +19,6 @@ impl IdentityWithAuth {
 
         anyhow::ensure!(is_valid, "invalid identity");
         Ok(())
-    }
-
-    pub fn into_platform_with_id(self) -> (Platform, Identity) {
-        match self {
-            Self::EvmChain(address, _) => (Platform::EvmChain, Identity::EvmChain(address)),
-            Self::Discord(id, _) => (Platform::Discord, Identity::Discord(id)),
-            Self::Telegram(id, _) => (Platform::Telegram, Identity::Telegram(id)),
-        }
     }
 }
 
