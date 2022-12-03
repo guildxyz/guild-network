@@ -9,3 +9,4 @@ pad = []
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "3.2.1", default-features = false, features = ["derive"] }
+guild-network-gate = { path = "../guild-network-gate", default-features = false }

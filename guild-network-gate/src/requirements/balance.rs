@@ -11,7 +11,7 @@ pub struct RequiredBalance<T, U, V> {
 pub enum TokenType<T, U> {
     Fungible { address: T },
     NonFungible { address: T, id: U },
-    Special { address: T, metadata: Vec<u8> },
+    Special { address: T, metadata: [u8; 32] },
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -21,7 +21,7 @@ pub enum Relation<T> {
     GreaterOrEqualTo(T),
     LessThan(T),
     LessOrEqualTo(T),
-    Between(std::ops::Range<T>),
+    Between(core::ops::Range<T>),
 }
 
 impl<T: PartialEq + PartialOrd> Relation<T> {

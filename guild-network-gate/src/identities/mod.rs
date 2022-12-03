@@ -1,12 +1,13 @@
-use ethereum_types::{Address, Signature as EvmSignature};
-use serde::{Deserialize, Serialize};
-
 #[cfg(feature = "with-checks")]
 mod impls;
 #[cfg(feature = "with-checks")]
 mod map;
+
 #[cfg(feature = "with-checks")]
-pub use map::*;
+pub use map::IdentityMap;
+
+use crate::{EvmAddress, EvmSignature};
+use codec::{Decode, Encode};
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum Platform {
@@ -15,28 +16,18 @@ pub enum Platform {
     Telegram,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Encode, Decode, Clone, Copy, Debug)]
 pub enum Identity {
-    EvmChain(Address),
-    Discord(Vec<u8>),
-    Telegram(Vec<u8>),
+    EvmChain(EvmAddress),
+    Discord(u64),
+    Telegram(u64),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Encode, Decode, Clone, Copy, Debug)]
 pub enum IdentityWithAuth {
-    EvmChain(Address, EvmSignature),
-    Discord(Vec<u8>, ()),  // not authenticating for now
-    Telegram(Vec<u8>, ()), // not authenticating for now
-}
-
-impl IdentityWithAuth {
-    pub fn into_platform_with_id(self) -> (Platform, Identity) {
-        match self {
-            Self::EvmChain(address, _) => (Platform::EvmChain, Identity::EvmChain(address)),
-            Self::Discord(id, _) => (Platform::Discord, Identity::Discord(id)),
-            Self::Telegram(id, _) => (Platform::Telegram, Identity::Telegram(id)),
-        }
-    }
+    EvmChain(EvmAddress, EvmSignature),
+    Discord(u64, ()),  // not authenticating for now
+    Telegram(u64, ()), // not authenticating for now
 }
 
 impl From<IdentityWithAuth> for Identity {

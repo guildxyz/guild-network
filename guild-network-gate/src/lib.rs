@@ -1,16 +1,15 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+#![deny(clippy::all)]
+#![deny(clippy::dbg_macro)]
+
 pub mod identities;
 pub mod requirements;
 
-pub use ethereum_types::{Address as EvmAddress, Signature as EvmSignature};
+pub type EvmAddress = [u8; 20];
+pub type EvmSignature = [u8; 65];
+pub type U256 = [u8; 32];
 
-#[macro_export]
-macro_rules! address {
-    ($addr:expr) => {{
-        <ethereum_types::Address as std::str::FromStr>::from_str($addr)
-            .expect(&format!("invalid address {}", $addr))
-    }};
-}
-
+#[cfg(feature = "std")]
 pub fn verification_msg<T, U, V>(id: T, guild_name: U, role_name: V) -> String
 where
     T: std::fmt::Display,

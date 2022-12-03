@@ -1,5 +1,5 @@
 use super::{Identity, IdentityWithAuth, Platform};
-use ethereum_types::Address;
+use crate::EvmAddress;
 use std::collections::HashMap;
 
 /// Stores the user's identities in a HashMap that allows
@@ -29,7 +29,7 @@ impl IdentityMap {
         &self.0
     }
 
-    pub fn evm_address(&self) -> Option<&Address> {
+    pub fn evm_address(&self) -> Option<&EvmAddress> {
         match self.0.get(&Platform::EvmChain) {
             Some(Identity::EvmChain(address)) => Some(address),
             None => None,
