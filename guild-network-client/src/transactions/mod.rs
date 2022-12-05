@@ -3,8 +3,8 @@ pub use status::TxStatus;
 
 use crate::{cbor_serialize, data::Guild, runtime, AccountId, Api, Hash, Signer};
 use futures::StreamExt;
+use guild_network_common::identities::IdentityWithAuth;
 use guild_network_common::{GuildName, RoleName};
-use guild_network_gate::identities::IdentityWithAuth;
 use subxt::ext::sp_runtime::MultiAddress;
 use subxt::tx::TxPayload;
 

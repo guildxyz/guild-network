@@ -4,6 +4,7 @@
 
 pub mod identities;
 pub mod pad;
+#[cfg(feature = "std")]
 pub mod requirements;
 pub mod utils;
 
@@ -28,6 +29,6 @@ pub struct Request<T> {
 
 #[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Debug)]
 pub enum RequestData {
-    Register(Vec<identities::IdentityWithAuth>),
+    Register(SpVec<identities::IdentityWithAuth>),
     Join { guild: GuildName, role: RoleName },
 }

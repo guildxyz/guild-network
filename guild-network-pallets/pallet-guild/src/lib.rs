@@ -280,7 +280,7 @@ pub mod pallet {
                     let identities = identities_with_auth
                         .into_iter()
                         .map(Into::into)
-                        .collect::<Vec<Identity>>();
+                        .collect::<SpVec<Identity>>();
 
                     if !UserData::<T>::contains_key(&request.requester) {
                         UserData::<T>::insert(&request.requester, identities);

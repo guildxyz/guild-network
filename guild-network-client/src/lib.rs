@@ -25,7 +25,6 @@ pub type BalanceOf = u128;
 pub type BlockHeader = Header<BlockNumber, BlakeTwo256>;
 pub type BlockNumber = u32;
 pub type BlockSubscription = Subscription<BlockHeader>;
-pub type JoinRequest = guild_network_common::JoinRequest<AccountId>;
 pub type GuildCall = runtime::runtime_types::pallet_guild::pallet::Call;
 pub type GuildData = runtime::runtime_types::pallet_guild::pallet::Guild<AccountId>;
 pub type OracleRequest = runtime::runtime_types::pallet_chainlink::pallet::GenericRequest<
@@ -34,6 +33,7 @@ pub type OracleRequest = runtime::runtime_types::pallet_chainlink::pallet::Gener
     u32,
     u128,
 >;
+pub type Request = guild_network_common::Request<AccountId>;
 pub type Signer = PairSigner<ClientConfig, Keypair>;
 pub type TransactionProgress = TxProgress<ClientConfig, Api>;
 pub type TransactionStatus = SubTxStatus<ClientConfig, Api>;

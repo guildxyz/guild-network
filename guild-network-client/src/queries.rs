@@ -1,7 +1,7 @@
-use crate::{cbor_deserialize, runtime, AccountId, Api, GuildData, Hash, JoinRequest};
+use crate::{cbor_deserialize, runtime, AccountId, Api, GuildData, Hash, Request};
+use guild_network_common::identities::{Identity, IdentityWithAuth};
+use guild_network_common::requirements::RequirementsWithLogic;
 use guild_network_common::{GuildName, RequestIdentifier, RoleName};
-use guild_network_gate::identities::{Identity, IdentityWithAuth};
-use guild_network_gate::requirements::RequirementsWithLogic;
 use subxt::ext::codec::Decode;
 use subxt::storage::address::{StorageHasher, StorageMapKey};
 
@@ -29,13 +29,7 @@ pub async fn user_identities(
     let root = runtime::storage().guild().user_data_root();
     let mut map = BTreeMap::new();
     let mut iter = api.storage().iter(root, page_size, None).await?;
-    while let Some((key, value)) = iter.next().await? {
-        let identities_with_auth: Vec<IdentityWithAuth> =
-            cbor_deserialize(&value).map_err(|e| subxt::Error::Other(e.to_string()))?;
-        let identities = identities_with_auth
-            .into_iter()
-            .map(|id_auth| id_auth.into())
-            .collect::<Vec<Identity>>();
+    while let Some((key, identities)) = iter.next().await? {
         // NOTE unwrap is fine because we are creating an account id from 32 bytes
         let account_id = AccountId::try_from(&key.0[48..80]).unwrap();
         map.insert(account_id, identities);
@@ -123,7 +117,7 @@ pub async fn role_id(
     Ok(role_ids)
 }
 
-pub async fn join_request(api: Api, id: RequestIdentifier) -> Result<JoinRequest, subxt::Error> {
+pub async fn join_request(api: Api, id: RequestIdentifier) -> Result<Request, subxt::Error> {
     let key = runtime::storage().chainlink().requests(id);
     let request = api
         .storage()
@@ -131,7 +125,7 @@ pub async fn join_request(api: Api, id: RequestIdentifier) -> Result<JoinRequest
         .await?
         .ok_or_else(|| subxt::Error::Other(format!("no request with id: {}", id)))?;
 
-    let join_request = JoinRequest::decode(&mut request.data.as_slice())?;
+    let join_request = Request::decode(&mut request.data.as_slice())?;
 
     Ok(join_request)
 }

@@ -1,5 +1,5 @@
+use guild_network_common::requirements::RequirementsWithLogic;
 use guild_network_common::{GuildName, RoleName};
-use guild_network_gate::requirements::RequirementsWithLogic;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
