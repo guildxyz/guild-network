@@ -151,6 +151,8 @@ pub mod pallet {
             // because users can join free roles without identities
             //
             // users could later add identities to their "guild passport"
+            //
+            // TODO we could immediately register a user if they submit an empty identity vector
             ensure!(
                 matches_variant(&data, &RequestData::Register(SpVec::new())),
                 Error::<T>::InvalidRequestData
@@ -211,10 +213,6 @@ pub mod pallet {
         pub fn join_guild(origin: OriginFor<T>, data: RequestData) -> DispatchResult {
             let requester = ensure_signed(origin.clone())?;
 
-            ensure!(
-                <UserData<T>>::contains_key(&requester),
-                Error::<T>::UserNotRegistered
-            );
             // check data variant
             match data {
                 RequestData::Join {
@@ -223,6 +221,12 @@ pub mod pallet {
                 } => Self::join_request_check(&requester, &guild_name, &role_name)?,
                 _ => return Err(Error::<T>::InvalidRequestData.into()),
             };
+
+            // check user has registered
+            ensure!(
+                <UserData<T>>::contains_key(&requester),
+                Error::<T>::UserNotRegistered
+            );
 
             // after all successful checks, we can create our request
             let request = Request::<T::AccountId> { requester, data };

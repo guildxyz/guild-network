@@ -4,7 +4,7 @@ use codec::{Decode, Encode};
 use frame_support::traits::{OnFinalize, OnInitialize};
 use guild_network_common::{
     identities::{Identity, IdentityWithAuth},
-    RequestData,
+    Request, RequestData,
 };
 use sp_runtime::DispatchError;
 
@@ -174,30 +174,90 @@ fn register_user() {
             <Guild>::user_data(&user_1),
             Some(vec![Identity::EvmChain([0; 20]), Identity::Discord(123)])
         );
+
+        // re-register identities but only new ones are pushed
+        let identities_with_auth = vec![
+            IdentityWithAuth::EvmChain([0; 20], [1; 65]),
+            IdentityWithAuth::Telegram(99, ()),
+        ];
+        let request_data = RequestData::Register(identities_with_auth);
+        <Guild>::register(Origin::signed(user_1), request_data.clone()).unwrap();
+        let answer = dummy_answer(vec![u8::from(true)], user_1, request_data);
+        <Guild>::callback(Origin::root(), answer.encode()).unwrap();
+        assert_eq!(
+            <Guild>::user_data(&user_1),
+            Some(vec![
+                Identity::EvmChain([0; 20]),
+                Identity::Discord(123),
+                Identity::Telegram(99)
+            ])
+        );
+
+        // register all identities at once
+        let identities_with_auth = vec![
+            IdentityWithAuth::EvmChain([11; 20], [92; 65]),
+            IdentityWithAuth::Discord(12, ()),
+            IdentityWithAuth::Telegram(33, ()),
+        ];
+        let request_data = RequestData::Register(identities_with_auth);
+        <Guild>::register(Origin::signed(user_2), request_data.clone()).unwrap();
+        let answer = dummy_answer(vec![u8::from(true)], user_2, request_data);
+        <Guild>::callback(Origin::root(), answer.encode()).unwrap();
+        assert_eq!(
+            <Guild>::user_data(&user_2),
+            Some(vec![
+                Identity::EvmChain([11; 20]),
+                Identity::Discord(12),
+                Identity::Telegram(33)
+            ])
+        );
     });
 }
 
-/*
 #[test]
 fn invalid_join_guild_request() {
     new_test_runtime().execute_with(|| {
         init_chain();
-        let guild_id = [0u8; 32];
-        let role_id = [1u8; 32];
+        let signer = 1;
+        let guild_name = [0u8; 32];
+        let role_name = [1u8; 32];
+        let request_data = RequestData::Join {
+            guild: [111; 32],
+            role: [255; 32],
+        };
 
-        // try join non-existent guild
-        let error = <Guild>::join_guild(Origin::signed(1), guild_id, role_id, vec![])
-            .err()
-            .unwrap();
+        // try join with invalid data variant
+        let error =
+            <Guild>::join_guild(Origin::signed(signer), RequestData::Register(vec![])).unwrap_err();
+        assert_eq!(error_msg(error), "InvalidRequestData");
+        // try join non-existend guild
+        let error = <Guild>::join_guild(Origin::signed(signer), request_data).unwrap_err();
         assert_eq!(error_msg(error), "GuildDoesNotExist");
         assert_eq!(<Guild>::next_request_id(), 0);
 
+        // create the actual guild
+        <Guild>::create_guild(
+            Origin::signed(signer),
+            guild_name,
+            vec![],
+            vec![(role_name, vec![])],
+        )
+        .unwrap();
+
         // try join existing guild with invalid role
-        <Guild>::create_guild(Origin::signed(1), guild_id, vec![], vec![]).unwrap();
-        let error = <Guild>::join_guild(Origin::signed(1), guild_id, role_id, vec![])
-            .err()
-            .unwrap();
+        let request_data = RequestData::Join {
+            guild: guild_name,
+            role: [255; 32],
+        };
+        let error = <Guild>::join_guild(Origin::signed(signer), request_data).unwrap_err();
         assert_eq!(error_msg(error), "RoleDoesNotExist");
+        //  try join without registering first
+        let request_data = RequestData::Join {
+            guild: guild_name,
+            role: role_name,
+        };
+        let error = <Guild>::join_guild(Origin::signed(signer), request_data).unwrap_err();
+        assert_eq!(error_msg(error), "UserNotRegistered");
     });
 }
 
@@ -208,7 +268,11 @@ fn valid_join_guild_request() {
         let guild_name = [0u8; 32];
         let role_name = [1u8; 32];
         let signer = 1;
-        let identity = vec![1, 2, 3];
+        let register = RequestData::Register(vec![]);
+        let join = RequestData::Join {
+            guild: guild_name,
+            role: role_name,
+        };
 
         <Chainlink>::register_operator(Origin::signed(signer)).unwrap();
         <Guild>::create_guild(
@@ -219,21 +283,25 @@ fn valid_join_guild_request() {
         )
         .unwrap();
 
-        <Guild>::join_guild(
-            Origin::signed(signer),
-            guild_name,
-            role_name,
-            identity.clone(),
-        )
-        .unwrap();
+        <Guild>::register(Origin::signed(signer), register.clone()).unwrap();
 
-        let request = <Chainlink>::request(0).unwrap();
+        let mut request_id = 0;
+        let request = <Chainlink>::request(request_id).unwrap();
         assert_eq!(request.requester, signer);
         assert_eq!(request.operator, signer);
-        let request_data =
-            guild_network_common::JoinRequest::<AccountId>::decode(&mut request.data.as_slice())
-                .unwrap();
-        assert_eq!(request_data.requester_identities, identity);
+        let request_data = Request::<AccountId>::decode(&mut request.data.as_slice()).unwrap();
+        assert_eq!(request_data.data, register);
+
+        <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
+
+        <Guild>::join_guild(Origin::signed(signer), join.clone()).unwrap();
+        request_id += 1;
+
+        let request = <Chainlink>::request(request_id).unwrap();
+        assert_eq!(request.requester, signer);
+        assert_eq!(request.operator, signer);
+        let request_data = Request::<AccountId>::decode(&mut request.data.as_slice()).unwrap();
+        assert_eq!(request_data.data, join);
     });
 }
 
@@ -244,9 +312,8 @@ fn joining_a_guild() {
         let guild_name = [0u8; 32];
         let role_1_name = [1u8; 32];
         let role_2_name = [2u8; 32];
-
         let signer = 1;
-        let user_data = vec![1, 2, 3];
+        let mut request_id = 0;
 
         <Chainlink>::register_operator(Origin::signed(signer)).unwrap();
         <Guild>::create_guild(
@@ -257,19 +324,27 @@ fn joining_a_guild() {
         )
         .unwrap();
 
+        // register first
+        <Guild>::register(Origin::signed(signer), RequestData::Register(vec![])).unwrap();
+
+        // registration = ok
+        <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
+        assert!(<Guild>::user_data(signer).is_some());
+        request_id += 1;
+
         // join first role
         <Guild>::join_guild(
             Origin::signed(signer),
-            guild_name,
-            role_1_name,
-            user_data.clone(),
+            RequestData::Join {
+                guild: guild_name,
+                role: role_1_name,
+            },
         )
         .unwrap();
 
-        assert!(<Guild>::user_data(signer).is_none());
-
         // access = true
-        <Chainlink>::callback(Origin::signed(signer), 0, vec![u8::from(true)]).unwrap();
+        <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
+        request_id += 1;
 
         assert_eq!(
             last_event(),
@@ -285,22 +360,24 @@ fn joining_a_guild() {
         let role_2_id = <Guild>::role_id(guild_id, role_2_name).unwrap();
         assert!(<Guild>::member(role_1_id, signer).is_some());
         assert!(<Guild>::member(role_2_id, signer).is_none());
-        assert_eq!(<Guild>::user_data(signer).unwrap(), user_data);
+        assert_eq!(<Guild>::user_data(signer), Some(vec![]));
 
         // try join second role
         <Guild>::join_guild(
             Origin::signed(signer),
-            guild_name,
-            role_2_name,
-            user_data.clone(),
+            RequestData::Join {
+                guild: guild_name,
+                role: role_2_name,
+            },
         )
         .unwrap();
 
         // access = false
-        let error = <Chainlink>::callback(Origin::signed(signer), 1, vec![u8::from(false)])
-            .err()
-            .unwrap();
+        let error =
+            <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(false)])
+                .unwrap_err();
         assert_eq!(error_msg(error), "AccessDenied");
+        request_id += 1;
 
         assert!(<Guild>::member(role_1_id, signer).is_some());
         assert!(<Guild>::member(role_2_id, signer).is_none());
@@ -308,14 +385,15 @@ fn joining_a_guild() {
         // try join second role again
         <Guild>::join_guild(
             Origin::signed(signer),
-            guild_name,
-            role_2_name,
-            user_data.clone(),
+            RequestData::Join {
+                guild: guild_name,
+                role: role_2_name,
+            },
         )
         .unwrap();
 
         // access = true
-        <Chainlink>::callback(Origin::signed(signer), 2, vec![u8::from(true)]).unwrap();
+        <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
         assert!(<Guild>::member(role_1_id, signer).is_some());
         assert!(<Guild>::member(role_2_id, signer).is_some());
 
@@ -328,7 +406,7 @@ fn joining_a_guild() {
             ))
         );
 
-        assert_eq!(<Guild>::user_data(signer).unwrap(), user_data);
+        assert_eq!(<Guild>::user_data(signer), Some(vec![]));
     });
 }
 
@@ -338,8 +416,8 @@ fn joining_the_same_role_in_a_guild_twice_fails() {
         init_chain();
         let guild_name = [0u8; 32];
         let role_name = [1u8; 32];
-        let user_data = vec![1, 2, 3];
         let signer = 1;
+        let mut request_id = 0;
 
         <Chainlink>::register_operator(Origin::signed(signer)).unwrap();
         <Guild>::create_guild(
@@ -349,10 +427,21 @@ fn joining_the_same_role_in_a_guild_twice_fails() {
             vec![(role_name, vec![])],
         )
         .unwrap();
-        // join first time
-        <Guild>::join_guild(Origin::signed(signer), guild_name, role_name, user_data).unwrap();
+        // register first
+        <Guild>::register(Origin::signed(signer), RequestData::Register(vec![])).unwrap();
+        <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
+        request_id += 1;
 
-        let request_id = 0u64;
+        // join first time
+        <Guild>::join_guild(
+            Origin::signed(signer),
+            RequestData::Join {
+                guild: guild_name,
+                role: role_name,
+            },
+        )
+        .unwrap();
+
         <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
 
         let guild_id = <Guild>::guild_id(guild_name).unwrap();
@@ -360,12 +449,15 @@ fn joining_the_same_role_in_a_guild_twice_fails() {
         assert!(<Guild>::member(role_id, signer).is_some());
 
         // try to join again
-        <Guild>::join_guild(Origin::signed(signer), guild_name, role_name, vec![]).unwrap();
+        let error = <Guild>::join_guild(
+            Origin::signed(signer),
+            RequestData::Join {
+                guild: guild_name,
+                role: role_name,
+            },
+        )
+        .unwrap_err();
 
-        let request_id = 1u64;
-        let error = <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)])
-            .err()
-            .unwrap();
         assert_eq!(error_msg(error), "UserAlreadyJoined");
         assert!(<Guild>::member(role_id, signer).is_some());
     });
@@ -384,10 +476,14 @@ fn joining_multiple_guilds() {
         let signer_1 = 1;
         let signer_2 = 2;
 
-        let user_1_data = vec![1, 2, 3];
-        let user_2_data = vec![4, 5, 6];
+        let user_1_auth = vec![IdentityWithAuth::EvmChain([0; 20], [9; 65])];
+        let user_2_auth = vec![IdentityWithAuth::Discord(999, ())];
+
+        let user_1_id = vec![Identity::EvmChain([0; 20])];
+        let user_2_id = vec![Identity::Discord(999)];
 
         <Chainlink>::register_operator(Origin::signed(signer_1)).unwrap();
+
         // create first guild
         <Guild>::create_guild(
             Origin::signed(signer_1),
@@ -396,6 +492,7 @@ fn joining_multiple_guilds() {
             vec![(role_1_name, vec![]), (role_2_name, vec![])],
         )
         .unwrap();
+
         // create second guild
         <Guild>::create_guild(
             Origin::signed(signer_2),
@@ -404,44 +501,58 @@ fn joining_multiple_guilds() {
             vec![(role_3_name, vec![]), (role_4_name, vec![])],
         )
         .unwrap();
+
+        // register both users
+        <Guild>::register(Origin::signed(signer_1), RequestData::Register(user_1_auth)).unwrap();
+        <Guild>::register(Origin::signed(signer_2), RequestData::Register(user_2_auth)).unwrap();
+
+        // registrations
+        <Chainlink>::callback(Origin::signed(signer_1), 0, vec![u8::from(true)]).unwrap();
+        <Chainlink>::callback(Origin::signed(signer_1), 1, vec![u8::from(true)]).unwrap();
+
         // signer 1 wants to join both guilds
         <Guild>::join_guild(
             Origin::signed(signer_1),
-            guild_1_name,
-            role_2_name,
-            user_1_data.clone(),
+            RequestData::Join {
+                guild: guild_1_name,
+                role: role_2_name,
+            },
         )
         .unwrap();
         <Guild>::join_guild(
             Origin::signed(signer_1),
-            guild_2_name,
-            role_3_name,
-            user_1_data.clone(),
-        )
-        .unwrap();
-        // signer 2 wants to join both guilds
-        <Guild>::join_guild(
-            Origin::signed(signer_2),
-            guild_2_name,
-            role_4_name,
-            user_2_data.clone(),
-        )
-        .unwrap();
-        <Guild>::join_guild(
-            Origin::signed(signer_2),
-            guild_1_name,
-            role_1_name,
-            user_2_data.clone(),
+            RequestData::Join {
+                guild: guild_2_name,
+                role: role_3_name,
+            },
         )
         .unwrap();
 
+        // signer 2 wants to join both guilds
+        <Guild>::join_guild(
+            Origin::signed(signer_2),
+            RequestData::Join {
+                guild: guild_2_name,
+                role: role_4_name,
+            },
+        )
+        .unwrap();
+        <Guild>::join_guild(
+            Origin::signed(signer_2),
+            RequestData::Join {
+                guild: guild_1_name,
+                role: role_1_name,
+            },
+        )
+        .unwrap();
+
+        // join requests
+        <Chainlink>::callback(Origin::signed(signer_1), 2, vec![u8::from(true)]).unwrap();
         <Chainlink>::callback(Origin::signed(signer_1), 3, vec![u8::from(true)]).unwrap();
-        <Chainlink>::callback(Origin::signed(signer_1), 0, vec![u8::from(true)]).unwrap();
-        <Chainlink>::callback(Origin::signed(signer_1), 1, vec![u8::from(true)]).unwrap();
-        let error = <Chainlink>::callback(Origin::signed(signer_1), 2, vec![u8::from(false)])
-            .err()
-            .unwrap();
+        let error =
+            <Chainlink>::callback(Origin::signed(signer_1), 4, vec![u8::from(false)]).unwrap_err();
         assert_eq!(error_msg(error), "AccessDenied");
+        <Chainlink>::callback(Origin::signed(signer_1), 5, vec![u8::from(true)]).unwrap();
 
         let guild_1_id = <Guild>::guild_id(guild_1_name).unwrap();
         let guild_2_id = <Guild>::guild_id(guild_2_name).unwrap();
@@ -459,8 +570,7 @@ fn joining_multiple_guilds() {
         // 3rd request passes
         assert!(<Guild>::member(role_1_id, signer_2).is_some());
 
-        assert_eq!(<Guild>::user_data(signer_1).unwrap(), user_1_data);
-        assert_eq!(<Guild>::user_data(signer_2).unwrap(), user_2_data);
+        assert_eq!(<Guild>::user_data(signer_1), Some(user_1_id));
+        assert_eq!(<Guild>::user_data(signer_2), Some(user_2_id));
     });
 }
-*/
