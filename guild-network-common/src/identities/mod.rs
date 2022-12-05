@@ -6,8 +6,8 @@ mod map;
 #[cfg(feature = "with-checks")]
 pub use map::IdentityMap;
 
+use crate::{Decode, Encode, TypeInfo};
 use crate::{EvmAddress, EvmSignature};
-use codec::{Decode, Encode};
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum Platform {
@@ -16,14 +16,14 @@ pub enum Platform {
     Telegram,
 }
 
-#[derive(Encode, Decode, Clone, Copy, Debug)]
+#[derive(Encode, Decode, TypeInfo, Clone, Copy, Debug)]
 pub enum Identity {
     EvmChain(EvmAddress),
     Discord(u64),
     Telegram(u64),
 }
 
-#[derive(Encode, Decode, Clone, Copy, Debug)]
+#[derive(Encode, Decode, TypeInfo, Clone, Copy, Debug)]
 pub enum IdentityWithAuth {
     EvmChain(EvmAddress, EvmSignature),
     Discord(u64, ()),  // not authenticating for now

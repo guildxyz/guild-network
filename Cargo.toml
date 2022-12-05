@@ -2,7 +2,6 @@
 members = [
     "guild-network-client",
     "guild-network-common",
-    "guild-network-gate",
     "guild-network-node",
     "guild-network-oracle",
     "guild-network-pallets/pallet-chainlink",

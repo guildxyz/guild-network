@@ -1,13 +1,6 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-#![deny(clippy::all)]
-#![deny(clippy::dbg_macro)]
-
-pub mod identities;
-pub mod requirements;
-
-pub type EvmAddress = [u8; 20];
-pub type EvmSignature = [u8; 65];
-pub type U256 = [u8; 32];
+pub fn matches_variant<T>(a: &T, b: &T) -> bool {
+    core::mem::discriminant(a) == core::mem::discriminant(b)
+}
 
 #[cfg(feature = "std")]
 pub fn verification_msg<T, U, V>(id: T, guild_name: U, role_name: V) -> String

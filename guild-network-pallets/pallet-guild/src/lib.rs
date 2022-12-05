@@ -111,8 +111,11 @@ pub mod pallet {
         GuildDoesNotExist,
         RoleDoesNotExist,
         InvalidOracleAnswer,
+        InvalidOracleRequest,
         JoinRequestDoesNotExist,
         UserAlreadyJoined,
+        UserAlreadyRegistered,
+        UserNotRegistered,
         CodecError,
     }
 
@@ -137,6 +140,33 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        #[pallet::weight(1000)] //T::WeightInfo::register())]
+        pub fn register(origin: OriginFor<T>, data: RequestData) -> DispatchResult {
+            let requester = ensure_signed(origin.clone())?;
+
+            ensure!(
+                !<UserData<T>>::contains_key(requester),
+                Error::<T>::UserAlreadyRegistered
+            );
+
+            // check data variant
+            ensure!(
+                matches_variant(&data, &RequestData::Register(SpVec::new())),
+                Error::<T>::InvalidOracleRequest
+            );
+
+            let request = Request::<T::AccountId> { requester, data };
+
+            let call: <T as ChainlinkConfig>::Callback = Call::callback {
+                result: SpVec::new(),
+            };
+            // TODO set unique fee
+            let fee = BalanceOf::<T>::unique_saturated_from(100_000_000u32);
+            <pallet_chainlink::Pallet<T>>::initiate_request(origin, call, request.encode(), fee)?;
+
+            Ok(())
+        }
+
         #[pallet::weight(1000)] //T::WeightInfo::create_guild())]
         pub fn create_guild(
             origin: OriginFor<T>,
@@ -166,6 +196,52 @@ pub mod pallet {
             }
 
             Self::deposit_event(Event::GuildCreated(sender, guild_name));
+            Ok(())
+        }
+
+        #[pallet::weight(1000)] //T::WeightInfo::join_guild())]
+        pub fn join_guild(origin: OriginFor<T>, data: RequestData) -> DispatchResult {
+            let requester = ensure_signed(origin.clone())?;
+
+            ensure!(
+                <UserData<T>>::contains_key(requester),
+                Error::<T>::UserNotRegistered
+            );
+
+            ensure!(
+                <GuildIdMap<T>>::contains_key(guild_name),
+                Error::<T>::GuildDoesNotExist
+            );
+            // NOTE unwrap is fine because of the ensure check above
+            let guild_id = Self::guild_id(guild_name).unwrap();
+
+            ensure!(
+                <RoleIdMap<T>>::contains_key(guild_id, role_name),
+                Error::<T>::RoleDoesNotExist
+            );
+            // NOTE unwrap is fine because of the ensure check above
+            let role_id = Self::role_id(guild_id, role_name).unwrap();
+
+            ensure!(
+                !Members::<T>::contains_key(role_id, &join_request.requester),
+                Error::<T>::UserAlreadyJoined
+            );
+
+            // check data variant
+            match data {
+                RequestData::Join { .. } => {}
+                _ => return Err(Error::<T>::InvalidOracleRequest.into()),
+            }
+
+            let request = Request::<T::AccountId> { requester, data };
+
+            let call: <T as ChainlinkConfig>::Callback = Call::callback {
+                result: SpVec::new(),
+            };
+            // TODO set unique fee
+            let fee = BalanceOf::<T>::unique_saturated_from(100_000_000u32);
+            <pallet_chainlink::Pallet<T>>::initiate_request(origin, call, request.encode(), fee)?;
+
             Ok(())
         }
 
@@ -211,47 +287,6 @@ pub mod pallet {
                 join_request.guild_name,
                 join_request.role_name,
             ));
-
-            Ok(())
-        }
-
-        #[pallet::weight(1000)] //T::WeightInfo::join_guild())]
-        pub fn join_guild(
-            origin: OriginFor<T>,
-            guild_name: GuildName,
-            role_name: RoleName,
-            requester_identities: SpVec<u8>,
-        ) -> DispatchResult {
-            let requester = ensure_signed(origin.clone())?;
-
-            ensure!(
-                <GuildIdMap<T>>::contains_key(guild_name),
-                Error::<T>::GuildDoesNotExist
-            );
-            let guild_id = Self::guild_id(guild_name).unwrap();
-            ensure!(
-                <RoleIdMap<T>>::contains_key(guild_id, role_name),
-                Error::<T>::RoleDoesNotExist
-            );
-
-            let join_request = JoinRequest::<T::AccountId> {
-                requester,
-                guild_name,
-                role_name,
-                requester_identities,
-            };
-
-            let call: <T as ChainlinkConfig>::Callback = Call::callback {
-                result: SpVec::new(),
-            };
-            // TODO set unique fee
-            let fee = BalanceOf::<T>::unique_saturated_from(100_000_000u32);
-            <pallet_chainlink::Pallet<T>>::initiate_request(
-                origin,
-                call,
-                join_request.encode(),
-                fee,
-            )?;
 
             Ok(())
         }

@@ -208,7 +208,3 @@ async fn next_event(
         Err(anyhow::anyhow!("next event is None"))
     }
 }
-
-fn matches_variant<T>(a: &T, b: &T) -> bool {
-    std::mem::discriminant(a) == std::mem::discriminant(b)
-}

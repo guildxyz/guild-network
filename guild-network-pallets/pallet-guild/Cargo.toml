@@ -10,6 +10,7 @@ std = [
   "codec/std",
   "frame-support/std",
   "frame-system/std",
+  "guild-network-common/std",
   "pallet-chainlink/std",
   "scale-info/std",
   "sp-std/std",
