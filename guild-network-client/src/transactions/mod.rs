@@ -1,9 +1,11 @@
 mod status;
 pub use status::TxStatus;
 
-use crate::{cbor_serialize, data::Guild, runtime, AccountId, Api, Hash, Signer};
+use crate::{
+    cbor_serialize, data::Guild, runtime, AccountId, Api, Hash, RequestData,
+    RuntimeIdentityWithAuth, Signer,
+};
 use futures::StreamExt;
-use guild_network_common::identities::IdentityWithAuth;
 use guild_network_common::{GuildName, RoleName};
 use subxt::ext::sp_runtime::MultiAddress;
 use subxt::tx::TxPayload;
@@ -36,15 +38,17 @@ pub fn create_guild(guild: Guild) -> Result<impl TxPayload, serde_cbor::Error> {
         .create_guild(guild.name, guild.metadata, roles))
 }
 
-pub fn join_guild(
-    guild_name: GuildName,
-    role_name: RoleName,
-    identities: Vec<IdentityWithAuth>,
-) -> Result<impl TxPayload, serde_cbor::Error> {
-    let ser_identities = cbor_serialize(&identities)?;
-    Ok(runtime::tx()
+pub fn register(identities: Vec<RuntimeIdentityWithAuth>) -> impl TxPayload {
+    runtime::tx()
         .guild()
-        .join_guild(guild_name, role_name, ser_identities))
+        .register(RequestData::Register(identities))
+}
+
+pub fn join_guild(guild_name: GuildName, role_name: RoleName) -> impl TxPayload {
+    runtime::tx().guild().join_guild(RequestData::Join {
+        guild: guild_name,
+        role: role_name,
+    })
 }
 
 pub async fn send_owned_tx<T: TxPayload>(

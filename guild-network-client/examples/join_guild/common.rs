@@ -4,11 +4,9 @@ use guild_network_client::data::*;
 #[cfg(not(feature = "external-oracle"))]
 use guild_network_client::queries::*;
 use guild_network_client::transactions::*;
-use guild_network_client::{AccountId, Api, Hash, Keypair, Signer};
-use guild_network_common::{unpad_from_32_bytes, GuildName, RoleName};
-use guild_network_gate::identities::IdentityWithAuth;
-use guild_network_gate::requirements::{Requirement, RequirementsWithLogic};
-use guild_network_gate::{EvmAddress, EvmSignature};
+use guild_network_client::{AccountId, Api, Hash, Keypair, RuntimeIdentityWithAuth, Signer};
+use guild_network_common::requirements::{Requirement, RequirementsWithLogic};
+use guild_network_common::{EvmAddress, EvmSignature, GuildName, RoleName};
 use rand::{rngs::StdRng, SeedableRng};
 use sp_keyring::AccountKeyring;
 use subxt::ext::sp_core::crypto::Pair as TraitPair;
@@ -104,7 +102,7 @@ pub async fn create_dummy_guilds(
     accounts: impl Iterator<Item = &Accounts>,
 ) {
     let allowlist: Vec<EvmAddress> = accounts
-        .map(|acc| EvmAddress::from_slice(acc.eth.address().as_bytes()))
+        .map(|acc| acc.eth.address().to_fixed_bytes())
         .collect();
     // create two guilds, each with 2 roles
     let roles = vec![
@@ -151,15 +149,15 @@ pub async fn create_dummy_guilds(
     .expect("failed to create guild");
 }
 
-pub async fn join_guilds(api: Api, operators: &BTreeMap<AccountId, Accounts>) {
-    let join_request_futures = operators
+pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
+    let join_request_futures = users
         .iter()
         .enumerate()
-        .map(|(i, (id, accounts))| match i % 4 {
-            0 => join_request_tx(api.clone(), &FIRST_GUILD, &FIRST_ROLE, id, accounts),
-            1 => join_request_tx(api.clone(), &FIRST_GUILD, &SECOND_ROLE, id, accounts),
-            2 => join_request_tx(api.clone(), &SECOND_GUILD, &FIRST_ROLE, id, accounts),
-            3 => join_request_tx(api.clone(), &SECOND_GUILD, &SECOND_ROLE, id, accounts),
+        .map(|(i, (_, accounts))| match i % 4 {
+            0 => join_request_tx(api.clone(), &FIRST_GUILD, &FIRST_ROLE, accounts),
+            1 => join_request_tx(api.clone(), &FIRST_GUILD, &SECOND_ROLE, accounts),
+            2 => join_request_tx(api.clone(), &SECOND_GUILD, &FIRST_ROLE, accounts),
+            3 => join_request_tx(api.clone(), &SECOND_GUILD, &SECOND_ROLE, accounts),
             _ => unreachable!(),
         })
         .collect::<Vec<_>>();
@@ -171,32 +169,56 @@ pub async fn join_guilds(api: Api, operators: &BTreeMap<AccountId, Accounts>) {
     println!("join requests successfully submitted");
 }
 
+pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {
+    let signature_futures = users
+        .iter()
+        .map(|(id, accounts)| {
+            let msg = guild_network_common::utils::verification_msg(id);
+
+            accounts.eth.sign_message(msg)
+        })
+        .collect::<Vec<_>>();
+
+    let signatures = try_join_all(signature_futures)
+        .await
+        .expect("failed to sign messages");
+
+    let register_futures = signatures
+        .into_iter()
+        .zip(users.iter())
+        .enumerate()
+        .map(|(i, (sig, (_, accounts)))| {
+            let tx_payload = register(vec![
+                RuntimeIdentityWithAuth::EvmChain(
+                    accounts.eth.address().to_fixed_bytes(),
+                    // NOTE unwrap is fine because byte lengths always match
+                    EvmSignature::try_from(sig.to_vec()).unwrap(),
+                ),
+                RuntimeIdentityWithAuth::Discord(i as u64, ()),
+            ]);
+            send_owned_tx(
+                api.clone(),
+                tx_payload,
+                Arc::clone(&accounts.substrate),
+                TxStatus::InBlock,
+            )
+        })
+        .collect::<Vec<_>>();
+
+    try_join_all(register_futures)
+        .await
+        .expect("failed to register accounts");
+
+    println!("registrations successfully submitted");
+}
+
 async fn join_request_tx(
     api: Api,
     guild_name: &GuildName,
     role_name: &RoleName,
-    id: &AccountId,
     accounts: &Accounts,
 ) -> Result<Hash, subxt::Error> {
-    let msg = guild_network_gate::verification_msg(
-        id,
-        unpad_from_32_bytes(guild_name),
-        unpad_from_32_bytes(role_name),
-    );
-    let signature = accounts
-        .eth
-        .sign_message(&msg)
-        .await
-        .map_err(|e| subxt::Error::Other(e.to_string()))?;
-    let tx_payload = join_guild(
-        *guild_name,
-        *role_name,
-        vec![IdentityWithAuth::EvmChain(
-            EvmAddress::from_slice(accounts.eth.address().as_bytes()),
-            EvmSignature::from_slice(&signature.to_vec()),
-        )],
-    )
-    .expect("Failed to serialize data");
+    let tx_payload = join_guild(*guild_name, *role_name);
     send_tx_in_block(api, &tx_payload, Arc::clone(&accounts.substrate)).await
 }
 

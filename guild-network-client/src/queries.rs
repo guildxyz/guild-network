@@ -1,5 +1,5 @@
-use crate::{cbor_deserialize, runtime, AccountId, Api, GuildData, Hash, Request};
-use guild_network_common::identities::{Identity, IdentityWithAuth};
+use crate::{cbor_deserialize, runtime, AccountId, Api, GuildData, Hash, Request, RuntimeIdentity};
+use guild_network_common::identities::Identity;
 use guild_network_common::requirements::RequirementsWithLogic;
 use guild_network_common::{GuildName, RequestIdentifier, RoleName};
 use subxt::ext::codec::Decode;
@@ -30,6 +30,12 @@ pub async fn user_identities(
     let mut map = BTreeMap::new();
     let mut iter = api.storage().iter(root, page_size, None).await?;
     while let Some((key, identities)) = iter.next().await? {
+        let identities = identities
+            .into_iter()
+            // NOTE safety: these are the same types defined at two different
+            // places by the subxt macro
+            .map(|x| unsafe { std::mem::transmute::<RuntimeIdentity, Identity>(x) })
+            .collect();
         // NOTE unwrap is fine because we are creating an account id from 32 bytes
         let account_id = AccountId::try_from(&key.0[48..80]).unwrap();
         map.insert(account_id, identities);

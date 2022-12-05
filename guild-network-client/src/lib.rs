@@ -34,6 +34,10 @@ pub type OracleRequest = runtime::runtime_types::pallet_chainlink::pallet::Gener
     u128,
 >;
 pub type Request = guild_network_common::Request<AccountId>;
+pub type RequestData = runtime::runtime_types::guild_network_common::RequestData;
+pub type RuntimeIdentity = runtime::runtime_types::guild_network_common::identities::Identity;
+pub type RuntimeIdentityWithAuth =
+    runtime::runtime_types::guild_network_common::identities::IdentityWithAuth;
 pub type Signer = PairSigner<ClientConfig, Keypair>;
 pub type TransactionProgress = TxProgress<ClientConfig, Api>;
 pub type TransactionStatus = SubTxStatus<ClientConfig, Api>;

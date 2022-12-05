@@ -3,14 +3,6 @@ pub fn matches_variant<T>(a: &T, b: &T) -> bool {
 }
 
 #[cfg(feature = "std")]
-pub fn verification_msg<T, U, V>(id: T, guild_name: U, role_name: V) -> String
-where
-    T: std::fmt::Display,
-    U: std::fmt::Display,
-    V: std::fmt::Display,
-{
-    format!(
-        "{} wants to join role {} of guild {}",
-        id, guild_name, role_name
-    )
+pub fn verification_msg<T: std::fmt::Display>(id: T) -> String {
+    format!("This is my ({}) registration request to Guild Network", id)
 }

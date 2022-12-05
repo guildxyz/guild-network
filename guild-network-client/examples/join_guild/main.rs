@@ -3,7 +3,7 @@ use common::*;
 
 use ethers::signers::Signer as EthSigner;
 use guild_network_client::queries::*;
-use guild_network_gate::identities::Identity;
+use guild_network_common::identities::Identity;
 use std::sync::Arc;
 
 #[tokio::main]
@@ -32,6 +32,30 @@ async fn main() {
     #[cfg(not(feature = "external-oracle"))]
     for registered in &registered_operators {
         assert!(operators.get(registered).is_some());
+    }
+
+    register_users(api.clone(), &operators).await;
+
+    #[cfg(not(feature = "external-oracle"))]
+    send_dummy_oracle_answers(api.clone(), &operators).await;
+
+    loop {
+        let user_identities = user_identities(api.clone(), PAGE_SIZE)
+            .await
+            .expect("failed to fetch user identities");
+        if user_identities.len() == N_TEST_ACCOUNTS {
+            for (i, (id, accounts)) in operators.iter().enumerate() {
+                assert_eq!(
+                    user_identities.get(id).unwrap(),
+                    &[
+                        Identity::EvmChain(accounts.eth.address().to_fixed_bytes()),
+                        Identity::Discord(i as u64)
+                    ]
+                );
+            }
+            println!("USER IDENTITIES MATCH");
+            break;
+        }
     }
 
     create_dummy_guilds(api.clone(), alice, operators.values()).await;
@@ -107,7 +131,7 @@ async fn main() {
             let expected_address = operators.get(account).unwrap().eth.address();
             match id {
                 Identity::EvmChain(address) => {
-                    assert_eq!(address.as_bytes(), expected_address.as_bytes())
+                    assert_eq!(address, expected_address.as_bytes())
                 }
                 _ => unimplemented!(),
             }
