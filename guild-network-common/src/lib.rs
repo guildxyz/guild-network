@@ -26,7 +26,7 @@ pub struct Request<T> {
     pub data: RequestData,
 }
 
-#[derive(Encode, Decode, TypeInfo, Clone, Debug)]
+#[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Debug)]
 pub enum RequestData {
     Register(Vec<identities::IdentityWithAuth>),
     Join { guild: GuildName, role: RoleName },

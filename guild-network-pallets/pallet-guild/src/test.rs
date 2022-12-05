@@ -2,6 +2,10 @@ use crate::{self as pallet_guild};
 
 use codec::{Decode, Encode};
 use frame_support::traits::{OnFinalize, OnInitialize};
+use guild_network_common::{
+    identities::{Identity, IdentityWithAuth},
+    RequestData,
+};
 use sp_runtime::DispatchError;
 
 use test_runtime::test_runtime;
@@ -38,18 +42,19 @@ fn error_msg<'a>(error: DispatchError) -> &'a str {
     }
 }
 
-fn dummy_answer(result: Vec<u8>) -> pallet_chainlink::OracleAnswer {
-    let data = guild_network_common::JoinRequest::<AccountId> {
-        requester: 0,
-        requester_identities: Vec::new(),
-        guild_name: [0; 32],
-        role_name: [1; 32],
+fn dummy_answer(
+    result: Vec<u8>,
+    requester: AccountId,
+    request_data: RequestData,
+) -> pallet_chainlink::OracleAnswer {
+    let data = guild_network_common::Request::<AccountId> {
+        requester,
+        data: request_data,
     }
     .encode();
     pallet_chainlink::OracleAnswer { data, result }
 }
 
-// TODO add more tests once guild functionalities are final
 #[test]
 fn create_guild() {
     new_test_runtime().execute_with(|| {
@@ -104,26 +109,75 @@ fn create_guild() {
 fn callback_can_only_be_called_by_root() {
     new_test_runtime().execute_with(|| {
         init_chain();
-        let error = <Guild>::callback(Origin::signed(1), vec![]).err().unwrap();
+        let error = <Guild>::callback(Origin::signed(1), vec![]).unwrap_err();
         assert_eq!(error, DispatchError::BadOrigin,);
 
-        let error = <Guild>::callback(Origin::root(), vec![1]).err().unwrap();
+        let error = <Guild>::callback(Origin::root(), vec![1]).unwrap_err();
         assert_eq!(error_msg(error), "CodecError");
 
-        let no_access = dummy_answer(vec![u8::from(false)]);
-        let error = <Guild>::callback(Origin::root(), no_access.encode())
-            .err()
-            .unwrap();
+        let no_access = dummy_answer(vec![u8::from(false)], 1, RequestData::Register(vec![]));
+        let error = <Guild>::callback(Origin::root(), no_access.encode()).unwrap_err();
         assert_eq!(error_msg(error), "AccessDenied");
 
-        let access = dummy_answer(vec![u8::from(true)]);
-        let error = <Guild>::callback(Origin::root(), access.encode())
-            .err()
-            .unwrap();
+        let access = dummy_answer(
+            vec![u8::from(true)],
+            2,
+            RequestData::Join {
+                guild: [0; 32],
+                role: [1; 32],
+            },
+        );
+        let error = <Guild>::callback(Origin::root(), access.encode()).unwrap_err();
         assert_eq!(error_msg(error), "GuildDoesNotExist");
     });
 }
 
+#[test]
+fn register_user() {
+    new_test_runtime().execute_with(|| {
+        init_chain();
+        let operator = 0;
+        let user_1 = 1;
+        let user_2 = 2;
+
+        <Chainlink>::register_operator(Origin::signed(operator)).unwrap();
+
+        // wrong request data variant
+        let error = <Guild>::register(
+            Origin::signed(operator),
+            RequestData::Join {
+                guild: [0; 32],
+                role: [1; 32],
+            },
+        )
+        .unwrap_err();
+        assert_eq!(error_msg(error), "InvalidRequestData");
+
+        // register without identities
+        let identities_with_auth = vec![];
+        let request_data = RequestData::Register(identities_with_auth);
+        <Guild>::register(Origin::signed(user_1), request_data.clone()).unwrap();
+        let answer = dummy_answer(vec![u8::from(true)], user_1, request_data);
+        <Guild>::callback(Origin::root(), answer.encode()).unwrap();
+        assert_eq!(<Guild>::user_data(&user_1), Some(vec![]));
+
+        // register identities for already registered user
+        let identities_with_auth = vec![
+            IdentityWithAuth::EvmChain([0; 20], [1; 65]),
+            IdentityWithAuth::Discord(123, ()),
+        ];
+        let request_data = RequestData::Register(identities_with_auth);
+        <Guild>::register(Origin::signed(user_1), request_data.clone()).unwrap();
+        let answer = dummy_answer(vec![u8::from(true)], user_1, request_data);
+        <Guild>::callback(Origin::root(), answer.encode()).unwrap();
+        assert_eq!(
+            <Guild>::user_data(&user_1),
+            Some(vec![Identity::EvmChain([0; 20]), Identity::Discord(123)])
+        );
+    });
+}
+
+/*
 #[test]
 fn invalid_join_guild_request() {
     new_test_runtime().execute_with(|| {
@@ -409,3 +463,4 @@ fn joining_multiple_guilds() {
         assert_eq!(<Guild>::user_data(signer_2).unwrap(), user_2_data);
     });
 }
+*/

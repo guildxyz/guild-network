@@ -16,14 +16,14 @@ pub enum Platform {
     Telegram,
 }
 
-#[derive(Encode, Decode, TypeInfo, Clone, Copy, Debug)]
+#[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Copy, Debug)]
 pub enum Identity {
     EvmChain(EvmAddress),
     Discord(u64),
     Telegram(u64),
 }
 
-#[derive(Encode, Decode, TypeInfo, Clone, Copy, Debug)]
+#[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Copy, Debug)]
 pub enum IdentityWithAuth {
     EvmChain(EvmAddress, EvmSignature),
     Discord(u64, ()),  // not authenticating for now
