@@ -131,8 +131,8 @@ pub async fn guild(
     api: Api,
     filter: Option<GuildName>,
     page_size: u32,
-) -> Result<Vec<GuildData>, subxt::Error> {
-    let mut guilds: Vec<GuildData> = Vec::new();
+) -> Result<BTreeMap<GuildName, GuildData>, subxt::Error> {
+    let mut guilds_map = BTreeMap::new();
     if let Some(name) = filter {
         let guild_id = guild_id(api.clone(), name).await?;
         let guild_addr = runtime::storage().guild().guilds(guild_id);
@@ -141,14 +141,14 @@ pub async fn guild(
             .fetch(&guild_addr, None)
             .await?
             .ok_or_else(|| subxt::Error::Other(format!("no Guild with name: {:#?}", name)))?;
-        guilds.push(guild);
+        guilds_map.insert(guild.name, guild.data);
     } else {
         let root = runtime::storage().guild().guilds_root();
         let mut iter = api.storage().iter(root, page_size, None).await?;
         while let Some((_guild_uuid, guild_data)) = iter.next().await? {
             // we don't care about guild_uuid in this case
-            guilds.push(guild_data);
+            guilds_map.insert(guild_data.name, guild_data.data);
         }
     }
-    Ok(guilds)
+    Ok(guilds_map)
 }
