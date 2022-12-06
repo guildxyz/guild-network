@@ -22,13 +22,14 @@ impl IdentityMap {
     }
 
     pub fn from_identities(ids: Vec<Identity>) -> Self {
-        let map = ids.into_iter().map(|x| {
-            match x {
+        let map = ids
+            .into_iter()
+            .map(|x| match x {
                 Identity::EvmChain(address) => (Platform::EvmChain, Identity::EvmChain(address)),
                 Identity::Discord(id) => (Platform::Discord, Identity::Discord(id)),
                 Identity::Telegram(id) => (Platform::Telegram, Identity::Telegram(id)),
-            }
-        }).collect();
+            })
+            .collect();
 
         Self(map)
     }

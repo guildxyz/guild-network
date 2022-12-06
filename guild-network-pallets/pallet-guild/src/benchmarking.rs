@@ -4,6 +4,8 @@ use crate::Pallet as Guild;
 use frame_benchmarking::{benchmarks, whitelisted_caller};
 use frame_support::traits::Currency;
 use frame_system::RawOrigin;
+use guild_network_common::identities::IdentityWithAuth;
+use guild_network_common::RequestData;
 use pallet_chainlink::Pallet as Chainlink;
 use sp_std::vec;
 
@@ -25,6 +27,27 @@ benchmarks! {
         assert!(Guild::<T>::guild(guild_id).is_some());
     }
 
+    register {
+        let caller: T::AccountId = whitelisted_caller();
+        let operator: T::AccountId = whitelisted_caller();
+
+        T::Currency::make_free_balance_be(&caller, T::Currency::minimum_balance() + 2_000_000_000u32.into());
+        Chainlink::<T>::register_operator(RawOrigin::Signed(operator).into())?;
+    }: _(
+        RawOrigin::Signed(caller),
+        RequestData::Register(vec![
+            IdentityWithAuth::EvmChain([0; 20],[1; 65]),
+            IdentityWithAuth::EvmChain([2; 20],[3; 65]),
+            IdentityWithAuth::EvmChain([4; 20],[5; 65]),
+            IdentityWithAuth::EvmChain([6; 20],[7; 65]),
+            IdentityWithAuth::Discord(11234, ()),
+            IdentityWithAuth::Telegram(9999999, ()),
+        ])
+    )
+    verify {
+        assert!(Chainlink::<T>::request(0).is_some())
+    }
+
     join_guild {
         let caller: T::AccountId = whitelisted_caller();
         let operator: T::AccountId = whitelisted_caller();
@@ -40,7 +63,7 @@ benchmarks! {
         T::Currency::make_free_balance_be(&caller, T::Currency::minimum_balance() + 2_000_000_000u32.into());
         Chainlink::<T>::register_operator(RawOrigin::Signed(operator).into())?;
         Guild::<T>::create_guild(RawOrigin::Signed(caller.clone()).into(), guild_name, guild_metadata, roles)?;
-    }: _(RawOrigin::Signed(caller), guild_name, [10u8; 32], vec![0u8; 500], vec![0u8; 750])
+    }: _(RawOrigin::Signed(caller), RequestData::Join { guild: guild_name, role: [10u8; 32] })
     verify {
         assert!(Chainlink::<T>::request(0).is_some());
     }

@@ -1,6 +1,6 @@
 use crate as pallet_test_caller;
+use codec::{Decode, Encode};
 use frame_support::traits::OnFinalize;
-use guild_network_common::{Decode, Encode};
 use test_runtime::test_runtime;
 
 test_runtime!(TestCaller, pallet_test_caller);
