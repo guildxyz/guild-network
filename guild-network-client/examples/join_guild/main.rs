@@ -122,19 +122,4 @@ async fn main() {
         .expect("failed to fetch members");
     println!("SECOND GUILD SECOND ROLE MEMBERS");
     println!("{:#?}", second_guild_second_role_members);
-
-    let user_identities = user_identities(api, PAGE_SIZE)
-        .await
-        .expect("failed to load user ids");
-    for (account, ids) in user_identities.iter() {
-        for id in ids {
-            let expected_address = operators.get(account).unwrap().eth.address();
-            match id {
-                Identity::EvmChain(address) => {
-                    assert_eq!(address, expected_address.as_bytes())
-                }
-                _ => unimplemented!(),
-            }
-        }
-    }
 }
