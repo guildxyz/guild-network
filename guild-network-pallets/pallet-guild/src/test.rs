@@ -85,8 +85,8 @@ fn create_guild() {
 
         let guild_id = <Guild>::guild_id(guild_name).unwrap();
         let guild = <Guild>::guild(guild_id).unwrap();
-        assert_eq!(guild.owner, signer);
-        assert_eq!(guild.metadata, metadata);
+        assert_eq!(guild.data.owner, signer);
+        assert_eq!(guild.data.metadata, metadata);
 
         let role_1_id = <Guild>::role_id(guild_id, role_1_name).unwrap();
         let role_2_id = <Guild>::role_id(guild_id, role_2_name).unwrap();
