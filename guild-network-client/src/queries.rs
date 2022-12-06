@@ -43,6 +43,15 @@ pub async fn user_identities(
     Ok(map)
 }
 
+pub async fn user_identity(api: Api, user_id: &AccountId) -> Result<Vec<Identity>, subxt::Error> {
+    let key = runtime::storage().guild().user_data(user_id);
+    let ids = api.storage().fetch(&key, None).await?.unwrap_or_default();
+    Ok(ids
+        .into_iter()
+        .map(|x| unsafe { std::mem::transmute::<RuntimeIdentity, Identity>(x) })
+        .collect())
+}
+
 pub async fn members(
     api: Api,
     filter: Option<&GuildFilter>,
@@ -123,7 +132,7 @@ pub async fn role_id(
     Ok(role_ids)
 }
 
-pub async fn join_request(api: Api, id: RequestIdentifier) -> Result<Request, subxt::Error> {
+pub async fn oracle_request(api: Api, id: RequestIdentifier) -> Result<Request, subxt::Error> {
     let key = runtime::storage().chainlink().requests(id);
     let request = api
         .storage()
@@ -131,9 +140,9 @@ pub async fn join_request(api: Api, id: RequestIdentifier) -> Result<Request, su
         .await?
         .ok_or_else(|| subxt::Error::Other(format!("no request with id: {}", id)))?;
 
-    let join_request = Request::decode(&mut request.data.as_slice())?;
+    let request = Request::decode(&mut request.data.as_slice())?;
 
-    Ok(join_request)
+    Ok(request)
 }
 
 pub async fn oracle_requests(
