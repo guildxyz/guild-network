@@ -17,8 +17,5 @@ where
     U: std::fmt::Display,
     V: std::fmt::Display,
 {
-    format!(
-        "{} wants to join role {} of guild {}",
-        id, guild_name, role_name
-    )
+    format!("{id} wants to join role {guild_name} of guild {role_name}")
 }
