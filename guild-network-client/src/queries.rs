@@ -192,7 +192,7 @@ pub async fn requirements(
         .storage()
         .fetch(&requirements_addr, None)
         .await?
-        .ok_or_else(|| subxt::Error::Other(format!("no role with name: {:#?}", role_name)))?;
+        .ok_or_else(|| subxt::Error::Other(format!("no role with name: {role_name:#?}")))?;
 
     cbor_deserialize(&requirements_vec).map_err(|e| subxt::Error::Other(e.to_string()))
 }
