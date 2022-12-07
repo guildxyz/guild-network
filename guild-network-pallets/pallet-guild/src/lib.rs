@@ -91,6 +91,7 @@ pub mod pallet {
     #[pallet::getter(fn user_data)]
     pub type UserData<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, SpVec<Identity>, OptionQuery>;
+        //StorageMap<_, Blake2_128Concat, T::AccountId, SpBTreeMap<Platform, Identity>, OptionQuery>;
 
     #[pallet::config]
     pub trait Config: ChainlinkConfig<Callback = Call<Self>> + frame_system::Config {

@@ -9,6 +9,7 @@ members = [
     "guild-network-pallets/pallet-test-caller",
     "guild-network-runtime",
     "guild-network-test-runtime",
+    "guild-network-wasm",
 ]
 [profile.release]
 panic = "abort"
