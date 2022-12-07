@@ -33,8 +33,15 @@ pub mod pallet {
 
     #[derive(Encode, Decode, Clone, TypeInfo)]
     pub struct Guild<AccountId> {
+        pub name: GuildName,
+        pub data: GuildData<AccountId>,
+    }
+
+    #[derive(Encode, Decode, Clone, TypeInfo)]
+    pub struct GuildData<AccountId> {
         pub owner: AccountId,
         pub metadata: SpVec<u8>,
+        pub roles: SpVec<RoleName>,
     }
 
     #[pallet::storage]
@@ -153,9 +160,15 @@ pub mod pallet {
             let guild_id = Self::get_random_uuid();
             GuildIdMap::<T>::insert(guild_name, guild_id);
 
-            let guild = Guild {
+            let guild_data = GuildData {
                 owner: sender.clone(),
                 metadata,
+                roles: roles.iter().map(|(role_name, _)| *role_name).collect(),
+            };
+
+            let guild = Guild {
+                name: guild_name,
+                data: guild_data,
             };
             Guilds::<T>::insert(guild_id, guild);
 
