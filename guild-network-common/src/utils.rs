@@ -4,5 +4,5 @@ pub fn matches_variant<T>(a: &T, b: &T) -> bool {
 
 #[cfg(feature = "std")]
 pub fn verification_msg<T: std::fmt::Display>(id: T) -> String {
-    format!("This is my ({}) registration request to Guild Network", id)
+    format!("This is my ({id}) registration request to Guild Network")
 }

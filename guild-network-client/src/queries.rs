@@ -91,7 +91,7 @@ pub async fn guild_id(api: Api, name: GuildName) -> Result<Hash, subxt::Error> {
     api.storage()
         .fetch(&guild_id_address, None)
         .await?
-        .ok_or_else(|| subxt::Error::Other(format!("no such Guild registered: {:?}", name)))
+        .ok_or_else(|| subxt::Error::Other(format!("no such Guild registered: {name:?}")))
 }
 
 pub async fn role_id(
@@ -122,7 +122,7 @@ pub async fn role_id(
             .storage()
             .fetch_raw(&key.0, None)
             .await?
-            .ok_or_else(|| subxt::Error::Other(format!("invalid key {:?}", key)))?;
+            .ok_or_else(|| subxt::Error::Other(format!("invalid key {key:?}")))?;
         let role_id_bytes: [u8; 32] = role_id_bytes_vec
             .as_slice()
             .try_into()
@@ -138,7 +138,7 @@ pub async fn oracle_request(api: Api, id: RequestIdentifier) -> Result<Request, 
         .storage()
         .fetch(&key, None)
         .await?
-        .ok_or_else(|| subxt::Error::Other(format!("no request with id: {}", id)))?;
+        .ok_or_else(|| subxt::Error::Other(format!("no request with id: {id}")))?;
 
     let request = Request::decode(&mut request.data.as_slice())?;
 
@@ -173,7 +173,7 @@ pub async fn guild(
             .storage()
             .fetch(&guild_addr, None)
             .await?
-            .ok_or_else(|| subxt::Error::Other(format!("no Guild with name: {:#?}", name)))?;
+            .ok_or_else(|| subxt::Error::Other(format!("no Guild with name: {name:#?}")))?;
         guilds.push(guild);
     } else {
         let root = runtime::storage().guild().guilds_root();
@@ -201,7 +201,7 @@ pub async fn requirements(
         .storage()
         .fetch(&requirements_addr, None)
         .await?
-        .ok_or_else(|| subxt::Error::Other(format!("no role with name: {:#?}", role_name)))?;
+        .ok_or_else(|| subxt::Error::Other(format!("no role with name: {role_name:#?}")))?;
 
     cbor_deserialize(&requirements_vec).map_err(|e| subxt::Error::Other(e.to_string()))
 }
