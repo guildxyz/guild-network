@@ -176,22 +176,25 @@ fn register_user() {
         );
 
         // re-register identities but only new ones are pushed
+        // NOTE: this behavior should be purposefully broken
         let identities_with_auth = vec![
             IdentityWithAuth::EvmChain([0; 20], [1; 65]),
             IdentityWithAuth::Telegram(99, ()),
         ];
         let request_data = RequestData::Register(identities_with_auth);
-        <Guild>::register(Origin::signed(user_1), request_data.clone()).unwrap();
-        let answer = dummy_answer(vec![u8::from(true)], user_1, request_data);
-        <Guild>::callback(Origin::root(), answer.encode()).unwrap();
-        assert_eq!(
-            <Guild>::user_data(&user_1),
-            Some(vec![
-                Identity::EvmChain([0; 20]),
-                Identity::Discord(123),
-                Identity::Telegram(99)
-            ])
-        );
+        let error = <Guild>::register(Origin::signed(user_1), request_data.clone()).unwrap_err();
+        assert_eq!(error_msg(error), "IdentityTypeAlreadyExists");
+
+        // let answer = dummy_answer(vec![u8::from(true)], user_1, request_data);
+        // <Guild>::callback(Origin::root(), answer.encode()).unwrap();
+        // assert_eq!(
+        //     <Guild>::user_data(&user_1),
+        //     Some(vec![
+        //         Identity::EvmChain([0; 20]),
+        //         Identity::Discord(123),
+        //         Identity::Telegram(99)
+        //     ])
+        // );
 
         // register all identities at once
         let identities_with_auth = vec![
@@ -211,6 +214,27 @@ fn register_user() {
                 Identity::Telegram(33)
             ])
         );
+    });
+}
+
+#[test]
+fn invalid_multiple_type_register() {
+    new_test_runtime().execute_with(|| {
+        init_chain();
+        let operator = 0;
+        let user = 2;
+
+        <Chainlink>::register_operator(Origin::signed(operator)).unwrap();
+
+        let identities_with_auth = vec![
+            IdentityWithAuth::EvmChain([11; 20], [92; 65]),
+            IdentityWithAuth::EvmChain([11; 20], [92; 65]),
+            IdentityWithAuth::Discord(12, ()),
+            IdentityWithAuth::Telegram(33, ()),
+        ];
+        let request_data = RequestData::Register(identities_with_auth);
+        let error = <Guild>::register(Origin::signed(user), request_data.clone()).unwrap_err();
+        assert_eq!(error_msg(error), "InvalidRequestData");
     });
 }
 

@@ -22,6 +22,7 @@ pub mod pallet {
     use guild_network_common::identities::Identity;
     use guild_network_common::utils::matches_variant;
     use guild_network_common::*;
+    use hashbrown::HashMap;
     use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig};
     use sp_std::vec::Vec as SpVec;
 
@@ -114,6 +115,7 @@ pub mod pallet {
         RoleDoesNotExist,
         InvalidOracleAnswer,
         InvalidRequestData,
+        IdentityTypeAlreadyExists,
         JoinRequestDoesNotExist,
         UserAlreadyJoined,
         UserNotRegistered,
@@ -156,6 +158,38 @@ pub mod pallet {
             ensure!(
                 matches_variant(&data, &RequestData::Register(SpVec::new())),
                 Error::<T>::InvalidRequestData
+            );
+
+            let req_ids = match &data {
+                RequestData::Register(ids) => ids,
+                // variant type was checked beforehand
+                _ => unreachable!(),
+            };
+
+            let mut counts = HashMap::new();
+
+            for id in req_ids {
+                *counts
+                    .entry(core::mem::discriminant(&Identity::from(*id)))
+                    .or_insert(0) += 1;
+            }
+            ensure!(
+                counts.values().into_iter().all(|&i| i == 1),
+                Error::<T>::InvalidRequestData
+            );
+
+            if <UserData<T>>::contains_key(&requester) {
+                let user_ids = UserData::<T>::get(&requester).unwrap();
+
+                for id in user_ids {
+                    *counts
+                        .entry(core::mem::discriminant(&Identity::from(id)))
+                        .or_insert(0) += 1;
+                }
+            }
+            ensure!(
+                counts.values().into_iter().all(|&i| i == 1),
+                Error::<T>::IdentityTypeAlreadyExists
             );
 
             let request = Request::<T::AccountId> { requester, data };
