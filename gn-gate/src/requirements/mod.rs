@@ -3,18 +3,29 @@ use serde::{Deserialize, Serialize};
 
 pub mod allowlist;
 pub mod balance;
+pub mod chains;
 #[cfg(feature = "with-checks")]
 mod check;
 
 use allowlist::Allowlist;
 use balance::RequiredBalance;
+use chains::EvmChain;
+
+// NOTE example stuff to be implemented
+// SolanaBalance(RequiredBalance<Pubkey, u64, SolChain>),
+// NearBalance(RequiredBalance<NearAddress, u128, NearChain>),
+// SolanaAllowlist(Allowlist<Pubkey>),
+// NearAllowlist(Allowlist<NearAddress>),
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum Requirement {
     Free,
-    EthereumBalance(RequiredBalance<Address, U256>),
-    BscBalance(RequiredBalance<Address, U256>),
-    GnosisBalance(RequiredBalance<Address, U256>),
-    PolygonBalance(RequiredBalance<Address, U256>),
+    EvmBalance(RequiredBalance<Address, U256, EvmChain>),
     EvmAllowlist(Allowlist<Address>),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RequirementsWithLogic {
+    pub logic: String,
+    pub requirements: Vec<Requirement>,
 }

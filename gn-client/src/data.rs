@@ -1,5 +1,5 @@
 use gn_common::{GuildName, RoleName};
-use gn_gate::requirements::Requirement;
+use gn_gate::requirements::RequirementsWithLogic;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -12,11 +12,5 @@ pub struct Guild {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Role {
     pub name: RoleName,
-    pub requirements: RequirementsLogic,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RequirementsLogic {
-    pub logic: String,
-    pub requirements: Vec<Requirement>,
+    pub reqs: RequirementsWithLogic,
 }

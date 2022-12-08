@@ -42,7 +42,6 @@ fn dummy_answer(result: Vec<u8>) -> pallet_chainlink::OracleAnswer {
     let data = gn_common::JoinRequest::<AccountId> {
         requester: 0,
         requester_identities: Vec::new(),
-        request_data: Vec::new(),
         guild_name: [0; 32],
         role_name: [1; 32],
     }
@@ -133,7 +132,7 @@ fn invalid_join_guild_request() {
         let role_id = [1u8; 32];
 
         // try join non-existent guild
-        let error = <Guild>::join_guild(Origin::signed(1), guild_id, role_id, vec![], vec![])
+        let error = <Guild>::join_guild(Origin::signed(1), guild_id, role_id, vec![])
             .err()
             .unwrap();
         assert_eq!(error_msg(error), "GuildDoesNotExist");
@@ -141,7 +140,7 @@ fn invalid_join_guild_request() {
 
         // try join existing guild with invalid role
         <Guild>::create_guild(Origin::signed(1), guild_id, vec![], vec![]).unwrap();
-        let error = <Guild>::join_guild(Origin::signed(1), guild_id, role_id, vec![], vec![])
+        let error = <Guild>::join_guild(Origin::signed(1), guild_id, role_id, vec![])
             .err()
             .unwrap();
         assert_eq!(error_msg(error), "RoleDoesNotExist");
@@ -156,7 +155,6 @@ fn valid_join_guild_request() {
         let role_name = [1u8; 32];
         let signer = 1;
         let identity = vec![1, 2, 3];
-        let auth = vec![4, 5, 6];
 
         <Chainlink>::register_operator(Origin::signed(signer)).unwrap();
         <Guild>::create_guild(
@@ -172,7 +170,6 @@ fn valid_join_guild_request() {
             guild_name,
             role_name,
             identity.clone(),
-            auth.clone(),
         )
         .unwrap();
 
@@ -182,7 +179,6 @@ fn valid_join_guild_request() {
         let request_data =
             gn_common::JoinRequest::<AccountId>::decode(&mut request.data.as_slice()).unwrap();
         assert_eq!(request_data.requester_identities, identity);
-        assert_eq!(request_data.request_data, auth);
     });
 }
 
@@ -212,7 +208,6 @@ fn joining_a_guild() {
             guild_name,
             role_1_name,
             user_data.clone(),
-            vec![],
         )
         .unwrap();
 
@@ -243,7 +238,6 @@ fn joining_a_guild() {
             guild_name,
             role_2_name,
             user_data.clone(),
-            vec![],
         )
         .unwrap();
 
@@ -262,7 +256,6 @@ fn joining_a_guild() {
             guild_name,
             role_2_name,
             user_data.clone(),
-            vec![],
         )
         .unwrap();
 
@@ -302,14 +295,7 @@ fn joining_the_same_role_in_a_guild_twice_fails() {
         )
         .unwrap();
         // join first time
-        <Guild>::join_guild(
-            Origin::signed(signer),
-            guild_name,
-            role_name,
-            user_data,
-            vec![],
-        )
-        .unwrap();
+        <Guild>::join_guild(Origin::signed(signer), guild_name, role_name, user_data).unwrap();
 
         let request_id = 0u64;
         <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
@@ -319,14 +305,7 @@ fn joining_the_same_role_in_a_guild_twice_fails() {
         assert!(<Guild>::member(role_id, signer).is_some());
 
         // try to join again
-        <Guild>::join_guild(
-            Origin::signed(signer),
-            guild_name,
-            role_name,
-            vec![],
-            vec![],
-        )
-        .unwrap();
+        <Guild>::join_guild(Origin::signed(signer), guild_name, role_name, vec![]).unwrap();
 
         let request_id = 1u64;
         let error = <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)])
@@ -376,7 +355,6 @@ fn joining_multiple_guilds() {
             guild_1_name,
             role_2_name,
             user_1_data.clone(),
-            vec![],
         )
         .unwrap();
         <Guild>::join_guild(
@@ -384,7 +362,6 @@ fn joining_multiple_guilds() {
             guild_2_name,
             role_3_name,
             user_1_data.clone(),
-            vec![],
         )
         .unwrap();
         // signer 2 wants to join both guilds
@@ -393,7 +370,6 @@ fn joining_multiple_guilds() {
             guild_2_name,
             role_4_name,
             user_2_data.clone(),
-            vec![],
         )
         .unwrap();
         <Guild>::join_guild(
@@ -401,7 +377,6 @@ fn joining_multiple_guilds() {
             guild_1_name,
             role_1_name,
             user_2_data.clone(),
-            vec![],
         )
         .unwrap();
 

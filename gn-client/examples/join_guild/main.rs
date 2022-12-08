@@ -1,10 +1,10 @@
 mod common;
 use common::*;
 
+use ethers::signers::Signer as EthSigner;
 use gn_client::queries::*;
+use gn_gate::identities::Identity;
 use std::sync::Arc;
-
-const N_TEST_ACCOUNTS: usize = 10;
 
 #[tokio::main]
 async fn main() {
@@ -15,7 +15,10 @@ async fn main() {
     #[cfg(not(feature = "external-oracle"))]
     let registering_operators = operators.values();
     #[cfg(feature = "external-oracle")]
-    let alice_vec = vec![Arc::clone(&alice)];
+    let alice_vec = vec![Accounts {
+        substrate: Arc::clone(&alice),
+        eth: ethers::signers::LocalWallet::new(&mut rand::rngs::OsRng),
+    }];
     #[cfg(feature = "external-oracle")]
     let registering_operators = alice_vec.iter();
 
@@ -31,7 +34,7 @@ async fn main() {
         assert!(operators.get(registered).is_some());
     }
 
-    create_dummy_guilds(api.clone(), alice).await;
+    create_dummy_guilds(api.clone(), alice, operators.values()).await;
 
     join_guilds(api.clone(), &operators).await;
 
@@ -44,7 +47,7 @@ async fn main() {
             .expect("failed to fetch registered members");
         if all_members.len() == N_TEST_ACCOUNTS {
             println!("ALL MEMBERS");
-            println!("{:#?}", all_members);
+            println!("{all_members:#?}");
             break;
         }
     }
@@ -57,14 +60,14 @@ async fn main() {
         .await
         .expect("failed to fetch members");
     println!("FIRST GUILD MEMBERS");
-    println!("{:#?}", first_guild_members);
+    println!("{first_guild_members:#?}");
 
     filter.name = SECOND_GUILD;
     let second_guild_members = members(api.clone(), Some(&filter), PAGE_SIZE)
         .await
         .expect("failed to fetch members");
     println!("SECOND GUILD MEMBERS");
-    println!("{:#?}", second_guild_members);
+    println!("{second_guild_members:#?}");
 
     filter.name = FIRST_GUILD;
     filter.role = Some(FIRST_ROLE);
@@ -72,14 +75,14 @@ async fn main() {
         .await
         .expect("failed to fetch members");
     println!("FIRST GUILD FIRST ROLE MEMBERS");
-    println!("{:#?}", first_guild_first_role_members);
+    println!("{first_guild_first_role_members:#?}");
 
     filter.role = Some(SECOND_ROLE);
     let first_guild_second_role_members = members(api.clone(), Some(&filter), PAGE_SIZE)
         .await
         .expect("failed to fetch members");
     println!("FIRST GUILD SECOND ROLE MEMBERS");
-    println!("{:#?}", first_guild_second_role_members);
+    println!("{first_guild_second_role_members:#?}");
 
     filter.name = SECOND_GUILD;
     filter.role = Some(FIRST_ROLE);
@@ -87,12 +90,27 @@ async fn main() {
         .await
         .expect("failed to fetch members");
     println!("SECOND GUILD FIRST ROLE MEMBERS");
-    println!("{:#?}", second_guild_first_role_members);
+    println!("{second_guild_first_role_members:#?}");
 
     filter.role = Some(SECOND_ROLE);
     let second_guild_second_role_members = members(api.clone(), Some(&filter), PAGE_SIZE)
         .await
         .expect("failed to fetch members");
     println!("SECOND GUILD SECOND ROLE MEMBERS");
-    println!("{:#?}", second_guild_second_role_members);
+    println!("{second_guild_second_role_members:#?}");
+
+    let user_identities = user_identities(api, PAGE_SIZE)
+        .await
+        .expect("failed to load user ids");
+    for (account, ids) in user_identities.iter() {
+        for id in ids {
+            let expected_address = operators.get(account).unwrap().eth.address();
+            match id {
+                Identity::EvmChain(address) => {
+                    assert_eq!(address.as_bytes(), expected_address.as_bytes())
+                }
+                _ => unimplemented!(),
+            }
+        }
+    }
 }

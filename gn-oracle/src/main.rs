@@ -1,13 +1,20 @@
 use futures::StreamExt;
-use gn_client::queries::join_request;
+use gn_client::queries::{join_request, requirements};
 use gn_client::runtime::chainlink::events::OracleRequest;
 use gn_client::transactions::{oracle_callback, send_tx_ready};
-use gn_client::{Api, FilteredEvents, GuildCall, Signer};
-use log::{error, info};
+use gn_client::{cbor_deserialize, Api, FilteredEvents, GuildCall, Signer};
+use gn_common::unpad_from_32_bytes;
+use gn_gate::identities::{IdentityMap, IdentityWithAuth};
+use gn_gate::verification_msg;
+use reqwest::Client as ReqwestClient;
 use sp_keyring::AccountKeyring;
 use structopt::StructOpt;
 
+use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::Arc;
+
+const TX_RETRIES: u64 = 10;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -39,6 +46,7 @@ async fn main() -> ! {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(opt.log)).init();
 
     let url = format!("ws://{}:{}", opt.node_ip, opt.node_port);
+    let client = ReqwestClient::new();
 
     // TODO: this will be read from the oracle's wallet for testing purposes we
     // are choosing from pre-funded accounts
@@ -67,22 +75,28 @@ async fn main() -> ! {
 
     loop {
         match next_event(&mut events).await {
-            Ok(oracle_request) => submit_answer(api.clone(), Arc::clone(&signer), oracle_request),
-            Err(e) => error!("{e}"),
+            Ok(oracle_request) => submit_answer(
+                api.clone(),
+                client.clone(),
+                Arc::clone(&signer),
+                oracle_request,
+            ),
+            Err(e) => log::error!("{e}"),
         }
     }
 }
 
-fn submit_answer(api: Api, signer: Arc<Signer>, request: OracleRequest) {
+fn submit_answer(api: Api, client: ReqwestClient, signer: Arc<Signer>, request: OracleRequest) {
     tokio::spawn(async move {
-        if let Err(e) = try_submit_answer(api, signer, request).await {
-            error!("{e}");
+        if let Err(e) = try_submit_answer(api, client, signer, request).await {
+            log::error!("{e}");
         }
     });
 }
 
 async fn try_submit_answer(
     api: Api,
+    client: ReqwestClient,
     signer: Arc<Signer>,
     request: OracleRequest,
 ) -> Result<(), anyhow::Error> {
@@ -92,9 +106,12 @@ async fn try_submit_answer(
         callback,
         fee,
     } = request;
-    info!(
+    log::info!(
         "OracleRequest: {}, {}, {:?}, {}",
-        request_id, operator, callback, fee
+        request_id,
+        operator,
+        callback,
+        fee
     );
     if &operator != signer.account_id() {
         // request wasn't delegated to us so return
@@ -107,23 +124,77 @@ async fn try_submit_answer(
         return Ok(());
     }
 
-    // TODO storage query for requirements
     let join_request = join_request(api.clone(), request_id).await?;
-    info!(
+    log::info!(
         "guild: {:?}, role: {:?}",
-        join_request.guild_name, join_request.role_name
+        join_request.guild_name,
+        join_request.role_name
     );
-    // TODO verify user identities
-    // TODO retrieve balances and check requirements
-    tokio::time::sleep(tokio::time::Duration::from_millis(request_id * 10)).await;
-    let requirement_check = true;
-    let result = vec![u8::from(requirement_check)];
+
+    // deserialize user identities
+    let identities: Vec<IdentityWithAuth> = cbor_deserialize(&join_request.requester_identities)?;
+    let expected_msg = verification_msg(
+        &join_request.requester,
+        unpad_from_32_bytes(&join_request.guild_name),
+        unpad_from_32_bytes(&join_request.role_name),
+    );
+
+    // fetch requirements
+    let requirements_with_logic =
+        requirements(api.clone(), join_request.guild_name, join_request.role_name).await?;
+
+    let requirement_tree = requiem::LogicTree::from_str(&requirements_with_logic.logic)?;
+
+    // check identities and requirements
+    let mut identity_check = false;
+    let mut requirement_check = false;
+    match IdentityMap::from_verified_identities(identities, &expected_msg) {
+        Ok(identity_map) => {
+            identity_check = true;
+            let requirement_futures = requirements_with_logic
+                .requirements
+                .iter()
+                .map(|req| req.check(&client, &identity_map))
+                .collect::<Vec<_>>();
+            // requirement checks
+            match futures::future::try_join_all(requirement_futures).await {
+                Ok(boolean_vec) => {
+                    let requirement_check_map: HashMap<u32, bool> = boolean_vec
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, b)| (i as u32, b))
+                        .collect();
+                    requirement_check = requirement_tree
+                        .evaluate(&requirement_check_map)
+                        .unwrap_or(false);
+                }
+                Err(error) => log::warn!("identity check failed: {}", error),
+            }
+        }
+        Err(error) => log::warn!("identity check failed: {}", error),
+    }
+
+    let access = identity_check && requirement_check;
+    let result = vec![u8::from(access)];
     let tx = oracle_callback(request_id, result);
-    send_tx_ready(api, &tx, signer).await?;
-    info!(
-        "oracle answer ({}) submitted: {}",
-        request_id, requirement_check
-    );
+    let mut retries = 1;
+    while retries <= TX_RETRIES {
+        match send_tx_ready(api.clone(), &tx, Arc::clone(&signer)).await {
+            Ok(()) => {
+                log::info!(
+                    "oracle answer ({}) submitted: {}",
+                    request_id,
+                    requirement_check
+                );
+                break;
+            }
+            Err(error) => {
+                log::warn!("submitting transaction returned error: {}", error);
+                tokio::time::sleep(tokio::time::Duration::from_millis(retries)).await;
+                retries += 1;
+            }
+        }
+    }
     Ok(())
 }
 

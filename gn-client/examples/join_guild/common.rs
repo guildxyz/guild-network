@@ -1,11 +1,15 @@
+use ethers::signers::{LocalWallet, Signer as EthSigner};
 use futures::future::try_join_all;
 use gn_client::data::*;
 #[cfg(not(feature = "external-oracle"))]
 use gn_client::queries::*;
 use gn_client::transactions::*;
-use gn_client::{AccountId, Api, Keypair, Signer, TxStatus};
-use gn_common::{GuildName, RoleName};
-use gn_gate::requirements::Requirement;
+use gn_client::{AccountId, Api, Hash, Keypair, Signer};
+use gn_common::{unpad_from_32_bytes, GuildName, RoleName};
+use gn_gate::identities::IdentityWithAuth;
+use gn_gate::requirements::{Requirement, RequirementsWithLogic};
+use gn_gate::{EvmAddress, EvmSignature};
+use rand::{rngs::StdRng, SeedableRng};
 use sp_keyring::AccountKeyring;
 use subxt::ext::sp_core::crypto::Pair as TraitPair;
 
@@ -17,7 +21,13 @@ pub const FIRST_ROLE: RoleName = [0; 32];
 pub const SECOND_ROLE: RoleName = [1; 32];
 pub const FIRST_GUILD: GuildName = [2; 32];
 pub const SECOND_GUILD: GuildName = [3; 32];
+pub const N_TEST_ACCOUNTS: usize = 10;
 pub const PAGE_SIZE: u32 = 10;
+
+pub struct Accounts {
+    pub substrate: Arc<Signer>,
+    pub eth: LocalWallet,
+}
 
 pub async fn api_with_alice() -> (Api, Arc<Signer>) {
     let api = Api::from_url(URL)
@@ -32,16 +42,21 @@ pub async fn prefunded_accounts(
     api: Api,
     faucet: Arc<Signer>,
     num_accounts: usize,
-) -> BTreeMap<AccountId, Arc<Signer>> {
+) -> BTreeMap<AccountId, Accounts> {
+    let mut rng = StdRng::seed_from_u64(0);
     let mut seed = [10u8; 32];
     let accounts = (0..num_accounts)
         .map(|_| {
             let keypair = Arc::new(Signer::new(Keypair::from_seed(&seed)));
             seed[0] += 1;
-            (keypair.as_ref().account_id().clone(), keypair)
+            let accounts = Accounts {
+                substrate: keypair,
+                eth: LocalWallet::new(&mut rng),
+            };
+            (accounts.substrate.as_ref().account_id().clone(), accounts)
         })
-        .inspect(|(id, _)| println!("new account: {}", id))
-        .collect::<BTreeMap<AccountId, Arc<Signer>>>();
+        .inspect(|(id, _)| println!("new account: {id:?}"))
+        .collect::<BTreeMap<AccountId, Accounts>>();
 
     let amount = 1_000_000_000_000_000u128;
     let mut keys = accounts.keys();
@@ -64,13 +79,13 @@ pub async fn prefunded_accounts(
     accounts
 }
 
-pub async fn register_operators(api: Api, operators: impl Iterator<Item = &Arc<Signer>>) {
-    let register_operator_futures = operators
-        .map(|operator| {
+pub async fn register_operators(api: Api, accounts: impl Iterator<Item = &Accounts>) {
+    let register_operator_futures = accounts
+        .map(|account| {
             send_owned_tx(
                 api.clone(),
                 register_operator(),
-                Arc::clone(operator),
+                Arc::clone(&account.substrate),
                 TxStatus::InBlock,
             )
         })
@@ -83,21 +98,28 @@ pub async fn register_operators(api: Api, operators: impl Iterator<Item = &Arc<S
     println!("operator registrations in block");
 }
 
-pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>) {
+pub async fn create_dummy_guilds(
+    api: Api,
+    signer: Arc<Signer>,
+    accounts: impl Iterator<Item = &Accounts>,
+) {
+    let allowlist: Vec<EvmAddress> = accounts
+        .map(|acc| EvmAddress::from_slice(acc.eth.address().as_bytes()))
+        .collect();
     // create two guilds, each with 2 roles
     let roles = vec![
         Role {
             name: FIRST_ROLE,
-            requirements: RequirementsLogic {
-                logic: "".to_string(),
+            reqs: RequirementsWithLogic {
+                logic: "0".to_string(),
                 requirements: vec![Requirement::Free],
             },
         },
         Role {
             name: SECOND_ROLE,
-            requirements: RequirementsLogic {
-                logic: "".to_string(),
-                requirements: vec![Requirement::Free],
+            reqs: RequirementsWithLogic {
+                logic: "0".to_string(),
+                requirements: vec![Requirement::EvmAllowlist(allowlist.into())],
             },
         },
     ];
@@ -129,19 +151,16 @@ pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>) {
     .expect("failed to create guild");
 }
 
-pub async fn join_guilds(api: Api, operators: &BTreeMap<AccountId, Arc<Signer>>) {
-    let join_request_txns = [
-        join_guild(FIRST_GUILD, FIRST_ROLE, vec![], vec![]).expect("Failed to serialize data"),
-        join_guild(FIRST_GUILD, SECOND_ROLE, vec![], vec![]).expect("Failed to serialize data"),
-        join_guild(SECOND_GUILD, FIRST_ROLE, vec![], vec![]).expect("Failed to serialize data"),
-        join_guild(SECOND_GUILD, SECOND_ROLE, vec![], vec![]).expect("Failed to serialize data"),
-    ];
-
+pub async fn join_guilds(api: Api, operators: &BTreeMap<AccountId, Accounts>) {
     let join_request_futures = operators
-        .values()
+        .iter()
         .enumerate()
-        .map(|(i, signer)| {
-            send_tx_in_block(api.clone(), &join_request_txns[i % 4], Arc::clone(signer))
+        .map(|(i, (id, accounts))| match i % 4 {
+            0 => join_request_tx(api.clone(), &FIRST_GUILD, &FIRST_ROLE, id, accounts),
+            1 => join_request_tx(api.clone(), &FIRST_GUILD, &SECOND_ROLE, id, accounts),
+            2 => join_request_tx(api.clone(), &SECOND_GUILD, &FIRST_ROLE, id, accounts),
+            3 => join_request_tx(api.clone(), &SECOND_GUILD, &SECOND_ROLE, id, accounts),
+            _ => unreachable!(),
         })
         .collect::<Vec<_>>();
 
@@ -152,8 +171,37 @@ pub async fn join_guilds(api: Api, operators: &BTreeMap<AccountId, Arc<Signer>>)
     println!("join requests successfully submitted");
 }
 
+async fn join_request_tx(
+    api: Api,
+    guild_name: &GuildName,
+    role_name: &RoleName,
+    id: &AccountId,
+    accounts: &Accounts,
+) -> Result<Hash, subxt::Error> {
+    let msg = gn_gate::verification_msg(
+        id,
+        unpad_from_32_bytes(guild_name),
+        unpad_from_32_bytes(role_name),
+    );
+    let signature = accounts
+        .eth
+        .sign_message(&msg)
+        .await
+        .map_err(|e| subxt::Error::Other(e.to_string()))?;
+    let tx_payload = join_guild(
+        *guild_name,
+        *role_name,
+        vec![IdentityWithAuth::EvmChain(
+            EvmAddress::from_slice(accounts.eth.address().as_bytes()),
+            EvmSignature::from_slice(&signature.to_vec()),
+        )],
+    )
+    .expect("Failed to serialize data");
+    send_tx_in_block(api, &tx_payload, Arc::clone(&accounts.substrate)).await
+}
+
 #[cfg(not(feature = "external-oracle"))]
-pub async fn send_dummy_oracle_answers(api: Api, operators: &BTreeMap<AccountId, Arc<Signer>>) {
+pub async fn send_dummy_oracle_answers(api: Api, operators: &BTreeMap<AccountId, Accounts>) {
     let oracle_requests = oracle_requests(api.clone(), PAGE_SIZE)
         .await
         .expect("failed to fetch oracle requests");
@@ -162,8 +210,13 @@ pub async fn send_dummy_oracle_answers(api: Api, operators: &BTreeMap<AccountId,
         .into_iter()
         .map(|(request_id, operator)| {
             let tx = oracle_callback(request_id, vec![u8::from(true)]);
-            let signer = operators.get(&operator).unwrap();
-            send_owned_tx(api.clone(), tx, Arc::clone(signer), TxStatus::InBlock)
+            let accounts = operators.get(&operator).unwrap();
+            send_owned_tx(
+                api.clone(),
+                tx,
+                Arc::clone(&accounts.substrate),
+                TxStatus::InBlock,
+            )
         })
         .collect::<Vec<_>>();
 
