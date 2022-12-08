@@ -16,7 +16,6 @@ use subxt::ext::sp_core::crypto::Pair as TraitPair;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-const URL: &str = "ws://127.0.0.1:9944";
 pub const FIRST_ROLE: RoleName = [0; 32];
 pub const SECOND_ROLE: RoleName = [1; 32];
 pub const FIRST_GUILD: GuildName = [2; 32];
@@ -29,8 +28,8 @@ pub struct Accounts {
     pub eth: LocalWallet,
 }
 
-pub async fn api_with_alice() -> (Api, Arc<Signer>) {
-    let api = Api::from_url(URL)
+pub async fn api_with_alice(url: String) -> (Api, Arc<Signer>) {
+    let api = Api::from_url(url)
         .await
         .expect("failed to initialize client");
     let alice = Arc::new(Signer::new(AccountKeyring::Alice.pair()));
