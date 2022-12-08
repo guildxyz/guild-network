@@ -1,10 +1,10 @@
 #!/bin/sh
 if [ $1 = "boot" ]; then
-	./target/release/guild-network-node purge-chain \
+	./target/release/gn-node purge-chain \
 		--base-path /tmp/mynode \
 		--chain chain-spec-raw.json -y
 	
-	./target/release/guild-network-node \
+	./target/release/gn-node \
 		--base-path /tmp/mynode \
 		--chain chain-spec-raw.json \
 		--alice \
@@ -16,11 +16,11 @@ if [ $1 = "boot" ]; then
 		--ws-external \
 		--rpc-cors=all
 elif [ $1 = "node" ]; then
-	./target/release/guild-network-node purge-chain \
+	./target/release/gn-node purge-chain \
 		--base-path /tmp/mynode \
 		--chain chain-spec-raw.json -y
 	
-	./target/release/guild-network-node \
+	./target/release/gn-node \
 		--base-path /tmp/mynode \
 		--chain chain-spec-raw.json \
 		--$2 \
@@ -32,18 +32,18 @@ elif [ $1 = "node" ]; then
 		--ws-external \
 		--rpc-cors=all
 elif [ $1 = "api" ]; then
-	subxt metadata -f bytes > guild-network-client/artifacts/metadata.scale
+	subxt metadata -f bytes > gn-client/artifacts/metadata.scale
 elif [ $1 = "dev" ]; then
-	./target/release/guild-network-node --dev
+	./target/release/gn-node --dev
 elif [ $1 = "build-spec" ]; then
-	./target/release/guild-network-node build-spec --disable-default-bootnode > chain-spec.json
-	./target/release/guild-network-node build-spec --chain=chain-spec.json --raw --disable-default-bootnode > chain-spec-raw.json
+	./target/release/gn-node build-spec --disable-default-bootnode > chain-spec.json
+	./target/release/gn-node build-spec --chain=chain-spec.json --raw --disable-default-bootnode > chain-spec-raw.json
 elif [ $1 = "clean" ]; then
-	./target/release/guild-network-node purge-chain --base-path /tmp/$2 -y
+	./target/release/gn-node purge-chain --base-path /tmp/$2 -y
 elif [ $1 = "benchmark" ]; then
 	pallet=$2
 
-	./target/release/guild-network-node benchmark pallet \
+	./target/release/gn-node benchmark pallet \
 		--chain dev \
 		--pallet pallet_$pallet \
 		--extrinsic "*" \
@@ -52,7 +52,7 @@ elif [ $1 = "benchmark" ]; then
 		--steps 50 \
 		--repeat 20 \
 		--template frame-weight-template.hbs \
-		--output ./guild-network-pallets/pallet-$pallet/src/weights.rs
+		--output ./gn-pallets/pallet-$pallet/src/weights.rs
 else
   echo "Invalid command"
 fi
