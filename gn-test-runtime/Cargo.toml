@@ -1,0 +1,6 @@
+[package]
+edition = "2021"
+name = "gn-test-runtime"
+version = "0.1.0"
+
+[dependencies]
