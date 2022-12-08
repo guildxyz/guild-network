@@ -196,8 +196,11 @@ pub async fn requirements(
         name: guild_name,
         role: Some(role_name),
     };
-    let role_id = role_id(api.clone(), &filter, 1).await?;
-    let requirements_addr = runtime::storage().guild().roles(role_id[0]);
+    let role_ids = role_id(api.clone(), &filter, 1).await?;
+    let role_id = role_ids
+        .get(0)
+        .ok_or_else(|| subxt::Error::Other(format!("no role with name: {:#?}", role_name)))?;
+    let requirements_addr = runtime::storage().guild().roles(role_id);
     let requirements_vec = api
         .storage()
         .fetch(&requirements_addr, None)

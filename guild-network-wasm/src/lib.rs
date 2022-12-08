@@ -44,6 +44,19 @@ async fn test_query_guilds() {
     assert_eq!(guilds_vec.len(), 2);
 }
 
+#[wasm_bindgen_test]
+async fn test_query_requirements() {
+    let guild_name = "myguild".to_string();
+    let role_name = "myrole".to_string();
+    let requirements_js = query_requirements(guild_name, role_name, URL.to_string())
+        .await
+        .unwrap();
+    let requirements: guild_network_common::requirements::RequirementsWithLogic =
+        requirements_js.into_serde().unwrap();
+
+    assert_eq!(requirements.logic, "0");
+}
+
 #[wasm_bindgen(js_name = "queryMembers")]
 pub async fn query_members(guild: String, role: String, url: String) -> Result<JsValue, JsValue> {
     let api = Api::from_url(&url)
@@ -89,4 +102,28 @@ pub async fn query_guilds(guild: String, url: String) -> Result<JsValue, JsValue
         .map_err(|e| JsValue::from(e.to_string()))?;
 
     JsValue::from_serde(&guilds).map_err(|e| JsValue::from(e.to_string()))
+}
+
+#[wasm_bindgen(js_name = "queryRequirements")]
+pub async fn query_requirements(
+    guild: String,
+    role: String,
+    url: String,
+) -> Result<JsValue, JsValue> {
+    let api = Api::from_url(&url)
+        .await
+        .map_err(|e| JsValue::from(e.to_string()))?;
+
+    if guild.len() > 32 || role.len() > 32 {
+        Err(JsValue::from("too long input name"))
+    } else {
+        let guild_name = pad_to_32_bytes(&guild);
+        let role_name = pad_to_32_bytes(&role);
+
+        let requirements = queries::requirements(api, guild_name, role_name)
+            .await
+            .map_err(|e| JsValue::from(e.to_string()))?;
+
+        JsValue::from_serde(&requirements).map_err(|e| JsValue::from(e.to_string()))
+    }
 }

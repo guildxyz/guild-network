@@ -15,7 +15,11 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 const URL: &str = "ws://127.0.0.1:9944";
-pub const FIRST_ROLE: RoleName = [0; 32];
+// myrole
+pub const FIRST_ROLE: RoleName = [
+    109, 121, 114, 111, 108, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0,
+];
 pub const SECOND_ROLE: RoleName = [1; 32];
 // myguild
 pub const FIRST_GUILD: GuildName = [
