@@ -1,4 +1,5 @@
-use crate::{cbor_deserialize, runtime, AccountId, Api, GuildData, Hash, Request, RuntimeIdentity};
+use crate::data::GuildData;
+use crate::{cbor_deserialize, runtime, AccountId, Api, Hash, Request, RuntimeIdentity};
 use guild_network_common::identities::Identity;
 use guild_network_common::requirements::RequirementsWithLogic;
 use guild_network_common::{GuildName, RequestIdentifier, RoleName};
@@ -160,7 +161,7 @@ pub async fn oracle_requests(
     Ok(map)
 }
 
-pub async fn guild(
+pub async fn guilds(
     api: Api,
     filter: Option<GuildName>,
     page_size: u32,
@@ -174,13 +175,13 @@ pub async fn guild(
             .fetch(&guild_addr, None)
             .await?
             .ok_or_else(|| subxt::Error::Other(format!("no Guild with name: {:#?}", name)))?;
-        guilds.push(guild);
+        guilds.push(GuildData::from(guild));
     } else {
         let root = runtime::storage().guild().guilds_root();
         let mut iter = api.storage().iter(root, page_size, None).await?;
-        while let Some((_guild_uuid, guild_data)) = iter.next().await? {
+        while let Some((_guild_uuid, guild)) = iter.next().await? {
             // we don't care about guild_uuid in this case
-            guilds.push(guild_data);
+            guilds.push(GuildData::from(guild));
         }
     }
     Ok(guilds)

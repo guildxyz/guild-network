@@ -33,7 +33,7 @@ pub mod pallet {
     #[pallet::getter(fn nonce)]
     pub type Nonce<T: Config> = StorageValue<_, u64, ValueQuery>;
 
-    #[derive(Encode, Decode, Clone, TypeInfo)]
+    #[derive(Serialize, Encode, Decode, Clone, TypeInfo)]
     pub struct Guild<AccountId> {
         pub owner: AccountId,
         pub metadata: SpVec<u8>,
@@ -91,7 +91,7 @@ pub mod pallet {
     #[pallet::getter(fn user_data)]
     pub type UserData<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, SpVec<Identity>, OptionQuery>;
-        //StorageMap<_, Blake2_128Concat, T::AccountId, SpBTreeMap<Platform, Identity>, OptionQuery>;
+    //StorageMap<_, Blake2_128Concat, T::AccountId, SpBTreeMap<Platform, Identity>, OptionQuery>;
 
     #[pallet::config]
     pub trait Config: ChainlinkConfig<Callback = Call<Self>> + frame_system::Config {
