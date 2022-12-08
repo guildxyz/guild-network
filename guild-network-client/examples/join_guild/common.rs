@@ -17,7 +17,11 @@ use std::sync::Arc;
 const URL: &str = "ws://127.0.0.1:9944";
 pub const FIRST_ROLE: RoleName = [0; 32];
 pub const SECOND_ROLE: RoleName = [1; 32];
-pub const FIRST_GUILD: GuildName = [2; 32];
+// myguild
+pub const FIRST_GUILD: GuildName = [
+    109, 121, 103, 117, 105, 108, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0
+];
 pub const SECOND_GUILD: GuildName = [3; 32];
 pub const N_TEST_ACCOUNTS: usize = 10;
 pub const PAGE_SIZE: u32 = 10;

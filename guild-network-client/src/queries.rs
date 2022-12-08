@@ -80,10 +80,10 @@ pub async fn members(
     }
 
     // NOTE unwrap is fine because we are creating an account id from 32 bytes
-    Ok(keys
-        .iter()
-        .map(|key| AccountId::try_from(&key.0[96..128]).unwrap())
-        .collect())
+    keys.iter()
+        .map(|key| AccountId::try_from(&key.0[96..128]))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| subxt::Error::Other("failed to parse account id".to_string()))
 }
 
 pub async fn guild_id(api: Api, name: GuildName) -> Result<Hash, subxt::Error> {
