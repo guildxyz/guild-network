@@ -1,7 +1,7 @@
 FROM rust:1.63.0-slim-buster as build
 RUN apt update -y \
     && apt upgrade -y \
-    && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev -y
+    && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev libssl-dev pkg-config -y
 
 RUN rustup toolchain install nightly \
     && rustup override set nightly \
@@ -16,4 +16,4 @@ RUN cargo fmt -- --check
 
 RUN cargo clippy --color=always --all-features --tests
 
-RUN cargo test --all-features --workspace --exclude guild-network-node
+RUN cargo test --all-features --workspace --exclude gn-node

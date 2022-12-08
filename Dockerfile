@@ -11,7 +11,7 @@ WORKDIR app
 
 RUN apt update -y \
     && apt upgrade -y \
-    && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev -y
+    && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev libssl-dev pkg-config -y
 
 RUN rustup toolchain install nightly \
     && rustup override set nightly \
@@ -27,7 +27,7 @@ FROM rust:1.63.0-slim-buster as build
 
 RUN apt update -y \
     && apt upgrade -y \
-    && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev -y
+    && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev libssl-dev pkg-config -y
 
 RUN rustup toolchain install nightly \
     && rustup override set nightly \
@@ -46,7 +46,7 @@ RUN cargo build --release
 FROM alpine:3.16.2
 
 RUN apk add --no-cache ca-certificates
-COPY --from=build /opt/app/target/release/guild-network-node /usr/local/bin/guild-network-node
+COPY --from=build /opt/app/target/release/gn-node /usr/local/bin/gn-node
 
 EXPOSE 30333 30333/udp 9944 9933 
 ENTRYPOINT ["substrate-node"]
