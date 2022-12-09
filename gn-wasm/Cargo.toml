@@ -10,8 +10,10 @@ crate-type = ["cdylib", "lib"]
 console_error_panic_hook = "0.1.7"
 gn-client = { path = "../gn-client", default-features = false, features = ["wasm"] }
 gn-common = { path = "../gn-common" }
+js-sys = "0.3.60"
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
 wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3.6", features = ["Window", "console"] }
 
 [dev-dependencies]
 tracing-wasm = "0.2.1"
