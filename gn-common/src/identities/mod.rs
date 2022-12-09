@@ -16,6 +16,12 @@ pub enum Platform {
     Telegram,
 }
 
+impl From<Platform> for u32 {
+    fn from(value: Platform) -> Self {
+        value as u32
+    }
+}
+
 impl From<&IdentityWithAuth> for Platform {
     fn from(value: &IdentityWithAuth) -> Self {
         match value {

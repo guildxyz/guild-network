@@ -21,8 +21,8 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use gn_common::identities::Identity;
     use gn_common::identities::Platform;
+    use gn_common::utils::check_for_duplicates;
     use gn_common::*;
-    use hashbrown::HashMap;
     use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig};
     use sp_std::vec::Vec as SpVec;
 
@@ -162,17 +162,15 @@ pub mod pallet {
             // users could later add identities to their "guild passport"
             //
             // TODO we could immediately register a user if they submit an empty identity vector
-            let mut counts = HashMap::new();
+            let mut identities = SpVec::new();
             ensure!(
                 // if request is the wrong variant, or has duplicate Platforms, returns false
                 match &data {
                     RequestData::Register(ids) => {
                         for id_with_auth in ids {
-                            *counts
-                                .entry(core::mem::discriminant(&Platform::from(id_with_auth)))
-                                .or_insert(0) += 1;
+                            identities.push(Platform::from(id_with_auth));
                         }
-                        counts.values().into_iter().all(|&i| i == 1)
+                        check_for_duplicates(&identities)
                     }
                     _ => false,
                 },
@@ -184,13 +182,11 @@ pub mod pallet {
                 let registered_ids = UserData::<T>::get(&requester).unwrap();
 
                 for id in registered_ids {
-                    *counts
-                        .entry(core::mem::discriminant(&Platform::from(&id)))
-                        .or_insert(0) += 1;
+                    identities.push(Platform::from(&id));
                 }
             }
             ensure!(
-                counts.values().into_iter().all(|&i| i == 1),
+                check_for_duplicates(&identities),
                 Error::<T>::IdentityTypeAlreadyExists
             );
 
