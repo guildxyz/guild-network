@@ -16,6 +16,26 @@ pub enum Platform {
     Telegram,
 }
 
+impl From<&IdentityWithAuth> for Platform {
+    fn from(value: &IdentityWithAuth) -> Self {
+        match value {
+            IdentityWithAuth::EvmChain(_, _) => Self::EvmChain,
+            IdentityWithAuth::Discord(_, _) => Self::Discord,
+            IdentityWithAuth::Telegram(_, _) => Self::Telegram,
+        }
+    }
+}
+
+impl From<&Identity> for Platform {
+    fn from(value: &Identity) -> Self {
+        match value {
+            Identity::EvmChain(_) => Self::EvmChain,
+            Identity::Discord(_) => Self::Discord,
+            Identity::Telegram(_) => Self::Telegram,
+        }
+    }
+}
+
 #[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Copy, Debug)]
 pub enum Identity {
     EvmChain(EvmAddress),

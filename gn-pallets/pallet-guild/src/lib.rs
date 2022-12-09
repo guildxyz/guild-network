@@ -20,7 +20,7 @@ pub mod pallet {
     };
     use frame_system::pallet_prelude::*;
     use gn_common::identities::Identity;
-    use gn_common::utils::matches_variant;
+    use gn_common::identities::Platform;
     use gn_common::*;
     use hashbrown::HashMap;
     use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig};
@@ -162,34 +162,31 @@ pub mod pallet {
             // users could later add identities to their "guild passport"
             //
             // TODO we could immediately register a user if they submit an empty identity vector
-            ensure!(
-                matches_variant(&data, &RequestData::Register(SpVec::new())),
-                Error::<T>::InvalidRequestData
-            );
-
-            let req_ids = match &data {
-                RequestData::Register(ids) => ids,
-                // variant type was checked beforehand
-                _ => unreachable!(),
-            };
-
             let mut counts = HashMap::new();
-
-            for id in req_ids {
-                *counts
-                    .entry(core::mem::discriminant(&Identity::from(*id)))
-                    .or_insert(0) += 1;
-            }
             ensure!(
-                counts.values().into_iter().all(|&i| i == 1),
+                // if request is the wrong variant, or has duplicate Platforms, returns false
+                match &data {
+                    RequestData::Register(ids) => {
+                        for id_with_auth in ids {
+                            *counts
+                                .entry(core::mem::discriminant(&Platform::from(id_with_auth)))
+                                .or_insert(0) += 1;
+                        }
+                        counts.values().into_iter().all(|&i| i == 1)
+                    }
+                    _ => false,
+                },
                 Error::<T>::InvalidRequestData
             );
 
+            // if user has already registered, and tries to register an already existing platform again, throw error
             if <UserData<T>>::contains_key(&requester) {
-                let user_ids = UserData::<T>::get(&requester).unwrap();
+                let registered_ids = UserData::<T>::get(&requester).unwrap();
 
-                for id in user_ids {
-                    *counts.entry(core::mem::discriminant(&id)).or_insert(0) += 1;
+                for id in registered_ids {
+                    *counts
+                        .entry(core::mem::discriminant(&Platform::from(&id)))
+                        .or_insert(0) += 1;
                 }
             }
             ensure!(
