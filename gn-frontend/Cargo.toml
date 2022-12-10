@@ -19,3 +19,4 @@ gloo = "0.8.0"
 wasm-bindgen-futures = "0.4.33"
 gn-wasm = { path = "../gn-wasm" }
 gloo-console = "0.2.3"
+yew-router = "0.17"
