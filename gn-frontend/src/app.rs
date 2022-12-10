@@ -1,4 +1,6 @@
 use yew::prelude::*;
+use yew_router::prelude::*;
+use crate::Route;
 use gn_wasm::query_guilds;
 use wasm_bindgen_futures::spawn_local;
 use gloo_console::log;
@@ -39,8 +41,10 @@ pub fn app() -> Html {
                         .expect("Failed to access guild \"name\" property")
                         .into();
 
+                    let guild_name_string: String = guild_name.as_string().unwrap();
+
                     html! {
-                        <div>{ &guild_name }</div>
+                        <Link<Route> to={Route::GuildPage { guild_name: guild_name_string }}><div>{ &guild_name }</div></Link<Route>>
                     }
                 })
                 .collect::<Html>()

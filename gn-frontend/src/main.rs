@@ -10,7 +10,7 @@ use yew_router::prelude::*;
 use yew::prelude::*;
 
 #[derive(Clone, Routable, PartialEq)]
-enum Route {
+pub enum Route {
     #[at("/")]
     Home,
     #[at("/:guild_name")]
