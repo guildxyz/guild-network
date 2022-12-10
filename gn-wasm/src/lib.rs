@@ -2,6 +2,7 @@ use gn_client::queries::{self, GuildFilter};
 use gn_client::{AccountId, Api};
 use gn_common::identities::IdentityWithAuth;
 use gn_common::{pad::pad_to_32_bytes, utils, Encode, GuildName, RequestData};
+use js_sys::Uint8Array;
 use serde_wasm_bindgen::to_value as serialize_to_value;
 use wasm_bindgen::prelude::*;
 
@@ -103,7 +104,7 @@ pub async fn register_tx_payload(
     signature: String,
     discord: Option<String>,
     telegram: Option<String>,
-) -> Result<js_sys::Uint8Array, JsValue> {
+) -> Result<Uint8Array, JsValue> {
     let mut address_bytes = [0u8; 20];
     let mut signature_bytes = [0u8; 65];
 
@@ -127,9 +128,23 @@ pub async fn register_tx_payload(
         identities.push(IdentityWithAuth::Telegram(tg_id_u64, ()));
     }
 
-    Ok(js_sys::Uint8Array::from(
+    Ok(Uint8Array::from(
         RequestData::Register(identities).encode().as_slice(),
     ))
+}
+
+#[wasm_bindgen(js_name = "joinGuildTxPayload")]
+pub async fn join_guild_tx_payload(guild: String, role: String) -> Result<Uint8Array, JsValue> {
+    if guild.len() > 32 || role.len() > 32 {
+        return Err(JsValue::from("too long input length"));
+    }
+
+    let request_data = RequestData::Join {
+        guild: pad_to_32_bytes(&guild),
+        role: pad_to_32_bytes(&role),
+    };
+
+    Ok(Uint8Array::from(request_data.encode().as_slice()))
 }
 
 #[cfg(test)]
