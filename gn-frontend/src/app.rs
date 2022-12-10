@@ -11,19 +11,23 @@ pub fn app() -> Html {
     {
         let guilds = guilds.clone();
 
-        use_effect(move || {
-            spawn_local(async move {
-                guilds.set(
-                    query_guilds(String::from(""), String::from("ws://127.0.0.1:9944"))
-                        .await
-                        .expect("Failed to query guilds")
-                        .into()
-                );
-            });
-            
-            || {}
-        });
+        use_effect_with_deps(move |_| {
+                spawn_local(async move {
+                    guilds.set(
+                        query_guilds(String::from(""), String::from("ws://127.0.0.1:9944"))
+                            .await
+                            .expect("Failed to query guilds")
+                            .into()
+                    );
+                });
+                
+                || {}
+            },
+            ()
+        );
     }
+
+    log!(&*guilds);
 
 
     html! {

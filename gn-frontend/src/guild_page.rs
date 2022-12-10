@@ -19,7 +19,7 @@ pub fn guild_page(props: &Props) -> Html {
         let guild = guild.clone();
         let guild_name = props.name.clone();
 
-        use_effect(move || {
+        use_effect_with_deps(move |_| {
             spawn_local(async move {
                 let res: Array = query_guilds(guild_name, String::from("ws://127.0.0.1:9944"))
                   .await
@@ -32,7 +32,8 @@ pub fn guild_page(props: &Props) -> Html {
             });
             
             || {}
-        });
+        },
+        ());
     }
 
     if *guild == JsValue::NULL {
@@ -49,11 +50,26 @@ pub fn guild_page(props: &Props) -> Html {
       .expect("Failed to read guild name")
       .into();
 
+    let roles: Array = Reflect::get(&guild, &"roles".into())
+      .expect("Failed to read guild name")
+      .into();
+
+
+
+    log!(&*guild);
 
     html! {
         <>  
             <h1>{ name }</h1>
             <h2 class="monospace">{ owner }</h2>
+            <div class="vertical-flex-container">
+              { roles.iter().map(|role| {
+                let role_name: JsString = role.into();
+                html! {
+                  <span>{ role_name }</span>
+                }
+              }).collect::<Html>() }
+            </div>
         </>
     }
 }

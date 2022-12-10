@@ -7,3 +7,8 @@
 .monospace {
   font-family: monospace;
 }
+
+.vertical-flex-container {
+  display: flex;
+  flex-direction: column;
+}
