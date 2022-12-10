@@ -134,6 +134,8 @@ pub async fn register_tx_payload(
 #[cfg(test)]
 mod test {
     use super::*;
+    use gn_client::{Keypair, Signer, TraitPair};
+    use gn_common::identities::Identity;
     use wasm_bindgen_test::*;
     const URL: &str = "ws://127.0.0.1:9944";
 
@@ -188,5 +190,33 @@ mod test {
             requirements_js.into_serde().unwrap();
 
         assert_eq!(requirements.logic, "0");
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_query_user_identity() {
+        let seed = [10u8; 32];
+        let signer = Signer::new(Keypair::from_seed(&seed));
+
+        let address_string = signer.account_id().to_string();
+        let converted_id = AccountId::from_str(&address_string).unwrap();
+        assert_eq!(&converted_id, signer.account_id());
+
+        let members_js = query_members("".to_string(), "".to_string(), URL.to_string())
+            .await
+            .unwrap();
+        let members_vec: Vec<AccountId> = members_js.into_serde().unwrap();
+        assert!(members_vec.contains(signer.account_id()));
+
+        let identities_js = query_user_identity(address_string, URL.to_string())
+            .await
+            .unwrap();
+
+        let identities: Vec<Identity> = identities_js.into_serde().unwrap();
+
+        assert_eq!(identities.len(), 2);
+        match identities[1] {
+            Identity::Discord(id) => assert!(id < 10),
+            _ => panic!("identity mismatch"),
+        }
     }
 }

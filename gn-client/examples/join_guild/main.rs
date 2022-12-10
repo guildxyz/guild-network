@@ -65,13 +65,16 @@ async fn main() {
             .expect("failed to fetch user identities");
         if user_identities.len() == N_TEST_ACCOUNTS {
             for (i, (id, accounts)) in operators.iter().enumerate() {
-                assert_eq!(
-                    user_identities.get(id).unwrap(),
-                    &[
-                        Identity::EvmChain(accounts.eth.address().to_fixed_bytes()),
-                        Identity::Discord(i as u64)
-                    ]
-                );
+                let user_identity = user_identity(api.clone(), id)
+                    .await
+                    .expect("failed to fetch individual identity");
+
+                let expected = &[
+                    Identity::EvmChain(accounts.eth.address().to_fixed_bytes()),
+                    Identity::Discord(i as u64),
+                ];
+                assert_eq!(user_identities.get(id).unwrap(), expected);
+                assert_eq!(user_identity, expected);
             }
             println!("USER IDENTITIES MATCH");
             break;

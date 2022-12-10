@@ -8,7 +8,7 @@ pub use map::IdentityMap;
 
 use crate::{Decode, Encode, TypeInfo};
 use crate::{EvmAddress, EvmSignature};
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum Platform {
@@ -17,7 +17,7 @@ pub enum Platform {
     Telegram,
 }
 
-#[derive(Serialize, Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Copy, Debug)]
 pub enum Identity {
     EvmChain(EvmAddress),
     Discord(u64),
