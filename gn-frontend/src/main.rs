@@ -1,8 +1,10 @@
 mod app;
 mod not_found;
+mod guild_page;
 
 use app::App;
 use not_found::NotFound;
+use guild_page::GuildPage;
 
 use yew_router::prelude::*;
 use yew::prelude::*;
@@ -11,6 +13,8 @@ use yew::prelude::*;
 enum Route {
     #[at("/")]
     Home,
+    #[at("/:guild_name")]
+    GuildPage { guild_name: String },
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -19,6 +23,7 @@ enum Route {
 fn switch(routes: Route) -> Html {
     match routes {
         Route::Home => html! { <App /> },
+        Route::GuildPage { guild_name } => html! { <GuildPage name={guild_name} /> },
         Route::NotFound => html! { <NotFound /> },
     }
 }
