@@ -91,6 +91,7 @@ pub async fn prefunded_accounts(
     accounts
 }
 
+#[cfg(not(feature = "external-oracle"))]
 pub async fn register_operators(api: Api, accounts: impl Iterator<Item = &Accounts>) {
     let register_operator_futures = accounts
         .map(|account| {

@@ -1,7 +1,9 @@
 use futures::StreamExt;
 use gn_client::queries::{oracle_request, requirements, user_identity};
 use gn_client::runtime::chainlink::events::OracleRequest;
-use gn_client::transactions::{oracle_callback, send_tx_ready};
+use gn_client::transactions::{
+    oracle_callback, register_operator, send_tx_in_block, send_tx_ready,
+};
 use gn_client::{Api, FilteredEvents, GuildCall, Signer};
 use gn_common::identities::IdentityMap;
 use gn_common::utils::{matches_variant, verification_msg};
@@ -25,18 +27,18 @@ struct Opt {
     /// Set logging level
     #[structopt(short, long, default_value = "warn")]
     log: String,
-
     /// Set node IP address
     #[structopt(short = "i", long = "node-ip", default_value = "127.0.0.1")]
     node_ip: String,
-
     /// Set node port number
     #[structopt(short = "p", long = "node-port", default_value = "9944")]
     node_port: String,
-
     /// Set operator account
     #[structopt(long = "id", default_value = "alice")]
     id: String,
+    /// Register as an oracle operator before starting to listen to events
+    #[structopt(long)]
+    register: bool,
 }
 
 #[tokio::main]
@@ -65,6 +67,14 @@ async fn main() -> ! {
     let api = Api::from_url(url)
         .await
         .expect("failed to start api client");
+
+    if opt.register {
+        send_tx_in_block(api.clone(), &register_operator(), Arc::clone(&signer))
+            .await
+            .expect("failed to register operator");
+
+        log::info!("successfully registered as an operator");
+    }
 
     let mut events = api
         .events()

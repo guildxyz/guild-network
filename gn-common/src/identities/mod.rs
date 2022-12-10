@@ -8,7 +8,7 @@ pub use map::IdentityMap;
 
 use crate::{Decode, Encode, TypeInfo};
 use crate::{EvmAddress, EvmSignature};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum Platform {
