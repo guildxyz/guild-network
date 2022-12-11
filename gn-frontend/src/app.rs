@@ -5,10 +5,26 @@ use js_sys::{Array, JsString, Reflect};
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 use yew_router::prelude::*;
+use crate::use_ens_account::use_ens_account;
 
 #[function_component(App)]
 pub fn app() -> Html {
     let guilds = use_state(|| Array::new());
+    let ens_account = use_ens_account();
+
+    {   
+        let ens_account = ens_account.clone();
+        let ens_account_dep = ens_account.clone();
+
+        use_effect_with_deps(
+            move |_| {
+                log!(&*ens_account);
+
+                || {}
+            },
+            ens_account_dep,
+        );
+    }
 
     {
         let guilds = guilds.clone();
@@ -49,6 +65,8 @@ pub fn app() -> Html {
                 })
                 .collect::<Html>()
             }
+            <w3m-core-button></w3m-core-button>
+            <w3m-modal></w3m-modal>
         </>
     }
 }

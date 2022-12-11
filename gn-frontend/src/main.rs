@@ -1,6 +1,7 @@
 mod app;
 mod not_found;
 mod guild_page;
+mod use_ens_account;
 
 use app::App;
 use not_found::NotFound;
