@@ -1,10 +1,11 @@
 const { readFile, readdir, rm, writeFile } = require("fs/promises");
 
 (async () => {
-  const files = await readdir("./dist");
+  const dir = process.argv[2] ?? "./dist";
+  const files = await readdir(dir);
   const jsBundleName = files.find((fileName) => fileName.endsWith("js"));
 
-  const jsBundleBuffer = await readFile(`./dist/${jsBundleName}`);
+  const jsBundleBuffer = await readFile(`${dir}/${jsBundleName}`);
   let jsBundleString = jsBundleBuffer.toString();
 
   jsBundleString = jsBundleString.slice(jsBundleString.indexOf(";") + 1);
@@ -21,6 +22,7 @@ const { readFile, readdir, rm, writeFile } = require("fs/promises");
     index + "imports['env'] = ".length + toReplace.length
   )}`;
 
-  await rm(`./dist/${jsBundleName}`);
-  await writeFile(`./dist/${jsBundleName}`, res);
+  await rm(`${dir}/${jsBundleName}`);
+  await writeFile(`${dir}/${jsBundleName}`, res);
+  console.log("Bundle fixed!");
 })();
