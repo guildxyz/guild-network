@@ -10,5 +10,7 @@ members = [
     "guild-network-runtime",
     "guild-network-test-runtime",
 ]
+exclude = ["rusty-gate"]
+
 [profile.release]
 panic = "abort"
