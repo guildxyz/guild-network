@@ -21,7 +21,7 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use gn_common::identities::Identity;
     use gn_common::identities::Platform;
-    use gn_common::utils::check_for_duplicates;
+    use gn_common::utils::detect_duplicates;
     use gn_common::*;
     use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig};
     use sp_std::vec::Vec as SpVec;
@@ -170,7 +170,7 @@ pub mod pallet {
                         for id_with_auth in ids {
                             identities.push(Platform::from(id_with_auth));
                         }
-                        check_for_duplicates(&identities)
+                        !detect_duplicates(&identities)
                     }
                     _ => false,
                 },
@@ -186,7 +186,7 @@ pub mod pallet {
                 }
             }
             ensure!(
-                check_for_duplicates(&identities),
+                !detect_duplicates(&identities),
                 Error::<T>::IdentityTypeAlreadyExists
             );
 

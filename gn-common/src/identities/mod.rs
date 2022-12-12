@@ -16,9 +16,9 @@ pub enum Platform {
     Telegram,
 }
 
-impl From<Platform> for u32 {
+impl From<Platform> for u64 {
     fn from(value: Platform) -> Self {
-        value as u32
+        value as u64
     }
 }
 
