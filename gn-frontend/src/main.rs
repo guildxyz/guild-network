@@ -1,14 +1,15 @@
 mod app;
-mod not_found;
 mod guild_page;
+mod not_found;
 mod use_ens_account;
 
 use app::App;
-use not_found::NotFound;
 use guild_page::GuildPage;
+use not_found::NotFound;
 
-use yew_router::prelude::*;
+use serde_wasm_bindgen::to_value as serialize_to_value;
 use yew::prelude::*;
+use yew_router::prelude::*;
 
 #[derive(Clone, Routable, PartialEq)]
 pub enum Route {
@@ -28,7 +29,6 @@ fn switch(routes: Route) -> Html {
         Route::NotFound => html! { <NotFound /> },
     }
 }
-
 
 #[function_component(Router)]
 fn app() -> Html {
