@@ -4,12 +4,11 @@ use gn_client::data::*;
 #[cfg(not(feature = "external-oracle"))]
 use gn_client::queries::*;
 use gn_client::transactions::*;
-use gn_client::{AccountId, Api, Hash, Keypair, RuntimeIdentityWithAuth, Signer};
+use gn_client::{AccountId, Api, Hash, Keypair, RuntimeIdentityWithAuth, Signer, TraitPair};
 use gn_common::requirements::{Requirement, RequirementsWithLogic};
 use gn_common::{EvmAddress, EvmSignature, GuildName, RoleName};
 use rand::{rngs::StdRng, SeedableRng};
 use sp_keyring::AccountKeyring;
-use subxt::ext::sp_core::crypto::Pair as TraitPair;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -19,7 +18,11 @@ pub const FIRST_ROLE: RoleName = [
     109, 121, 114, 111, 108, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0,
 ];
-pub const SECOND_ROLE: RoleName = [1; 32];
+// mysecondrole
+pub const SECOND_ROLE: RoleName = [
+    109, 121, 115, 101, 99, 111, 110, 100, 114, 111, 108, 101, 013, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0,
+];
 // myguild
 pub const FIRST_GUILD: GuildName = [
     109, 121, 103, 117, 105, 108, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -88,6 +91,7 @@ pub async fn prefunded_accounts(
     accounts
 }
 
+#[cfg(not(feature = "external-oracle"))]
 pub async fn register_operators(api: Api, accounts: impl Iterator<Item = &Accounts>) {
     let register_operator_futures = accounts
         .map(|account| {

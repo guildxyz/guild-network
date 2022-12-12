@@ -2,6 +2,8 @@ use gn_client::queries::{self, GuildFilter};
 use gn_client::{AccountId, Api};
 use gn_common::identities::IdentityWithAuth;
 use gn_common::{pad::pad_to_32_bytes, utils, Encode, GuildName, RequestData};
+use js_sys::Uint8Array;
+use serde_wasm_bindgen::to_value as serialize_to_value;
 use wasm_bindgen::prelude::*;
 
 use std::str::FromStr;
@@ -32,7 +34,7 @@ pub async fn query_members(guild: String, role: String, url: String) -> Result<J
         .await
         .map_err(|e| JsValue::from(e.to_string()))?;
 
-    JsValue::from_serde(&members).map_err(|e| JsValue::from(e.to_string()))
+    serialize_to_value(&members).map_err(|e| JsValue::from(e.to_string()))
 }
 
 #[wasm_bindgen(js_name = "queryGuilds")]
@@ -50,7 +52,7 @@ pub async fn query_guilds(guild: String, url: String) -> Result<JsValue, JsValue
         .await
         .map_err(|e| JsValue::from(e.to_string()))?;
 
-    JsValue::from_serde(&guilds).map_err(|e| JsValue::from(e.to_string()))
+    serialize_to_value(&guilds).map_err(|e| JsValue::from(e.to_string()))
 }
 
 #[wasm_bindgen(js_name = "queryRequirements")]
@@ -73,7 +75,7 @@ pub async fn query_requirements(
             .await
             .map_err(|e| JsValue::from(e.to_string()))?;
 
-        JsValue::from_serde(&requirements).map_err(|e| JsValue::from(e.to_string()))
+        serialize_to_value(&requirements).map_err(|e| JsValue::from(e.to_string()))
     }
 }
 
@@ -88,7 +90,7 @@ pub async fn query_user_identity(address: String, url: String) -> Result<JsValue
         .await
         .map_err(|e| JsValue::from(e.to_string()))?;
 
-    JsValue::from_serde(&identities).map_err(|e| JsValue::from(e.to_string()))
+    serialize_to_value(&identities).map_err(|e| JsValue::from(e.to_string()))
 }
 
 #[wasm_bindgen(js_name = "verificationMsg")]
@@ -102,7 +104,7 @@ pub async fn register_tx_payload(
     signature: String,
     discord: Option<String>,
     telegram: Option<String>,
-) -> Result<js_sys::Uint8Array, JsValue> {
+) -> Result<Uint8Array, JsValue> {
     let mut address_bytes = [0u8; 20];
     let mut signature_bytes = [0u8; 65];
 
@@ -126,14 +128,31 @@ pub async fn register_tx_payload(
         identities.push(IdentityWithAuth::Telegram(tg_id_u64, ()));
     }
 
-    Ok(js_sys::Uint8Array::from(
+    Ok(Uint8Array::from(
         RequestData::Register(identities).encode().as_slice(),
     ))
+}
+
+#[wasm_bindgen(js_name = "joinGuildTxPayload")]
+pub async fn join_guild_tx_payload(guild: String, role: String) -> Result<Uint8Array, JsValue> {
+    if guild.len() > 32 || role.len() > 32 {
+        return Err(JsValue::from("too long input length"));
+    }
+
+    let request_data = RequestData::Join {
+        guild: pad_to_32_bytes(&guild),
+        role: pad_to_32_bytes(&role),
+    };
+
+    Ok(Uint8Array::from(request_data.encode().as_slice()))
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use gn_client::{Keypair, Signer, TraitPair};
+    use gn_common::identities::Identity;
+    use serde_wasm_bindgen::from_value as deserialize_from_value;
     use wasm_bindgen_test::*;
     const URL: &str = "ws://127.0.0.1:9944";
 
@@ -161,7 +180,7 @@ mod test {
         let role = "".to_string();
 
         let members_js = query_members(guild, role, URL.to_string()).await.unwrap();
-        let members_vec: Vec<gn_client::AccountId> = members_js.into_serde().unwrap();
+        let members_vec: Vec<gn_client::AccountId> = deserialize_from_value(members_js).unwrap();
 
         assert_eq!(members_vec.len(), 6);
     }
@@ -170,7 +189,7 @@ mod test {
     async fn test_query_guilds() {
         let guild_name = "".to_string();
         let guilds = query_guilds(guild_name, URL.to_string()).await.unwrap();
-        let guilds_vec: Vec<gn_client::data::GuildData> = guilds.into_serde().unwrap();
+        let guilds_vec: Vec<gn_client::data::GuildData> = deserialize_from_value(guilds).unwrap();
 
         assert_eq!(guilds_vec.len(), 2);
         assert_eq!(guilds_vec[0].roles.len(), 2);
@@ -185,8 +204,36 @@ mod test {
             .await
             .unwrap();
         let requirements: gn_common::requirements::RequirementsWithLogic =
-            requirements_js.into_serde().unwrap();
+            deserialize_from_value(requirements_js).unwrap();
 
         assert_eq!(requirements.logic, "0");
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_query_user_identity() {
+        let seed = [10u8; 32];
+        let signer = Signer::new(Keypair::from_seed(&seed));
+
+        let address_string = signer.account_id().to_string();
+        let converted_id = AccountId::from_str(&address_string).unwrap();
+        assert_eq!(&converted_id, signer.account_id());
+
+        let members_js = query_members("".to_string(), "".to_string(), URL.to_string())
+            .await
+            .unwrap();
+        let members_vec: Vec<AccountId> = deserialize_from_value(members_js).unwrap();
+        assert!(members_vec.contains(signer.account_id()));
+
+        let identities_js = query_user_identity(address_string, URL.to_string())
+            .await
+            .unwrap();
+
+        let identities: Vec<Identity> = deserialize_from_value(identities_js).unwrap();
+
+        assert_eq!(identities.len(), 2);
+        match identities[1] {
+            Identity::Discord(id) => assert!(id < 10),
+            _ => panic!("identity mismatch"),
+        }
     }
 }

@@ -9,6 +9,7 @@ use subxt::{
 // re-exports
 pub use serde_cbor::{from_slice as cbor_deserialize, to_vec as cbor_serialize};
 pub use sp_keyring::sr25519::sr25519::Pair as Keypair;
+pub use subxt::ext::sp_core::crypto::Pair as TraitPair;
 pub use subxt::ext::sp_core::H256 as Hash;
 pub use subxt::tx::Signer as TxSignerTrait;
 pub use subxt::PolkadotConfig as ClientConfig;
