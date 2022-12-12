@@ -98,6 +98,7 @@ pub async fn verification_msg(address: String) -> String {
     utils::verification_msg(&address)
 }
 
+/*
 #[wasm_bindgen(js_name = "registerTxPayload")]
 pub async fn register_tx_payload(
     address: String,
@@ -146,6 +147,7 @@ pub async fn join_guild_tx_payload(guild: String, role: String) -> Result<Uint8A
 
     Ok(Uint8Array::from(request_data.encode().as_slice()))
 }
+*/
 
 #[cfg(test)]
 mod test {

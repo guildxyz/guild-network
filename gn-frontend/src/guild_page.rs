@@ -1,6 +1,6 @@
 use super::serialize_to_value;
 use gloo_console::log;
-use gn_client::queries;
+use gn_wasm::query_guilds;
 use js_sys::{Array, JsString, Reflect};
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::spawn_local;
@@ -18,18 +18,12 @@ pub fn guild_page(props: &Props) -> Html {
     {
         let guild = guild.clone();
         let guild_name = props.name.clone();
-        let api = Api::from_url("ws://127.0.0.1:9944")
-            .await
-            .expect("failed to connect to api");
-
         use_effect_with_deps(
             move |_| {
                 spawn_local(async move {
-                    let guilds = queries::query_guilds(api, Some(pad_to_32_bytes(&guild_name)), 10)
+                    let res: Array = query_guilds(guild_name, String::from("ws://127.0.0.1:9944"))
                         .await
-                        .expect("Failed to query guilds");
-                    let res: Array = serialize_to_value(&guilds)
-                        .expect("Failed to serialize guilds") //query_guilds(guild_name, String::from("ws://127.0.0.1:9944"))
+                        .expect("failed to query guilds")
                         .into();
 
                     let res = res.pop();

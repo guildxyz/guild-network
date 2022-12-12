@@ -1,3 +1,4 @@
+use crate::use_ens_account::use_ens_account;
 use crate::Route;
 use gloo_console::log;
 use gn_wasm::query_guilds;
@@ -5,14 +6,13 @@ use js_sys::{Array, JsString, Reflect};
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 use yew_router::prelude::*;
-use crate::use_ens_account::use_ens_account;
 
 #[function_component(App)]
 pub fn app() -> Html {
     let guilds = use_state(|| Array::new());
     let ens_account = use_ens_account();
 
-    {   
+    {
         let ens_account = ens_account.clone();
         let ens_account_dep = ens_account.clone();
 

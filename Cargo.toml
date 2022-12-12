@@ -2,6 +2,7 @@
 members = [
     "gn-client",
     "gn-common",
+    "gn-frontend",
     "gn-node",
     "gn-oracle",
     "gn-pallets/pallet-chainlink",
@@ -10,7 +11,6 @@ members = [
     "gn-runtime",
     "gn-test-runtime",
     "gn-wasm",
-    "gn-frontend",
 ]
 # don't include wasm in the build process
 default-members = [
