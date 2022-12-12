@@ -12,6 +12,7 @@ std = [
 with-checks = ["anyhow", "ethers-core", "reqwest", "std", "providers"]
 
 [dependencies]
+providers = { path = "../rusty-gate" }
 anyhow = { version = "1.0", default-features = false, optional = true }
 codec = { package = "parity-scale-codec", version = "3.2.1", default-features = false, features = ["derive"] }
 ethers-core = { version = "0.11.0", default-features = false, optional = true }
