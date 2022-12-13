@@ -10,17 +10,16 @@ external-oracle = []
 anyhow = "1"
 futures = "0.3.25"
 log = { version = "0.4.17", default-features = false }
-gn-common = { path = "../gn-common", features = ["pad"] }
-gn-gate = { path = "../gn-gate", default-features = false }
+gn-common = { path = "../gn-common" }
 hex = "0.4.3"
 parity-scale-codec = { version = "3.2.1", default-features = false } # required for the runtime subxt macro
 sp-keyring = { version = "6.0.0", default-features = false }
 subxt = "0.24.0"
-tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
 serde = { version = "1.0.144", features = ["derive"] }
 serde_cbor = "0.11.2"
-structopt = { version = "0.3", default-features = false }
 
 [dev-dependencies]
 ethers = "0.6.2"
 rand = { version = "0.8.5", default-features = false, features = ["std_rng"] }
+tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
+structopt = { version = "0.3", default-features = false }

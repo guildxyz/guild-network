@@ -1,11 +1,11 @@
 use futures::StreamExt;
-use gn_client::queries::{join_request, requirements};
+use gn_client::queries::{oracle_request, requirements, user_identity};
 use gn_client::runtime::chainlink::events::OracleRequest;
 use gn_client::transactions::{oracle_callback, send_tx_ready};
-use gn_client::{cbor_deserialize, Api, FilteredEvents, GuildCall, Signer};
-use gn_common::unpad_from_32_bytes;
-use gn_gate::identities::{IdentityMap, IdentityWithAuth};
-use gn_gate::verification_msg;
+use gn_client::{Api, FilteredEvents, GuildCall, Signer};
+use gn_common::identities::IdentityMap;
+use gn_common::utils::{matches_variant, verification_msg};
+use gn_common::RequestData;
 use reqwest::Client as ReqwestClient;
 use sp_keyring::AccountKeyring;
 use structopt::StructOpt;
@@ -124,39 +124,39 @@ async fn try_submit_answer(
         return Ok(());
     }
 
-    let join_request = join_request(api.clone(), request_id).await?;
-    log::info!(
-        "guild: {:?}, role: {:?}",
-        join_request.guild_name,
-        join_request.role_name
-    );
+    let oracle_request = oracle_request(api.clone(), request_id).await?;
 
-    // deserialize user identities
-    let identities: Vec<IdentityWithAuth> = cbor_deserialize(&join_request.requester_identities)?;
-    let expected_msg = verification_msg(
-        &join_request.requester,
-        unpad_from_32_bytes(&join_request.guild_name),
-        unpad_from_32_bytes(&join_request.role_name),
-    );
-
-    // fetch requirements
-    let requirements_with_logic =
-        requirements(api.clone(), join_request.guild_name, join_request.role_name).await?;
-
-    let requirement_tree = requiem::LogicTree::from_str(&requirements_with_logic.logic)?;
-
-    // check identities and requirements
-    let mut identity_check = false;
-    let mut requirement_check = false;
-    match IdentityMap::from_verified_identities(identities, &expected_msg) {
-        Ok(identity_map) => {
-            identity_check = true;
+    let oracle_answer = match oracle_request.data {
+        RequestData::Register(identities) => {
+            log::info!("user registration: {}", oracle_request.requester);
+            // deserialize user identities
+            let expected_msg = verification_msg(&oracle_request.requester);
+            match identities
+                .iter()
+                .map(|id| id.verify(&expected_msg))
+                .collect::<Result<Vec<_>, _>>()
+            {
+                Ok(_) => true,
+                Err(error) => {
+                    log::warn!("identity check failed: {}", error);
+                    false
+                }
+            }
+        }
+        RequestData::Join { guild, role } => {
+            log::info!("join guild request: {:?}, role: {:?}", guild, role);
+            // fetch requirements
+            let requirements_with_logic = requirements(api.clone(), guild, role).await?;
+            // build requireemnt tree from logic
+            let requirement_tree = requiem::LogicTree::from_str(&requirements_with_logic.logic)?;
+            let identity_map = IdentityMap::from_identities(
+                user_identity(api.clone(), &oracle_request.requester).await?,
+            );
             let requirement_futures = requirements_with_logic
                 .requirements
                 .iter()
                 .map(|req| req.check(&client, &identity_map))
                 .collect::<Vec<_>>();
-            // requirement checks
             match futures::future::try_join_all(requirement_futures).await {
                 Ok(boolean_vec) => {
                     let requirement_check_map: HashMap<u32, bool> = boolean_vec
@@ -164,18 +164,19 @@ async fn try_submit_answer(
                         .enumerate()
                         .map(|(i, b)| (i as u32, b))
                         .collect();
-                    requirement_check = requirement_tree
+                    requirement_tree
                         .evaluate(&requirement_check_map)
-                        .unwrap_or(false);
+                        .unwrap_or(false)
                 }
-                Err(error) => log::warn!("identity check failed: {}", error),
+                Err(error) => {
+                    log::warn!("identity check failed: {}", error);
+                    false
+                }
             }
         }
-        Err(error) => log::warn!("identity check failed: {}", error),
-    }
+    };
 
-    let access = identity_check && requirement_check;
-    let result = vec![u8::from(access)];
+    let result = vec![u8::from(oracle_answer)];
     let tx = oracle_callback(request_id, result);
     let mut retries = 1;
     while retries <= TX_RETRIES {
@@ -184,7 +185,7 @@ async fn try_submit_answer(
                 log::info!(
                     "oracle answer ({}) submitted: {}",
                     request_id,
-                    requirement_check
+                    oracle_answer
                 );
                 break;
             }
@@ -207,8 +208,4 @@ async fn next_event(
     } else {
         Err(anyhow::anyhow!("next event is None"))
     }
-}
-
-fn matches_variant<T>(a: &T, b: &T) -> bool {
-    std::mem::discriminant(a) == std::mem::discriminant(b)
 }

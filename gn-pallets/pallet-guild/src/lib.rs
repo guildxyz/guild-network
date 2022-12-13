@@ -19,6 +19,9 @@ pub mod pallet {
         traits::Currency,
     };
     use frame_system::pallet_prelude::*;
+    use gn_common::identities::Identity;
+    use gn_common::identities::Platform;
+    use gn_common::utils::detect_duplicates;
     use gn_common::*;
     use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig};
     use sp_std::vec::Vec as SpVec;
@@ -95,7 +98,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn user_data)]
     pub type UserData<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::AccountId, SpVec<u8>, OptionQuery>;
+        StorageMap<_, Blake2_128Concat, T::AccountId, SpVec<Identity>, OptionQuery>;
 
     #[pallet::config]
     pub trait Config: ChainlinkConfig<Callback = Call<Self>> + frame_system::Config {
@@ -118,8 +121,11 @@ pub mod pallet {
         GuildDoesNotExist,
         RoleDoesNotExist,
         InvalidOracleAnswer,
+        InvalidRequestData,
+        IdentityTypeAlreadyExists,
         JoinRequestDoesNotExist,
         UserAlreadyJoined,
+        UserNotRegistered,
         CodecError,
     }
 
@@ -144,6 +150,58 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        #[pallet::weight(1000)] //T::WeightInfo::register())]
+        pub fn register(origin: OriginFor<T>, data: RequestData) -> DispatchResult {
+            let requester = ensure_signed(origin.clone())?;
+
+            // check data variant
+            //
+            // note that we don't check whether the user submits actual identities
+            // because users can join free roles without identities
+            //
+            // users could later add identities to their "guild passport"
+            //
+            // TODO we could immediately register a user if they submit an empty identity vector
+            let mut identities = SpVec::new();
+            ensure!(
+                // if request is the wrong variant, or has duplicate Platforms, returns false
+                match &data {
+                    RequestData::Register(ids) => {
+                        for id_with_auth in ids {
+                            identities.push(Platform::from(id_with_auth));
+                        }
+                        !detect_duplicates(&identities)
+                    }
+                    _ => false,
+                },
+                Error::<T>::InvalidRequestData
+            );
+
+            // if user has already registered, and tries to register an already existing platform again, throw error
+            if <UserData<T>>::contains_key(&requester) {
+                let registered_ids = UserData::<T>::get(&requester).unwrap();
+
+                for id in registered_ids {
+                    identities.push(Platform::from(&id));
+                }
+            }
+            ensure!(
+                !detect_duplicates(&identities),
+                Error::<T>::IdentityTypeAlreadyExists
+            );
+
+            let request = Request::<T::AccountId> { requester, data };
+
+            let call: <T as ChainlinkConfig>::Callback = Call::callback {
+                result: SpVec::new(),
+            };
+            // TODO set unique fee
+            let fee = BalanceOf::<T>::unique_saturated_from(100_000_000u32);
+            <pallet_chainlink::Pallet<T>>::initiate_request(origin, call, request.encode(), fee)?;
+
+            Ok(())
+        }
+
         #[pallet::weight(1000)] //T::WeightInfo::create_guild())]
         pub fn create_guild(
             origin: OriginFor<T>,
@@ -182,6 +240,38 @@ pub mod pallet {
             Ok(())
         }
 
+        #[pallet::weight(1000)] //T::WeightInfo::join_guild())]
+        pub fn join_guild(origin: OriginFor<T>, data: RequestData) -> DispatchResult {
+            let requester = ensure_signed(origin.clone())?;
+
+            // check data variant
+            match data {
+                RequestData::Join {
+                    guild: guild_name,
+                    role: role_name,
+                } => Self::join_request_check(&requester, &guild_name, &role_name)?,
+                _ => return Err(Error::<T>::InvalidRequestData.into()),
+            };
+
+            // check user has registered
+            ensure!(
+                <UserData<T>>::contains_key(&requester),
+                Error::<T>::UserNotRegistered
+            );
+
+            // after all successful checks, we can create our request
+            let request = Request::<T::AccountId> { requester, data };
+
+            let call: <T as ChainlinkConfig>::Callback = Call::callback {
+                result: SpVec::new(),
+            };
+            // TODO set unique fee
+            let fee = BalanceOf::<T>::unique_saturated_from(100_000_000u32);
+            <pallet_chainlink::Pallet<T>>::initiate_request(origin, call, request.encode(), fee)?;
+
+            Ok(())
+        }
+
         #[pallet::weight(0)]
         pub fn callback(origin: OriginFor<T>, result: SpVec<u8>) -> DispatchResult {
             // NOTE this ensures that only the root can call this function via
@@ -200,73 +290,65 @@ pub mod pallet {
             // returned
             ensure!(access, Error::<T>::AccessDenied);
 
-            let join_request = JoinRequest::<T::AccountId>::decode(&mut answer.data.as_slice())
+            let request = Request::<T::AccountId>::decode(&mut answer.data.as_slice())
                 .map_err(|_| Error::<T>::CodecError)?;
 
-            let guild_id =
-                Self::guild_id(join_request.guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
-            let role_id = Self::role_id(guild_id, join_request.role_name)
-                .ok_or(Error::<T>::RoleDoesNotExist)?;
+            match request.data {
+                RequestData::Join {
+                    guild: guild_name,
+                    role: role_name,
+                } => {
+                    let role_id =
+                        Self::join_request_check(&request.requester, &guild_name, &role_name)?;
+                    Members::<T>::insert(role_id, &request.requester, true);
+                    Self::deposit_event(Event::GuildJoined(
+                        request.requester,
+                        guild_name,
+                        role_name,
+                    ));
+                }
+                RequestData::Register(identities_with_auth) => {
+                    let identities = identities_with_auth
+                        .into_iter()
+                        .map(Into::into)
+                        .collect::<SpVec<Identity>>();
 
-            ensure!(
-                !Members::<T>::contains_key(role_id, &join_request.requester),
-                Error::<T>::UserAlreadyJoined
-            );
-
-            Members::<T>::insert(role_id, &join_request.requester, true);
-
-            if !UserData::<T>::contains_key(&join_request.requester) {
-                UserData::<T>::insert(&join_request.requester, &join_request.requester_identities);
+                    if !UserData::<T>::contains_key(&request.requester) {
+                        UserData::<T>::insert(&request.requester, identities);
+                    } else {
+                        UserData::<T>::mutate(&request.requester, |maybe_reg_id| {
+                            if let Some(registered_identities) = maybe_reg_id {
+                                for new_id in identities.into_iter() {
+                                    if !registered_identities.contains(&new_id) {
+                                        registered_identities.push(new_id)
+                                    }
+                                }
+                            }
+                        })
+                    }
+                }
             }
-
-            Self::deposit_event(Event::GuildJoined(
-                join_request.requester,
-                join_request.guild_name,
-                join_request.role_name,
-            ));
 
             Ok(())
         }
+    }
 
-        #[pallet::weight(1000)] //T::WeightInfo::join_guild())]
-        pub fn join_guild(
-            origin: OriginFor<T>,
-            guild_name: GuildName,
-            role_name: RoleName,
-            requester_identities: SpVec<u8>,
-        ) -> DispatchResult {
-            let requester = ensure_signed(origin.clone())?;
+    impl<T: Config> Pallet<T> {
+        fn join_request_check(
+            requester: &T::AccountId,
+            guild_name: &GuildName,
+            role_name: &RoleName,
+        ) -> Result<T::Hash, DispatchError> {
+            let guild_id = Self::guild_id(guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
+
+            let role_id = Self::role_id(guild_id, role_name).ok_or(Error::<T>::RoleDoesNotExist)?;
 
             ensure!(
-                <GuildIdMap<T>>::contains_key(guild_name),
-                Error::<T>::GuildDoesNotExist
-            );
-            let guild_id = Self::guild_id(guild_name).unwrap();
-            ensure!(
-                <RoleIdMap<T>>::contains_key(guild_id, role_name),
-                Error::<T>::RoleDoesNotExist
+                !Members::<T>::contains_key(role_id, requester),
+                Error::<T>::UserAlreadyJoined
             );
 
-            let join_request = JoinRequest::<T::AccountId> {
-                requester,
-                guild_name,
-                role_name,
-                requester_identities,
-            };
-
-            let call: <T as ChainlinkConfig>::Callback = Call::callback {
-                result: SpVec::new(),
-            };
-            // TODO set unique fee
-            let fee = BalanceOf::<T>::unique_saturated_from(100_000_000u32);
-            <pallet_chainlink::Pallet<T>>::initiate_request(
-                origin,
-                call,
-                join_request.encode(),
-                fee,
-            )?;
-
-            Ok(())
+            Ok(role_id)
         }
     }
 

@@ -1,5 +1,5 @@
+use gn_common::requirements::RequirementsWithLogic;
 use gn_common::{GuildName, RoleName};
-use gn_gate::requirements::RequirementsWithLogic;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

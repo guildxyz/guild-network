@@ -1,6 +1,3 @@
-use ethereum_types::{Address, U256};
-use serde::{Deserialize, Serialize};
-
 pub mod allowlist;
 pub mod balance;
 pub mod chains;
@@ -11,6 +8,9 @@ use allowlist::Allowlist;
 use balance::RequiredBalance;
 use chains::EvmChain;
 
+use crate::{EvmAddress, U256};
+use serde::{Deserialize, Serialize};
+
 // NOTE example stuff to be implemented
 // SolanaBalance(RequiredBalance<Pubkey, u64, SolChain>),
 // NearBalance(RequiredBalance<NearAddress, u128, NearChain>),
@@ -20,12 +20,12 @@ use chains::EvmChain;
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum Requirement {
     Free,
-    EvmBalance(RequiredBalance<Address, U256, EvmChain>),
-    EvmAllowlist(Allowlist<Address>),
+    EvmBalance(RequiredBalance<EvmAddress, U256, EvmChain>),
+    EvmAllowlist(Allowlist<EvmAddress>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RequirementsWithLogic {
-    pub logic: String,
-    pub requirements: Vec<Requirement>,
+    pub logic: codec::alloc::string::String,
+    pub requirements: codec::alloc::vec::Vec<Requirement>,
 }

@@ -3,7 +3,7 @@ use common::*;
 
 use ethers::signers::Signer as EthSigner;
 use gn_client::queries::*;
-use gn_gate::identities::Identity;
+use gn_common::identities::Identity;
 use std::sync::Arc;
 use structopt::StructOpt;
 
@@ -52,6 +52,30 @@ async fn main() {
     #[cfg(not(feature = "external-oracle"))]
     for registered in &registered_operators {
         assert!(operators.get(registered).is_some());
+    }
+
+    register_users(api.clone(), &operators).await;
+
+    #[cfg(not(feature = "external-oracle"))]
+    send_dummy_oracle_answers(api.clone(), &operators).await;
+
+    loop {
+        let user_identities = user_identities(api.clone(), PAGE_SIZE)
+            .await
+            .expect("failed to fetch user identities");
+        if user_identities.len() == N_TEST_ACCOUNTS {
+            for (i, (id, accounts)) in operators.iter().enumerate() {
+                assert_eq!(
+                    user_identities.get(id).unwrap(),
+                    &[
+                        Identity::EvmChain(accounts.eth.address().to_fixed_bytes()),
+                        Identity::Discord(i as u64)
+                    ]
+                );
+            }
+            println!("USER IDENTITIES MATCH");
+            break;
+        }
     }
 
     create_dummy_guilds(api.clone(), alice, operators.values()).await;
@@ -118,19 +142,4 @@ async fn main() {
         .expect("failed to fetch members");
     println!("SECOND GUILD SECOND ROLE MEMBERS");
     println!("{second_guild_second_role_members:#?}");
-
-    let user_identities = user_identities(api, PAGE_SIZE)
-        .await
-        .expect("failed to load user ids");
-    for (account, ids) in user_identities.iter() {
-        for id in ids {
-            let expected_address = operators.get(account).unwrap().eth.address();
-            match id {
-                Identity::EvmChain(address) => {
-                    assert_eq!(address.as_bytes(), expected_address.as_bytes())
-                }
-                _ => unimplemented!(),
-            }
-        }
-    }
 }

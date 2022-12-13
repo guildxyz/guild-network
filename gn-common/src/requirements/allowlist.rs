@@ -1,3 +1,4 @@
+use codec::alloc::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -21,17 +22,13 @@ impl<T> From<Vec<T>> for Allowlist<T> {
 #[cfg(test)]
 mod test {
     use super::Allowlist;
-    use crate::address;
 
     #[test]
     fn is_member() {
-        let allowlist = Allowlist(vec![
-            address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
-            address!("0x20CC54c7ebc5f43b74866D839b4BD5c01BB23503"),
-        ]);
+        let allowlist = Allowlist(codec::alloc::vec![0, 2]);
 
-        assert!(allowlist.is_member(&address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE")));
-        assert!(allowlist.is_member(&address!("0x20CC54c7ebc5f43b74866D839b4BD5c01BB23503")));
-        assert!(!allowlist.is_member(&address!("0x0000000000000000000000000000000000000000")));
+        assert!(allowlist.is_member(&0));
+        assert!(!allowlist.is_member(&1));
+        assert!(allowlist.is_member(&2));
     }
 }

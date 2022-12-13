@@ -1,15 +1,14 @@
 [workspace]
 members = [
-  "gn-client",
-  "gn-common",
-  "gn-gate",
-  "gn-node",
-  "gn-oracle",
-  "gn-pallets/pallet-chainlink",
-  "gn-pallets/pallet-guild",
-  "gn-pallets/pallet-test-caller",
-  "gn-runtime",
-  "gn-test-runtime",
+    "gn-client",
+    "gn-common",
+    "gn-node",
+    "gn-oracle",
+    "gn-pallets/pallet-chainlink",
+    "gn-pallets/pallet-guild",
+    "gn-pallets/pallet-test-caller",
+    "gn-runtime",
+    "gn-test-runtime",
 ]
 [profile.release]
 panic = "abort"

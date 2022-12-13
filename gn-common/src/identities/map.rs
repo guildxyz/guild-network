@@ -1,5 +1,5 @@
 use super::{Identity, IdentityWithAuth, Platform};
-use ethereum_types::Address;
+use crate::EvmAddress;
 use std::collections::HashMap;
 
 /// Stores the user's identities in a HashMap that allows
@@ -21,6 +21,19 @@ impl IdentityMap {
         Ok(Self(map))
     }
 
+    pub fn from_identities(ids: Vec<Identity>) -> Self {
+        let map = ids
+            .into_iter()
+            .map(|x| match x {
+                Identity::EvmChain(address) => (Platform::EvmChain, Identity::EvmChain(address)),
+                Identity::Discord(id) => (Platform::Discord, Identity::Discord(id)),
+                Identity::Telegram(id) => (Platform::Telegram, Identity::Telegram(id)),
+            })
+            .collect();
+
+        Self(map)
+    }
+
     pub fn into_identity_vec(self) -> Vec<Identity> {
         self.0.into_values().collect()
     }
@@ -29,7 +42,7 @@ impl IdentityMap {
         &self.0
     }
 
-    pub fn evm_address(&self) -> Option<&Address> {
+    pub fn evm_address(&self) -> Option<&EvmAddress> {
         match self.0.get(&Platform::EvmChain) {
             Some(Identity::EvmChain(address)) => Some(address),
             None => None,
