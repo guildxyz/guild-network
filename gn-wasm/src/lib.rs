@@ -1,8 +1,7 @@
 use gn_client::queries::{self, GuildFilter};
-use gn_client::{AccountId, Api};
-use gn_common::identities::IdentityWithAuth;
-use gn_common::{pad::pad_to_32_bytes, utils, Encode, GuildName, RequestData};
-use js_sys::Uint8Array;
+use gn_client::transactions;
+use gn_client::{AccountId, Api, RuntimeIdentityWithAuth};
+use gn_common::{pad::pad_to_32_bytes, utils, GuildName};
 use serde_wasm_bindgen::to_value as serialize_to_value;
 use wasm_bindgen::prelude::*;
 
@@ -98,56 +97,84 @@ pub async fn verification_msg(address: String) -> String {
     utils::verification_msg(&address)
 }
 
-/*
 #[wasm_bindgen(js_name = "registerTxPayload")]
 pub async fn register_tx_payload(
     address: String,
-    signature: String,
+    evm_address: String,
+    evm_signature: String,
     discord: Option<String>,
     telegram: Option<String>,
-) -> Result<Uint8Array, JsValue> {
-    let mut address_bytes = [0u8; 20];
-    let mut signature_bytes = [0u8; 65];
-
-    hex::decode_to_slice(&address, &mut address_bytes).map_err(|e| JsValue::from(e.to_string()))?;
-    hex::decode_to_slice(&signature, &mut signature_bytes)
+    url: String,
+) -> Result<JsValue, JsValue> {
+    let api = Api::from_url(&url)
+        .await
         .map_err(|e| JsValue::from(e.to_string()))?;
 
-    let mut identities = vec![IdentityWithAuth::EvmChain(address_bytes, signature_bytes)];
+    let account_id = AccountId::from_str(&address).map_err(|e| JsValue::from(e.to_string()))?;
+    let mut evm_address_bytes = [0u8; 20];
+    let mut evm_signature_bytes = [0u8; 65];
+
+    hex::decode_to_slice(&evm_address, &mut evm_address_bytes)
+        .map_err(|e| JsValue::from(e.to_string()))?;
+    hex::decode_to_slice(&evm_signature, &mut evm_signature_bytes)
+        .map_err(|e| JsValue::from(e.to_string()))?;
+
+    let mut identities = vec![RuntimeIdentityWithAuth::EvmChain(
+        evm_address_bytes,
+        evm_signature_bytes,
+    )];
 
     if let Some(dc_id) = discord {
         let dc_id_u64 = dc_id
             .parse::<u64>()
             .map_err(|e| JsValue::from(e.to_string()))?;
-        identities.push(IdentityWithAuth::Discord(dc_id_u64, ()));
+        identities.push(RuntimeIdentityWithAuth::Discord(dc_id_u64, ()));
     }
 
     if let Some(tg_id) = telegram {
         let tg_id_u64 = tg_id
             .parse::<u64>()
             .map_err(|e| JsValue::from(e.to_string()))?;
-        identities.push(IdentityWithAuth::Telegram(tg_id_u64, ()));
+        identities.push(RuntimeIdentityWithAuth::Telegram(tg_id_u64, ()));
     }
 
-    Ok(Uint8Array::from(
-        RequestData::Register(identities).encode().as_slice(),
-    ))
+    let tx_payload = transactions::register(identities);
+
+    let prepared = api
+        .tx()
+        .prepare_unsigned(&tx_payload, &account_id, Default::default())
+        .await
+        .map_err(|e| JsValue::from(e.to_string()))?;
+
+    serialize_to_value(&prepared).map_err(|e| JsValue::from(e.to_string()))
 }
 
 #[wasm_bindgen(js_name = "joinGuildTxPayload")]
-pub async fn join_guild_tx_payload(guild: String, role: String) -> Result<Uint8Array, JsValue> {
+pub async fn join_guild_tx_payload(
+    address: String,
+    guild: String,
+    role: String,
+    url: String,
+) -> Result<JsValue, JsValue> {
     if guild.len() > 32 || role.len() > 32 {
         return Err(JsValue::from("too long input length"));
     }
 
-    let request_data = RequestData::Join {
-        guild: pad_to_32_bytes(&guild),
-        role: pad_to_32_bytes(&role),
-    };
+    let api = Api::from_url(&url)
+        .await
+        .map_err(|e| JsValue::from(e.to_string()))?;
+    let account_id = AccountId::from_str(&address).map_err(|e| JsValue::from(e.to_string()))?;
 
-    Ok(Uint8Array::from(request_data.encode().as_slice()))
+    let tx_payload = transactions::join_guild(pad_to_32_bytes(&guild), pad_to_32_bytes(&role));
+
+    let prepared = api
+        .tx()
+        .prepare_unsigned(&tx_payload, &account_id, Default::default())
+        .await
+        .map_err(|e| JsValue::from(e.to_string()))?;
+
+    serialize_to_value(&prepared).map_err(|e| JsValue::from(e.to_string()))
 }
-*/
 
 #[cfg(test)]
 mod test {
