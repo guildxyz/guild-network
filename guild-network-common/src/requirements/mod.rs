@@ -1,14 +1,12 @@
 pub mod allowlist;
 pub mod balance;
-pub mod chains;
 #[cfg(feature = "with-checks")]
 mod check;
 
 use allowlist::Allowlist;
 use balance::RequiredBalance;
-use chains::EvmChain;
-
 use crate::{EvmAddress, U256};
+use providers::EvmChain;
 use serde::{Deserialize, Serialize};
 
 // NOTE example stuff to be implemented
