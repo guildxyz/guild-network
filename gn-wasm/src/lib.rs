@@ -1,6 +1,8 @@
 use gn_client::queries::{self, GuildFilter};
-use gn_client::transactions;
-use gn_client::{AccountId, Api, RuntimeIdentityWithAuth};
+use gn_client::transactions::{self, TxStatus};
+use gn_client::{
+    AccountId, Api, RuntimeIdentityWithAuth, Signature, SrSignature, SubstrateAddress,
+};
 use gn_common::{pad::pad_to_32_bytes, utils, GuildName};
 use serde_wasm_bindgen::to_value as serialize_to_value;
 use wasm_bindgen::prelude::*;
@@ -174,6 +176,37 @@ pub async fn join_guild_tx_payload(
         .map_err(|e| JsValue::from(e.to_string()))?;
 
     serialize_to_value(&prepared).map_err(|e| JsValue::from(e.to_string()))
+}
+
+#[wasm_bindgen(js_name = "sendTransaction")]
+pub async fn send_transaction(
+    address: String,
+    signature: String,
+    encoded_params: Vec<u8>,
+    url: String,
+) -> Result<JsValue, JsValue> {
+    let api = Api::from_url(&url)
+        .await
+        .map_err(|e| JsValue::from(e.to_string()))?;
+    let account_id = AccountId::from_str(&address).map_err(|e| JsValue::from(e.to_string()))?;
+    let substrate_address = SubstrateAddress::from(account_id);
+
+    let mut signature_bytes = [0u8; 64];
+    hex::decode_to_slice(&signature, &mut signature_bytes)
+        .map_err(|e| JsValue::from(e.to_string()))?;
+    let signature = Signature::Sr25519(SrSignature::from_raw(signature_bytes));
+
+    let mut progress = api
+        .tx()
+        .pack_and_submit_then_watch(substrate_address, signature, &encoded_params)
+        .await
+        .map_err(|e| JsValue::from(e.to_string()))?;
+
+    let maybe_hash = transactions::track_progress(&mut progress, TxStatus::InBlock)
+        .await
+        .map_err(|e| JsValue::from(e.to_string()))?;
+
+    serialize_to_value(&maybe_hash).map_err(|e| JsValue::from(e.to_string()))
 }
 
 #[cfg(test)]

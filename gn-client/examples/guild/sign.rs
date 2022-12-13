@@ -1,5 +1,5 @@
 use gn_client::queries;
-use gn_client::transactions::{track_progress, register_operator, TxStatus};
+use gn_client::transactions::{register_operator, track_progress, TxStatus};
 use gn_client::{Api, Signer, TxSignerTrait};
 
 use std::sync::Arc;
