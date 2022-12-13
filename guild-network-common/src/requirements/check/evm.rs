@@ -1,40 +1,7 @@
 use super::*;
 use crate::requirements::balance::TokenType;
-use crate::requirements::chains::EvmChain;
 use crate::{EvmAddress, U256};
-
-async fn get_native_balance(
-    _client: &ReqwestClient,
-    _chain: EvmChain,
-    _user_address: &EvmAddress,
-) -> Result<U256, anyhow::Error> {
-    let mut result = [0u8; 32];
-    result[0..8].copy_from_slice(&1000u64.to_le_bytes());
-    Ok(result)
-}
-
-async fn get_erc20_balance(
-    _client: &ReqwestClient,
-    _chain: EvmChain,
-    _user_address: &EvmAddress,
-    _token_address: &EvmAddress,
-) -> Result<U256, anyhow::Error> {
-    let mut result = [0u8; 32];
-    result[0..16].copy_from_slice(&1_000_000_000_000_000u128.to_le_bytes());
-    Ok(result)
-}
-
-async fn get_nft(
-    _client: &ReqwestClient,
-    _chain: EvmChain,
-    _user_address: &EvmAddress,
-    _token_address: &EvmAddress,
-    _token_id: U256,
-) -> Result<U256, anyhow::Error> {
-    let mut result = [0u8; 32];
-    result[0] = 1;
-    Ok(result)
-}
+use providers::EvmChain;
 
 pub async fn get_balance(
     client: &ReqwestClient,
