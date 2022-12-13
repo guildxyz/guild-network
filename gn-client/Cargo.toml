@@ -16,7 +16,7 @@ gn-common = { path = "../gn-common" }
 hex = "0.4.3"
 parity-scale-codec = { version = "3.2.1", default-features = false } # required for the runtime subxt macro
 sp-keyring = { version = "6.0.0", default-features = false }
-subxt = { git = "https://github.com/agoraxyz/subxt", branch = "wasm", default-features = false }
+subxt = { git = "https://github.com/agoraxyz/subxt", branch = "wasm-sig", default-features = false }
 serde = { version = "1.0.144", features = ["derive"] }
 serde_cbor = "0.11.2"
 

@@ -261,5 +261,5 @@ pub async fn send_dummy_oracle_answers(api: Api, operators: &BTreeMap<AccountId,
         .await
         .expect("failed to submit oracle answers");
 
-    println!("join requests successfully answered");
+    println!("oracle requests successfully answered");
 }
