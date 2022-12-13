@@ -1,25 +1,48 @@
 use super::*;
 use crate::requirements::balance::TokenType;
 use crate::{EvmAddress, U256};
-use providers::EvmChain;
+use providers::{evm::general::PROVIDERS, BalanceQuerier, EvmChain};
 
 pub async fn get_balance(
-    client: &ReqwestClient,
+    _client: &ReqwestClient,
     token_type: &Option<TokenType<EvmAddress, U256>>,
     user_address: &EvmAddress,
     chain: EvmChain,
 ) -> Result<U256, anyhow::Error> {
-    match token_type {
-        None => get_native_balance(client, chain, user_address).await,
+    let Some(provider) = PROVIDERS.get(&(chain as u8)) else {
+        anyhow::bail!("Chain not supported")
+    };
+
+    let results = match token_type {
+        None => provider.get_native_balance(&[user_address.into()]).await,
         Some(TokenType::Fungible {
             address: token_address,
-        }) => get_erc20_balance(client, chain, user_address, token_address).await,
+        }) => {
+            provider
+                .get_fungible_balance(token_address.into(), &[user_address.into()])
+                .await
+        }
         Some(TokenType::NonFungible {
             address: token_address,
             id: token_id,
-        }) => get_nft(client, chain, user_address, token_address, *token_id).await,
+        }) => {
+            provider
+                .get_non_fungible_balance(
+                    token_address.into(),
+                    Some(token_id.into()),
+                    &[user_address.into()],
+                )
+                .await
+        }
         Some(TokenType::Special { .. }) => todo!(),
-    }
+    };
+
+    let multiplier = 10_u128.pow(18);
+    let balance = *(results[0].as_ref().unwrap_or(&0.0)) as u128 * multiplier;
+
+    let mut result = [0u8; 32];
+    result[0..16].copy_from_slice(&balance.to_le_bytes());
+    Ok(result)
 }
 
 /*
