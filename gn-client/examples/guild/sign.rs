@@ -1,6 +1,5 @@
-use futures::StreamExt;
 use gn_client::queries;
-use gn_client::transactions::{register_operator, TxStatus};
+use gn_client::transactions::{track_progress, register_operator, TxStatus};
 use gn_client::{Api, Signer, TxSignerTrait};
 
 use std::sync::Arc;
@@ -24,7 +23,6 @@ pub async fn sign(api: Api, alice: Arc<Signer>) {
         alice.as_ref().address()
     );
 
-    let status = TxStatus::InBlock;
     let mut progress = api
         .tx()
         .pack_and_submit_then_watch(
@@ -35,18 +33,9 @@ pub async fn sign(api: Api, alice: Arc<Signer>) {
         .await
         .expect("failed to submit extrisic");
 
-    while let Some(try_event) = progress.next().await {
-        let tx_progress_status = try_event.expect("failed to parse tx progress");
-        let (reached, tx_hash) = status.reached(&tx_progress_status);
-        if reached {
-            log::info!(
-                "transaction status {:?} reached, hash: {:?}",
-                status,
-                tx_hash
-            );
-            break;
-        }
-    }
+    track_progress(&mut progress, TxStatus::InBlock)
+        .await
+        .expect("failed to track status");
 
     let registered_operators = queries::registered_operators(api.clone())
         .await

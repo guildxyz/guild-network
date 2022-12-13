@@ -3,7 +3,7 @@ pub use status::TxStatus;
 
 use crate::{
     cbor_serialize, data::Guild, runtime, AccountId, Api, Hash, RequestData,
-    RuntimeIdentityWithAuth, Signer,
+    RuntimeIdentityWithAuth, Signer, TransactionProgress,
 };
 use futures::StreamExt;
 use gn_common::{GuildName, RoleName};
@@ -71,6 +71,13 @@ pub async fn send_tx<T: TxPayload>(
         .sign_and_submit_then_watch_default(tx, signer.as_ref())
         .await?;
 
+    track_progress(&mut progress, status).await
+}
+
+pub async fn track_progress(
+    progress: &mut TransactionProgress,
+    status: TxStatus,
+) -> Result<Option<Hash>, subxt::Error> {
     while let Some(try_event) = progress.next().await {
         let tx_progress_status = try_event?;
         let (reached, tx_hash) = status.reached(&tx_progress_status);
@@ -83,7 +90,6 @@ pub async fn send_tx<T: TxPayload>(
             return Ok(tx_hash);
         }
     }
-
     Ok(None)
 }
 
