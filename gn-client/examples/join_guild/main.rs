@@ -71,6 +71,30 @@ async fn main() {
         }
     }
 
+    register_users(api.clone(), &operators).await;
+
+    #[cfg(not(feature = "external-oracle"))]
+    send_dummy_oracle_answers(api.clone(), &operators).await;
+
+    loop {
+        let user_identities = user_identities(api.clone(), PAGE_SIZE)
+            .await
+            .expect("failed to fetch user identities");
+        if user_identities.len() == N_TEST_ACCOUNTS {
+            for (i, (id, accounts)) in operators.iter().enumerate() {
+                assert_eq!(
+                    user_identities.get(id).unwrap(),
+                    &[
+                        Identity::EvmChain(accounts.eth.address().to_fixed_bytes()),
+                        Identity::Discord(i as u64)
+                    ]
+                );
+            }
+            println!("USER IDENTITIES MATCH");
+            break;
+        }
+    }
+
     create_dummy_guilds(api.clone(), alice, operators.values()).await;
 
     join_guilds(api.clone(), &operators).await;
