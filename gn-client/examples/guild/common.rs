@@ -9,33 +9,11 @@ use gn_client::{
 };
 use gn_common::requirements::{Requirement, RequirementsWithLogic};
 use gn_common::{EvmAddress, EvmSignature, GuildName, RoleName};
+use gn_test_data::*;
 use rand::{rngs::StdRng, SeedableRng};
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
-
-// myrole
-pub const FIRST_ROLE: RoleName = [
-    109, 121, 114, 111, 108, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0,
-];
-// mysecondrole
-pub const SECOND_ROLE: RoleName = [
-    109, 121, 115, 101, 99, 111, 110, 100, 114, 111, 108, 101, 013, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0,
-];
-// myguild
-pub const FIRST_GUILD: GuildName = [
-    109, 121, 103, 117, 105, 108, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-];
-// mysecondguild
-pub const SECOND_GUILD: GuildName = [
-    109, 121, 115, 101, 99, 111, 110, 100, 103, 117, 105, 108, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0,
-];
-pub const N_TEST_ACCOUNTS: usize = 10;
-pub const PAGE_SIZE: u32 = 10;
 
 pub struct Accounts {
     pub substrate: Arc<Signer>,
@@ -57,7 +35,7 @@ pub async fn prefunded_accounts(
     num_accounts: usize,
 ) -> BTreeMap<AccountId, Accounts> {
     let mut rng = StdRng::seed_from_u64(0);
-    let mut seed = [10u8; 32];
+    let mut seed = ACCOUNT_SEED;
     let accounts = (0..num_accounts)
         .map(|_| {
             let keypair = Arc::new(Signer::new(Keypair::from_seed(&seed)));

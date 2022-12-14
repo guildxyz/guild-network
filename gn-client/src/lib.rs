@@ -13,7 +13,8 @@ pub use sp_keyring::AccountKeyring;
 pub use subxt::ext::sp_core::crypto::Pair as TraitPair;
 pub use subxt::ext::sp_core::sr25519::Signature as SrSignature;
 pub use subxt::ext::sp_core::H256 as Hash;
-pub use subxt::tx::Signer as TxSignerTrait;
+pub use subxt::ext::sp_runtime::MultiSignature;
+pub use subxt::tx::{PreparedMsgWithParams, Signer as TxSignerTrait};
 pub use subxt::PolkadotConfig as ClientConfig;
 
 #[subxt::subxt(runtime_metadata_path = "./artifacts/metadata.scale")]

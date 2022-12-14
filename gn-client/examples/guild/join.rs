@@ -3,6 +3,7 @@ use ethers::signers::Signer as EthSigner;
 use gn_client::queries::*;
 use gn_client::{Api, Signer};
 use gn_common::identities::Identity;
+use gn_test_data::*;
 use std::sync::Arc;
 
 pub async fn join(api: Api, alice: Arc<Signer>) {

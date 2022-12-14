@@ -9,6 +9,7 @@ members = [
     "gn-pallets/pallet-guild",
     "gn-pallets/pallet-test-caller",
     "gn-runtime",
+    "gn-test-data",
     "gn-test-runtime",
     "gn-wasm",
 ]
@@ -22,6 +23,7 @@ default-members = [
     "gn-pallets/pallet-guild",
     "gn-pallets/pallet-test-caller",
     "gn-runtime",
+    "gn-test-data",
     "gn-test-runtime",
 ]
 

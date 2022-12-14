@@ -181,7 +181,7 @@ pub async fn join_guild_tx_payload(
 #[wasm_bindgen(js_name = "sendTransaction")]
 pub async fn send_transaction(
     address: String,
-    signature: String,
+    signature: Vec<u8>,
     encoded_params: Vec<u8>,
     url: String,
 ) -> Result<JsValue, JsValue> {
@@ -191,10 +191,9 @@ pub async fn send_transaction(
     let account_id = AccountId::from_str(&address).map_err(|e| JsValue::from(e.to_string()))?;
     let substrate_address = SubstrateAddress::from(account_id);
 
-    let mut signature_bytes = [0u8; 64];
-    hex::decode_to_slice(&signature, &mut signature_bytes)
-        .map_err(|e| JsValue::from(e.to_string()))?;
-    let signature = Signature::Sr25519(SrSignature::from_raw(signature_bytes));
+    let sr_sig = SrSignature::from_slice(&signature)
+        .ok_or_else(|| JsValue::from("invalid signature bytes"))?;
+    let signature = Signature::Sr25519(sr_sig);
 
     let mut progress = api
         .tx()
@@ -212,11 +211,13 @@ pub async fn send_transaction(
 #[cfg(test)]
 mod test {
     use super::*;
-    use gn_client::{AccountKeyring, Keypair, Signer, TraitPair};
+    use gn_client::{
+        Hash, Keypair, MultiSignature, PreparedMsgWithParams, Signer, TraitPair, TxSignerTrait,
+    };
     use gn_common::identities::Identity;
+    use gn_test_data::*;
     use serde_wasm_bindgen::from_value as deserialize_from_value;
     use wasm_bindgen_test::*;
-    const URL: &str = "ws://127.0.0.1:9944";
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
@@ -273,8 +274,7 @@ mod test {
 
     #[wasm_bindgen_test]
     async fn test_query_user_identity() {
-        let seed = [10u8; 32];
-        let signer = Signer::new(Keypair::from_seed(&seed));
+        let signer = Signer::new(Keypair::from_seed(&ACCOUNT_SEED));
 
         let address_string = signer.account_id().to_string();
         let converted_id = AccountId::from_str(&address_string).unwrap();
@@ -301,17 +301,76 @@ mod test {
 
     #[wasm_bindgen_test]
     async fn test_tx_submission() {
+        // NOTE
         // assuming that the guild/join test has been successfully
         // completed this signer should be able to join a specific guild
-        let seed = [10u8; 32];
-        let signer = Arc::new(Signer::new(Keypair::from_seed(&seed)));
+        //
+        // It is important to run an oracle instance when testing this example
+        // because the an oracle has to check requirements
+        let signer = Signer::new(Keypair::from_seed(&ACCOUNT_SEED));
         // create api for queries
         let api = Api::from_url(URL).await.unwrap();
-        let members = queries::members(api.clone(), Some(&GuildFilter { name:  ,10);
+        let members = queries::members(
+            api.clone(),
+            Some(&GuildFilter {
+                name: SECOND_GUILD,
+                role: Some(SECOND_ROLE),
+            }),
+            10,
+        )
+        .await
+        .expect("failed to query members");
 
-        // join_guild tx payload
-        // sign payload msg manually
+        // check that we indeed haven't joined this guild yet
+        assert!(!members.contains(signer.account_id()));
+
+        let payload_js = join_guild_tx_payload(
+            signer.account_id().to_string(),
+            "mysecondguild".to_string(),
+            "mysecondrole".to_string(),
+            URL.to_owned(),
+        )
+        .await
+        .expect("failed to generate payload");
+
+        let payload: PreparedMsgWithParams = deserialize_from_value(payload_js).unwrap();
+
+        let signature = match signer.sign(&payload.prepared_msg) {
+            MultiSignature::Sr25519(sig) => sig.0.to_vec(),
+            _ => panic!("should be sr signature"),
+        };
+
         // send transaction
-        // query members
+        let maybe_hash_js = send_transaction(
+            signer.account_id().to_string(),
+            signature,
+            payload.encoded_params,
+            URL.to_owned(),
+        )
+        .await
+        .expect("failed to send tx");
+
+        let maybe_hash: Option<Hash> = deserialize_from_value(maybe_hash_js).unwrap();
+        assert!(maybe_hash.is_some());
+
+        // query members again in a loop (for some reason, send tx doesn't wait
+        // until it's included
+        loop {
+            let members = queries::members(
+                api.clone(),
+                Some(&GuildFilter {
+                    name: SECOND_GUILD,
+                    role: Some(SECOND_ROLE),
+                }),
+                10,
+            )
+            .await
+            .expect("failed to query members");
+
+            // check that we indeed haven't joined this guild yet
+            if members.contains(signer.account_id()) {
+                break;
+            }
+        }
     }
 }
