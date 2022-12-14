@@ -212,7 +212,7 @@ pub async fn send_transaction(
 #[cfg(test)]
 mod test {
     use super::*;
-    use gn_client::{Keypair, Signer, TraitPair};
+    use gn_client::{AccountKeyring, Keypair, Signer, TraitPair};
     use gn_common::identities::Identity;
     use serde_wasm_bindgen::from_value as deserialize_from_value;
     use wasm_bindgen_test::*;
@@ -297,5 +297,21 @@ mod test {
             Identity::Discord(id) => assert!(id < 10),
             _ => panic!("identity mismatch"),
         }
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_tx_submission() {
+        // assuming that the guild/join test has been successfully
+        // completed this signer should be able to join a specific guild
+        let seed = [10u8; 32];
+        let signer = Arc::new(Signer::new(Keypair::from_seed(&seed)));
+        // create api for queries
+        let api = Api::from_url(URL).await.unwrap();
+        let members = queries::members(api.clone(), Some(&GuildFilter { name:  ,10);
+
+        // join_guild tx payload
+        // sign payload msg manually
+        // send transaction
+        // query members
     }
 }

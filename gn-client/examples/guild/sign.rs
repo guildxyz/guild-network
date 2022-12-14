@@ -1,6 +1,7 @@
 use gn_client::queries;
 use gn_client::transactions::{register_operator, track_progress, TxStatus};
 use gn_client::{Api, Signer, TxSignerTrait};
+use gn_common::utils::verification_msg;
 
 use std::sync::Arc;
 
@@ -22,6 +23,7 @@ pub async fn sign(api: Api, alice: Arc<Signer>) {
         alice.as_ref().account_id(),
         alice.as_ref().address()
     );
+    println!("{}", verification_msg(alice.as_ref().account_id()));
 
     let mut progress = api
         .tx()
