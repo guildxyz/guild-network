@@ -1,7 +1,9 @@
+use ethers::signers::{LocalWallet, Signer as EthSigner};
 use gn_client::queries;
 use gn_client::transactions::{register_operator, track_progress, TxStatus};
 use gn_client::{Api, Signer, TxSignerTrait};
 use gn_common::utils::verification_msg;
+use rand::{rngs::StdRng, SeedableRng};
 
 use std::sync::Arc;
 
@@ -23,7 +25,6 @@ pub async fn sign(api: Api, alice: Arc<Signer>) {
         alice.as_ref().account_id(),
         alice.as_ref().address()
     );
-    println!("{}", verification_msg(alice.as_ref().account_id()));
 
     let mut progress = api
         .tx()
@@ -44,4 +45,14 @@ pub async fn sign(api: Api, alice: Arc<Signer>) {
         .expect("failed to fetch registered operators");
     // check that the transaction was successful
     assert_eq!(&registered_operators[0], alice.as_ref().account_id());
+
+    // registration helpers
+    let mut rng = StdRng::seed_from_u64(1111);
+    let wallet = LocalWallet::new(&mut rng);
+    let msg = verification_msg(alice.as_ref().account_id());
+    println!("VERIFICATION MSG: {msg}");
+    let evm_sig = wallet.sign_message(msg).await.expect("failed to sign msg");
+
+    println!("ADDRESS: {:?}", wallet.address().to_fixed_bytes());
+    println!("SIGNATURE: {:?}", evm_sig.to_vec());
 }

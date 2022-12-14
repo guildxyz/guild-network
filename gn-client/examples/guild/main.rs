@@ -20,7 +20,7 @@ impl FromStr for Example {
         match s {
             "join" => Ok(Self::Join),
             "sign" => Ok(Self::Sign),
-            _ => Err(format!("no example with name {}", s)),
+            _ => Err(format!("no example with name {s}")),
         }
     }
 }

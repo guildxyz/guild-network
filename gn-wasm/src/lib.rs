@@ -4,7 +4,7 @@ use gn_client::{
     AccountId, Api, RuntimeIdentityWithAuth, Signature, SrSignature, SubstrateAddress,
 };
 use gn_common::{pad::pad_to_32_bytes, utils, GuildName};
-use serde_wasm_bindgen::to_value as serialize_to_value;
+use serde_wasm_bindgen::{from_value as deserialize_from_value, to_value as serialize_to_value};
 use wasm_bindgen::prelude::*;
 
 use std::str::FromStr;
@@ -161,14 +161,32 @@ pub async fn join_guild_tx_payload(
     if guild.len() > 32 || role.len() > 32 {
         return Err(JsValue::from("too long input length"));
     }
-
     let api = Api::from_url(&url)
         .await
         .map_err(|e| JsValue::from(e.to_string()))?;
     let account_id = AccountId::from_str(&address).map_err(|e| JsValue::from(e.to_string()))?;
-
     let tx_payload = transactions::join_guild(pad_to_32_bytes(&guild), pad_to_32_bytes(&role));
+    let prepared = api
+        .tx()
+        .prepare_unsigned(&tx_payload, &account_id, Default::default())
+        .await
+        .map_err(|e| JsValue::from(e.to_string()))?;
 
+    serialize_to_value(&prepared).map_err(|e| JsValue::from(e.to_string()))
+}
+
+#[wasm_bindgen(js_name = "createGuildTxPayload")]
+pub async fn create_guild_tx_payload(
+    address: String,
+    guild: JsValue,
+    url: String,
+) -> Result<JsValue, JsValue> {
+    let api = Api::from_url(&url)
+        .await
+        .map_err(|e| JsValue::from(e.to_string()))?;
+    let account_id = AccountId::from_str(&address).map_err(|e| JsValue::from(e.to_string()))?;
+    let guild = deserialize_from_value(guild).map_err(|e| JsValue::from(e.to_string()))?;
+    let tx_payload = transactions::create_guild(guild).map_err(|e| JsValue::from(e.to_string()))?;
     let prepared = api
         .tx()
         .prepare_unsigned(&tx_payload, &account_id, Default::default())
@@ -211,12 +229,7 @@ pub async fn send_transaction(
 #[cfg(test)]
 mod test {
     use super::*;
-    use gn_client::{
-        Hash, Keypair, MultiSignature, PreparedMsgWithParams, Signer, TraitPair, TxSignerTrait,
-    };
-    use gn_common::identities::Identity;
     use gn_test_data::*;
-    use serde_wasm_bindgen::from_value as deserialize_from_value;
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
@@ -237,125 +250,92 @@ mod test {
         assert_eq!(chain, "Development");
     }
 
-    #[wasm_bindgen_test]
-    async fn test_query_members() {
-        let guild = "myguild".to_string();
-        let role = "".to_string();
-
-        let members_js = query_members(guild, role, URL.to_string()).await.unwrap();
-        let members_vec: Vec<gn_client::AccountId> = deserialize_from_value(members_js).unwrap();
-
-        assert_eq!(members_vec.len(), 6);
-    }
-
-    #[wasm_bindgen_test]
-    async fn test_query_guilds() {
-        let guild_name = "".to_string();
-        let guilds = query_guilds(guild_name, URL.to_string()).await.unwrap();
-        let guilds_vec: Vec<gn_client::data::GuildData> = deserialize_from_value(guilds).unwrap();
-
-        assert_eq!(guilds_vec.len(), 2);
-        assert_eq!(guilds_vec[0].roles.len(), 2);
-        assert_eq!(guilds_vec[1].roles.len(), 2);
-    }
-
-    #[wasm_bindgen_test]
-    async fn test_query_requirements() {
-        let guild_name = "myguild".to_string();
-        let role_name = "myrole".to_string();
-        let requirements_js = query_requirements(guild_name, role_name, URL.to_string())
-            .await
-            .unwrap();
-        let requirements: gn_common::requirements::RequirementsWithLogic =
-            deserialize_from_value(requirements_js).unwrap();
-
-        assert_eq!(requirements.logic, "0");
-    }
-
-    #[wasm_bindgen_test]
-    async fn test_query_user_identity() {
-        let signer = Signer::new(Keypair::from_seed(&ACCOUNT_SEED));
-
-        let address_string = signer.account_id().to_string();
-        let converted_id = AccountId::from_str(&address_string).unwrap();
-        assert_eq!(&converted_id, signer.account_id());
-
-        let members_js = query_members("".to_string(), "".to_string(), URL.to_string())
-            .await
-            .unwrap();
-        let members_vec: Vec<AccountId> = deserialize_from_value(members_js).unwrap();
-        assert!(members_vec.contains(signer.account_id()));
-
-        let identities_js = query_user_identity(address_string, URL.to_string())
-            .await
-            .unwrap();
-
-        let identities: Vec<Identity> = deserialize_from_value(identities_js).unwrap();
-
-        assert_eq!(identities.len(), 2);
-        match identities[1] {
-            Identity::Discord(id) => assert!(id < 10),
-            _ => panic!("identity mismatch"),
-        }
-    }
-
-    #[wasm_bindgen_test]
-    async fn test_tx_submission() {
-        // NOTE
-        // assuming that the guild/join test has been successfully
-        // completed this signer should be able to join a specific guild
-        //
-        // It is important to run an oracle instance when testing this example
-        // because the an oracle has to check requirements
-        let signer = Signer::new(Keypair::from_seed(&ACCOUNT_SEED));
-        // create api for queries
-        let api = Api::from_url(URL).await.unwrap();
-        let members = queries::members(
-            api.clone(),
-            Some(&GuildFilter {
-                name: SECOND_GUILD,
-                role: Some(SECOND_ROLE),
-            }),
-            10,
-        )
-        .await
-        .expect("failed to query members");
-
-        // check that we indeed haven't joined this guild yet
-        assert!(!members.contains(signer.account_id()));
-
-        let payload_js = join_guild_tx_payload(
-            signer.account_id().to_string(),
-            "mysecondguild".to_string(),
-            "mysecondrole".to_string(),
-            URL.to_owned(),
-        )
-        .await
-        .expect("failed to generate payload");
-
-        let payload: PreparedMsgWithParams = deserialize_from_value(payload_js).unwrap();
-
-        let signature = match signer.sign(&payload.prepared_msg) {
-            MultiSignature::Sr25519(sig) => sig.0.to_vec(),
-            _ => panic!("should be sr signature"),
+    // NOTE these only work after the guild/join example
+    // was successfully run
+    #[cfg(feature = "queries")]
+    mod queries {
+        use super::*;
+        use gn_client::queries;
+        use gn_client::{
+            Hash, Keypair, MultiSignature, PreparedMsgWithParams, Signer, TraitPair, TxSignerTrait,
         };
+        use gn_common::identities::Identity;
 
-        // send transaction
-        let maybe_hash_js = send_transaction(
-            signer.account_id().to_string(),
-            signature,
-            payload.encoded_params,
-            URL.to_owned(),
-        )
-        .await
-        .expect("failed to send tx");
+        #[wasm_bindgen_test]
+        async fn test_query_members() {
+            let guild = "myguild".to_string();
+            let role = "".to_string();
 
-        let maybe_hash: Option<Hash> = deserialize_from_value(maybe_hash_js).unwrap();
-        assert!(maybe_hash.is_some());
+            let members_js = query_members(guild, role, URL.to_string()).await.unwrap();
+            let members_vec: Vec<gn_client::AccountId> =
+                deserialize_from_value(members_js).unwrap();
 
-        // query members again in a loop (for some reason, send tx doesn't wait
-        // until it's included
-        loop {
+            assert_eq!(members_vec.len(), 6);
+        }
+
+        #[wasm_bindgen_test]
+        async fn test_query_guilds() {
+            let guild_name = "".to_string();
+            let guilds = query_guilds(guild_name, URL.to_string()).await.unwrap();
+            let guilds_vec: Vec<gn_client::data::GuildData> =
+                deserialize_from_value(guilds).unwrap();
+
+            assert_eq!(guilds_vec.len(), 2);
+            assert_eq!(guilds_vec[0].roles.len(), 2);
+            assert_eq!(guilds_vec[1].roles.len(), 2);
+        }
+
+        #[wasm_bindgen_test]
+        async fn test_query_requirements() {
+            let guild_name = "myguild".to_string();
+            let role_name = "myrole".to_string();
+            let requirements_js = query_requirements(guild_name, role_name, URL.to_string())
+                .await
+                .unwrap();
+            let requirements: gn_common::requirements::RequirementsWithLogic =
+                deserialize_from_value(requirements_js).unwrap();
+
+            assert_eq!(requirements.logic, "0");
+        }
+
+        #[wasm_bindgen_test]
+        async fn test_query_user_identity() {
+            let signer = Signer::new(Keypair::from_seed(&ACCOUNT_SEED));
+
+            let address_string = signer.account_id().to_string();
+            let converted_id = AccountId::from_str(&address_string).unwrap();
+            assert_eq!(&converted_id, signer.account_id());
+
+            let members_js = query_members("".to_string(), "".to_string(), URL.to_string())
+                .await
+                .unwrap();
+            let members_vec: Vec<AccountId> = deserialize_from_value(members_js).unwrap();
+            assert!(members_vec.contains(signer.account_id()));
+
+            let identities_js = query_user_identity(address_string, URL.to_string())
+                .await
+                .unwrap();
+
+            let identities: Vec<Identity> = deserialize_from_value(identities_js).unwrap();
+
+            assert_eq!(identities.len(), 2);
+            match identities[1] {
+                Identity::Discord(id) => assert!(id < 10),
+                _ => panic!("identity mismatch"),
+            }
+        }
+
+        #[wasm_bindgen_test]
+        async fn test_tx_submission() {
+            // NOTE
+            // assuming that the guild/join test has been successfully
+            // completed this signer should be able to join a specific guild
+            //
+            // It is important to run an oracle instance when testing this example
+            // because the an oracle has to check requirements
+            let signer = Signer::new(Keypair::from_seed(&ACCOUNT_SEED));
+            // create api for queries
+            let api = Api::from_url(URL).await.unwrap();
             let members = queries::members(
                 api.clone(),
                 Some(&GuildFilter {
@@ -368,8 +348,204 @@ mod test {
             .expect("failed to query members");
 
             // check that we indeed haven't joined this guild yet
-            if members.contains(signer.account_id()) {
-                break;
+            assert!(!members.contains(signer.account_id()));
+
+            let payload_js = join_guild_tx_payload(
+                signer.account_id().to_string(),
+                "mysecondguild".to_string(),
+                "mysecondrole".to_string(),
+                URL.to_owned(),
+            )
+            .await
+            .expect("failed to generate payload");
+
+            let payload: PreparedMsgWithParams = deserialize_from_value(payload_js).unwrap();
+
+            let signature = match signer.sign(&payload.prepared_msg) {
+                MultiSignature::Sr25519(sig) => sig.0.to_vec(),
+                _ => panic!("should be sr signature"),
+            };
+
+            // send transaction
+            let maybe_hash_js = send_transaction(
+                signer.account_id().to_string(),
+                signature,
+                payload.encoded_params,
+                URL.to_owned(),
+            )
+            .await
+            .expect("failed to send tx");
+
+            let maybe_hash: Option<Hash> = deserialize_from_value(maybe_hash_js).unwrap();
+            assert!(maybe_hash.is_some());
+
+            // query members again in a loop (for some reason, send tx doesn't wait
+            // until it's included
+            loop {
+                let members = queries::members(
+                    api.clone(),
+                    Some(&GuildFilter {
+                        name: SECOND_GUILD,
+                        role: Some(SECOND_ROLE),
+                    }),
+                    10,
+                )
+                .await
+                .expect("failed to query members");
+
+                // check that we indeed haven't joined this guild yet
+                if members.contains(signer.account_id()) {
+                    break;
+                }
+            }
+        }
+    }
+
+    mod transactions {
+        use super::*;
+        use gn_client::data::{Guild, Role};
+        use gn_client::queries;
+        use gn_client::{
+            AccountKeyring, Hash, MultiSignature, PreparedMsgWithParams, Signer, TxSignerTrait,
+        };
+        use gn_common::requirements::{Requirement, RequirementsWithLogic};
+
+        #[wasm_bindgen_test]
+        async fn test_all_transactions() {
+            let guild_name = "yellow-guild";
+            let role_name = "canary-role";
+            let evm_address = [
+                45, 48, 227, 6, 107, 2, 236, 154, 191, 183, 175, 121, 86, 27, 2, 236, 112, 110,
+                213, 74,
+            ];
+            let evm_signature = [
+                96, 116, 11, 233, 146, 64, 97, 53, 128, 37, 159, 151, 138, 73, 148, 90, 83, 91,
+                237, 104, 28, 186, 75, 75, 139, 202, 88, 250, 233, 60, 63, 126, 95, 180, 10, 64,
+                252, 128, 147, 63, 252, 142, 192, 125, 104, 52, 76, 113, 228, 109, 237, 55, 74, 78,
+                35, 147, 185, 84, 65, 144, 90, 70, 80, 9, 28,
+            ];
+            let signer = Signer::new(AccountKeyring::Alice.pair());
+
+            // 1) register alice with dummy identities
+            let payload_js = register_tx_payload(
+                signer.account_id().to_string(),
+                hex::encode(&evm_address),
+                hex::encode(&evm_signature),
+                Some(123.to_string()),
+                Some(456.to_string()),
+                URL.to_string(),
+            )
+            .await
+            .expect("failed to get payload");
+
+            let payload: PreparedMsgWithParams = deserialize_from_value(payload_js).unwrap();
+
+            let signature = match signer.sign(&payload.prepared_msg) {
+                MultiSignature::Sr25519(sig) => sig.0.to_vec(),
+                _ => panic!("should be sr signature"),
+            };
+
+            // send transaction
+            let maybe_hash_js = send_transaction(
+                signer.account_id().to_string(),
+                signature,
+                payload.encoded_params,
+                URL.to_owned(),
+            )
+            .await
+            .expect("failed to send tx");
+
+            let maybe_hash: Option<Hash> = deserialize_from_value(maybe_hash_js).unwrap();
+            assert!(maybe_hash.is_some());
+
+            // 2) create a guild with a single FREE role
+            let guild = Guild {
+                name: pad_to_32_bytes(guild_name),
+                metadata: vec![1, 2, 3, 4, 5, 6, 7],
+                roles: vec![Role {
+                    name: pad_to_32_bytes(role_name),
+                    reqs: RequirementsWithLogic {
+                        logic: "0".to_string(),
+                        requirements: vec![Requirement::Free],
+                    },
+                }],
+            };
+            let payload_js = create_guild_tx_payload(
+                signer.account_id().to_string(),
+                serialize_to_value(&guild).unwrap(),
+                URL.to_string(),
+            )
+            .await
+            .expect("failed to get payload");
+
+            let payload: PreparedMsgWithParams = deserialize_from_value(payload_js).unwrap();
+
+            let signature = match signer.sign(&payload.prepared_msg) {
+                MultiSignature::Sr25519(sig) => sig.0.to_vec(),
+                _ => panic!("should be sr signature"),
+            };
+
+            // send transaction
+            let maybe_hash_js = send_transaction(
+                signer.account_id().to_string(),
+                signature,
+                payload.encoded_params,
+                URL.to_owned(),
+            )
+            .await
+            .expect("failed to send tx");
+
+            let maybe_hash: Option<Hash> = deserialize_from_value(maybe_hash_js).unwrap();
+            assert!(maybe_hash.is_some());
+
+            // 3) join the guild with the free role
+            let payload_js = join_guild_tx_payload(
+                signer.account_id().to_string(),
+                guild_name.to_string(),
+                role_name.to_string(),
+                URL.to_owned(),
+            )
+            .await
+            .expect("failed to generate payload");
+
+            let payload: PreparedMsgWithParams = deserialize_from_value(payload_js).unwrap();
+
+            let signature = match signer.sign(&payload.prepared_msg) {
+                MultiSignature::Sr25519(sig) => sig.0.to_vec(),
+                _ => panic!("should be sr signature"),
+            };
+
+            // send transaction
+            let maybe_hash_js = send_transaction(
+                signer.account_id().to_string(),
+                signature,
+                payload.encoded_params,
+                URL.to_owned(),
+            )
+            .await
+            .expect("failed to send tx");
+
+            let maybe_hash: Option<Hash> = deserialize_from_value(maybe_hash_js).unwrap();
+            assert!(maybe_hash.is_some());
+
+            // query members again in a loop (for some reason, send tx doesn't wait until it's included)
+            loop {
+                let api = Api::from_url(URL).await.unwrap();
+                let members = queries::members(
+                    api.clone(),
+                    Some(&GuildFilter {
+                        name: pad_to_32_bytes(guild_name),
+                        role: Some(pad_to_32_bytes(role_name)),
+                    }),
+                    10,
+                )
+                .await
+                .expect("failed to query members");
+
+                if members.len() == 1 {
+                    assert_eq!(&members[0], signer.account_id());
+                    break;
+                }
             }
         }
     }

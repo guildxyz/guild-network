@@ -130,6 +130,6 @@ mod test {
         };
 
         let serialized = serde_json::to_string(&guild).unwrap();
-        println!("{}", serialized);
+        println!("{serialized}");
     }
 }
