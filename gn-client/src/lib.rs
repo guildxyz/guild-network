@@ -13,7 +13,6 @@ pub use sp_keyring::AccountKeyring;
 pub use subxt::ext::sp_core::crypto::Pair as TraitPair;
 pub use subxt::ext::sp_core::sr25519::Signature as SrSignature;
 pub use subxt::ext::sp_core::H256 as Hash;
-pub use subxt::ext::sp_runtime::MultiSignature;
 pub use subxt::tx::{PreparedMsgWithParams, Signer as TxSignerTrait};
 pub use subxt::PolkadotConfig as ClientConfig;
 
@@ -44,6 +43,7 @@ pub type RuntimeIdentity = runtime::runtime_types::gn_common::identities::Identi
 pub type RuntimeIdentityWithAuth = runtime::runtime_types::gn_common::identities::IdentityWithAuth;
 pub type Signature = <ClientConfig as subxt::Config>::Signature;
 pub type Signer = PairSigner<ClientConfig, Keypair>;
+pub type SubxtError = subxt::Error;
 pub type TransactionProgress = TxProgress<ClientConfig, Api>;
 pub type TransactionStatus = SubTxStatus<ClientConfig, Api>;
 

@@ -1,25 +1,32 @@
-// TODO WIP
+use gn_client::{AccountId, SubstrateAddress};
 use js_sys::{Error, Function, JsString, Object, Promise};
+use serde_wasm_bindgen::from_value as deserialize_from_value;
+use wasm_bindgen::prelude::JsValue;
 use web_sys::{console, window};
+
 use std::str::FromStr;
 
-fn get_sign_request(msg: &str, address: &str) -> Result<js_sys::Object, Error> {
+fn get_sign_request(msg: &[u8], address: &SubstrateAddress) -> Result<js_sys::Object, Error> {
     let sign_request_param = js_sys::Object::new();
 
     js_sys::Reflect::set(
         &sign_request_param,
         &JsString::from("address"),
-        &address.into(),
+        &JsString::from(address.to_string()),
     )?;
-    js_sys::Reflect::set(&sign_request_param, &JsString::from("data"), &msg.into())?;
+    js_sys::Reflect::set(
+        &sign_request_param,
+        &JsString::from("data"),
+        &JsString::from(hex::encode(msg)),
+    )?;
 
     Ok(sign_request_param)
 }
 
 pub struct WasmSigner {
-    pub lib: Object,
-    pub account_id: AccountId,
-    pub address: SubstrateAddress,
+    lib: Object,
+    account_id: AccountId,
+    address: SubstrateAddress,
 }
 
 impl WasmSigner {
@@ -51,10 +58,10 @@ impl WasmSigner {
         .await?
         .into();
 
-        let name: String = js_sys::Reflect::get(&addresses.at(0), &"name".into())?
+        let name: String = js_sys::Reflect::get(&addresses.at(0), &JsString::from("name"))?
             .as_string()
             .expect("Failed to cast addresses[0] to String");
-        let address: String = js_sys::Reflect::get(&addresses.at(0), &"address".into())?
+        let address: String = js_sys::Reflect::get(&addresses.at(0), &JsString::from("address"))?
             .as_string()
             .expect("Failed to cast addresses[0] to String");
 
@@ -65,49 +72,33 @@ impl WasmSigner {
 
         Ok(Self {
             lib,
-            account_id, 
+            account_id,
             address,
         })
     }
-}
 
-impl TxSignerTrait<ClientConfig> for WasmSigner {
-    fn nonce(&self) -> Option<Index> {
-        Some(123)
-    }
-
-    fn account_id(&self) -> &AccountId {
+    pub fn account_id(&self) -> &AccountId {
         &self.account_id
     }
 
-    fn address(&self) -> SubstrateAddress {
-        self.address
+    pub fn address(&self) -> &SubstrateAddress {
+        &self.address
     }
 
-    fn sign(&self, signer_payload: &[u8]) -> Signature {
-        let signer =
-            js_sys::Reflect::get(&self.lib, &"signer".into()).expect("failed to get signer");
-        let sign_raw: Function = js_sys::Reflect::get(&signer, &"signRaw".into())
-            .expect("failed to get signature function")
-            .into();
+    pub async fn sign(&self, signer_payload: &[u8]) -> Result<[u8; 64], JsValue> {
+        let signer = js_sys::Reflect::get(&self.lib, &JsString::from("signer"))?;
+        let sign_raw: Function = js_sys::Reflect::get(&signer, &JsString::from("signRaw"))?.into();
 
-        let sign_payload =
-            get_sign_request(signer_payload, &self.address).expect("failed to get sign request");
+        let sign_payload = get_sign_request(&signer_payload, self.address())?;
 
-        sign_raw
-            .call1(&JsValue::NULL, &sign_payload)
-            .expect("failed to get sign promise")
-            .into()
+        let signature_js = sign_raw.call1(&JsValue::NULL, &sign_payload)?;
+
+        let signature: String =
+            deserialize_from_value(signature_js).map_err(|e| JsValue::from(e.to_string()))?;
+        let mut signature_bytes = [0u8; 64];
+        hex::decode_to_slice(&signature, &mut signature_bytes)
+            .map_err(|e| JsValue::from(e.to_string()))?;
+
+        Ok(signature_bytes)
     }
-}
-
-#[wasm_bindgen(js_name = "polkadotSign")]
-pub async fn polkadot_sign(message: &str) -> Result<(), Error> {
-    console::log_2(&"Message to sign:".into(), &message.into());
-
-    let signer = WasmSigner::new().await?;
-    let signature = signer.sign(message.as_bytes());
-
-    console::log_1(&signature);
-    Ok(())
 }
