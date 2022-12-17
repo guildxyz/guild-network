@@ -9,8 +9,6 @@ RUN cargo chef prepare --recipe-path recipe.json
 FROM rust:1.63.0-slim-buster as cacher
 WORKDIR app
 
-RUN git submodule update --init --recursive
-
 RUN apt update -y \
     && apt upgrade -y \
     && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev libssl-dev pkg-config -y
@@ -37,8 +35,6 @@ RUN rustup toolchain install nightly \
     && rustup component add clippy --toolchain nightly
 
 WORKDIR /opt/app
-
-RUN git submodule update --init --recursive
 
 COPY . /opt/app
 COPY --from=cacher /app/target target
