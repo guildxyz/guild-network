@@ -42,9 +42,6 @@ pub async fn get_balance(
             address: token_address,
             id: token_id,
         }) => {
-            dbg!(Into::<providers::Address>::into(token_address));
-            dbg!(Into::<providers::U256>::into(token_id));
-
             provider
                 .get_non_fungible_balance(
                     token_address.into(),
