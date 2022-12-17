@@ -36,6 +36,8 @@ RUN rustup toolchain install nightly \
 
 WORKDIR /opt/app
 
+RUN git submodule update --init --recursive
+
 COPY . /opt/app
 COPY --from=cacher /app/target target
 COPY --from=cacher /usr/local/cargo /usr/local/cargo
