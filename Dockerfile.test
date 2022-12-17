@@ -12,6 +12,9 @@ RUN rustup toolchain install nightly \
 WORKDIR /opt/app
 COPY . .
 ENV RUSTFLAGS=-Dwarnings
+
+RUN git submodule update --init --recursive
+
 RUN cargo fmt -- --check 
 
 RUN cargo clippy --color=always --all-features --tests
