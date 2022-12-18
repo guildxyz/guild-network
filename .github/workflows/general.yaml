@@ -14,10 +14,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Dummy git user
-        run: |
-          git config --system http.sslVerify false
-          git config --system user.email "email@email.com"
+      - name: set $HOME
+        run: export HOME=/
 
       - uses: webfactory/ssh-agent@v0.7.0
         with:
