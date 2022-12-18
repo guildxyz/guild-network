@@ -26,8 +26,9 @@ jobs:
 
       - name: Update submodules 
         run: |
+          eval `ssh-agent -s`
           random=$(date +%s)
-          ssh-agent -a /tmp/ssh_agent_${random}.sock > /dev/null
+          ssh-agent -a /tmp/ssh_agent${random}.sock > /dev/null
           ssh-add - <<< "${{ secrets.RUSTY_GATE }}"
           git submodule update --init --recursive --remote
 
