@@ -14,12 +14,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: set $HOME
-        run: export HOME=/
-
-      - uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.RUSTY_GATE }}
+      - name: Update submodules 
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null || echo 0
+          ssh-add - <<< "${{ secrets.RUSTY_GATE }}"
+          git submodule update --init --recursive --remote
 
       - name: Checkout submodules
         run: git submodule update --init --recursive
