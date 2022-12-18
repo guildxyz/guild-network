@@ -19,14 +19,14 @@ jobs:
 
       - name: Update submodules
         run: |
-          git pull --recurse-submodules
-          git submodule update --remote --recursive
+          git -c "url.https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/.insteadOf=https://github.com/" pull --recurse-submodules
+          git -c "url.https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/.insteadOf=https://github.com/" submodule update --init --recursive --remote
 
       - name: Setup buildx
         uses: docker/setup-buildx-action@v1
         with:
           install: true
-      
+
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
