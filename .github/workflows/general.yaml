@@ -38,7 +38,7 @@ jobs:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
         run: |
           pacman -Sy --noconfirm lsof
-          lsof $SSH_AUTH_SOCK | awk 'NR > 1 {print $2}' | xargs kill -15
+          lsof $SSH_AUTH_SOCK | awk 'NR > 1 {print $2}' | xargs kill -15 || echo
           ssh-agent -a $SSH_AUTH_SOCK > /dev/null
           ssh-add - <<< "${{ secrets.RUSTY_GATE }}"
           git submodule update --init --recursive --remote
