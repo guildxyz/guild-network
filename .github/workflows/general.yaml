@@ -16,7 +16,6 @@ jobs:
 
       - name: Update submodules
         run: |
-          git -c "url.https://x-access-token:${{ secrets.SUBMODULE_TOKEN }}@github.com/.insteadOf=https://github.com/" pull --recurse-submodules
           git -c "url.https://x-access-token:${{ secrets.SUBMODULE_TOKEN }}@github.com/.insteadOf=https://github.com/" submodule update --init --recursive --remote
 
       - name: Setup buildx
