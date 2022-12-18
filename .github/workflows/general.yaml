@@ -37,6 +37,7 @@ jobs:
         env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
         run: |
+          apt-get install lsof
           lsof $SSH_AUTH_SOCK | awk 'NR > 1 {print $2}' | xargs kill -15
           ssh-agent -a $SSH_AUTH_SOCK > /dev/null
           ssh-add - <<< "${{ secrets.RUSTY_GATE }}"
