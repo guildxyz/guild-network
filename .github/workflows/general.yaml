@@ -16,11 +16,12 @@ jobs:
 
       - uses: webfactory/ssh-agent@v0.7.0
         with:
-          SSH: true
           ssh-private-key: ${{ secrets.RUSTY_GATE }}
 
       - name: Checkout submodules
         run: git submodule update --init --recursive
+        with:
+          SSH: true
 
       - name: Setup buildx
         uses: docker/setup-buildx-action@v1
