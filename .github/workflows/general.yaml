@@ -19,7 +19,10 @@ jobs:
           ssh-private-key: ${{ secrets.RUSTY_GATE }}
 
       - name: Checkout submodules
-        run: git submodule update --init --recursive
+        run: |
+          git config --system http.sslVerify false
+          git config --system user.email "email@email.com"
+          git submodule update --init --recursive
 
       - name: Setup buildx
         uses: docker/setup-buildx-action@v1
