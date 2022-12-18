@@ -29,9 +29,13 @@ jobs:
       CRONOS_RPC: ${{ secrets.CRONOS_RPC }}
       BOBA_RPC: ${{ secrets.BOBA_RPC }}
       PALM_RPC: ${{ secrets.PALM_RPC }}
+      DUMMY_RPC: ${{ secrets.DUMMY_RPC }}
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Debug env vars
+        run: echo ${{secrets.DUMMY_RPC}}
 
       - name: Update submodules
         run: |
@@ -48,7 +52,7 @@ jobs:
         uses: docker/setup-buildx-action@v1
         with:
           install: true
-      
+
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
