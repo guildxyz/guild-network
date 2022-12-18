@@ -17,4 +17,4 @@ RUN cargo fmt -- --check
 
 RUN cargo clippy --color=always --all-features --tests
 
-RUN cargo test --all-features --workspace --exclude gn-node
+# RUN cargo test --all-features --workspace --exclude gn-node
