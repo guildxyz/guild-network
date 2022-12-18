@@ -29,8 +29,6 @@ jobs:
       CRONOS_RPC: ${{ secrets.CRONOS_RPC }}
       BOBA_RPC: ${{ secrets.BOBA_RPC }}
       PALM_RPC: ${{ secrets.PALM_RPC }}
-      DUMMY_RPC: ${{ secrets.DUMMY_RPC }}
-
     steps:
       - uses: actions/checkout@v3
 
