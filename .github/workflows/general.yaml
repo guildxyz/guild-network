@@ -8,6 +8,8 @@ on:
 jobs:
   test:
     runs-on: rust
+
+    env:
       RUSTFLAGS: -Dwarnings # fails on warnings as well
       ETHEREUM_RPC: ${{ secrets.ETHEREUM_RPC }}
       POLYGON_RPC: ${{ secrets.POLYGON_RPC }}
@@ -27,6 +29,7 @@ jobs:
       CRONOS_RPC: ${{ secrets.CRONOS_RPC }}
       BOBA_RPC: ${{ secrets.BOBA_RPC }}
       PALM_RPC: ${{ secrets.PALM_RPC }}
+
     steps:
       - uses: actions/checkout@v3
 
