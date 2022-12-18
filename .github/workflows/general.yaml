@@ -16,7 +16,7 @@ jobs:
 
       - name: Update submodules 
         env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+          SSH_AUTH_SOCK: /tmp/ssh_agent1.sock
         run: |
           ssh-agent -a $SSH_AUTH_SOCK > /dev/null || echo 0
           ssh-add - <<< "${{ secrets.RUSTY_GATE }}"
