@@ -14,9 +14,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Update submodules
+      - name: Update submodules 
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
         run: |
-          git -c "url.https://x-access-token:${{ secrets.SUBMODULE_TOKEN }}@github.com/.insteadOf=https://github.com/" submodule update --init --recursive --remote
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add - <<< "${{ secrets.RUSTY_GATE }}"
+          git submodule update --init --recursive --remote
 
       - name: Setup buildx
         uses: docker/setup-buildx-action@v1
