@@ -7,7 +7,7 @@ use gn_client::transactions::{
 use gn_client::{Api, FilteredEvents, GuildCall, Signer};
 use gn_common::identities::IdentityMap;
 use gn_common::utils::{matches_variant, verification_msg};
-use gn_common::RequestData;
+use gn_common::{RequestData, RequestIdentifier};
 use reqwest::Client as ReqwestClient;
 use sp_keyring::AccountKeyring;
 use structopt::StructOpt;
@@ -98,7 +98,35 @@ async fn main() -> ! {
 
 fn submit_answer(api: Api, client: ReqwestClient, signer: Arc<Signer>, request: OracleRequest) {
     tokio::spawn(async move {
-        if let Err(e) = try_submit_answer(api, client, signer, request).await {
+        let OracleRequest {
+            request_id,
+            operator,
+            callback,
+            fee,
+        } = request;
+
+        log::info!(
+            "OracleRequest: {}, {}, {:?}, {}",
+            request_id,
+            operator,
+            callback,
+            fee
+        );
+
+        if &operator != signer.account_id() {
+            // request wasn't delegated to us so return
+            log::trace!("request not delegated to us");
+            return;
+        }
+
+        // check whether the incoming request originates from the guild
+        // pallet just for testing basically
+        if !matches_variant(&callback, &GuildCall::callback { result: vec![] }) {
+            log::trace!("callback mismatch");
+            return;
+        }
+
+        if let Err(e) = try_submit_answer(api, client, signer, request_id).await {
             log::error!("{e}");
         }
     });
@@ -108,32 +136,8 @@ async fn try_submit_answer(
     api: Api,
     client: ReqwestClient,
     signer: Arc<Signer>,
-    request: OracleRequest,
+    request_id: RequestIdentifier,
 ) -> Result<(), anyhow::Error> {
-    let OracleRequest {
-        request_id,
-        operator,
-        callback,
-        fee,
-    } = request;
-    log::info!(
-        "OracleRequest: {}, {}, {:?}, {}",
-        request_id,
-        operator,
-        callback,
-        fee
-    );
-    if &operator != signer.account_id() {
-        // request wasn't delegated to us so return
-        return Ok(());
-    }
-
-    // check whether the incoming request originates from the guild
-    // pallet just for testing basically
-    if !matches_variant(&callback, &GuildCall::callback { result: vec![] }) {
-        return Ok(());
-    }
-
     let oracle_request = oracle_request(api.clone(), request_id).await?;
 
     let oracle_answer = match oracle_request.data {
