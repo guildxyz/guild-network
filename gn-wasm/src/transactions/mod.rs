@@ -35,7 +35,8 @@ mod test {
     use super::*;
     use gn_client::data::{Guild, Role};
     use gn_client::queries::{self, GuildFilter};
-    use gn_client::{AccountKeyring, Api, MultiSignature, Signer, TxSignerTrait};
+    use gn_client::{AccountKeyring, Api, Signature, Signer, TxSignerTrait};
+    use gn_common::identities::Identity;
     use gn_common::pad::pad_to_32_bytes;
     use gn_common::requirements::{Requirement, RequirementsWithLogic};
     use wasm_bindgen_test::*;
@@ -64,16 +65,16 @@ mod test {
         let prepared = register(
             api.clone(),
             signer.account_id(),
-            hex::encode(&evm_address),
-            hex::encode(&evm_signature),
+            Some(hex::encode(&evm_address)),
+            Some(hex::encode(&evm_signature)),
             Some(123.to_string()),
-            Some(456.to_string()),
+            None,
         )
         .await
         .expect("failed to get payload");
 
         let signature = match signer.sign(&prepared.prepared_msg) {
-            MultiSignature::Sr25519(sig) => sig.0,
+            Signature::Sr25519(sig) => sig.0,
             _ => panic!("should be sr signature"),
         };
 
@@ -136,7 +137,7 @@ mod test {
         .expect("failed to generate payload");
 
         let signature = match signer.sign(&prepared.prepared_msg) {
-            MultiSignature::Sr25519(sig) => sig.0,
+            Signature::Sr25519(sig) => sig.0,
             _ => panic!("should be sr signature"),
         };
 
@@ -170,6 +171,49 @@ mod test {
 
             if members.len() == 1 {
                 assert_eq!(&members[0], signer.account_id());
+                break;
+            }
+        }
+
+        // last but not least register another (not-yet registered) telegram
+        // identity
+        let prepared = register(
+            api.clone(),
+            signer.account_id(),
+            None,
+            None,
+            None,
+            Some("456".to_string()),
+        )
+        .await
+        .expect("failed to get payload");
+
+        let signature = match signer.sign(&prepared.prepared_msg) {
+            Signature::Sr25519(sig) => sig.0,
+            _ => panic!("should be sr signature"),
+        };
+
+        // send transaction
+        let maybe_hash = send_tx(
+            api.clone(),
+            signer.address(),
+            &signature,
+            &prepared,
+            TxStatus::InBlock,
+        )
+        .await
+        .expect("failed to send tx");
+        assert!(maybe_hash.is_some());
+
+        // query members again in a loop (for some reason, send tx doesn't wait until it's included)
+        loop {
+            let identities = queries::user_identity(api.clone(), signer.account_id())
+                .await
+                .expect("failed to query identities");
+
+            if identities.len() == 3 {
+                assert!(identities.contains(&Identity::Discord(123)));
+                assert!(identities.contains(&Identity::Telegram(456)));
                 break;
             }
         }

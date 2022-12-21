@@ -104,8 +104,8 @@ pub async fn verification_msg(address: String) -> String {
 
 #[wasm_bindgen(js_name = "registerTx")]
 pub async fn register_tx(
-    evm_address: String,
-    evm_signature: String,
+    evm_address: Option<String>,
+    evm_signature: Option<String>,
     discord: Option<String>,
     telegram: Option<String>,
     url: String,
