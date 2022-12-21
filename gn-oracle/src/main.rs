@@ -179,7 +179,7 @@ async fn try_submit_answer(
                         .unwrap_or(false)
                 }
                 Err(error) => {
-                    log::warn!("identity check failed: {}", error);
+                    log::warn!("requirement check failed: {}", error);
                     false
                 }
             }
