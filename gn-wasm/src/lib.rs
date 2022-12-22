@@ -3,10 +3,12 @@ mod transactions;
 
 use signer::WasmSigner;
 
+use gn_client::data::Guild;
 use gn_client::queries::{self, GuildFilter};
 use gn_client::transactions::TxStatus;
 use gn_client::{AccountId, Api};
 use gn_common::{pad::pad_to_32_bytes, utils, GuildName};
+pub use serde_cbor::to_vec as cbor_serialize;
 use serde_wasm_bindgen::{from_value as deserialize_from_value, to_value as serialize_to_value};
 use wasm_bindgen::prelude::*;
 
@@ -199,6 +201,21 @@ pub async fn create_guild_tx_payload(guild: JsValue, url: String) -> Result<JsVa
     .map_err(|e| JsValue::from(e.to_string()))?;
 
     serialize_to_value(&maybe_hash).map_err(|e| JsValue::from(e.to_string()))
+}
+
+#[wasm_bindgen(js_name = "createGuildEncodeParams")]
+pub async fn create_guild_encode_params(guild: JsValue) -> Result<JsValue, JsValue> {
+    let guild: Guild = deserialize_from_value(guild).map_err(|e| JsValue::from(e.to_string()))?;
+
+    let mut roles = Vec::new();
+    for role in guild.roles.into_iter() {
+        let ser_requirements =
+            cbor_serialize(&role.reqs).map_err(|e| JsValue::from(e.to_string()))?;
+        roles.push((role.name, ser_requirements));
+    }
+
+    serialize_to_value(&(guild.name, guild.metadata, roles))
+        .map_err(|e| JsValue::from(e.to_string()))
 }
 
 #[cfg(test)]
