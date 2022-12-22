@@ -6,18 +6,15 @@ use web_sys::{console, window};
 
 use std::str::FromStr;
 
-fn get_sign_request(msg: &[u8], address: &SubstrateAddress) -> Result<js_sys::Object, Error> {
+fn get_sign_request(msg: &[u8], address: &JsString) -> Result<js_sys::Object, Error> {
     let sign_request_param = js_sys::Object::new();
+
+    js_sys::Reflect::set(&sign_request_param, &JsString::from("address"), &address)?;
 
     js_sys::Reflect::set(
         &sign_request_param,
-        &JsString::from("address"),
-        &JsString::from(address.to_string()),
-    )?;
-    js_sys::Reflect::set(
-        &sign_request_param,
         &JsString::from("data"),
-        &JsString::from(hex::encode(msg)),
+        &JsString::from(hex::encode(msg)), // format!("0x{}", hex::encode(msg))
     )?;
 
     Ok(sign_request_param)
@@ -27,6 +24,7 @@ pub struct WasmSigner {
     lib: Object,
     account_id: AccountId,
     address: SubstrateAddress,
+    address_js: JsString,
 }
 
 impl WasmSigner {
@@ -61,19 +59,23 @@ impl WasmSigner {
         let name: String = js_sys::Reflect::get(&addresses.at(0), &JsString::from("name"))?
             .as_string()
             .expect("Failed to cast addresses[0] to String");
-        let address: String = js_sys::Reflect::get(&addresses.at(0), &JsString::from("address"))?
+        let address_js: JsString =
+            js_sys::Reflect::get(&addresses.at(0), &JsString::from("address"))?.into();
+
+        let address = address_js
             .as_string()
             .expect("Failed to cast addresses[0] to String");
 
         console::log_1(&format!("Hello {}! ({})", name, address).into());
 
         let account_id = AccountId::from_str(&address).expect("invalid address");
-        let address = SubstrateAddress::from(account_id.clone());
+        let substrate_address = SubstrateAddress::from(account_id.clone());
 
         Ok(Self {
             lib,
             account_id,
-            address,
+            address: substrate_address,
+            address_js,
         })
     }
 
@@ -89,9 +91,16 @@ impl WasmSigner {
         let signer = js_sys::Reflect::get(&self.lib, &JsString::from("signer"))?;
         let sign_raw: Function = js_sys::Reflect::get(&signer, &JsString::from("signRaw"))?.into();
 
-        let sign_payload = get_sign_request(&signer_payload, self.address())?;
+        let sign_payload = get_sign_request(&signer_payload, &self.address_js)?;
 
-        let signature_js = sign_raw.call1(&JsValue::NULL, &sign_payload)?;
+        let signature_js: Promise = sign_raw.call1(&JsValue::NULL, &sign_payload)?.into();
+        let signature_js = wasm_bindgen_futures::JsFuture::from(signature_js).await?;
+        let signature_js: JsString =
+            js_sys::Reflect::get(&signature_js, &JsString::from("signature"))?.into();
+        // console::log_1(&signature_js);
+        let signature_js: JsValue = signature_js.slice(4, signature_js.length()).into();
+
+        // console::log_1(&signature_js);
 
         let signature: String =
             deserialize_from_value(signature_js).map_err(|e| JsValue::from(e.to_string()))?;
