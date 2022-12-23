@@ -1,52 +1,41 @@
-#---
-FROM rust:1.63.0-slim-buster as planner
-WORKDIR app
+FROM rustlang/rust:nightly-slim AS chef
+
 RUN cargo install cargo-chef
+WORKDIR /app
+
+FROM chef AS planner
 COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
-#---
-FROM rust:1.63.0-slim-buster as cacher
-WORKDIR app
+FROM chef AS builder 
+WORKDIR /opt/app
+COPY --from=planner app/recipe.json recipe.json
 
+# Build dependencies - this is the caching Docker layer!
 RUN apt update -y \
     && apt upgrade -y \
-    && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev libssl-dev pkg-config -y
+    # && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev libssl-dev pkg-config -y
+    && apt install build-essential librocksdb-dev libclang-dev clang cmake libssl-dev pkg-config -y
 
-RUN rustup toolchain install nightly \
-    && rustup override set nightly \
-    && rustup target add wasm32-unknown-unknown --toolchain nightly \
-    && rustup component add clippy --toolchain nightly
+#RUN rustup toolchain install nightly \
+RUN rustup target add wasm32-unknown-unknown --toolchain nightly
 
-RUN cargo install cargo-chef
-COPY --from=planner /app/recipe.json recipe.json
 RUN cargo +nightly chef cook --release --recipe-path recipe.json
 
-#---
-FROM rust:1.63.0-slim-buster as build
+# Build application
+COPY . .
+RUN cargo build --release 
 
+FROM debian:stable-slim AS runtime
 RUN apt update -y \
     && apt upgrade -y \
-    && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev libssl-dev pkg-config -y
+    && apt install ca-certificates -y
+EXPOSE 30333 30333/udp 9944 9933
 
-RUN rustup toolchain install nightly \
-    && rustup override set nightly \
-    && rustup target add wasm32-unknown-unknown --toolchain nightly \
-    && rustup component add clippy --toolchain nightly
+FROM runtime as gn-oracle
+COPY --from=builder /opt/app/target/release/gn-oracle /usr/local/bin/
+ENTRYPOINT ["gn-oracle"]
 
-WORKDIR /opt/app
-
-COPY . /opt/app
-COPY --from=cacher /app/target target
-COPY --from=cacher /usr/local/cargo /usr/local/cargo
-
-RUN cargo build --release
-
-#---
-FROM alpine:3.16.2
-
-RUN apk add --no-cache ca-certificates
-COPY --from=build /opt/app/target/release/gn-node /usr/local/bin/gn-node
-
-EXPOSE 30333 30333/udp 9944 9933 
+FROM runtime AS gn-node
+COPY --from=builder /opt/app/target/release/gn-node /usr/local/bin/
 ENTRYPOINT ["gn-node"]
