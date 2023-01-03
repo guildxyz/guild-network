@@ -1,6 +1,7 @@
 mod common;
 mod join;
 mod sign;
+mod token;
 
 use common::api_with_alice;
 
@@ -12,6 +13,7 @@ use std::str::FromStr;
 enum Example {
     Join,
     Sign,
+    Token,
 }
 
 impl FromStr for Example {
@@ -20,6 +22,7 @@ impl FromStr for Example {
         match s {
             "join" => Ok(Self::Join),
             "sign" => Ok(Self::Sign),
+            "token" => Ok(Self::Token),
             _ => Err(format!("no example with name {s}")),
         }
     }
@@ -53,5 +56,6 @@ async fn main() {
     match opt.example {
         Example::Join => join::join(api, alice).await,
         Example::Sign => sign::sign(api, alice).await,
+        Example::Token => token::token(api, alice).await,
     }
 }
