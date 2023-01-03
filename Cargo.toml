@@ -27,5 +27,7 @@ default-members = [
     "gn-test-runtime",
 ]
 
+exclude = ["rusty-gate"]
+
 [profile.release]
 panic = "abort"

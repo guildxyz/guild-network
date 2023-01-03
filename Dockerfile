@@ -49,4 +49,4 @@ RUN apk add --no-cache ca-certificates
 COPY --from=build /opt/app/target/release/gn-node /usr/local/bin/gn-node
 
 EXPOSE 30333 30333/udp 9944 9933 
-ENTRYPOINT ["substrate-node"]
+ENTRYPOINT ["gn-node"]

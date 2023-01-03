@@ -12,6 +12,7 @@ RUN rustup toolchain install nightly \
 WORKDIR /opt/app
 COPY . .
 ENV RUSTFLAGS=-Dwarnings
+
 RUN cargo fmt -- --check 
 
 RUN cargo clippy --color=always --tests --features runtime-benchmarks
