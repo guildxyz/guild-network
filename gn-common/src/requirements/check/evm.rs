@@ -29,39 +29,47 @@ pub async fn get_balance(
         anyhow::bail!("Chain not supported")
     };
 
-    let results = match token_type {
-        None => provider.get_native_balance(&[user_address.into()]).await,
+    let balance = match token_type {
+        None => {
+            let balances = provider.get_native_balance(&[user_address.into()]).await;
+            if let Some(Ok(balance)) = balances.get(0) {
+                (*balance * MULTIPLIER) as u128
+            } else {
+                0
+            }
+        }
         Some(TokenType::Fungible {
             address: token_address,
         }) => {
-            provider
+            let balances = provider
                 .get_fungible_balance(token_address.into(), &[user_address.into()])
-                .await
+                .await;
+
+            if let Some(Ok(balance)) = balances.get(0) {
+                (*balance * MULTIPLIER) as u128
+            } else {
+                0
+            }
         }
         Some(TokenType::NonFungible {
             address: token_address,
             id: token_id,
         }) => {
-            provider
+            let balances = provider
                 .get_non_fungible_balance(
                     token_address.into(),
                     Some(token_id.into()),
                     &[user_address.into()],
                 )
-                .await
-        }
-        Some(TokenType::Special { .. }) => todo!(),
-    };
+                .await;
 
-    // TODO because here we get vec of results, we need to index into it which
-    // is quite inconvenient and it "might" panic if the lenght is 0. So use
-    // `get` instead, but that returns an Option so we need a double unwrap_or
-    //
-    // we wouldn't need any of this if the get_balance would return and U256
-    let balance = if let Some(Ok(balance)) = results.get(0) {
-        (*balance * MULTIPLIER) as u128
-    } else {
-        0
+            if let Some(Ok(balance)) = balances.get(0) {
+                *balance as u128
+            } else {
+                0
+            }
+        }
+        Some(TokenType::Special { .. }) => anyhow::bail!("Token type not supported"), // TODO
     };
 
     let mut result = [0u8; 32];

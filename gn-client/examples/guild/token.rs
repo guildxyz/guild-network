@@ -47,44 +47,69 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
         }
     }
 
-    let roles = vec![Role {
-        name: FIRST_ROLE,
-        reqs: RequirementsWithLogic {
-            logic: "0 AND 1".to_string(),
-            requirements: vec![
-                //Requirement::EvmBalance(RequiredBalance {
-                //    token_type: Some(TokenType::NonFungible {
-                //        address: Address::from_str(ETH_ERC721_ADDRESS)
-                //            .unwrap()
-                //            .to_fixed_bytes(),
-                //        id: U256::from_str(ETH_ERC721_ID).unwrap().into(),
-                //    }),
-                //    relation: Relation::EqualTo(U256::from(1).into()),
-                //    chain: EvmChain::Ethereum,
-                //}),
-                Requirement::EvmBalance(RequiredBalance {
-                    token_type: Some(TokenType::NonFungible {
-                        address: Address::from_str(GNOSIS_ERC721_ADDRESS_0)
-                            .unwrap()
-                            .to_fixed_bytes(),
-                        id: U256::from_str(GNOSIS_ERC721_ID_0).unwrap().into(),
+    pritnln!("USER REGISTERED");
+
+    let mut one = [0u8; 32];
+    one[0] = 1;
+
+    let roles = vec![
+        Role {
+            name: FIRST_ROLE,
+            reqs: RequirementsWithLogic {
+                logic: "0 AND 1".to_string(),
+                requirements: vec![
+                    Requirement::EvmBalance(RequiredBalance {
+                        token_type: Some(TokenType::NonFungible {
+                            address: Address::from_str(ETH_ERC721_ADDRESS)
+                                .unwrap()
+                                .to_fixed_bytes(),
+                            id: U256::from_dec_str(ETH_ERC721_ID).unwrap().into(),
+                        }),
+                        relation: Relation::EqualTo(one),
+                        chain: EvmChain::Ethereum,
                     }),
-                    relation: Relation::EqualTo(U256::from(1).into()),
-                    chain: EvmChain::Gnosis,
-                }),
-                Requirement::EvmBalance(RequiredBalance {
-                    token_type: Some(TokenType::NonFungible {
-                        address: Address::from_str(GNOSIS_ERC721_ADDRESS_1)
-                            .unwrap()
-                            .to_fixed_bytes(),
-                        id: U256::from_str(GNOSIS_ERC721_ID_1).unwrap().into(),
+                    Requirement::EvmBalance(RequiredBalance {
+                        token_type: None,
+                        relation: Relation::GreaterThan([0u8; 32]),
+                        chain: EvmChain::Ethereum,
                     }),
-                    relation: Relation::EqualTo(U256::from(1).into()),
-                    chain: EvmChain::Gnosis,
-                }),
-            ],
+                ],
+            },
         },
-    }];
+        Role {
+            name: SECOND_ROLE,
+            reqs: RequirementsWithLogic {
+                logic: "0 OR (1 AND 2)".to_string(),
+                requirements: vec![
+                    Requirement::EvmBalance(RequiredBalance {
+                        token_type: None,
+                        relation: Relation::GreaterThan([1u8; 32]),
+                        chain: EvmChain::Ethereum,
+                    }),
+                    Requirement::EvmBalance(RequiredBalance {
+                        token_type: Some(TokenType::NonFungible {
+                            address: Address::from_str(GNOSIS_ERC721_ADDRESS_0)
+                                .unwrap()
+                                .to_fixed_bytes(),
+                            id: U256::from_dec_str(GNOSIS_ERC721_ID_0).unwrap().into(),
+                        }),
+                        relation: Relation::EqualTo(one),
+                        chain: EvmChain::Gnosis,
+                    }),
+                    Requirement::EvmBalance(RequiredBalance {
+                        token_type: Some(TokenType::NonFungible {
+                            address: Address::from_str(GNOSIS_ERC721_ADDRESS_1)
+                                .unwrap()
+                                .to_fixed_bytes(),
+                            id: U256::from_dec_str(GNOSIS_ERC721_ID_1).unwrap().into(),
+                        }),
+                        relation: Relation::EqualTo(U256::from(1).into()),
+                        chain: EvmChain::Gnosis,
+                    }),
+                ],
+            },
+        },
+    ];
 
     let guild = Guild {
         name: FIRST_GUILD,
@@ -96,6 +121,8 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
     transactions::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
         .await
         .expect("failed to create guild");
+
+    println!("GUILD CREATED");
 
     let tx_payload = transactions::join_guild(FIRST_GUILD, FIRST_ROLE);
     transactions::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
@@ -116,4 +143,28 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
             break;
         }
     }
+
+    println!("FIRST_ROLE JOINED");
+
+    let tx_payload = transactions::join_guild(FIRST_GUILD, SECOND_ROLE);
+    transactions::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
+        .await
+        .expect("failed to join guild");
+
+    let guild_filter = queries::GuildFilter {
+        name: FIRST_GUILD,
+        role: Some(SECOND_ROLE),
+    };
+
+    loop {
+        let members = queries::members(api.clone(), Some(&guild_filter), PAGE_SIZE)
+            .await
+            .expect("failed to query members");
+        if members.len() == 1 {
+            assert_eq!(members.get(0).unwrap(), alice.account_id());
+            break;
+        }
+    }
+
+    println!("SECOND_ROLE JOINED");
 }
