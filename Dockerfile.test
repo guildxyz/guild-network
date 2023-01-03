@@ -14,6 +14,6 @@ COPY . .
 ENV RUSTFLAGS=-Dwarnings
 RUN cargo fmt -- --check 
 
-RUN cargo clippy --color=always --tests --features runtime-benchmarking
+RUN cargo clippy --color=always --tests --features runtime-benchmarks
 
 RUN cargo test --workspace --exclude gn-node
