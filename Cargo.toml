@@ -10,5 +10,8 @@ members = [
     "gn-runtime",
     "gn-test-runtime",
 ]
+
+exclude = ["rusty-gate"]
+
 [profile.release]
 panic = "abort"

@@ -24,6 +24,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Update submodules 
+        run: |
+          eval `ssh-agent -s`
+          random=$(date +%s)
+          ssh-agent -a /tmp/ssh_agent${random}.sock > /dev/null
+          ssh-add - <<< "${{ secrets.RUSTY_GATE }}"
+          git submodule update --init --recursive --remote
+
       - name: Setup buildx
         uses: docker/setup-buildx-action@v1
         with:
@@ -63,7 +71,7 @@ jobs:
           tags: app:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-      
+
       - name: Move cache
         run: |
           rm -rf /tmp/.buildx-cache
