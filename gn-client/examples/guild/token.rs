@@ -47,7 +47,7 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
         }
     }
 
-    pritnln!("USER REGISTERED");
+    println!("USER REGISTERED");
 
     let mut one = [0u8; 32];
     one[0] = 1;

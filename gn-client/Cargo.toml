@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["subxt/jsonrpsee-ws"]
+default = []
 external-oracle = []
 wasm = ["subxt/jsonrpsee-web"]
 
@@ -16,14 +16,15 @@ gn-common = { path = "../gn-common" }
 hex = "0.4.3"
 parity-scale-codec = { version = "3.2.1", default-features = false } # required for the runtime subxt macro
 sp-keyring = { version = "6.0.0", default-features = false }
-subxt = { git = "https://github.com/agoraxyz/subxt", branch = "wasm-sig", default-features = false }
 serde = { version = "1.0.144", features = ["derive"] }
 serde_cbor = "0.11.2"
+subxt = { git = "https://github.com/agoraxyz/subxt", branch = "wasm-sig", default-features = false }
 
 [dev-dependencies]
 ethers = "0.6.2"
 gn-test-data = { path = "../gn-test-data" }
 rand = { version = "0.8.5", default-features = false, features = ["std_rng"] }
-tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
 serde_json = "1"
 structopt = { version = "0.3", default-features = false }
+subxt = { git = "https://github.com/agoraxyz/subxt", branch = "wasm-sig" }
+tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
