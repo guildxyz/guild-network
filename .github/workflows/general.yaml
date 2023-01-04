@@ -15,9 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Debug env vars
-        run: echo "env var=${{secrets.DUMMY_RPC}}"
-
       - name: Update submodules
         run: |
           eval `ssh-agent -s`
