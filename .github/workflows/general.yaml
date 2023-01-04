@@ -11,24 +11,7 @@ jobs:
 
     env:
       RUSTFLAGS: -Dwarnings # fails on warnings as well
-      ETHEREUM_RPC: ${{ secrets.ETHEREUM_RPC }}
-      POLYGON_RPC: ${{ secrets.POLYGON_RPC }}
-      BSC_RPC: ${{ secrets.BSC_RPC }}
-      GNOSIS_RPC: ${{ secrets.GNOSIS_RPC }}
-      FANTOM_RPC: ${{ secrets.FANTOM_RPC }}
-      AVALANCHE_RPC: ${{ secrets.AVALANCHE_RPC }}
-      ARBITRUM_RPC: ${{ secrets.ARBITRUM_RPC }}
-      CELO_RPC: ${{ secrets.CELO_RPC }}
-      HARMONY_RPC: ${{ secrets.HARMONY_RPC }}
-      HECO_RPC: ${{ secrets.HECO_RPC }}
-      GOERLI_RPC: ${{ secrets.GOERLI_RPC }}
-      OPTIMISM_RPC: ${{ secrets.OPTIMISM_RPC }}
-      MOONRIVER_RPC: ${{ secrets.MOONRIVER_RPC }}
-      RINKEBY_RPC: ${{ secrets.RINKEBY_RPC }}
-      METIS_RPC: ${{ secrets.METIS_RPC }}
-      CRONOS_RPC: ${{ secrets.CRONOS_RPC }}
-      BOBA_RPC: ${{ secrets.BOBA_RPC }}
-      PALM_RPC: ${{ secrets.PALM_RPC }}
+
     steps:
       - uses: actions/checkout@v3
 
@@ -57,3 +40,10 @@ jobs:
           file: Dockerfile.test
           context: .
           push: false
+          buildArgs: |
+            ETHEREUM_RPC_TOKEN=${{ secrets.ETHEREUM_RPC_TOKEN }}
+            POLYGON_RPC_TOKEN=${{ secrets.POLYGON_RPC_TOKEN }}
+            GOERLI_RPC_TOKEN=${{ secrets.GOERLI_RPC_TOKEN }}
+            ARBITRUM_RPC_TOKEN=${{ secrets.ARBITRUM_RPC_TOKEN }}
+            PALM_RPC_TOKEN=${{ secrets.PALM_RPC_TOKEN }}
+            METIS_RPC_TOKEN=${{ secrets.METIS_RPC_TOKEN }}
