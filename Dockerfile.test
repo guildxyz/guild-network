@@ -1,13 +1,10 @@
-FROM rust:1.63.0-slim-buster as build
+FROM rustlang/rust:nightly-slim AS build
+
 RUN apt update -y \
     && apt upgrade -y \
     && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev libssl-dev pkg-config -y
 
-RUN rustup toolchain install nightly \
-    && rustup override set nightly \
-    && rustup target add wasm32-unknown-unknown --toolchain nightly \
-    && rustup component add clippy --toolchain nightly \
-    && rustup component add rustfmt --toolchain nightly-x86_64-unknown-linux-gnu 
+RUN rustup target add wasm32-unknown-unknown --toolchain nightly
 
 WORKDIR /opt/app
 COPY . .
@@ -17,4 +14,4 @@ RUN cargo fmt -- --check
 
 RUN cargo clippy --color=always --tests --features runtime-benchmarks
 
-RUN cargo test --workspace --exclude gn-node --exclude gn-wasm --exclude gn-frontend
+RUN cargo test --release --features runtime-benchmarks --workspace --exclude gn-node --exclude gn-wasm --exclude gn-frontend
