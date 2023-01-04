@@ -62,7 +62,7 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Build container image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: .
@@ -70,7 +70,7 @@ jobs:
           load: true
           tags: app:latest
           target: gn-oracle
-          buildArgs: |
+          build-args: |
             ETHEREUM_RPC_TOKEN=${{ secrets.ETHEREUM_RPC_TOKEN }}
             POLYGON_RPC_TOKEN=${{ secrets.POLYGON_RPC_TOKEN }}
             GOERLI_RPC_TOKEN=${{ secrets.GOERLI_RPC_TOKEN }}

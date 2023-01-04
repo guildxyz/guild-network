@@ -37,7 +37,7 @@ jobs:
           file: Dockerfile.test
           context: .
           push: false
-          buildArgs: |
+          build-args: |
             ETHEREUM_RPC_TOKEN=${{ secrets.ETHEREUM_RPC_TOKEN }}
             POLYGON_RPC_TOKEN=${{ secrets.POLYGON_RPC_TOKEN }}
             GOERLI_RPC_TOKEN=${{ secrets.GOERLI_RPC_TOKEN }}
