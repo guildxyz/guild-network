@@ -71,6 +71,13 @@ jobs:
           load: true
           tags: app:latest
           target: gn-oracle
+          buildArgs: |
+            ETHEREUM_RPC_TOKEN=${{ secrets.ETHEREUM_RPC_TOKEN }}
+            POLYGON_RPC_TOKEN=${{ secrets.POLYGON_RPC_TOKEN }}
+            GOERLI_RPC_TOKEN=${{ secrets.GOERLI_RPC_TOKEN }}
+            ARBITRUM_RPC_TOKEN=${{ secrets.ARBITRUM_RPC_TOKEN }}
+            PALM_RPC_TOKEN=${{ secrets.PALM_RPC_TOKEN }}
+            METIS_RPC_TOKEN=${{ secrets.METIS_RPC_TOKEN }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
           
