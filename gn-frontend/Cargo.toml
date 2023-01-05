@@ -1,0 +1,16 @@
+[package]
+name = "gn-frontend"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gloo = "0.8.0"
+gloo-console = "0.2.3"
+gn-wasm = { path = "../gn-wasm" }
+js-sys = "0.3.60"
+yew = { version = "0.20", features = ["csr"] }
+yew-router = "0.17"
+serde-wasm-bindgen = "0.4.5"
+wasm-bindgen = "0.2.83"
+wasm-bindgen-futures = "0.4.33"
+web-sys = "0.3.60"

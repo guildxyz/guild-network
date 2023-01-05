@@ -2,12 +2,28 @@
 members = [
     "gn-client",
     "gn-common",
+    "gn-frontend",
     "gn-node",
     "gn-oracle",
     "gn-pallets/pallet-chainlink",
     "gn-pallets/pallet-guild",
     "gn-pallets/pallet-test-caller",
     "gn-runtime",
+    "gn-test-data",
+    "gn-test-runtime",
+    "gn-wasm",
+]
+# don't include wasm in the build process
+default-members = [
+    "gn-client",
+    "gn-common",
+    "gn-node",
+    "gn-oracle",
+    "gn-pallets/pallet-chainlink",
+    "gn-pallets/pallet-guild",
+    "gn-pallets/pallet-test-caller",
+    "gn-runtime",
+    "gn-test-data",
     "gn-test-runtime",
 ]
 

@@ -1,11 +1,13 @@
 use futures::StreamExt;
 use gn_client::queries::{oracle_request, requirements, user_identity};
 use gn_client::runtime::chainlink::events::OracleRequest;
-use gn_client::transactions::{oracle_callback, send_tx_ready};
+use gn_client::transactions::{
+    oracle_callback, register_operator, send_tx_in_block, send_tx_ready,
+};
 use gn_client::{Api, FilteredEvents, GuildCall, Signer};
 use gn_common::identities::IdentityMap;
 use gn_common::utils::{matches_variant, verification_msg};
-use gn_common::RequestData;
+use gn_common::{RequestData, RequestIdentifier};
 use reqwest::Client as ReqwestClient;
 use sp_keyring::AccountKeyring;
 use structopt::StructOpt;
@@ -25,18 +27,18 @@ struct Opt {
     /// Set logging level
     #[structopt(short, long, default_value = "warn")]
     log: String,
-
     /// Set node IP address
     #[structopt(short = "i", long = "node-ip", default_value = "127.0.0.1")]
     node_ip: String,
-
     /// Set node port number
     #[structopt(short = "p", long = "node-port", default_value = "9944")]
     node_port: String,
-
     /// Set operator account
     #[structopt(long = "id", default_value = "alice")]
     id: String,
+    /// Register as an oracle operator before starting to listen to events
+    #[structopt(long)]
+    register: bool,
 }
 
 #[tokio::main]
@@ -66,6 +68,14 @@ async fn main() -> ! {
         .await
         .expect("failed to start api client");
 
+    if opt.register {
+        send_tx_in_block(api.clone(), &register_operator(), Arc::clone(&signer))
+            .await
+            .expect("failed to register operator");
+
+        log::info!("successfully registered as an operator");
+    }
+
     let mut events = api
         .events()
         .subscribe()
@@ -88,7 +98,35 @@ async fn main() -> ! {
 
 fn submit_answer(api: Api, client: ReqwestClient, signer: Arc<Signer>, request: OracleRequest) {
     tokio::spawn(async move {
-        if let Err(e) = try_submit_answer(api, client, signer, request).await {
+        let OracleRequest {
+            request_id,
+            operator,
+            callback,
+            fee,
+        } = request;
+
+        log::info!(
+            "OracleRequest: {}, {}, {:?}, {}",
+            request_id,
+            operator,
+            callback,
+            fee
+        );
+
+        if &operator != signer.account_id() {
+            // request wasn't delegated to us so return
+            log::trace!("request not delegated to us");
+            return;
+        }
+
+        // check whether the incoming request originates from the guild
+        // pallet just for testing basically
+        if !matches_variant(&callback, &GuildCall::callback { result: vec![] }) {
+            log::trace!("callback mismatch");
+            return;
+        }
+
+        if let Err(e) = try_submit_answer(api, client, signer, request_id).await {
             log::error!("{e}");
         }
     });
@@ -98,32 +136,8 @@ async fn try_submit_answer(
     api: Api,
     client: ReqwestClient,
     signer: Arc<Signer>,
-    request: OracleRequest,
+    request_id: RequestIdentifier,
 ) -> Result<(), anyhow::Error> {
-    let OracleRequest {
-        request_id,
-        operator,
-        callback,
-        fee,
-    } = request;
-    log::info!(
-        "OracleRequest: {}, {}, {:?}, {}",
-        request_id,
-        operator,
-        callback,
-        fee
-    );
-    if &operator != signer.account_id() {
-        // request wasn't delegated to us so return
-        return Ok(());
-    }
-
-    // check whether the incoming request originates from the guild
-    // pallet just for testing basically
-    if !matches_variant(&callback, &GuildCall::callback { result: vec![] }) {
-        return Ok(());
-    }
-
     let oracle_request = oracle_request(api.clone(), request_id).await?;
 
     let oracle_answer = match oracle_request.data {
@@ -169,7 +183,7 @@ async fn try_submit_answer(
                         .unwrap_or(false)
                 }
                 Err(error) => {
-                    log::warn!("identity check failed: {}", error);
+                    log::warn!("requirement check failed: {}", error);
                     false
                 }
             }

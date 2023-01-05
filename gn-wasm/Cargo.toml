@@ -1,0 +1,28 @@
+[package]
+name = "gn-wasm"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[features]
+queries = []
+
+[dependencies]
+anyhow = { version = "1", default-features = false }
+console_error_panic_hook = "0.1.7"
+gn-client = { path = "../gn-client", default-features = false, features = ["wasm"] }
+gn-common = { path = "../gn-common" }
+hex = "0.4.3"
+js-sys = "0.3.6"
+serde-wasm-bindgen = "0.4.5"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3.60", features = ["console"] }
+serde_cbor = "0.11.2"
+
+[dev-dependencies]
+gn-test-data = { path = "../gn-test-data" }
+tracing-wasm = "0.2.1"
+wasm-bindgen-test = "0.3.24"

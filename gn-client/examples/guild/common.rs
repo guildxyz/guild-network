@@ -4,22 +4,16 @@ use gn_client::data::*;
 #[cfg(not(feature = "external-oracle"))]
 use gn_client::queries::*;
 use gn_client::transactions::*;
-use gn_client::{AccountId, Api, Hash, Keypair, RuntimeIdentityWithAuth, Signer};
+use gn_client::{
+    AccountId, AccountKeyring, Api, Hash, Keypair, RuntimeIdentityWithAuth, Signer, TraitPair,
+};
 use gn_common::requirements::{Requirement, RequirementsWithLogic};
 use gn_common::{EvmAddress, EvmSignature, GuildName, RoleName};
+use gn_test_data::*;
 use rand::{rngs::StdRng, SeedableRng};
-use sp_keyring::AccountKeyring;
-use subxt::ext::sp_core::crypto::Pair as TraitPair;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
-
-pub const FIRST_ROLE: RoleName = [0; 32];
-pub const SECOND_ROLE: RoleName = [1; 32];
-pub const FIRST_GUILD: GuildName = [2; 32];
-pub const SECOND_GUILD: GuildName = [3; 32];
-pub const N_TEST_ACCOUNTS: usize = 10;
-pub const PAGE_SIZE: u32 = 10;
 
 pub struct Accounts {
     pub substrate: Arc<Signer>,
@@ -41,7 +35,7 @@ pub async fn prefunded_accounts(
     num_accounts: usize,
 ) -> BTreeMap<AccountId, Accounts> {
     let mut rng = StdRng::seed_from_u64(0);
-    let mut seed = [10u8; 32];
+    let mut seed = ACCOUNT_SEED;
     let accounts = (0..num_accounts)
         .map(|_| {
             let keypair = Arc::new(Signer::new(Keypair::from_seed(&seed)));
@@ -76,6 +70,7 @@ pub async fn prefunded_accounts(
     accounts
 }
 
+#[cfg(not(feature = "external-oracle"))]
 pub async fn register_operators(api: Api, accounts: impl Iterator<Item = &Accounts>) {
     let register_operator_futures = accounts
         .map(|account| {
@@ -245,5 +240,5 @@ pub async fn send_dummy_oracle_answers(api: Api, operators: &BTreeMap<AccountId,
         .await
         .expect("failed to submit oracle answers");
 
-    println!("join requests successfully answered");
+    println!("oracle requests successfully answered");
 }

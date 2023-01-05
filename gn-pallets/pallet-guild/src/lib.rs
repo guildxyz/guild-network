@@ -22,7 +22,7 @@ pub mod pallet {
     use gn_common::identities::Identity;
     use gn_common::identities::Platform;
     use gn_common::utils::detect_duplicates;
-    use gn_common::*;
+    use gn_common::{GuildName, Request, RequestData, RequestIdentifier, RoleName};
     use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig};
     use sp_std::vec::Vec as SpVec;
 
