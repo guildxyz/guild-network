@@ -30,6 +30,9 @@ FROM bitnami/minideb:bullseye AS runtime
 RUN apt update -y \
     && apt upgrade -y \
     && apt install ca-certificates -y
+
+RUN rm -rf /var/lib/apt/lists/* /var/lib/dpkg/* /var/cache/*
+
 EXPOSE 30333 30333/udp 9944 9933
 
 FROM runtime as gn-oracle
