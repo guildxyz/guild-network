@@ -1,9 +1,8 @@
-FROM rustlang/rust:nightly-alpine AS build
+FROM rustlang/rust:nightly-slim AS build
 
-# RUN apt update -y \
-#     && apt upgrade -y \
-#     && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev libssl-dev pkg-config -y
-RUN apk add cmake build-base protoc pkgconf openssl-dev clang lld musl-dev compiler-rt compiler-rt-static
+RUN apt update -y \
+    && apt upgrade -y \
+    && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev libssl-dev pkg-config -y
 
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly
 
@@ -17,7 +16,7 @@ ARG ARBITRUM_RPC_TOKEN
 ARG PALM_RPC_TOKEN
 ARG METIS_RPC_TOKEN
 
-RUN echo -e 'ETHEREUM_RPC_TOKEN=$ETHEREUM_RPC_TOKEN\nPOLYGON_RPC_TOKEN=$POLYGON_RPC_TOKEN\nGOERLI_RPC_TOKEN=$GOERLI_RPC_TOKEN\nARBITRUM_RPC_TOKEN=$ARBITRUM_RPC_TOKEN\nPALM_RPC_TOKEN=$PALM_RPC_TOKEN\nMETIS_RPC_TOKEN=$METIS_RPC_TOKEN\n' > .env
+RUN bash -c "echo -e 'ETHEREUM_RPC_TOKEN=$ETHEREUM_RPC_TOKEN\nPOLYGON_RPC_TOKEN=$POLYGON_RPC_TOKEN\nGOERLI_RPC_TOKEN=$GOERLI_RPC_TOKEN\nARBITRUM_RPC_TOKEN=$ARBITRUM_RPC_TOKEN\nPALM_RPC_TOKEN=$PALM_RPC_TOKEN\nMETIS_RPC_TOKEN=$METIS_RPC_TOKEN\n' > .env"
 
 ENV RUSTFLAGS=-Dwarnings
 

@@ -26,7 +26,7 @@ RUN cargo +nightly chef cook --release --recipe-path recipe.json
 COPY . .
 RUN cargo build --release 
 
-FROM debian:stable-slim AS runtime
+FROM bitnami/minideb:bullseye AS runtime
 RUN apt update -y \
     && apt upgrade -y \
     && apt install ca-certificates -y
@@ -34,6 +34,15 @@ EXPOSE 30333 30333/udp 9944 9933
 
 FROM runtime as gn-oracle
 COPY --from=builder /opt/app/target/release/gn-oracle /usr/local/bin/
+
+ARG ETHEREUM_RPC_TOKEN
+ARG POLYGON_RPC_TOKEN
+ARG GOERLI_RPC_TOKEN
+ARG ARBITRUM_RPC_TOKEN
+ARG PALM_RPC_TOKEN
+ARG METIS_RPC_TOKEN
+RUN echo -e 'ETHEREUM_RPC_TOKEN=$ETHEREUM_RPC_TOKEN\nPOLYGON_RPC_TOKEN=$POLYGON_RPC_TOKEN\nGOERLI_RPC_TOKEN=$GOERLI_RPC_TOKEN\nARBITRUM_RPC_TOKEN=$ARBITRUM_RPC_TOKEN\nPALM_RPC_TOKEN=$PALM_RPC_TOKEN\nMETIS_RPC_TOKEN=$METIS_RPC_TOKEN\n' > .env
+
 ENTRYPOINT ["gn-oracle"]
 
 FROM runtime AS gn-node
