@@ -46,7 +46,7 @@ jobs:
         run: curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
 
       - name: Get current repository name
-        run: echo "REPOSITORY_NAME=guild-network-oracle" >> $GITHUB_ENV
+        run: echo "REPOSITORY_NAME=guild-network-node" >> $GITHUB_ENV
         shell: bash
 
       - name: Determine tag name
