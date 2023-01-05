@@ -3,7 +3,7 @@ FROM rustlang/rust:nightly-alpine AS build
 # RUN apt update -y \
 #     && apt upgrade -y \
 #     && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev libssl-dev pkg-config -y
-RUN apk add cmake build-base protoc pkgconf openssl-dev libclang-dev
+RUN apk add cmake build-base protoc pkgconf openssl-dev clang lld musl-dev compiler-rt compiler-rt-static
 
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly
 
