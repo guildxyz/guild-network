@@ -29,6 +29,24 @@ pub async fn get_balance(
         anyhow::bail!("Chain not supported")
     };
 
+    let balance = get_balance_with_provider(provider, token_type, user_address).await?;
+
+    let mut result = [0u8; 32];
+    result[0..16].copy_from_slice(&balance.to_le_bytes());
+    Ok(result)
+}
+
+async fn get_balance_with_provider<T>(
+    provider: &T,
+    token_type: &Option<TokenType<EvmAddress, U256>>,
+    user_address: &EvmAddress,
+) -> Result<u128, anyhow::Error>
+where
+    T: BalanceQuerier,
+    for<'a> <T as BalanceQuerier>::Address: From<&'a EvmAddress>,
+    for<'a> <T as BalanceQuerier>::Id: From<&'a U256>,
+    <T as BalanceQuerier>::Balance: std::ops::Mul<f64, Output = f64> + Copy,
+{
     let balance = match token_type {
         None => {
             let balances = provider.get_native_balance(&[user_address.into()]).await;
@@ -64,96 +82,94 @@ pub async fn get_balance(
                 .await;
 
             if let Some(Ok(balance)) = balances.get(0) {
-                *balance as u128
+                (*balance * 1.0) as u128
             } else {
                 0
             }
         }
         Some(TokenType::Special { .. }) => anyhow::bail!("Token type not supported"), // TODO
     };
-
-    let mut result = [0u8; 32];
-    result[0..16].copy_from_slice(&balance.to_le_bytes());
-    Ok(result)
+    Ok(balance)
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use async_trait::async_trait;
+    use providers::{Address, U256};
 
-    // 0xde4e179cc1d3b298216b96893767b9b01a6bc413
-    const TOKEN_ADDRESS: EvmAddress = [
-        222, 78, 23, 156, 193, 211, 178, 152, 33, 107, 150, 137, 55, 103, 185, 176, 26, 107, 196,
-        19,
-    ];
-    // 0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85
-    const NFT_ADDRESS: EvmAddress = [
-        87, 241, 136, 122, 139, 241, 155, 20, 252, 13, 246, 253, 155, 42, 204, 154, 241, 71, 234,
-        133,
-    ];
-    // 0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE
-    const USER_ADDRESS: EvmAddress = [
-        228, 56, 120, 206, 120, 147, 79, 232, 0, 119, 72, 255, 72, 31, 3, 184, 238, 59, 151, 222,
-    ];
-    // 61313325075603536901663283754390960556726744542208800735045237225934362163454
-    const ID: U256 = [
-        135, 142, 28, 184, 229, 47, 185, 39, 243, 86, 182, 36, 52, 56, 187, 61, 223, 186, 163, 212,
-        169, 0, 39, 121, 10, 11, 108, 224, 183, 30, 184, 254,
-    ];
-    // 10_000_000_000_000_000 (0.01)
-    const BALANCE_E16: U256 = [
-        0, 0, 193, 111, 242, 134, 35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-    ];
-    // 464_468_855_704_627 (0.000464468855704627)
-    const BALANCE_E3: U256 = [
-        51, 76, 39, 149, 110, 166, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-    ];
-    // 1
-    const BALANCE_ONE: U256 = [
-        1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
-    ];
+    struct TestProvider;
+
+    #[async_trait]
+    impl BalanceQuerier for TestProvider {
+        type Address = Address;
+        type Id = U256;
+        type Balance = f64;
+        type Chain = EvmChain;
+        type Error = String;
+        async fn get_native_balance(
+            &self,
+            _user_addresses: &[Self::Address],
+        ) -> Vec<Result<Self::Balance, Self::Error>> {
+            vec![Ok(100.0)]
+        }
+        async fn get_fungible_balance(
+            &self,
+            _token_address: Self::Address,
+            _user_addresses: &[Self::Address],
+        ) -> Vec<Result<Self::Balance, Self::Error>> {
+            vec![Ok(10.0)]
+        }
+        async fn get_non_fungible_balance(
+            &self,
+            _token_address: Address,
+            _token_id: Option<Self::Id>,
+            _user_addresses: &[Address],
+        ) -> Vec<Result<Self::Balance, Self::Error>> {
+            vec![Ok(1.0)]
+        }
+        async fn get_special_balance(
+            &self,
+            _token_address: Self::Address,
+            _token_id: Option<Self::Id>,
+            _user_addresses: &[Self::Address],
+        ) -> Vec<Result<Self::Balance, Self::Error>> {
+            unimplemented!()
+        }
+    }
 
     #[tokio::test]
     pub async fn test_get_eth_balance() {
-        let client = reqwest::Client::new();
-
         // check zero address
-        let balance = get_balance(&client, &None, &USER_ADDRESS, EvmChain::Ethereum)
+        let balance = get_balance_with_provider(&TestProvider, &None, &[12; 20])
             .await
             .unwrap();
 
-        assert_eq!(balance, BALANCE_E3);
+        assert_eq!(balance, 100_000_000_000_000_000_000);
     }
 
     #[tokio::test]
     async fn test_get_erc20_balance() {
-        let client = reqwest::Client::new();
-        let token_type = Some(TokenType::Fungible {
-            address: TOKEN_ADDRESS,
-        });
+        let token_type = Some(TokenType::Fungible { address: [0; 20] });
 
-        let balance = get_balance(&client, &token_type, &USER_ADDRESS, EvmChain::Bsc)
+        let balance = get_balance_with_provider(&TestProvider, &token_type, &[13; 20])
             .await
             .unwrap();
 
-        assert_eq!(balance, BALANCE_E16);
+        assert_eq!(balance, 10_000_000_000_000_000_000);
     }
 
     #[tokio::test]
     pub async fn test_get_nft_balance() {
-        let client = reqwest::Client::new();
         let token_type = Some(TokenType::NonFungible {
-            address: NFT_ADDRESS,
-            id: ID,
+            address: [2; 20],
+            id: [10; 32],
         });
 
-        let balance = get_balance(&client, &token_type, &USER_ADDRESS, EvmChain::Ethereum)
+        let balance = get_balance_with_provider(&TestProvider, &token_type, &[14; 20])
             .await
             .unwrap();
 
-        assert_eq!(balance, BALANCE_ONE);
+        assert_eq!(balance, 1);
     }
 }
