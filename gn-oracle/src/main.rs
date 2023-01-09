@@ -8,7 +8,6 @@ use gn_client::{Api, FilteredEvents, GuildCall, Signer};
 use gn_common::identities::IdentityMap;
 use gn_common::utils::{matches_variant, verification_msg};
 use gn_common::{RequestData, RequestIdentifier};
-use reqwest::Client as ReqwestClient;
 use sp_keyring::AccountKeyring;
 use structopt::StructOpt;
 
@@ -48,7 +47,6 @@ async fn main() -> ! {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(opt.log)).init();
 
     let url = format!("ws://{}:{}", opt.node_ip, opt.node_port);
-    let client = ReqwestClient::new();
 
     // TODO: this will be read from the oracle's wallet for testing purposes we
     // are choosing from pre-funded accounts
@@ -85,18 +83,13 @@ async fn main() -> ! {
 
     loop {
         match next_event(&mut events).await {
-            Ok(oracle_request) => submit_answer(
-                api.clone(),
-                client.clone(),
-                Arc::clone(&signer),
-                oracle_request,
-            ),
+            Ok(oracle_request) => submit_answer(api.clone(), Arc::clone(&signer), oracle_request),
             Err(e) => log::error!("{e}"),
         }
     }
 }
 
-fn submit_answer(api: Api, client: ReqwestClient, signer: Arc<Signer>, request: OracleRequest) {
+fn submit_answer(api: Api, signer: Arc<Signer>, request: OracleRequest) {
     tokio::spawn(async move {
         let OracleRequest {
             request_id,
@@ -126,7 +119,7 @@ fn submit_answer(api: Api, client: ReqwestClient, signer: Arc<Signer>, request: 
             return;
         }
 
-        if let Err(e) = try_submit_answer(api, client, signer, request_id).await {
+        if let Err(e) = try_submit_answer(api, signer, request_id).await {
             log::error!("{e}");
         }
     });
@@ -134,7 +127,6 @@ fn submit_answer(api: Api, client: ReqwestClient, signer: Arc<Signer>, request: 
 
 async fn try_submit_answer(
     api: Api,
-    client: ReqwestClient,
     signer: Arc<Signer>,
     request_id: RequestIdentifier,
 ) -> Result<(), anyhow::Error> {
@@ -169,7 +161,7 @@ async fn try_submit_answer(
             let requirement_futures = requirements_with_logic
                 .requirements
                 .iter()
-                .map(|req| req.check(&client, &identity_map))
+                .map(|req| req.check(&identity_map))
                 .collect::<Vec<_>>();
             match futures::future::try_join_all(requirement_futures).await {
                 Ok(boolean_vec) => {
