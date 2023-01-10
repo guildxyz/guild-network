@@ -4,7 +4,7 @@ use gn_client::runtime::chainlink::events::OracleRequest;
 use gn_client::transactions::{
     oracle_callback, register_operator, send_tx_in_block, send_tx_ready,
 };
-use gn_client::{Api, FilteredEvents, GuildCall, Signer};
+use gn_client::{Api, FilteredEvents, GuildCall, Signer, SubxtError};
 use gn_common::identities::IdentityMap;
 use gn_common::utils::{matches_variant, verification_msg};
 use gn_common::{RequestData, RequestIdentifier};
@@ -12,6 +12,7 @@ use sp_keyring::AccountKeyring;
 use structopt::StructOpt;
 
 use std::collections::HashMap;
+use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -62,7 +63,7 @@ async fn main() -> ! {
         .pair(),
     ));
 
-    let api = Api::from_url(url)
+    let api = Api::from_url(&url)
         .await
         .expect("failed to start api client");
 
@@ -71,7 +72,7 @@ async fn main() -> ! {
             .await
             .expect("failed to register operator");
 
-        log::info!("successfully registered as an operator");
+        log::info!("operator registration request submitted");
     }
 
     let mut events = api
@@ -84,7 +85,14 @@ async fn main() -> ! {
     loop {
         match next_event(&mut events).await {
             Ok(oracle_request) => submit_answer(api.clone(), Arc::clone(&signer), oracle_request),
-            Err(e) => log::error!("{e}"),
+            Err(err) => {
+                log::error!("{err}");
+                if let SubxtError::Io(io_error) = err {
+                    if io_error.kind() == IoErrorKind::ConnectionAborted {
+                        panic!("connection aborted, restart needed")
+                    }
+                }
+            }
         }
     }
 }
@@ -129,7 +137,7 @@ async fn try_submit_answer(
     api: Api,
     signer: Arc<Signer>,
     request_id: RequestIdentifier,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), SubxtError> {
     let oracle_request = oracle_request(api.clone(), request_id).await?;
 
     let oracle_answer = match oracle_request.data {
@@ -154,7 +162,8 @@ async fn try_submit_answer(
             // fetch requirements
             let requirements_with_logic = requirements(api.clone(), guild, role).await?;
             // build requireemnt tree from logic
-            let requirement_tree = requiem::LogicTree::from_str(&requirements_with_logic.logic)?;
+            let requirement_tree = requiem::LogicTree::from_str(&requirements_with_logic.logic)
+                .map_err(|e| SubxtError::Other(e.to_string()))?;
             let identity_map = IdentityMap::from_identities(
                 user_identity(api.clone(), &oracle_request.requester).await?,
             );
@@ -207,11 +216,13 @@ async fn try_submit_answer(
 
 async fn next_event(
     events: &mut FilteredEvents<'_, (OracleRequest,)>,
-) -> Result<OracleRequest, anyhow::Error> {
+) -> Result<OracleRequest, SubxtError> {
     if let Some(event) = events.next().await {
         let oracle_request = event?.event;
         Ok(oracle_request)
     } else {
-        Err(anyhow::anyhow!("next event is None"))
+        Err(SubxtError::Io(IoError::from(
+            IoErrorKind::ConnectionAborted,
+        )))
     }
 }

@@ -1,4 +1,4 @@
 [submodule "rusty-gate"]
 	path = rusty-gate
 	url = git@github.com:agoraxyz/rusty-gate
-	branch = I21-refactor-providers
+	branch = main

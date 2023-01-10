@@ -23,9 +23,6 @@ jobs:
           ssh-add - <<< "${{ secrets.RUSTY_GATE }}"
           git submodule update --init --recursive --remote
 
-      - name: Checkout submodules
-        run: git submodule update --init --recursive
-
       - name: Setup buildx
         uses: docker/setup-buildx-action@v1
         with:
