@@ -89,11 +89,24 @@ async fn main() -> ! {
                 log::error!("{err}");
                 match err {
                     SubxtError::Io(_io_error) => loop {
-                        log::info!("attempting to reconnect in 5 seconds");
+                        log::info!("attempting to resubscribe in 5 seconds");
                         tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-                        if let Ok(new_api) = Api::from_url(&url).await {
-                            api = new_api;
-                            break;
+                        let connection_result = Api::from_url(&url).await;
+                        match connection_result {
+                            Ok(connection) => api = connection,
+                            Err(e) => {
+                                log::error!("failed to reconnect: {e}");
+                                continue;
+                            }
+                        }
+                        let subscription_result = api.events().subscribe().await;
+                        match subscription_result {
+                            Ok(subscription) => {
+                                events = subscription.filter_events::<(OracleRequest,)>();
+                                log::info!("connection reset, successfully resubscribed");
+                                break;
+                            }
+                            Err(e) => log::error!("failed to resubscribe: {e}"),
                         }
                     },
                     _ => {}
