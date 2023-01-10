@@ -2,13 +2,11 @@ use crate::requirements::balance::TokenType;
 use crate::requirements::chains::EvmChain;
 use crate::{EvmAddress, U256};
 use providers::{evm::general::PROVIDERS, BalanceQuerier, EvmChain as RustyEvmChain};
-use reqwest::Client as ReqwestClient;
 
 // only compute this once
 const MULTIPLIER: f64 = 1_000_000_000_000_000_000.0; // 10^18
 
 pub async fn get_balance(
-    _client: &ReqwestClient,
     token_type: &Option<TokenType<EvmAddress, U256>>,
     user_address: &EvmAddress,
     chain: EvmChain,
