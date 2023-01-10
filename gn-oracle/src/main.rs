@@ -63,7 +63,7 @@ async fn main() -> ! {
         .pair(),
     ));
 
-    let mut api = Api::from_url(&url)
+    let api = Api::from_url(&url)
         .await
         .expect("failed to start api client");
 
@@ -87,29 +87,10 @@ async fn main() -> ! {
             Ok(oracle_request) => submit_answer(api.clone(), Arc::clone(&signer), oracle_request),
             Err(err) => {
                 log::error!("{err}");
-                match err {
-                    SubxtError::Io(_io_error) => loop {
-                        log::info!("attempting to resubscribe in 5 seconds");
-                        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-                        let connection_result = Api::from_url(&url).await;
-                        match connection_result {
-                            Ok(connection) => api = connection,
-                            Err(e) => {
-                                log::error!("failed to reconnect: {e}");
-                                continue;
-                            }
-                        }
-                        let subscription_result = api.events().subscribe().await;
-                        match subscription_result {
-                            Ok(subscription) => {
-                                events = subscription.filter_events::<(OracleRequest,)>();
-                                log::info!("connection reset, successfully resubscribed");
-                                break;
-                            }
-                            Err(e) => log::error!("failed to resubscribe: {e}"),
-                        }
-                    },
-                    _ => {}
+                if let SubxtError::Io(io_error) = err {
+                    if io_error.kind() == IoErrorKind::ConnectionAborted {
+                        panic!("connection aborted, restart needed")
+                    }
                 }
             }
         }
