@@ -112,7 +112,7 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
     ];
 
     let guild = Guild {
-        name: FIRST_GUILD,
+        name: TOKEN_GUILD,
         metadata: vec![1, 2, 3],
         roles,
     };
@@ -124,13 +124,13 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
 
     println!("GUILD CREATED");
 
-    let tx_payload = transactions::join_guild(FIRST_GUILD, FIRST_ROLE);
+    let tx_payload = transactions::join_guild(TOKEN_GUILD, FIRST_ROLE);
     transactions::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
         .await
         .expect("failed to join guild");
 
     let guild_filter = queries::GuildFilter {
-        name: FIRST_GUILD,
+        name: TOKEN_GUILD,
         role: Some(FIRST_ROLE),
     };
 
@@ -146,13 +146,13 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
 
     println!("FIRST_ROLE JOINED");
 
-    let tx_payload = transactions::join_guild(FIRST_GUILD, SECOND_ROLE);
+    let tx_payload = transactions::join_guild(TOKEN_GUILD, SECOND_ROLE);
     transactions::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
         .await
         .expect("failed to join guild");
 
     let guild_filter = queries::GuildFilter {
-        name: FIRST_GUILD,
+        name: TOKEN_GUILD,
         role: Some(SECOND_ROLE),
     };
 
