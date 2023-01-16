@@ -15,7 +15,7 @@ macro_rules! test_runtime {
                 UncheckedExtrinsic = UncheckedExtrinsic,
             {
                 Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-                Chainlink: pallet_chainlink::{Pallet, Call, Storage, Event<T>},
+                Oracle: pallet_oracle::{Pallet, Call, Storage, Event<T>},
                 $name: $pallet::{Pallet, Call, Storage, Event<T>},
                 System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
                 RandomnessCollectiveFlip: pallet_randomness_collective_flip,
@@ -78,7 +78,7 @@ macro_rules! test_runtime {
             type ReserveIdentifier = [u8; 8];
         }
 
-        impl pallet_chainlink::Config for TestRuntime {
+        impl pallet_oracle::Config for TestRuntime {
             type Event = Event;
             type Currency = pallet_balances::Pallet<TestRuntime>;
             type Callback = $pallet::Call<TestRuntime>;

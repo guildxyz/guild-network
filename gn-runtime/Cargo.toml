@@ -21,7 +21,7 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "hex-literal",
   "pallet-balances/runtime-benchmarks",
-  "pallet-chainlink/runtime-benchmarks",
+  "pallet-oracle/runtime-benchmarks",
   "pallet-grandpa/runtime-benchmarks",
   "pallet-guild/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
@@ -37,7 +37,7 @@ std = [
   "frame-try-runtime/std",
   "pallet-aura/std",
   "pallet-balances/std",
-  "pallet-chainlink/std",
+  "pallet-oracle/std",
   "pallet-grandpa/std",
   "pallet-guild/std",
   "pallet-nicks/std",
@@ -87,7 +87,7 @@ hex-literal = {version = "0.3.4", optional = true}
 
 pallet-aura = {version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25"}
 pallet-balances = {version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25"}
-pallet-chainlink = {version = "3.0.0-alpha", default-features = false, path = "../gn-pallets/pallet-chainlink"}
+pallet-oracle = {version = "0.0.1-alpha", default-features = false, path = "../gn-pallets/pallet-oracle"}
 pallet-grandpa = {version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25"}
 pallet-guild = {version = "0.1.0-alpha", default-features = false, path = "../gn-pallets/pallet-guild"}
 pallet-nicks = {version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25"}

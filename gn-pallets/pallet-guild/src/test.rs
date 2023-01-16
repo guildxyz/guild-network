@@ -46,13 +46,13 @@ fn dummy_answer(
     result: Vec<u8>,
     requester: AccountId,
     request_data: RequestData,
-) -> pallet_chainlink::OracleAnswer {
+) -> pallet_oracle::OracleAnswer {
     let data = gn_common::Request::<AccountId> {
         requester,
         data: request_data,
     }
     .encode();
-    pallet_chainlink::OracleAnswer { data, result }
+    pallet_oracle::OracleAnswer { data, result }
 }
 
 #[test]
@@ -140,7 +140,7 @@ fn register_user() {
         let user_1 = 1;
         let user_2 = 2;
 
-        <Chainlink>::register_operator(Origin::signed(operator)).unwrap();
+        <Oracle>::register_operator(Origin::signed(operator)).unwrap();
 
         // wrong request data variant
         let error = <Guild>::register(
@@ -224,7 +224,7 @@ fn invalid_multiple_type_register() {
         let operator = 0;
         let user = 2;
 
-        <Chainlink>::register_operator(Origin::signed(operator)).unwrap();
+        <Oracle>::register_operator(Origin::signed(operator)).unwrap();
 
         let identities_with_auth = vec![
             IdentityWithAuth::EvmChain([11; 20], [92; 65]),
@@ -298,7 +298,7 @@ fn valid_join_guild_request() {
             role: role_name,
         };
 
-        <Chainlink>::register_operator(Origin::signed(signer)).unwrap();
+        <Oracle>::register_operator(Origin::signed(signer)).unwrap();
         <Guild>::create_guild(
             Origin::signed(signer),
             guild_name,
@@ -310,18 +310,18 @@ fn valid_join_guild_request() {
         <Guild>::register(Origin::signed(signer), register.clone()).unwrap();
 
         let mut request_id = 0;
-        let request = <Chainlink>::request(request_id).unwrap();
+        let request = <Oracle>::request(request_id).unwrap();
         assert_eq!(request.requester, signer);
         assert_eq!(request.operator, signer);
         let request_data = Request::<AccountId>::decode(&mut request.data.as_slice()).unwrap();
         assert_eq!(request_data.data, register);
 
-        <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
+        <Oracle>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
 
         <Guild>::join_guild(Origin::signed(signer), join.clone()).unwrap();
         request_id += 1;
 
-        let request = <Chainlink>::request(request_id).unwrap();
+        let request = <Oracle>::request(request_id).unwrap();
         assert_eq!(request.requester, signer);
         assert_eq!(request.operator, signer);
         let request_data = Request::<AccountId>::decode(&mut request.data.as_slice()).unwrap();
@@ -339,7 +339,7 @@ fn joining_a_guild() {
         let signer = 1;
         let mut request_id = 0;
 
-        <Chainlink>::register_operator(Origin::signed(signer)).unwrap();
+        <Oracle>::register_operator(Origin::signed(signer)).unwrap();
         <Guild>::create_guild(
             Origin::signed(signer),
             guild_name,
@@ -352,7 +352,7 @@ fn joining_a_guild() {
         <Guild>::register(Origin::signed(signer), RequestData::Register(vec![])).unwrap();
 
         // registration = ok
-        <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
+        <Oracle>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
         assert!(<Guild>::user_data(signer).is_some());
         request_id += 1;
 
@@ -367,7 +367,7 @@ fn joining_a_guild() {
         .unwrap();
 
         // access = true
-        <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
+        <Oracle>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
         request_id += 1;
 
         assert_eq!(
@@ -397,9 +397,8 @@ fn joining_a_guild() {
         .unwrap();
 
         // access = false
-        let error =
-            <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(false)])
-                .unwrap_err();
+        let error = <Oracle>::callback(Origin::signed(signer), request_id, vec![u8::from(false)])
+            .unwrap_err();
         assert_eq!(error_msg(error), "AccessDenied");
         request_id += 1;
 
@@ -417,7 +416,7 @@ fn joining_a_guild() {
         .unwrap();
 
         // access = true
-        <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
+        <Oracle>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
         assert!(<Guild>::member(role_1_id, signer).is_some());
         assert!(<Guild>::member(role_2_id, signer).is_some());
 
@@ -443,7 +442,7 @@ fn joining_the_same_role_in_a_guild_twice_fails() {
         let signer = 1;
         let mut request_id = 0;
 
-        <Chainlink>::register_operator(Origin::signed(signer)).unwrap();
+        <Oracle>::register_operator(Origin::signed(signer)).unwrap();
         <Guild>::create_guild(
             Origin::signed(signer),
             guild_name,
@@ -453,7 +452,7 @@ fn joining_the_same_role_in_a_guild_twice_fails() {
         .unwrap();
         // register first
         <Guild>::register(Origin::signed(signer), RequestData::Register(vec![])).unwrap();
-        <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
+        <Oracle>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
         request_id += 1;
 
         // join first time
@@ -466,7 +465,7 @@ fn joining_the_same_role_in_a_guild_twice_fails() {
         )
         .unwrap();
 
-        <Chainlink>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
+        <Oracle>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
 
         let guild_id = <Guild>::guild_id(guild_name).unwrap();
         let role_id = <Guild>::role_id(guild_id, role_name).unwrap();
@@ -506,7 +505,7 @@ fn joining_multiple_guilds() {
         let user_1_id = vec![Identity::EvmChain([0; 20])];
         let user_2_id = vec![Identity::Discord(999)];
 
-        <Chainlink>::register_operator(Origin::signed(signer_1)).unwrap();
+        <Oracle>::register_operator(Origin::signed(signer_1)).unwrap();
 
         // create first guild
         <Guild>::create_guild(
@@ -531,8 +530,8 @@ fn joining_multiple_guilds() {
         <Guild>::register(Origin::signed(signer_2), RequestData::Register(user_2_auth)).unwrap();
 
         // registrations
-        <Chainlink>::callback(Origin::signed(signer_1), 0, vec![u8::from(true)]).unwrap();
-        <Chainlink>::callback(Origin::signed(signer_1), 1, vec![u8::from(true)]).unwrap();
+        <Oracle>::callback(Origin::signed(signer_1), 0, vec![u8::from(true)]).unwrap();
+        <Oracle>::callback(Origin::signed(signer_1), 1, vec![u8::from(true)]).unwrap();
 
         // signer 1 wants to join both guilds
         <Guild>::join_guild(
@@ -571,12 +570,12 @@ fn joining_multiple_guilds() {
         .unwrap();
 
         // join requests
-        <Chainlink>::callback(Origin::signed(signer_1), 2, vec![u8::from(true)]).unwrap();
-        <Chainlink>::callback(Origin::signed(signer_1), 3, vec![u8::from(true)]).unwrap();
+        <Oracle>::callback(Origin::signed(signer_1), 2, vec![u8::from(true)]).unwrap();
+        <Oracle>::callback(Origin::signed(signer_1), 3, vec![u8::from(true)]).unwrap();
         let error =
-            <Chainlink>::callback(Origin::signed(signer_1), 4, vec![u8::from(false)]).unwrap_err();
+            <Oracle>::callback(Origin::signed(signer_1), 4, vec![u8::from(false)]).unwrap_err();
         assert_eq!(error_msg(error), "AccessDenied");
-        <Chainlink>::callback(Origin::signed(signer_1), 5, vec![u8::from(true)]).unwrap();
+        <Oracle>::callback(Origin::signed(signer_1), 5, vec![u8::from(true)]).unwrap();
 
         let guild_1_id = <Guild>::guild_id(guild_1_name).unwrap();
         let guild_2_id = <Guild>::guild_id(guild_2_name).unwrap();

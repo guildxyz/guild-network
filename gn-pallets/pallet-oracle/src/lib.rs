@@ -1,20 +1,18 @@
-//! # A pallet to interact with Chainlink nodes
+//! # A pallet to interact with oracle nodes
 //!
-//! \## Overview
+//! ## Overview
 //!
-//! `pallet-chainlink` allows to request external data from chainlink operators. This is done by
-//! emitting a well-known event (`OracleEvent`) embedding all required data. This event is listened
-//! by operators that in turns call back the `callback` function with the associated data.
+//! `pallet-oracle` allows to request external data from oracle operators. This
+//! is done by emitting a well-known event (`OracleEvent`) embedding all
+//! required data. This event is listened by operators that in turns call back
+//! the `callback` function with the associated data.
 //!
-//! To initiate a request, users call `initiate_request` with the relevant details, the `operator`
-//! AccountId and the `fee` they agree to spend to get the result.
+//! To initiate a request, users call `initiate_request` with the relevant
+//! details, the operator's `AccountId` and the fee they agree to spend to get
+//! the result.
 //!
-//! To be valid, an operator must register its AccountId first hand via `register_operator`.
-//!
-//! \## Terminology
-//! Operator: a member of chainlink that provides result to requests, in exchange of a fee payment
-//! Request: details about what the user expects as result. Must match a Specification supported by
-//! an identified Operator Fee: the amount of token a users pays to an operator
+//! To be valid, an operator must register its `AccountId` first hand via
+//! `register_operator`.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(clippy::all)]
@@ -47,17 +45,17 @@ pub mod pallet {
         type WeightInfo: WeightInfo;
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         type Currency: ReservableCurrency<Self::AccountId>;
-        // A reference to an Extrinsic that can have a result injected. Used as Chainlink callback
+        // A reference to an Extrinsic that can have a result injected. Used as Oracle callback
         type Callback: Parameter
             + UnfilteredDispatchable<Origin = Self::Origin>
             + Codec
             + Eq
             + CallbackWithParameter;
-
-        // NOTE: The following two types could be `const`
         // Period during which a request is valid
+        #[pallet::constant]
         type ValidityPeriod: Get<Self::BlockNumber>;
         // Minimum fee paid for all requests to disincentivize spam requests
+        #[pallet::constant]
         type MinimumFee: Get<u32>;
     }
 
@@ -238,10 +236,6 @@ pub mod pallet {
             let operator = operators[next_operator as usize % operators.len()].clone();
 
             NextOperator::<T>::put(next_operator.wrapping_add(1));
-
-            // Currency::minimum_balance() is equivalent to ExistentialDeposit in the
-            // pallet_balances config of the runtime
-            // ensure!(fee > T::Currency::minimum_balance(), Error::<T>::InsufficientFee);
 
             // NOTE: this might not be necessary since it seems that reserved
             // tokens are only moved from the `free` balance of an account and

@@ -1,6 +1,6 @@
 use futures::StreamExt;
 use gn_client::queries::{oracle_request, requirements, user_identity};
-use gn_client::runtime::chainlink::events::OracleRequest;
+use gn_client::runtime::oracle::events::OracleRequest;
 use gn_client::transactions::{
     oracle_callback, register_operator, send_tx_in_block, send_tx_ready,
 };

@@ -23,10 +23,10 @@ pub mod pallet {
     use gn_common::identities::Platform;
     use gn_common::utils::detect_duplicates;
     use gn_common::{GuildName, Request, RequestData, RequestIdentifier, RoleName};
-    use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig};
+    use pallet_oracle::{CallbackWithParameter, Config as OracleConfig, OracleAnswer};
     use sp_std::vec::Vec as SpVec;
 
-    type BalanceOf<T> = <<T as pallet_chainlink::Config>::Currency as Currency<
+    type BalanceOf<T> = <<T as OracleConfig>::Currency as Currency<
         <T as frame_system::Config>::AccountId,
     >>::Balance;
 
@@ -101,7 +101,7 @@ pub mod pallet {
         StorageMap<_, Blake2_128Concat, T::AccountId, SpVec<Identity>, OptionQuery>;
 
     #[pallet::config]
-    pub trait Config: ChainlinkConfig<Callback = Call<Self>> + frame_system::Config {
+    pub trait Config: OracleConfig<Callback = Call<Self>> + frame_system::Config {
         type WeightInfo: WeightInfo;
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         type MyRandomness: Randomness<Self::Hash, Self::BlockNumber>;
@@ -192,12 +192,11 @@ pub mod pallet {
 
             let request = Request::<T::AccountId> { requester, data };
 
-            let call: <T as ChainlinkConfig>::Callback = Call::callback {
+            let call: <T as OracleConfig>::Callback = Call::callback {
                 result: SpVec::new(),
             };
-            // TODO set unique fee
-            let fee = BalanceOf::<T>::unique_saturated_from(100_000_000u32);
-            <pallet_chainlink::Pallet<T>>::initiate_request(origin, call, request.encode(), fee)?;
+            let fee = BalanceOf::<T>::unique_saturated_from(<T as OracleConfig>::MinimumFee::get());
+            <pallet_oracle::Pallet<T>>::initiate_request(origin, call, request.encode(), fee)?;
 
             Ok(())
         }
@@ -262,12 +261,11 @@ pub mod pallet {
             // after all successful checks, we can create our request
             let request = Request::<T::AccountId> { requester, data };
 
-            let call: <T as ChainlinkConfig>::Callback = Call::callback {
+            let call: <T as OracleConfig>::Callback = Call::callback {
                 result: SpVec::new(),
             };
-            // TODO set unique fee
-            let fee = BalanceOf::<T>::unique_saturated_from(100_000_000u32);
-            <pallet_chainlink::Pallet<T>>::initiate_request(origin, call, request.encode(), fee)?;
+            let fee = BalanceOf::<T>::unique_saturated_from(<T as OracleConfig>::MinimumFee::get());
+            <pallet_oracle::Pallet<T>>::initiate_request(origin, call, request.encode(), fee)?;
 
             Ok(())
         }
@@ -280,8 +278,8 @@ pub mod pallet {
 
             // cannot wrap codec::Error in this error type because
             // it doesn't implement the required traits
-            let answer = pallet_chainlink::OracleAnswer::decode(&mut result.as_slice())
-                .map_err(|_| Error::<T>::CodecError)?;
+            let answer =
+                OracleAnswer::decode(&mut result.as_slice()).map_err(|_| Error::<T>::CodecError)?;
 
             ensure!(answer.result.len() == 1, Error::<T>::InvalidOracleAnswer);
 

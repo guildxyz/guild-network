@@ -47,8 +47,8 @@ use pallet_transaction_payment::CurrencyAdapter;
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 
-pub use pallet_chainlink;
 pub use pallet_guild;
+pub use pallet_oracle;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -150,8 +150,7 @@ parameter_types! {
         ::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
     pub const SS58Prefix: u8 = 42;
     pub const ValidityPeriod: u32 = 50;
-    /// This is a placeholder value further discussion is required
-    pub const MinimumFee: u32 = 1_000;
+    pub const MinimumFee: u32 = 0;
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -277,7 +276,7 @@ impl pallet_guild::Config for Runtime {
     type MyRandomness = RandomnessCollectiveFlip;
 }
 
-impl pallet_chainlink::Config for Runtime {
+impl pallet_oracle::Config for Runtime {
     type WeightInfo = ();
     type Event = Event;
     type Currency = Balances;
@@ -302,7 +301,7 @@ construct_runtime!(
         TransactionPayment: pallet_transaction_payment,
         Sudo: pallet_sudo,
         Guild: pallet_guild,
-        Chainlink: pallet_chainlink,
+        Oracle: pallet_oracle,
     }
 );
 
@@ -348,7 +347,7 @@ mod benches {
         [pallet_balances, Balances]
         [pallet_timestamp, Timestamp]
         [pallet_guild, Guild]
-        [pallet_chainlink, Chainlink]
+        [pallet_oracle, Oracle]
     );
 }
 
@@ -527,7 +526,7 @@ impl_runtime_apis! {
             let params = (&config, &whitelist);
 
             add_benchmark!(params, batches, pallet_guild, Guild);
-            add_benchmark!(params, batches, pallet_chainlink, Chainlink);
+            add_benchmark!(params, batches, pallet_oracle, Oracle);
             Ok(batches)
         }
     }

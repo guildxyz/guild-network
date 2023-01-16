@@ -8,10 +8,10 @@ pub mod pallet {
     use frame_support::traits::Randomness;
     use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
     use frame_system::{ensure_root, pallet_prelude::*};
-    use pallet_chainlink::{CallbackWithParameter, Config as ChainlinkConfig};
+    use pallet_oracle::{CallbackWithParameter, Config as OracleConfig};
 
     #[pallet::config]
-    pub trait Config: ChainlinkConfig<Callback = Call<Self>> + frame_system::Config {
+    pub trait Config: OracleConfig<Callback = Call<Self>> + frame_system::Config {
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         type WeightInfo: Sized;
         type MyRandomness: Randomness<Self::Hash, Self::BlockNumber>;
@@ -22,7 +22,7 @@ pub mod pallet {
         #[pallet::weight(1_000_000)]
         pub fn callback(origin: OriginFor<T>, result: Vec<u8>) -> DispatchResult {
             ensure_root(origin)?;
-            let answer = pallet_chainlink::OracleAnswer::decode(&mut result.as_slice())
+            let answer = pallet_oracle::OracleAnswer::decode(&mut result.as_slice())
                 .map_err(|_| Error::<T>::DecodingFailed)?;
             let num = u64::from_le_bytes(
                 answer

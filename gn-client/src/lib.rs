@@ -31,7 +31,7 @@ pub type BlockNumber = u32;
 pub type BlockSubscription = Subscription<BlockHeader>;
 pub type GuildCall = runtime::runtime_types::pallet_guild::pallet::Call;
 pub type Index = u32;
-pub type OracleRequest = runtime::runtime_types::pallet_chainlink::pallet::GenericRequest<
+pub type OracleRequest = runtime::runtime_types::pallet_oracle::pallet::GenericRequest<
     AccountId,
     GuildCall,
     u32,
