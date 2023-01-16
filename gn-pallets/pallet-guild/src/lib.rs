@@ -30,6 +30,10 @@ pub mod pallet {
         <T as frame_system::Config>::AccountId,
     >>::Balance;
 
+    type SerializedData = SpVec<u8>;
+    type RequirementLogic = SerializedData;
+    type Requirement = SerializedData;
+
     #[pallet::storage]
     #[pallet::getter(fn nonce)]
     pub type Nonce<T: Config> = StorageValue<_, u64, ValueQuery>;
@@ -43,8 +47,14 @@ pub mod pallet {
     #[derive(Encode, Decode, Clone, TypeInfo)]
     pub struct GuildData<AccountId> {
         pub owner: AccountId,
-        pub metadata: SpVec<u8>,
+        pub metadata: SerializedData,
         pub roles: SpVec<RoleName>,
+    }
+
+    #[derive(Encode, Decode, Clone, TypeInfo)]
+    pub struct RoleData {
+        pub logic: SerializedData,
+        pub requirements: SpVec<SerializedData>,
     }
 
     #[pallet::storage]
@@ -75,13 +85,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn role)]
-    pub type Roles<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        T::Hash,
-        SpVec<u8>, // role metadata
-        OptionQuery,
-    >;
+    pub type Roles<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, RoleData, OptionQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn member)]
@@ -135,7 +139,7 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     impl<T: Config> Pallet<T> {
-        fn get_and_increment_nonce() -> SpVec<u8> {
+        fn get_and_increment_nonce() -> SerializedData {
             let nonce = Nonce::<T>::get();
             Nonce::<T>::put(nonce.wrapping_add(1));
             nonce.encode()
@@ -205,8 +209,8 @@ pub mod pallet {
         pub fn create_guild(
             origin: OriginFor<T>,
             guild_name: GuildName,
-            metadata: SpVec<u8>,
-            roles: SpVec<(RoleName, SpVec<u8>)>,
+            metadata: SerializedData,
+            roles: SpVec<(RoleName, (RequirementLogic, SpVec<Requirement>))>,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(
@@ -232,7 +236,11 @@ pub mod pallet {
             for (role_name, role_metadata) in roles.into_iter() {
                 let role_id = Self::get_random_uuid();
                 RoleIdMap::<T>::insert(guild_id, role_name, role_id);
-                Roles::<T>::insert(role_id, role_metadata);
+                let role_data = RoleData {
+                    logic: role_metadata.0,
+                    requirements: role_metadata.1,
+                };
+                Roles::<T>::insert(role_id, role_data);
             }
 
             Self::deposit_event(Event::GuildCreated(sender, guild_name));
@@ -271,7 +279,7 @@ pub mod pallet {
         }
 
         #[pallet::weight(0)]
-        pub fn callback(origin: OriginFor<T>, result: SpVec<u8>) -> DispatchResult {
+        pub fn callback(origin: OriginFor<T>, result: SerializedData) -> DispatchResult {
             // NOTE this ensures that only the root can call this function via
             // a callback, see `frame_system::RawOrigin`
             ensure_root(origin)?;
@@ -351,7 +359,7 @@ pub mod pallet {
     }
 
     impl<T: Config> CallbackWithParameter for Call<T> {
-        fn with_result(&self, result: SpVec<u8>) -> Option<Self> {
+        fn with_result(&self, result: SerializedData) -> Option<Self> {
             match self {
                 Call::callback { .. } => Some(Call::callback { result }),
                 _ => None,

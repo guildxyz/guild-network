@@ -55,6 +55,25 @@ fn dummy_answer(
     pallet_oracle::OracleAnswer { data, result }
 }
 
+// the `assert_eq!` macro requires implementing `PartialEq` for `RoleData`
+// since the pallet itself doesn't use this trait, it only makes sense to implement it here
+impl PartialEq for pallet_guild::RoleData {
+    fn eq(&self, other: &Self) -> bool {
+        self.logic == other.logic && self.requirements == other.requirements
+    }
+}
+
+// the `assert_eq!` macro requires implementing `Debug` for `RoleData`
+// since the pallet itself doesn't use this trait, it only makes sense to implement it here
+impl sp_std::fmt::Debug for pallet_guild::RoleData {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("RoleData")
+            .field("logic", &self.logic)
+            .field("requirements", &self.requirements)
+            .finish()
+    }
+}
+
 #[test]
 fn create_guild() {
     new_test_runtime().execute_with(|| {
@@ -67,16 +86,51 @@ fn create_guild() {
         let role_2_name = [2u8; 32];
         let role_3_name = [3u8; 32];
 
-        let role_1_data = vec![6, 7, 8, 9, 0];
-        let role_2_data = vec![2, 4, 6, 8, 0];
-        let role_3_data = vec![1, 3, 5, 7, 9];
+        let requirement_1 = vec![6, 7, 8, 9, 0];
+        let requirement_2 = vec![2, 4, 6, 8, 0];
+        let requirement_3 = vec![1, 3, 5, 7, 9];
+
+        let requirement_1_logic = vec![6, 7, 8];
+        let requirement_2_logic = vec![2, 4, 6];
+        let requirement_3_logic = vec![1, 3, 5];
 
         let roles = vec![
-            (role_1_name, role_1_data.clone()),
-            (role_2_name, role_2_data.clone()),
-            (role_3_name, role_3_data.clone()),
+            (
+                role_1_name,
+                (
+                    requirement_1_logic.clone(),
+                    vec![
+                        requirement_1.clone(),
+                        requirement_2.clone(),
+                        requirement_3.clone(),
+                    ],
+                ),
+            ),
+            (
+                role_2_name,
+                (
+                    requirement_2_logic.clone(),
+                    vec![
+                        requirement_1.clone(),
+                        requirement_2.clone(),
+                        requirement_3.clone(),
+                    ],
+                ),
+            ),
+            (
+                role_3_name,
+                (
+                    requirement_3_logic.clone(),
+                    vec![
+                        requirement_1.clone(),
+                        requirement_2.clone(),
+                        requirement_3.clone(),
+                    ],
+                ),
+            ),
         ];
 
+        // roles: SpVec<(RoleName, (RequirementLogic, SpVec<Requirement>))>
         assert!(
             <Guild>::create_guild(Origin::signed(signer), guild_name, metadata.clone(), roles)
                 .is_ok()
@@ -95,13 +149,37 @@ fn create_guild() {
         let role_1_id = <Guild>::role_id(guild_id, role_1_name).unwrap();
         let role_2_id = <Guild>::role_id(guild_id, role_2_name).unwrap();
         let role_3_id = <Guild>::role_id(guild_id, role_3_name).unwrap();
-        let expected_role_1_data = <Guild>::role(role_1_id).unwrap();
-        let expected_role_2_data = <Guild>::role(role_2_id).unwrap();
-        let expected_role_3_data = <Guild>::role(role_3_id).unwrap();
+        let queried_role_1_data = <Guild>::role(role_1_id).unwrap();
+        let queried_role_2_data = <Guild>::role(role_2_id).unwrap();
+        let queried_role_3_data = <Guild>::role(role_3_id).unwrap();
+        let role_1_data_struct = pallet_guild::RoleData {
+            logic: requirement_1_logic,
+            requirements: vec![
+                requirement_1.clone(),
+                requirement_2.clone(),
+                requirement_3.clone(),
+            ],
+        };
+        let role_2_data_struct = pallet_guild::RoleData {
+            logic: requirement_2_logic,
+            requirements: vec![
+                requirement_1.clone(),
+                requirement_2.clone(),
+                requirement_3.clone(),
+            ],
+        };
+        let role_3_data_struct = pallet_guild::RoleData {
+            logic: requirement_3_logic,
+            requirements: vec![
+                requirement_1.clone(),
+                requirement_2.clone(),
+                requirement_3.clone(),
+            ],
+        };
 
-        assert_eq!(expected_role_1_data, role_1_data);
-        assert_eq!(expected_role_2_data, role_2_data);
-        assert_eq!(expected_role_3_data, role_3_data);
+        assert_eq!(queried_role_1_data, role_1_data_struct);
+        assert_eq!(queried_role_2_data, role_2_data_struct);
+        assert_eq!(queried_role_3_data, role_3_data_struct);
     });
 }
 
@@ -264,7 +342,7 @@ fn invalid_join_guild_request() {
             Origin::signed(signer),
             guild_name,
             vec![],
-            vec![(role_name, vec![])],
+            vec![(role_name, (vec![], vec![]))],
         )
         .unwrap();
 
@@ -303,7 +381,7 @@ fn valid_join_guild_request() {
             Origin::signed(signer),
             guild_name,
             vec![],
-            vec![(role_name, vec![])],
+            vec![(role_name, (vec![], vec![]))],
         )
         .unwrap();
 
@@ -344,7 +422,10 @@ fn joining_a_guild() {
             Origin::signed(signer),
             guild_name,
             vec![],
-            vec![(role_1_name, vec![]), (role_2_name, vec![])],
+            vec![
+                (role_1_name, (vec![], vec![])),
+                (role_2_name, (vec![], vec![])),
+            ],
         )
         .unwrap();
 
@@ -447,7 +528,7 @@ fn joining_the_same_role_in_a_guild_twice_fails() {
             Origin::signed(signer),
             guild_name,
             vec![],
-            vec![(role_name, vec![])],
+            vec![(role_name, (vec![], vec![]))],
         )
         .unwrap();
         // register first
@@ -512,7 +593,10 @@ fn joining_multiple_guilds() {
             Origin::signed(signer_1),
             guild_1_name,
             vec![],
-            vec![(role_1_name, vec![]), (role_2_name, vec![])],
+            vec![
+                (role_1_name, (vec![], vec![])),
+                (role_2_name, (vec![], vec![])),
+            ],
         )
         .unwrap();
 
@@ -521,7 +605,10 @@ fn joining_multiple_guilds() {
             Origin::signed(signer_2),
             guild_2_name,
             vec![],
-            vec![(role_3_name, vec![]), (role_4_name, vec![])],
+            vec![
+                (role_3_name, (vec![], vec![])),
+                (role_4_name, (vec![], vec![])),
+            ],
         )
         .unwrap();
 
