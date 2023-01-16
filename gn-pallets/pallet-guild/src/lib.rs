@@ -109,6 +109,12 @@ pub mod pallet {
         type WeightInfo: WeightInfo;
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         type MyRandomness: Randomness<Self::Hash, Self::BlockNumber>;
+        #[pallet::constant]
+        type MaxRolesPerGuild: Get<u32>;
+        #[pallet::constant]
+        type MaxReqsPerRole: Get<u32>;
+        #[pallet::constant]
+        type MaxSerializedReqLen: Get<u32>;
     }
 
     #[pallet::event]
@@ -131,6 +137,9 @@ pub mod pallet {
         UserAlreadyJoined,
         UserNotRegistered,
         CodecError,
+        MaxRolesPerGuildExceeded,
+        MaxReqsPerRoleExceeded,
+        MaxSerializedReqLenExceede,
     }
 
     #[pallet::pallet]
@@ -151,6 +160,8 @@ pub mod pallet {
             random_value
         }
     }
+
+    type SerializedRole = (RoleName, (RequirementLogic, SpVec<Requirement>));
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -210,12 +221,30 @@ pub mod pallet {
             origin: OriginFor<T>,
             guild_name: GuildName,
             metadata: SerializedData,
-            roles: SpVec<(RoleName, (RequirementLogic, SpVec<Requirement>))>,
+            roles: SpVec<SerializedRole>,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
             ensure!(
                 !GuildIdMap::<T>::contains_key(guild_name),
                 Error::<T>::GuildAlreadyExists
+            );
+            ensure!(
+                roles.len() <= T::MaxRolesPerGuild::get() as usize,
+                Error::<T>::MaxRolesPerGuildExceeded
+            );
+            ensure!(
+                roles
+                    .iter()
+                    .all(|role: &SerializedRole| role.1 .1.len()
+                        <= T::MaxReqsPerRole::get() as usize),
+                Error::<T>::MaxReqsPerRoleExceeded
+            );
+            ensure!(
+                roles.iter().all(|role: &SerializedRole| (role.1)
+                    .1
+                    .iter()
+                    .all(|req: &Requirement| req.len() <= T::MaxSerializedReqLen::get() as usize)),
+                Error::<T>::MaxReqsPerRoleExceeded
             );
 
             let guild_id = Self::get_random_uuid();

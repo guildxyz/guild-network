@@ -15,6 +15,12 @@ pub mod pallet {
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         type WeightInfo: Sized;
         type MyRandomness: Randomness<Self::Hash, Self::BlockNumber>;
+        #[pallet::constant]
+        type MaxRolesPerGuild: Get<u32>;
+        #[pallet::constant]
+        type MaxReqsPerRole: Get<u32>;
+        #[pallet::constant]
+        type MaxSerializedReqLen: Get<u32>;
     }
 
     #[pallet::call]

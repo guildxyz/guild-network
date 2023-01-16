@@ -5,7 +5,7 @@ macro_rules! test_runtime {
         use sp_core::H256;
         use sp_runtime::{
             testing::Header,
-            traits::{BlakeTwo256, IdentityLookup},
+            traits::{BlakeTwo256, IdentityLookup, ConstU32},
         };
 
         frame_support::construct_runtime!(
@@ -63,7 +63,7 @@ macro_rules! test_runtime {
             type SystemWeightInfo = ();
             type SS58Prefix = SS58Prefix;
             type OnSetCode = ();
-            type MaxConsumers = frame_support::traits::ConstU32<16>;
+            type MaxConsumers = ConstU32<16>;
         }
 
         impl pallet_balances::Config for TestRuntime {
@@ -91,6 +91,9 @@ macro_rules! test_runtime {
             type WeightInfo = ();
             type Event = Event;
             type MyRandomness = RandomnessCollectiveFlip;
+            type MaxRolesPerGuild = ConstU32<10>;
+            type MaxReqsPerRole = ConstU32<10>;
+            type MaxSerializedReqLen = ConstU32<10>;
         }
 
         pub const GENESIS_BALANCE: u64 = 1_000_000_000;
