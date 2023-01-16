@@ -6,7 +6,7 @@ use frame_support::traits::Currency;
 use frame_system::RawOrigin;
 use gn_common::identities::IdentityWithAuth;
 use gn_common::RequestData;
-use pallet_chainlink::Pallet as Chainlink;
+use pallet_oracle::Pallet as Oracle;
 use sp_std::vec;
 
 benchmarks! {
@@ -32,7 +32,7 @@ benchmarks! {
         let operator: T::AccountId = whitelisted_caller();
 
         T::Currency::make_free_balance_be(&caller, T::Currency::minimum_balance() + 2_000_000_000u32.into());
-        Chainlink::<T>::register_operator(RawOrigin::Signed(operator).into())?;
+        Oracle::<T>::register_operator(RawOrigin::Signed(operator).into())?;
     }: _(
         RawOrigin::Signed(caller),
         RequestData::Register(vec![
@@ -45,7 +45,7 @@ benchmarks! {
         ])
     )
     verify {
-        assert!(Chainlink::<T>::request(0).is_some())
+        assert!(Oracle::<T>::request(0).is_some())
     }
 
     join_guild {
@@ -61,10 +61,10 @@ benchmarks! {
         }
 
         T::Currency::make_free_balance_be(&caller, T::Currency::minimum_balance() + 2_000_000_000u32.into());
-        Chainlink::<T>::register_operator(RawOrigin::Signed(operator).into())?;
+        Oracle::<T>::register_operator(RawOrigin::Signed(operator).into())?;
         Guild::<T>::create_guild(RawOrigin::Signed(caller.clone()).into(), guild_name, guild_metadata, roles)?;
     }: _(RawOrigin::Signed(caller), RequestData::Join { guild: guild_name, role: [10u8; 32] })
     verify {
-        assert!(Chainlink::<T>::request(0).is_some());
+        assert!(Oracle::<T>::request(0).is_some());
     }
 }

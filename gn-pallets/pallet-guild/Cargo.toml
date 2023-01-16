@@ -11,7 +11,7 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "gn-common/std",
-  "pallet-chainlink/std",
+  "pallet-oracle/std",
   "scale-info/std",
   "sp-std/std",
 ]
@@ -25,7 +25,7 @@ frame-benchmarking = { default-features = false, version = "4.0.0-dev", git = "h
 frame-support = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
 frame-system = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
 hashbrown = "0.13.1"
-pallet-chainlink = { version = "3.0.0-alpha", default-features = false, path = "../pallet-chainlink" }
+pallet-oracle = { version = "0.0.1-alpha", default-features = false, path = "../pallet-oracle" }
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
 sp-std = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
 

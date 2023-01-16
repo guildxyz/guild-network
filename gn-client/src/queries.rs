@@ -17,7 +17,7 @@ pub struct GuildFilter {
 }
 
 pub async fn registered_operators(api: Api) -> Result<Vec<AccountId>, SubxtError> {
-    let operators = runtime::storage().chainlink().operators();
+    let operators = runtime::storage().oracle().operators();
     Ok(api
         .storage()
         .fetch(&operators, None)
@@ -136,7 +136,7 @@ pub async fn role_id(
 }
 
 pub async fn oracle_request(api: Api, id: RequestIdentifier) -> Result<Request, SubxtError> {
-    let key = runtime::storage().chainlink().requests(id);
+    let key = runtime::storage().oracle().requests(id);
     let request = api
         .storage()
         .fetch(&key, None)
@@ -152,7 +152,7 @@ pub async fn oracle_requests(
     api: Api,
     page_size: u32,
 ) -> Result<BTreeMap<RequestIdentifier, AccountId>, SubxtError> {
-    let root = runtime::storage().chainlink().requests_root();
+    let root = runtime::storage().oracle().requests_root();
 
     let mut map = BTreeMap::new();
     let mut iter = api.storage().iter(root, page_size, None).await?;

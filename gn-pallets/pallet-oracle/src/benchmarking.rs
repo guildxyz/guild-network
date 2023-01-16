@@ -1,5 +1,5 @@
 use super::*;
-use crate::Pallet as Chainlink;
+use crate::Pallet as Oracle;
 
 use frame_benchmarking::{benchmarks, whitelisted_caller};
 use frame_system::RawOrigin;
@@ -12,7 +12,7 @@ benchmarks! {
     }
     deregister_operator {
         let operator: T::AccountId = whitelisted_caller();
-        Chainlink::<T>::register_operator(RawOrigin::Signed(operator.clone()).into())?;
+        Oracle::<T>::register_operator(RawOrigin::Signed(operator.clone()).into())?;
     }: _(RawOrigin::Signed(operator))
     verify {
     }
@@ -22,7 +22,7 @@ benchmarks! {
     //    let caller: T::AccountId = whitelisted_caller();
     //    let operator: T::AccountId = account("operator", 1, 123);
 
-    //    Chainlink::<T>::register_operator(RawOrigin::Signed(operator.clone()).into())?;
+    //    Oracle::<T>::register_operator(RawOrigin::Signed(operator.clone()).into())?;
 
     //    let spec_index = vec![0; 5];
     //    let data_version = 987_u64;
@@ -38,7 +38,7 @@ benchmarks! {
     //    let request_id = 128_u64;
     //    let operator: T::AccountId = account("operator", 1, 123);
 
-    //    Chainlink::<T>::register_operator(RawOrigin::Signed(operator.clone()).into())?;
+    //    Oracle::<T>::register_operator(RawOrigin::Signed(operator.clone()).into())?;
     //    // TODO should add an initiate request
 
     //}: _(RawOrigin::Signed(caller), request_id, vec![0; b as usize])

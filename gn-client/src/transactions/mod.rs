@@ -19,11 +19,11 @@ pub fn fund_account(account: &AccountId, amount: u128) -> impl TxPayload {
 }
 
 pub fn register_operator() -> impl TxPayload {
-    runtime::tx().chainlink().register_operator()
+    runtime::tx().oracle().register_operator()
 }
 
 pub fn oracle_callback(request_id: u64, data: Vec<u8>) -> impl TxPayload {
-    runtime::tx().chainlink().callback(request_id, data)
+    runtime::tx().oracle().callback(request_id, data)
 }
 
 pub fn create_guild(guild: Guild) -> Result<impl TxPayload, serde_cbor::Error> {

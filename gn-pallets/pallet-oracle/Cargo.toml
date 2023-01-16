@@ -1,8 +1,8 @@
 [package]
-authors = ["Parity Technologies <admin@parity.io>"]
+authors = ["Guild Network <mark@guild.xyz>"]
 edition = "2021"
-name = "pallet-chainlink"
-version = "3.0.0-alpha"
+name = "pallet-oracle"
+version = "0.0.1-alpha"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
