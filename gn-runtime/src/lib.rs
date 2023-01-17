@@ -274,9 +274,9 @@ impl pallet_guild::Config for Runtime {
     type Event = Event;
     type WeightInfo = pallet_guild::weights::SubstrateWeight<Runtime>;
     type MyRandomness = RandomnessCollectiveFlip;
-    type MaxRolesPerGuild = ConstU32<10>;
-    type MaxReqsPerRole = ConstU32<10>;
-    type MaxSerializedReqLen = ConstU32<10>;
+    type MaxRolesPerGuild = ConstU32<64>;
+    type MaxReqsPerRole = ConstU32<64>;
+    type MaxSerializedReqLen = ConstU32<64>;
 }
 
 impl pallet_oracle::Config for Runtime {

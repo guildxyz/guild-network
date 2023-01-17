@@ -91,9 +91,9 @@ macro_rules! test_runtime {
             type WeightInfo = ();
             type Event = Event;
             type MyRandomness = RandomnessCollectiveFlip;
-            type MaxRolesPerGuild = ConstU32<10>;
-            type MaxReqsPerRole = ConstU32<10>;
-            type MaxSerializedReqLen = ConstU32<10>;
+            type MaxRolesPerGuild = ConstU32<64>;
+            type MaxReqsPerRole = ConstU32<64>;
+            type MaxSerializedReqLen = ConstU32<64>;
         }
 
         pub const GENESIS_BALANCE: u64 = 1_000_000_000;

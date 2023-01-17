@@ -29,8 +29,13 @@ pub fn oracle_callback(request_id: u64, data: Vec<u8>) -> impl TxPayload {
 pub fn create_guild(guild: Guild) -> Result<impl TxPayload, serde_cbor::Error> {
     let mut roles = Vec::new();
     for role in guild.roles.into_iter() {
-        let ser_requirements = cbor_serialize(&role.reqs)?;
-        roles.push((role.name, ser_requirements));
+        let logic = cbor_serialize(&role.reqs.logic)?;
+        let mut requirements = Vec::new();
+        for req in role.reqs.requirements {
+            requirements.push(cbor_serialize(&req)?);
+        }
+
+        roles.push((role.name, (logic, requirements)));
     }
 
     Ok(runtime::tx()
