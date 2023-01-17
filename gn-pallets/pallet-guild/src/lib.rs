@@ -33,6 +33,7 @@ pub mod pallet {
     type SerializedData = SpVec<u8>;
     type RequirementLogic = SerializedData;
     type Requirement = SerializedData;
+    type SerializedRole = (RoleName, (RequirementLogic, SpVec<Requirement>));
 
     #[pallet::storage]
     #[pallet::getter(fn nonce)]
@@ -139,7 +140,7 @@ pub mod pallet {
         CodecError,
         MaxRolesPerGuildExceeded,
         MaxReqsPerRoleExceeded,
-        MaxSerializedReqLenExceede,
+        MaxSerializedReqLenExceeded,
     }
 
     #[pallet::pallet]
@@ -160,8 +161,6 @@ pub mod pallet {
             random_value
         }
     }
-
-    type SerializedRole = (RoleName, (RequirementLogic, SpVec<Requirement>));
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -244,7 +243,7 @@ pub mod pallet {
                     .1
                     .iter()
                     .all(|req: &Requirement| req.len() <= T::MaxSerializedReqLen::get() as usize)),
-                Error::<T>::MaxReqsPerRoleExceeded
+                Error::<T>::MaxSerializedReqLenExceeded
             );
 
             let guild_id = Self::get_random_uuid();

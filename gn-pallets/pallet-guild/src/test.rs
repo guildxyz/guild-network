@@ -170,11 +170,7 @@ fn create_guild() {
         };
         let role_3_data_struct = pallet_guild::RoleData {
             logic: requirement_3_logic,
-            requirements: vec![
-                requirement_1.clone(),
-                requirement_2.clone(),
-                requirement_3.clone(),
-            ],
+            requirements: vec![requirement_1, requirement_2, requirement_3],
         };
 
         assert_eq!(queried_role_1_data, role_1_data_struct);
