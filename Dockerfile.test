@@ -2,7 +2,7 @@ FROM rustlang/rust:nightly-slim AS build
 
 RUN apt update -y \
     && apt upgrade -y \
-    && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev libssl-dev pkg-config -y
+    && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev libssl-dev pkg-config python3 -y
 
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly
 
@@ -16,3 +16,22 @@ RUN cargo fmt -- --check
 RUN cargo clippy --color=always --tests --examples --features runtime-benchmarks
 
 RUN cargo test --release --features runtime-benchmarks --workspace --exclude gn-node --exclude gn-wasm --exclude gn-frontend
+
+RUN cargo build --release
+
+ARG ETHEREUM_RPC_TOKEN
+ARG POLYGON_RPC_TOKEN
+ARG GOERLI_RPC_TOKEN
+ARG ARBITRUM_RPC_TOKEN
+ARG PALM_RPC_TOKEN
+ARG METIS_RPC_TOKEN
+
+
+
+RUN ETHEREUM_RPC_TOKEN=${ETHEREUM_RPC_TOKEN} \
+    POLYGON_RPC_TOKEN=${POLYGON_RPC_TOKEN} \
+    GOERLI_RPC_TOKEN=${GOERLI_RPC_TOKEN} \
+    ARBITRUM_RPC_TOKEN=${ARBITRUM_RPC_TOKEN} \
+    PALM_RPC_TOKEN=${PALM_RPC_TOKEN} \
+    METIS_RPC_TOKEN=${METIS_RPC_TOKEN}\ 
+    python3 integr_test.py
