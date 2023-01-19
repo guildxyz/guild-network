@@ -103,292 +103,121 @@ fn advanced_checks() {
 }
 
 #[test]
+#[rustfmt::skip]
 fn storage_checks() {
     new_test_runtime().execute_with(|| {
         init_chain();
-        let signer = 1;
-        let guild_name = [0u8; 32];
-        new_guild(signer, guild_name);
-
-        <Oracle>::register_operator(Origin::signed(signer)).unwrap();
-    });
-}
-
-/*
-#[test]
-fn joining_a_guild() {
-    new_test_runtime().execute_with(|| {
-        init_chain();
-        let guild_name = [0u8; 32];
-        let role_1_name = [1u8; 32];
-        let role_2_name = [2u8; 32];
-        let signer = 1;
-        let mut request_id = 0;
-
-        <Guild>::create_guild(
-            Origin::signed(signer),
-            guild_name,
-            vec![],
-            vec![
-                (role_1_name, (vec![], vec![])),
-                (role_2_name, (vec![], vec![])),
-            ],
-        )
-        .unwrap();
-
-        // register first
-        <Guild>::register(Origin::signed(signer), RequestData::Register(vec![])).unwrap();
-
-        // registration = ok
-        <Oracle>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
-        assert!(<Guild>::user_data(signer).is_some());
-        request_id += 1;
-
-        // join first role
-        <Guild>::assign_role(
-            Origin::signed(signer),
-            RequestData::ReqCheck {
-                guild: guild_name,
-                role: role_1_name,
-            },
-        )
-        .unwrap();
-
-        // access = true
-        <Oracle>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
-        request_id += 1;
-
-        assert_eq!(
-            last_event(),
-            Event::Guild(pallet_guild::Event::RoleAssigned(
-                signer,
-                guild_name,
-                role_1_name
-            ))
-        );
-
-        let guild_id = <Guild>::guild_id(guild_name).unwrap();
-        let role_1_id = <Guild>::role_id(guild_id, role_1_name).unwrap();
-        let role_2_id = <Guild>::role_id(guild_id, role_2_name).unwrap();
-        assert!(<Guild>::member(role_1_id, signer).is_some());
-        assert!(<Guild>::member(role_2_id, signer).is_none());
-        assert_eq!(<Guild>::user_data(signer), Some(vec![]));
-
-        // try join second role
-        <Guild>::assign_role(
-            Origin::signed(signer),
-            RequestData::ReqCheck {
-                guild: guild_name,
-                role: role_2_name,
-            },
-        )
-        .unwrap();
-
-        // access = false
-        let error = <Oracle>::callback(Origin::signed(signer), request_id, vec![u8::from(false)])
-            .unwrap_err();
-        assert_eq!(error_msg(error), "AccessDenied");
-        request_id += 1;
-
-        assert!(<Guild>::member(role_1_id, signer).is_some());
-        assert!(<Guild>::member(role_2_id, signer).is_none());
-
-        // try join second role again
-        <Guild>::assign_role(
-            Origin::signed(signer),
-            RequestData::ReqCheck {
-                guild: guild_name,
-                role: role_2_name,
-            },
-        )
-        .unwrap();
-
-        // access = true
-        <Oracle>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
-        assert!(<Guild>::member(role_1_id, signer).is_some());
-        assert!(<Guild>::member(role_2_id, signer).is_some());
-
-        assert_eq!(
-            last_event(),
-            Event::Guild(pallet_guild::Event::RoleAssigned(
-                signer,
-                guild_name,
-                role_2_name
-            ))
-        );
-
-        assert_eq!(<Guild>::user_data(signer), Some(vec![]));
-    });
-}
-
-#[test]
-fn joining_the_same_role_in_a_guild_twice_fails() {
-    new_test_runtime().execute_with(|| {
-        init_chain();
-        let guild_name = [0u8; 32];
-        let role_name = [1u8; 32];
-        let signer = 1;
-        let mut request_id = 0;
-
-        <Oracle>::register_operator(Origin::signed(signer)).unwrap();
-        <Guild>::create_guild(
-            Origin::signed(signer),
-            guild_name,
-            vec![],
-            vec![(role_name, (vec![], vec![]))],
-        )
-        .unwrap();
-        // register first
-        <Guild>::register(Origin::signed(signer), RequestData::Register(vec![])).unwrap();
-        <Oracle>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
-        request_id += 1;
-
-        // join first time
-        <Guild>::assign_role(
-            Origin::signed(signer),
-            RequestData::ReqCheck {
-                guild: guild_name,
-                role: role_name,
-            },
-        )
-        .unwrap();
-
-        <Oracle>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
-
-        let guild_id = <Guild>::guild_id(guild_name).unwrap();
-        let role_id = <Guild>::role_id(guild_id, role_name).unwrap();
-        assert!(<Guild>::member(role_id, signer).is_some());
-
-        // try to join again
-        let error = <Guild>::assign_role(
-            Origin::signed(signer),
-            RequestData::ReqCheck {
-                guild: guild_name,
-                role: role_name,
-            },
-        )
-        .unwrap_err();
-
-        assert_eq!(error_msg(error), "RoleAlreadyAssigned");
-        assert!(<Guild>::member(role_id, signer).is_some());
-    });
-}
-
-#[test]
-fn joining_multiple_guilds() {
-    new_test_runtime().execute_with(|| {
-        init_chain();
-        let guild_1_name = [1u8; 32];
-        let guild_2_name = [2u8; 32];
-        let role_1_name = [1u8; 32];
-        let role_2_name = [2u8; 32];
-        let role_3_name = [3u8; 32];
-        let role_4_name = [4u8; 32];
+        // setup two guilds
         let signer_1 = 1;
         let signer_2 = 2;
+        let guild_1 = [1u8; 32];
+        let guild_2 = [2u8; 32];
+        new_guild(signer_1, guild_1);
+        new_guild(signer_2, guild_2);
 
-        let user_1_auth = vec![IdentityWithAuth::EvmChain([0; 20], [9; 65])];
-        let user_2_auth = vec![IdentityWithAuth::Discord(999, ())];
+        let guild_id = <Guild>::guild_id(guild_1).unwrap();
+        let g1r1_id = <Guild>::role_id(guild_id, ROLE_1).unwrap();
+        let g1r2_id = <Guild>::role_id(guild_id, ROLE_2).unwrap();
+        let g1r3_id = <Guild>::role_id(guild_id, ROLE_3).unwrap();
+        let guild_id = <Guild>::guild_id(guild_2).unwrap();
+        let g2r1_id = <Guild>::role_id(guild_id, ROLE_1).unwrap();
+        let g2r2_id = <Guild>::role_id(guild_id, ROLE_2).unwrap();
+        let g2r3_id = <Guild>::role_id(guild_id, ROLE_3).unwrap();
 
-        let user_1_id = vec![Identity::EvmChain([0; 20])];
-        let user_2_id = vec![Identity::Discord(999)];
+        let mut request_id = 0;
 
+        // register a single operator
         <Oracle>::register_operator(Origin::signed(signer_1)).unwrap();
+        // register both users to guild
+        <Guild>::register(Origin::signed(signer_1), RequestData::Register(vec![])).unwrap();
+        <Guild>::register(Origin::signed(signer_2), RequestData::Register(vec![])).unwrap();
 
-        // create first guild
-        <Guild>::create_guild(
-            Origin::signed(signer_1),
-            guild_1_name,
-            vec![],
-            vec![
-                (role_1_name, (vec![], vec![])),
-                (role_2_name, (vec![], vec![])),
-            ],
-        )
-        .unwrap();
+        // both register requests are accepted
+        <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(true)]).unwrap();
+        request_id += 1;
+        <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(true)]).unwrap();
+        request_id += 1;
+        assert!(<Guild>::user_data(signer_1).is_some());
+        assert!(<Guild>::user_data(signer_2).is_some());
 
-        // create second guild
-        <Guild>::create_guild(
-            Origin::signed(signer_2),
-            guild_2_name,
-            vec![],
-            vec![
-                (role_3_name, (vec![], vec![])),
-                (role_4_name, (vec![], vec![])),
-            ],
-        )
-        .unwrap();
-
-        // register both users
-        <Guild>::register(Origin::signed(signer_1), RequestData::Register(user_1_auth)).unwrap();
-        <Guild>::register(Origin::signed(signer_2), RequestData::Register(user_2_auth)).unwrap();
-
-        // registrations
-        <Oracle>::callback(Origin::signed(signer_1), 0, vec![u8::from(true)]).unwrap();
-        <Oracle>::callback(Origin::signed(signer_1), 1, vec![u8::from(true)]).unwrap();
-
-        // signer 1 wants to join both guilds
-        <Guild>::assign_role(
-            Origin::signed(signer_1),
-            RequestData::ReqCheck {
-                guild: guild_1_name,
-                role: role_2_name,
-            },
-        )
-        .unwrap();
-        <Guild>::assign_role(
-            Origin::signed(signer_1),
-            RequestData::ReqCheck {
-                guild: guild_2_name,
-                role: role_3_name,
-            },
-        )
-        .unwrap();
-
-        // signer 2 wants to join both guilds
-        <Guild>::assign_role(
-            Origin::signed(signer_2),
-            RequestData::ReqCheck {
-                guild: guild_2_name,
-                role: role_4_name,
-            },
-        )
-        .unwrap();
-        <Guild>::assign_role(
-            Origin::signed(signer_2),
-            RequestData::ReqCheck {
-                guild: guild_1_name,
-                role: role_1_name,
-            },
-        )
-        .unwrap();
-
-        // join requests
-        <Oracle>::callback(Origin::signed(signer_1), 2, vec![u8::from(true)]).unwrap();
-        <Oracle>::callback(Origin::signed(signer_1), 3, vec![u8::from(true)]).unwrap();
-        let error =
-            <Oracle>::callback(Origin::signed(signer_1), 4, vec![u8::from(false)]).unwrap_err();
+        // assign some roles to signer_1
+        <Guild>::manage_role(Origin::signed(signer_1), RequestData::ReqCheck { account: signer_1, guild: guild_1, role: ROLE_1 }).unwrap();
+        <Guild>::manage_role(Origin::signed(signer_1), RequestData::ReqCheck { account: signer_1, guild: guild_1, role: ROLE_2 }).unwrap();
+        <Guild>::manage_role(Origin::signed(signer_1), RequestData::ReqCheck { account: signer_1, guild: guild_1, role: ROLE_3 }).unwrap();
+        <Guild>::manage_role(Origin::signed(signer_1), RequestData::ReqCheck { account: signer_1, guild: guild_2, role: ROLE_1 }).unwrap();
+        // assign some roles to signer_2
+        <Guild>::manage_role(Origin::signed(signer_2), RequestData::ReqCheck { account: signer_2, guild: guild_1, role: ROLE_3 }).unwrap();
+        <Guild>::manage_role(Origin::signed(signer_2), RequestData::ReqCheck { account: signer_2, guild: guild_2, role: ROLE_3 }).unwrap();
+        // let in signer_1 to all roles except one
+        <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(true)]).unwrap();
+        request_id += 1;
+        <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(true)]).unwrap();
+        request_id += 1;
+        <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(true)]).unwrap();
+        request_id += 1;
+        let error = <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(false)]).unwrap_err();
         assert_eq!(error_msg(error), "AccessDenied");
-        <Oracle>::callback(Origin::signed(signer_1), 5, vec![u8::from(true)]).unwrap();
+        request_id += 1;
+        <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(true)]).unwrap();
+        request_id += 1;
+        <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(true)]).unwrap();
+        request_id += 1;
+        // check that all roles were properly assigned in storage
+        assert!(<Guild>::member(g1r1_id, signer_1).is_some());
+        assert!(<Guild>::member(g1r2_id, signer_1).is_some());
+        assert!(<Guild>::member(g1r3_id, signer_1).is_some());
+        assert!(<Guild>::member(g2r1_id, signer_1).is_none());
+        assert!(<Guild>::member(g2r2_id, signer_1).is_none());
+        assert!(<Guild>::member(g2r3_id, signer_1).is_none());
 
-        let guild_1_id = <Guild>::guild_id(guild_1_name).unwrap();
-        let guild_2_id = <Guild>::guild_id(guild_2_name).unwrap();
-        let role_1_id = <Guild>::role_id(guild_1_id, role_1_name).unwrap();
-        let role_2_id = <Guild>::role_id(guild_1_id, role_2_name).unwrap();
-        let role_3_id = <Guild>::role_id(guild_2_id, role_3_name).unwrap();
-        let role_4_id = <Guild>::role_id(guild_2_id, role_4_name).unwrap();
+        assert!(<Guild>::member(g1r1_id, signer_2).is_none());
+        assert!(<Guild>::member(g1r2_id, signer_2).is_none());
+        assert!(<Guild>::member(g1r3_id, signer_2).is_some());
+        assert!(<Guild>::member(g2r1_id, signer_2).is_none());
+        assert!(<Guild>::member(g2r2_id, signer_2).is_none());
+        assert!(<Guild>::member(g2r3_id, signer_2).is_some());
+        // leave guilds voluntarily (check that no oracle request was sent)
+        <Guild>::manage_role(Origin::signed(signer_1), RequestData::ReqCheck { account: signer_1, guild: guild_1, role: ROLE_1 }).unwrap();
+        assert!(<Oracle>::request(request_id).is_none());
+        assert!(<Guild>::member(g1r1_id, signer_1).is_none());
+        <Guild>::manage_role(Origin::signed(signer_1), RequestData::ReqCheck { account: signer_1, guild: guild_1, role: ROLE_2 }).unwrap();
+        assert!(<Oracle>::request(request_id).is_none());
+        assert!(<Guild>::member(g1r2_id, signer_1).is_none());
+        // request a role check on another registered user
+        <Guild>::manage_role(Origin::signed(signer_1), RequestData::ReqCheck { account: signer_2, guild: guild_1, role: ROLE_3 }).unwrap();
+        <Guild>::manage_role(Origin::signed(signer_1), RequestData::ReqCheck { account: signer_2, guild: guild_2, role: ROLE_3 }).unwrap();
+        // one request passes, but the other fails
+        <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(false)]).unwrap();
+        request_id += 1;
+        <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(true)]).unwrap();
+        request_id += 1;
+        // check that signer 2 is stripped of guild1-role3, but kept guild2-role3
+        assert!(<Guild>::member(g1r3_id, signer_2).is_none());
+        assert!(<Guild>::member(g2r3_id, signer_2).is_some());
+        // you cannot assign a role to another user
+        let error = <Guild>::manage_role(Origin::signed(signer_2), RequestData::ReqCheck { account: signer_1, guild: guild_1, role: ROLE_1 }).unwrap_err();
+        assert_eq!(error_msg(error), "BadOrigin");
+        // request check on other user that still passes
+        <Guild>::manage_role(Origin::signed(signer_2), RequestData::ReqCheck { account: signer_1, guild: guild_1, role: ROLE_3 }).unwrap();
+        <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(true)]).unwrap();
+        request_id += 1;
+        // fist user re-joins a previously left role
+        <Guild>::manage_role(Origin::signed(signer_1), RequestData::ReqCheck { account: signer_1, guild: guild_1, role: ROLE_1 }).unwrap();
+        <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(true)]).unwrap();
 
-        // 0th request passes
-        assert!(<Guild>::member(role_2_id, signer_1).is_some());
-        // 1st request passes
-        assert!(<Guild>::member(role_3_id, signer_1).is_some());
-        // 2nd request fails
-        assert!(<Guild>::member(role_4_id, signer_2).is_none());
-        // 3rd request passes
-        assert!(<Guild>::member(role_1_id, signer_2).is_some());
+        // check that all roles were properly assigned in storage
+        assert!(<Guild>::member(g1r1_id, signer_1).is_some());
+        assert!(<Guild>::member(g1r2_id, signer_1).is_none());
+        assert!(<Guild>::member(g1r3_id, signer_1).is_some());
+        assert!(<Guild>::member(g2r1_id, signer_1).is_none());
+        assert!(<Guild>::member(g2r2_id, signer_1).is_none());
+        assert!(<Guild>::member(g2r3_id, signer_1).is_none());
 
-        assert_eq!(<Guild>::user_data(signer_1), Some(user_1_id));
-        assert_eq!(<Guild>::user_data(signer_2), Some(user_2_id));
+        assert!(<Guild>::member(g1r1_id, signer_2).is_none());
+        assert!(<Guild>::member(g1r2_id, signer_2).is_none());
+        assert!(<Guild>::member(g1r3_id, signer_2).is_none());
+        assert!(<Guild>::member(g2r1_id, signer_2).is_none());
+        assert!(<Guild>::member(g2r2_id, signer_2).is_none());
+        assert!(<Guild>::member(g2r3_id, signer_2).is_some());
     });
 }
-*/

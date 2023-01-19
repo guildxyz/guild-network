@@ -59,44 +59,31 @@ pub fn dummy_answer(
 }
 
 pub fn new_guild(signer: AccountId, guild_name: [u8; 32]) {
-        let roles = vec![
+    let roles = vec![
+        (
+            ROLE_1,
             (
-                ROLE_1,
-                (
-                    LOGIC_1.to_vec(),
-                    vec![
-                        REQ_1.to_vec(),
-                        REQ_2.to_vec(),
-                        REQ_3.to_vec(),
-                    ],
-                ),
+                LOGIC_1.to_vec(),
+                vec![REQ_1.to_vec(), REQ_2.to_vec(), REQ_3.to_vec()],
             ),
+        ),
+        (
+            ROLE_2,
             (
-                ROLE_2,
-                (
-                    LOGIC_2.to_vec(),
-                    vec![
-                        REQ_1.to_vec(),
-                        REQ_2.to_vec(),
-                        REQ_3.to_vec(),
-                    ],
-                ),
+                LOGIC_2.to_vec(),
+                vec![REQ_1.to_vec(), REQ_2.to_vec(), REQ_3.to_vec()],
             ),
+        ),
+        (
+            ROLE_3,
             (
-                ROLE_3,
-                (
-                    LOGIC_3.to_vec(),
-                    vec![
-                        REQ_1.to_vec(),
-                        REQ_2.to_vec(),
-                        REQ_3.to_vec(),
-                    ],
-                ),
+                LOGIC_3.to_vec(),
+                vec![REQ_1.to_vec(), REQ_2.to_vec(), REQ_3.to_vec()],
             ),
-        ];
+        ),
+    ];
 
-        assert!(
-            <Guild>::create_guild(Origin::signed(signer), guild_name, METADATA.to_vec(), roles)
-                .is_ok()
-        );
+    assert!(
+        <Guild>::create_guild(Origin::signed(signer), guild_name, METADATA.to_vec(), roles).is_ok()
+    );
 }
