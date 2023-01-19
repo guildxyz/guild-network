@@ -276,7 +276,7 @@ impl pallet_guild::Config for Runtime {
     type MyRandomness = RandomnessCollectiveFlip;
     type MaxRolesPerGuild = ConstU32<64>;
     type MaxReqsPerRole = ConstU32<64>;
-    type MaxSerializedReqLen = ConstU32<64>;
+    type MaxSerializedReqLen = ConstU32<1024>;
 }
 
 impl pallet_oracle::Config for Runtime {
