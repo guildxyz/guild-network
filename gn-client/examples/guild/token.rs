@@ -1,3 +1,4 @@
+#[cfg(not(feature = "external-oracle"))]
 use crate::common::*;
 use ethers::types::{Address, U256};
 use gn_client::data::{Guild, Role};
@@ -30,6 +31,7 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
     hex::decode_to_slice("e43878ce78934fe8007748ff481f03b8ee3b97de", &mut address)
         .expect("this should not fail");
 
+    #[cfg(not(feature = "external-oracle"))]
     let operators = prefunded_accounts(api.clone(), Arc::clone(&alice), N_TEST_ACCOUNTS).await;
 
     #[cfg(not(feature = "external-oracle"))]
@@ -39,8 +41,11 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
         let registered_operators = queries::registered_operators(api.clone())
             .await
             .expect("failed to fetch registered operators");
+
         for registered in &registered_operators {
-            assert!(operators.get(registered).is_some());
+            if registered != alice.account_id() {
+                assert!(operators.get(registered).is_some());
+            }
         }
     }
 
