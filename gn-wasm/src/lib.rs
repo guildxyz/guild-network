@@ -270,9 +270,13 @@ mod test {
             let guilds_vec: Vec<gn_client::data::GuildData> =
                 deserialize_from_value(guilds).unwrap();
 
-            assert_eq!(guilds_vec.len(), 2);
-            assert_eq!(guilds_vec[0].roles.len(), 2);
-            assert_eq!(guilds_vec[1].roles.len(), 2);
+            assert_eq!(guilds_vec.len(), 3);
+            for guild in &guilds_vec {
+                if guild.name == "myguild" || guild.name == "mysecondguild" {
+                    assert_eq!(guild.roles[0], "myrole");
+                    assert_eq!(guild.roles[1], "mysecondrole");
+                }
+            }
         }
 
         #[wasm_bindgen_test]

@@ -18,7 +18,7 @@ benchmarks! {
         let guild_metadata = vec![155u8; 255];
         let mut roles = vec![];
         for i in 0 .. r {
-            let role = ([i as u8; 32], vec![123u8; 500]);
+            let role = ([i as u8; 32], (vec![123u8; 250], vec![vec![123u8; 250]]));
             roles.push(role);
         }
     }: _(RawOrigin::Signed(caller), guild_name, guild_metadata, roles)
@@ -56,7 +56,7 @@ benchmarks! {
         let guild_metadata = vec![155u8; 255];
         let mut roles = vec![];
         for i in 0..20 {
-            let role = ([i as u8; 32], vec![123u8; 500]);
+            let role = ([i as u8; 32], (vec![123u8; 250], vec![vec![123u8; 250]]));
             roles.push(role);
         }
 

@@ -1,3 +1,5 @@
+#[cfg(not(feature = "external-oracle"))]
+use crate::common::*;
 use ethers::types::{Address, U256};
 use gn_client::data::{Guild, Role};
 use gn_client::{queries, transactions, Api, RuntimeIdentityWithAuth, Signer};
@@ -29,6 +31,24 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
     hex::decode_to_slice("e43878ce78934fe8007748ff481f03b8ee3b97de", &mut address)
         .expect("this should not fail");
 
+    #[cfg(not(feature = "external-oracle"))]
+    let operators = prefunded_accounts(api.clone(), Arc::clone(&alice), N_TEST_ACCOUNTS).await;
+
+    #[cfg(not(feature = "external-oracle"))]
+    {
+        let registering_operators = operators.values();
+        register_operators(api.clone(), registering_operators).await;
+        let registered_operators = queries::registered_operators(api.clone())
+            .await
+            .expect("failed to fetch registered operators");
+
+        for registered in &registered_operators {
+            if registered != alice.account_id() {
+                assert!(operators.get(registered).is_some());
+            }
+        }
+    }
+
     // register alice with test evm address + signature
     let evm_identity = RuntimeIdentityWithAuth::EvmChain(address, signature);
 
@@ -36,6 +56,9 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
     transactions::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
         .await
         .expect("failed to register");
+
+    #[cfg(not(feature = "external-oracle"))]
+    send_dummy_oracle_answers(api.clone(), &operators).await;
 
     loop {
         let user_identity = queries::user_identity(api.clone(), alice.account_id())
@@ -134,6 +157,9 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
         role: Some(FIRST_ROLE),
     };
 
+    #[cfg(not(feature = "external-oracle"))]
+    send_dummy_oracle_answers(api.clone(), &operators).await;
+
     loop {
         let members = queries::members(api.clone(), Some(&guild_filter), PAGE_SIZE)
             .await
@@ -155,6 +181,9 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
         name: TOKEN_GUILD,
         role: Some(SECOND_ROLE),
     };
+
+    #[cfg(not(feature = "external-oracle"))]
+    send_dummy_oracle_answers(api.clone(), &operators).await;
 
     loop {
         let members = queries::members(api.clone(), Some(&guild_filter), PAGE_SIZE)

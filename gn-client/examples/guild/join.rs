@@ -16,8 +16,11 @@ pub async fn join(api: Api, alice: Arc<Signer>) {
         let registered_operators = registered_operators(api.clone())
             .await
             .expect("failed to fetch registered operators");
+
         for registered in &registered_operators {
-            assert!(operators.get(registered).is_some());
+            if registered != alice.account_id() {
+                assert!(operators.get(registered).is_some());
+            }
         }
     }
 

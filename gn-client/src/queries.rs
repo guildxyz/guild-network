@@ -203,11 +203,27 @@ pub async fn requirements(
         .get(0)
         .ok_or_else(|| SubxtError::Other(format!("no role with name: {role_name:#?}")))?;
     let requirements_addr = runtime::storage().guild().roles(role_id);
-    let requirements_vec = api
+    let requirements_logic_ser = api
         .storage()
         .fetch(&requirements_addr, None)
         .await?
         .ok_or_else(|| SubxtError::Other(format!("no role with name: {role_name:#?}")))?;
 
-    cbor_deserialize(&requirements_vec).map_err(|e| SubxtError::Other(e.to_string()))
+    let mut reqs_with_logic = RequirementsWithLogic {
+        logic: "".to_string(),
+        requirements: vec![],
+    };
+
+    match cbor_deserialize(&requirements_logic_ser.logic) {
+        Ok(req) => reqs_with_logic.logic = req,
+        Err(err) => return Err(SubxtError::Other(err.to_string())),
+    };
+
+    for req in requirements_logic_ser.requirements {
+        match cbor_deserialize(&req) {
+            Ok(req) => reqs_with_logic.requirements.push(req),
+            Err(err) => return Err(SubxtError::Other(err.to_string())),
+        };
+    }
+    Ok(reqs_with_logic)
 }
