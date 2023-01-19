@@ -84,7 +84,7 @@ fn advanced_checks() {
         assert_eq!(request.requester, signer);
         assert_eq!(request.operator, signer);
         let request_data = Request::<AccountId>::decode(&mut request.data.as_slice()).unwrap();
-        assert_eq!(request_data.data, reqcheck_payload.clone());
+        assert_eq!(request_data.data, reqcheck_payload);
         <Oracle>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
 
         // strip role request successfully submitted by any signer
@@ -92,7 +92,7 @@ fn advanced_checks() {
         request_id += 1;
         let request = <Oracle>::request(request_id).unwrap();
         assert_eq!(request.requester, signer + 1);
-        assert_eq!(request_data.data, reqcheck_payload.clone());
+        assert_eq!(request_data.data, reqcheck_payload);
 
         // strip role request immediately executed if the signer is the same
         // without any oracle involvement
