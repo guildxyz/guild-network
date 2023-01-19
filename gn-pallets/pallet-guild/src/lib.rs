@@ -122,7 +122,8 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         GuildCreated(T::AccountId, GuildName),
-        GuildJoined(T::AccountId, GuildName, RoleName),
+        RoleAssigned(T::AccountId, GuildName, RoleName),
+        RoleStripped(T::AccountId, GuildName, RoleName),
     }
 
     #[pallet::error]
@@ -134,8 +135,9 @@ pub mod pallet {
         InvalidOracleAnswer,
         InvalidRequestData,
         IdentityTypeAlreadyExists,
-        JoinRequestDoesNotExist,
-        UserAlreadyJoined,
+        RequestDoesNotExist,
+        RoleAlreadyAssigned,
+        RoleNotAssigned,
         UserNotRegistered,
         CodecError,
         MaxRolesPerGuildExceeded,
@@ -148,22 +150,9 @@ pub mod pallet {
     #[pallet::generate_store(pub(super) trait Store)]
     pub struct Pallet<T>(_);
 
-    impl<T: Config> Pallet<T> {
-        fn get_and_increment_nonce() -> SerializedData {
-            let nonce = Nonce::<T>::get();
-            Nonce::<T>::put(nonce.wrapping_add(1));
-            nonce.encode()
-        }
-
-        fn get_random_uuid() -> T::Hash {
-            let nonce = Self::get_and_increment_nonce();
-            let (random_value, _) = T::MyRandomness::random(&nonce);
-            random_value
-        }
-    }
-
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        #[pallet::call_index(0)]
         #[pallet::weight(1000)] //T::WeightInfo::register())]
         pub fn register(origin: OriginFor<T>, data: RequestData) -> DispatchResult {
             let requester = ensure_signed(origin.clone())?;
@@ -215,6 +204,7 @@ pub mod pallet {
             Ok(())
         }
 
+        #[pallet::call_index(1)]
         #[pallet::weight(1000)] //T::WeightInfo::create_guild())]
         pub fn create_guild(
             origin: OriginFor<T>,
@@ -275,28 +265,21 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1000)] //T::WeightInfo::join_guild())]
-        pub fn join_guild(origin: OriginFor<T>, data: RequestData) -> DispatchResult {
+        #[pallet::call_index(2)]
+        #[pallet::weight(1000)]
+        pub fn assign_role(origin: OriginFor<T>, data: RequestData) -> DispatchResult {
             let requester = ensure_signed(origin.clone())?;
 
             // check data variant
             match data {
-                RequestData::Join {
+                RequestData::ReqCheck {
                     guild: guild_name,
                     role: role_name,
-                } => Self::join_request_check(&requester, &guild_name, &role_name)?,
+                } => Self::request_check(&requester, &guild_name, &role_name, true)?,
                 _ => return Err(Error::<T>::InvalidRequestData.into()),
             };
 
-            // check user has registered
-            ensure!(
-                <UserData<T>>::contains_key(&requester),
-                Error::<T>::UserNotRegistered
-            );
-
-            // after all successful checks, we can create our request
-            let request = Request::<T::AccountId> { requester, data };
-
+            let request = Request { requester, data };
             let call: <T as OracleConfig>::Callback = Call::callback {
                 result: SpVec::new(),
             };
@@ -306,6 +289,51 @@ pub mod pallet {
             Ok(())
         }
 
+        #[pallet::call_index(3)]
+        #[pallet::weight(1000)]
+        pub fn strip_role(
+            origin: OriginFor<T>,
+            data: RequestData,
+            account: T::AccountId,
+        ) -> DispatchResult {
+            let signer = ensure_signed(origin.clone())?;
+
+            // check data variant
+            match data {
+                RequestData::ReqCheck {
+                    guild: guild_name,
+                    role: role_name,
+                } => {
+                    let role_id = Self::request_check(&account, &guild_name, &role_name, false)?;
+                    if signer == account {
+                        // no need for oracle check if leaving voluntarily
+                        Members::<T>::remove(&role_id, &account);
+                        Self::deposit_event(Event::RoleStripped(account, guild_name, role_name));
+                    } else {
+                        let request = Request {
+                            requester: account,
+                            data,
+                        };
+                        let call: <T as OracleConfig>::Callback = Call::callback {
+                            result: SpVec::new(),
+                        };
+                        let fee = BalanceOf::<T>::unique_saturated_from(
+                            <T as OracleConfig>::MinimumFee::get(),
+                        );
+                        <pallet_oracle::Pallet<T>>::initiate_request(
+                            origin,
+                            call,
+                            request.encode(),
+                            fee,
+                        )?;
+                    }
+                    Ok(())
+                }
+                _ => Err(Error::<T>::InvalidRequestData.into()),
+            }
+        }
+
+        #[pallet::call_index(4)]
         #[pallet::weight(0)]
         pub fn callback(origin: OriginFor<T>, result: SerializedData) -> DispatchResult {
             // NOTE this ensures that only the root can call this function via
@@ -328,14 +356,14 @@ pub mod pallet {
                 .map_err(|_| Error::<T>::CodecError)?;
 
             match request.data {
-                RequestData::Join {
+                RequestData::ReqCheck {
                     guild: guild_name,
                     role: role_name,
                 } => {
                     let role_id =
-                        Self::join_request_check(&request.requester, &guild_name, &role_name)?;
+                        Self::request_check(&request.requester, &guild_name, &role_name, true)?;
                     Members::<T>::insert(role_id, &request.requester, true);
-                    Self::deposit_event(Event::GuildJoined(
+                    Self::deposit_event(Event::RoleAssigned(
                         request.requester,
                         guild_name,
                         role_name,
@@ -368,21 +396,47 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        fn join_request_check(
+        fn request_check(
             requester: &T::AccountId,
             guild_name: &GuildName,
             role_name: &RoleName,
+            assign_role: bool,
         ) -> Result<T::Hash, DispatchError> {
             let guild_id = Self::guild_id(guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
-
             let role_id = Self::role_id(guild_id, role_name).ok_or(Error::<T>::RoleDoesNotExist)?;
 
+            // check the requester is registered
             ensure!(
-                !Members::<T>::contains_key(role_id, requester),
-                Error::<T>::UserAlreadyJoined
+                <UserData<T>>::contains_key(&requester),
+                Error::<T>::UserNotRegistered
             );
 
+            // if we want to
+            if assign_role {
+                ensure!(
+                    !Members::<T>::contains_key(role_id, requester),
+                    Error::<T>::RoleAlreadyAssigned
+                );
+            } else {
+                ensure!(
+                    Members::<T>::contains_key(role_id, requester),
+                    Error::<T>::RoleNotAssigned
+                );
+            }
+
             Ok(role_id)
+        }
+
+        fn get_and_increment_nonce() -> SerializedData {
+            let nonce = Nonce::<T>::get();
+            Nonce::<T>::put(nonce.wrapping_add(1));
+            nonce.encode()
+        }
+
+        fn get_random_uuid() -> T::Hash {
+            let nonce = Self::get_and_increment_nonce();
+            let (random_value, _) = T::MyRandomness::random(&nonce);
+            random_value
         }
     }
 

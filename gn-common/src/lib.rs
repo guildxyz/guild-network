@@ -30,5 +30,5 @@ pub struct Request<T> {
 #[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Debug)]
 pub enum RequestData {
     Register(SpVec<identities::IdentityWithAuth>),
-    Join { guild: GuildName, role: RoleName },
+    ReqCheck { guild: GuildName, role: RoleName },
 }

@@ -196,7 +196,7 @@ fn callback_can_only_be_called_by_root() {
         let access = dummy_answer(
             vec![u8::from(true)],
             2,
-            RequestData::Join {
+            RequestData::ReqCheck {
                 guild: [0; 32],
                 role: [1; 32],
             },
@@ -219,7 +219,7 @@ fn register_user() {
         // wrong request data variant
         let error = <Guild>::register(
             Origin::signed(operator),
-            RequestData::Join {
+            RequestData::ReqCheck {
                 guild: [0; 32],
                 role: [1; 32],
             },
@@ -313,23 +313,23 @@ fn invalid_multiple_type_register() {
 }
 
 #[test]
-fn invalid_join_guild_request() {
+fn invalid_assign_role_request() {
     new_test_runtime().execute_with(|| {
         init_chain();
         let signer = 1;
         let guild_name = [0u8; 32];
         let role_name = [1u8; 32];
-        let request_data = RequestData::Join {
+        let request_data = RequestData::ReqCheck {
             guild: [111; 32],
             role: [255; 32],
         };
 
-        // try join with invalid data variant
+        // try assign role with invalid data variant
         let error =
-            <Guild>::join_guild(Origin::signed(signer), RequestData::Register(vec![])).unwrap_err();
+            <Guild>::assign_role(Origin::signed(signer), RequestData::Register(vec![])).unwrap_err();
         assert_eq!(error_msg(error), "InvalidRequestData");
-        // try join non-existend guild
-        let error = <Guild>::join_guild(Origin::signed(signer), request_data).unwrap_err();
+        // try assign non-existent guild's role
+        let error = <Guild>::assign_role(Origin::signed(signer), request_data).unwrap_err();
         assert_eq!(error_msg(error), "GuildDoesNotExist");
         assert_eq!(<Guild>::next_request_id(), 0);
 
@@ -342,32 +342,32 @@ fn invalid_join_guild_request() {
         )
         .unwrap();
 
-        // try join existing guild with invalid role
-        let request_data = RequestData::Join {
+        // try join existing guild with non-existent role
+        let request_data = RequestData::ReqCheck {
             guild: guild_name,
             role: [255; 32],
         };
-        let error = <Guild>::join_guild(Origin::signed(signer), request_data).unwrap_err();
+        let error = <Guild>::assign_role(Origin::signed(signer), request_data).unwrap_err();
         assert_eq!(error_msg(error), "RoleDoesNotExist");
         //  try join without registering first
-        let request_data = RequestData::Join {
+        let request_data = RequestData::ReqCheck {
             guild: guild_name,
             role: role_name,
         };
-        let error = <Guild>::join_guild(Origin::signed(signer), request_data).unwrap_err();
+        let error = <Guild>::assign_role(Origin::signed(signer), request_data).unwrap_err();
         assert_eq!(error_msg(error), "UserNotRegistered");
     });
 }
 
 #[test]
-fn valid_join_guild_request() {
+fn valid_assign_role_request() {
     new_test_runtime().execute_with(|| {
         init_chain();
         let guild_name = [0u8; 32];
         let role_name = [1u8; 32];
         let signer = 1;
         let register = RequestData::Register(vec![]);
-        let join = RequestData::Join {
+        let join = RequestData::ReqCheck {
             guild: guild_name,
             role: role_name,
         };
@@ -392,7 +392,7 @@ fn valid_join_guild_request() {
 
         <Oracle>::callback(Origin::signed(signer), request_id, vec![u8::from(true)]).unwrap();
 
-        <Guild>::join_guild(Origin::signed(signer), join.clone()).unwrap();
+        <Guild>::assign_role(Origin::signed(signer), join.clone()).unwrap();
         request_id += 1;
 
         let request = <Oracle>::request(request_id).unwrap();
@@ -400,6 +400,14 @@ fn valid_join_guild_request() {
         assert_eq!(request.operator, signer);
         let request_data = Request::<AccountId>::decode(&mut request.data.as_slice()).unwrap();
         assert_eq!(request_data.data, join);
+    });
+}
+
+#[test]
+fn strip_role_request() {
+    new_test_runtime().execute_with(|| {
+        init_chain();
+
     });
 }
 
@@ -434,9 +442,9 @@ fn joining_a_guild() {
         request_id += 1;
 
         // join first role
-        <Guild>::join_guild(
+        <Guild>::assign_role(
             Origin::signed(signer),
-            RequestData::Join {
+            RequestData::ReqCheck {
                 guild: guild_name,
                 role: role_1_name,
             },
@@ -449,7 +457,7 @@ fn joining_a_guild() {
 
         assert_eq!(
             last_event(),
-            Event::Guild(pallet_guild::Event::GuildJoined(
+            Event::Guild(pallet_guild::Event::RoleAssigned(
                 signer,
                 guild_name,
                 role_1_name
@@ -464,9 +472,9 @@ fn joining_a_guild() {
         assert_eq!(<Guild>::user_data(signer), Some(vec![]));
 
         // try join second role
-        <Guild>::join_guild(
+        <Guild>::assign_role(
             Origin::signed(signer),
-            RequestData::Join {
+            RequestData::ReqCheck {
                 guild: guild_name,
                 role: role_2_name,
             },
@@ -483,9 +491,9 @@ fn joining_a_guild() {
         assert!(<Guild>::member(role_2_id, signer).is_none());
 
         // try join second role again
-        <Guild>::join_guild(
+        <Guild>::assign_role(
             Origin::signed(signer),
-            RequestData::Join {
+            RequestData::ReqCheck {
                 guild: guild_name,
                 role: role_2_name,
             },
@@ -499,7 +507,7 @@ fn joining_a_guild() {
 
         assert_eq!(
             last_event(),
-            Event::Guild(pallet_guild::Event::GuildJoined(
+            Event::Guild(pallet_guild::Event::RoleAssigned(
                 signer,
                 guild_name,
                 role_2_name
@@ -533,9 +541,9 @@ fn joining_the_same_role_in_a_guild_twice_fails() {
         request_id += 1;
 
         // join first time
-        <Guild>::join_guild(
+        <Guild>::assign_role(
             Origin::signed(signer),
-            RequestData::Join {
+            RequestData::ReqCheck {
                 guild: guild_name,
                 role: role_name,
             },
@@ -549,16 +557,16 @@ fn joining_the_same_role_in_a_guild_twice_fails() {
         assert!(<Guild>::member(role_id, signer).is_some());
 
         // try to join again
-        let error = <Guild>::join_guild(
+        let error = <Guild>::assign_role(
             Origin::signed(signer),
-            RequestData::Join {
+            RequestData::ReqCheck {
                 guild: guild_name,
                 role: role_name,
             },
         )
         .unwrap_err();
 
-        assert_eq!(error_msg(error), "UserAlreadyJoined");
+        assert_eq!(error_msg(error), "RoleAlreadyAssigned");
         assert!(<Guild>::member(role_id, signer).is_some());
     });
 }
@@ -617,17 +625,17 @@ fn joining_multiple_guilds() {
         <Oracle>::callback(Origin::signed(signer_1), 1, vec![u8::from(true)]).unwrap();
 
         // signer 1 wants to join both guilds
-        <Guild>::join_guild(
+        <Guild>::assign_role(
             Origin::signed(signer_1),
-            RequestData::Join {
+            RequestData::ReqCheck {
                 guild: guild_1_name,
                 role: role_2_name,
             },
         )
         .unwrap();
-        <Guild>::join_guild(
+        <Guild>::assign_role(
             Origin::signed(signer_1),
-            RequestData::Join {
+            RequestData::ReqCheck {
                 guild: guild_2_name,
                 role: role_3_name,
             },
@@ -635,17 +643,17 @@ fn joining_multiple_guilds() {
         .unwrap();
 
         // signer 2 wants to join both guilds
-        <Guild>::join_guild(
+        <Guild>::assign_role(
             Origin::signed(signer_2),
-            RequestData::Join {
+            RequestData::ReqCheck {
                 guild: guild_2_name,
                 role: role_4_name,
             },
         )
         .unwrap();
-        <Guild>::join_guild(
+        <Guild>::assign_role(
             Origin::signed(signer_2),
-            RequestData::Join {
+            RequestData::ReqCheck {
                 guild: guild_1_name,
                 role: role_1_name,
             },
