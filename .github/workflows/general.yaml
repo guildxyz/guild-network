@@ -35,9 +35,9 @@ jobs:
           context: .
           push: false
           build-args: |
-            ETHEREUM_RPC_TOKEN=${{ secrets.ETHEREUM_RPC_TOKEN }}
-            POLYGON_RPC_TOKEN=${{ secrets.POLYGON_RPC_TOKEN }}
-            GOERLI_RPC_TOKEN=${{ secrets.GOERLI_RPC_TOKEN }}
-            ARBITRUM_RPC_TOKEN=${{ secrets.ARBITRUM_RPC_TOKEN }}
-            PALM_RPC_TOKEN=${{ secrets.PALM_RPC_TOKEN }}
-            METIS_RPC_TOKEN=${{ secrets.METIS_RPC_TOKEN }}
+            ETHEREUM_RPC=${{ secrets.ETHEREUM_RPC }}
+            POLYGON_RPC=${{ secrets.POLYGON_RPC }}
+            GOERLI_RPC=${{ secrets.GOERLI_RPC }}
+            ARBITRUM_RPC=${{ secrets.ARBITRUM_RPC }}
+            PALM_RPC=${{ secrets.PALM_RPC }}
+            METIS_RPC=${{ secrets.METIS_RPC }}
