@@ -44,6 +44,11 @@ fn successful_registration() {
             Some(vec![Identity::EvmChain([0; 20]), Identity::Discord(123)])
         );
 
+        assert_eq!(
+            last_event(),
+            Event::Guild(pallet_guild::Event::UserRegistered(user_1))
+        );
+
         // re-register identities but only new ones are pushed
         // NOTE: this behavior should be purposefully broken
         let identities_with_auth = vec![
@@ -82,6 +87,10 @@ fn successful_registration() {
                 Identity::Discord(12),
                 Identity::Telegram(33)
             ])
+        );
+        assert_eq!(
+            last_event(),
+            Event::Guild(pallet_guild::Event::UserRegistered(user_2))
         );
     });
 }

@@ -155,6 +155,7 @@ fn storage_checks() {
         request_id += 1;
         <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(true)]).unwrap();
         request_id += 1;
+        assert_eq!(last_event(), Event::Guild(pallet_guild::Event::RoleAssigned(signer_1, guild_1, ROLE_3)));
         let error = <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(false)]).unwrap_err();
         assert_eq!(error_msg(error), "AccessDenied");
         request_id += 1;
@@ -162,6 +163,7 @@ fn storage_checks() {
         request_id += 1;
         <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(true)]).unwrap();
         request_id += 1;
+        assert_eq!(last_event(), Event::Guild(pallet_guild::Event::RoleAssigned(signer_2, guild_2, ROLE_3)));
         // check that all roles were properly assigned in storage
         assert!(<Guild>::member(g1r1_id, signer_1).is_some());
         assert!(<Guild>::member(g1r2_id, signer_1).is_some());
@@ -183,6 +185,7 @@ fn storage_checks() {
         <Guild>::manage_role(Origin::signed(signer_1), RequestData::ReqCheck { account: signer_1, guild: guild_1, role: ROLE_2 }).unwrap();
         assert!(<Oracle>::request(request_id).is_none());
         assert!(<Guild>::member(g1r2_id, signer_1).is_none());
+        assert_eq!(last_event(), Event::Guild(pallet_guild::Event::RoleStripped(signer_1, guild_1, ROLE_2)));
         // request a role check on another registered user
         <Guild>::manage_role(Origin::signed(signer_1), RequestData::ReqCheck { account: signer_2, guild: guild_1, role: ROLE_3 }).unwrap();
         <Guild>::manage_role(Origin::signed(signer_1), RequestData::ReqCheck { account: signer_2, guild: guild_2, role: ROLE_3 }).unwrap();
@@ -191,6 +194,7 @@ fn storage_checks() {
         request_id += 1;
         <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(true)]).unwrap();
         request_id += 1;
+        assert_eq!(last_event(), Event::Guild(pallet_guild::Event::RoleStripped(signer_2, guild_1, ROLE_3))); // g1r3 is stripped
         // check that signer 2 is stripped of guild1-role3, but kept guild2-role3
         assert!(<Guild>::member(g1r3_id, signer_2).is_none());
         assert!(<Guild>::member(g2r3_id, signer_2).is_some());
@@ -204,6 +208,7 @@ fn storage_checks() {
         // fist user re-joins a previously left role
         <Guild>::manage_role(Origin::signed(signer_1), RequestData::ReqCheck { account: signer_1, guild: guild_1, role: ROLE_1 }).unwrap();
         <Oracle>::callback(Origin::signed(signer_1), request_id, vec![u8::from(true)]).unwrap();
+        assert_eq!(last_event(), Event::Guild(pallet_guild::Event::RoleAssigned(signer_1, guild_1, ROLE_1)));
 
         // check that all roles were properly assigned in storage
         assert!(<Guild>::member(g1r1_id, signer_1).is_some());

@@ -122,6 +122,7 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         GuildCreated(T::AccountId, GuildName),
+        UserRegistered(T::AccountId),
         RoleAssigned(T::AccountId, GuildName, RoleName),
         RoleStripped(T::AccountId, GuildName, RoleName),
     }
@@ -135,8 +136,6 @@ pub mod pallet {
         InvalidOracleAnswer,
         InvalidRequestData,
         IdentityTypeAlreadyExists,
-        RequestDoesNotExist,
-        RoleNotAssigned,
         UserNotRegistered,
         CodecError,
         MaxRolesPerGuildExceeded,
@@ -380,6 +379,7 @@ pub mod pallet {
                             }
                         })
                     }
+                    Self::deposit_event(Event::UserRegistered(request.requester));
                 }
             }
 
