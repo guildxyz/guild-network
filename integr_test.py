@@ -1,5 +1,7 @@
 from subprocess import Popen, DEVNULL, PIPE, run
 from threading import Thread
+import sys
+import shlex
 import os
 import time
 
@@ -15,7 +17,8 @@ def start_node():
         if int(time.time() - start) == 10:
             print("Node startup timeout, exiting...")
             os._exit(-1)
-    print(line)
+    sys.stdout.buffer.write(line)
+    sys.stdout.buffer.flush()
     return node
 
 
@@ -30,7 +33,8 @@ def start_oracle():
         if int(time.time() - start) == 10:
             print("Oracle startup timeout, exiting...")
             os._exit(-1)
-    print(line)
+    sys.stdout.buffer.write(line)
+    sys.stdout.buffer.flush()
     return oracle
 
 
@@ -38,7 +42,8 @@ def monitor_oracle(oracle, node):
     while True:
         line = oracle.stderr.readline()
         if line != b"":
-            print(line)
+            sys.stderr.buffer.write(line)
+            sys.stderr.buffer.flush()
         retcode = oracle.poll()
         if retcode is not None:
             print(f"Oracle exit status: {retcode}")
@@ -58,8 +63,8 @@ def main():
 
         command = "cargo run --release --example guild --features external-oracle -- --example "
 
-        run((command + "join").split(" "))
-        run((command + "token").split(" "))
+        run(shlex.split(command + "join"))
+        run(shlex.split(command + "token"))
         oracle_monitor.join()
     except KeyboardInterrupt:
         node.kill()
