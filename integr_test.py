@@ -1,4 +1,4 @@
-from subprocess import Popen, DEVNULL, PIPE, run
+from subprocess import Popen, DEVNULL, PIPE, run, TimeoutExpired
 from threading import Thread
 import sys
 import shlex
@@ -39,20 +39,40 @@ def start_oracle():
 
 
 def monitor_oracle(oracle, node):
+    retcode = monitor_process(oracle)
+    if retcode != 0:
+        node.kill()
+        while node.poll() is None:
+            pass
+        os._exit(retcode)
+
+
+def monitor_process(process):
     while True:
-        line = oracle.stderr.readline()
+        line = process.stderr.readline()
         if line != b"":
             sys.stderr.buffer.write(line)
             sys.stderr.buffer.flush()
-        retcode = oracle.poll()
+        retcode = process.poll()
         if retcode is not None:
-            print(f"Oracle exit status: {retcode}")
-            node.kill()
-            while node.poll() is None:
-                pass
-            os._exit(retcode)
+            print(f"Process exit status: {retcode}")
+            return retcode
 
 
+def run_tests(*commands, timeout=300):
+    try:
+        for cmd in commands:
+            test = run(shlex.split(cmd), timeout=timeout)
+            if test.returncode != 0:
+                return test.returncode
+        return 0
+    except TimeoutExpired:
+        sys.stderr.write("Test timeout expired\n")
+        sys.stderr.flush()
+        return -1
+
+
+# NOTE: this script is a rushed abomination of bodged half solutions, but it does the job
 def main():
     try:
         node = start_node()
@@ -63,8 +83,15 @@ def main():
 
         command = "cargo run --release --example guild --features external-oracle -- --example "
 
-        run(shlex.split(command + "join"))
-        run(shlex.split(command + "token"))
+        status = run_tests(command + "join",
+                           command + "token", timeout=180)
+        if status != 0:
+            sys.stderr.write("Cleaning up processes\n")
+            sys.stderr.flush()
+            node.kill()
+            oracle.kill()
+            os._exit(status)
+
         oracle_monitor.join()
     except KeyboardInterrupt:
         node.kill()
