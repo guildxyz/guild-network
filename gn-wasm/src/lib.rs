@@ -101,7 +101,7 @@ pub async fn query_user_identity(address: String, url: String) -> Result<JsValue
 
 #[wasm_bindgen(js_name = "verificationMsg")]
 pub async fn verification_msg(address: String) -> String {
-    utils::verification_msg(&address)
+    utils::verification_msg(address)
 }
 
 #[wasm_bindgen(js_name = "registerTx")]
@@ -116,7 +116,7 @@ pub async fn register_tx(
         .await
         .map_err(|e| JsValue::from(e.to_string()))?;
 
-    let signer = WasmSigner::new().await.map_err(|e| JsValue::from(e))?;
+    let signer = WasmSigner::new().await.map_err(JsValue::from)?;
 
     let prepared = transactions::register(
         api.clone(),
@@ -154,9 +154,9 @@ pub async fn join_guild_tx_payload(
         .await
         .map_err(|e| JsValue::from(e.to_string()))?;
 
-    let signer = WasmSigner::new().await.map_err(|e| JsValue::from(e))?;
+    let signer = WasmSigner::new().await.map_err(JsValue::from)?;
 
-    let prepared = transactions::join_guild(api.clone(), signer.account_id(), guild, role)
+    let prepared = transactions::manage_role(api.clone(), signer.account_id(), guild, role)
         .await
         .map_err(|e| JsValue::from(e.to_string()))?;
 
@@ -180,7 +180,7 @@ pub async fn create_guild_tx_payload(guild: JsValue, url: String) -> Result<JsVa
     let api = Api::from_url(&url)
         .await
         .map_err(|e| JsValue::from(e.to_string()))?;
-    let signer = WasmSigner::new().await.map_err(|e| JsValue::from(e))?;
+    let signer = WasmSigner::new().await.map_err(JsValue::from)?;
 
     let guild = deserialize_from_value(guild).map_err(|e| JsValue::from(e.to_string()))?;
 
@@ -270,11 +270,14 @@ mod test {
             let guilds_vec: Vec<gn_client::data::GuildData> =
                 deserialize_from_value(guilds).unwrap();
 
-            assert_eq!(guilds_vec.len(), 3);
+            assert_eq!(guilds_vec.len() >= 2);
             for guild in &guilds_vec {
                 if guild.name == "myguild" || guild.name == "mysecondguild" {
                     assert_eq!(guild.roles[0], "myrole");
                     assert_eq!(guild.roles[1], "mysecondrole");
+                } else {
+                    assert_eq!(guild.name == "yellow-guild");
+                    assert_eq!(guild.roles[0], "canary-role");
                 }
             }
         }

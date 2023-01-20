@@ -10,7 +10,7 @@ pub async fn create_guild(
     let tx_payload = transactions::create_guild(guild)?;
     let prepared = api
         .tx()
-        .prepare_unsigned(&tx_payload, &account_id, Default::default())
+        .prepare_unsigned(&tx_payload, account_id, Default::default())
         .await?;
 
     Ok(prepared)

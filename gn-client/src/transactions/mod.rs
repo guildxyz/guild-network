@@ -49,8 +49,13 @@ pub fn register(identities: Vec<RuntimeIdentityWithAuth>) -> impl TxPayload {
         .register(RequestData::Register(identities))
 }
 
-pub fn join_guild(guild_name: GuildName, role_name: RoleName) -> impl TxPayload {
-    runtime::tx().guild().join_guild(RequestData::Join {
+pub fn manage_role(
+    account: AccountId,
+    guild_name: GuildName,
+    role_name: RoleName,
+) -> impl TxPayload {
+    runtime::tx().guild().manage_role(RequestData::ReqCheck {
+        account,
         guild: guild_name,
         role: role_name,
     })

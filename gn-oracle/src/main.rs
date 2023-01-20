@@ -142,7 +142,7 @@ async fn try_submit_answer(
 
     let oracle_answer = match oracle_request.data {
         RequestData::Register(identities) => {
-            log::info!("user registration: {}", oracle_request.requester);
+            log::info!("[registration request] acc: {}", oracle_request.requester);
             // deserialize user identities
             let expected_msg = verification_msg(&oracle_request.requester);
             match identities
@@ -157,16 +157,24 @@ async fn try_submit_answer(
                 }
             }
         }
-        RequestData::Join { guild, role } => {
-            log::info!("join guild request: {:?}, role: {:?}", guild, role);
+        RequestData::ReqCheck {
+            account,
+            guild,
+            role,
+        } => {
+            log::info!(
+                "[requirement check request] acc: {}, guild: {:?}, role: {:?}",
+                account,
+                guild,
+                role
+            );
             // fetch requirements
             let requirements_with_logic = requirements(api.clone(), guild, role).await?;
             // build requireemnt tree from logic
             let requirement_tree = requiem::LogicTree::from_str(&requirements_with_logic.logic)
                 .map_err(|e| SubxtError::Other(e.to_string()))?;
-            let identity_map = IdentityMap::from_identities(
-                user_identity(api.clone(), &oracle_request.requester).await?,
-            );
+            let identity_map =
+                IdentityMap::from_identities(user_identity(api.clone(), &account).await?);
             let requirement_futures = requirements_with_logic
                 .requirements
                 .iter()
