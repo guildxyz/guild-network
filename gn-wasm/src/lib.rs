@@ -270,13 +270,13 @@ mod test {
             let guilds_vec: Vec<gn_client::data::GuildData> =
                 deserialize_from_value(guilds).unwrap();
 
-            assert_eq!(guilds_vec.len() >= 2);
+            assert!(guilds_vec.len() >= 2);
             for guild in &guilds_vec {
                 if guild.name == "myguild" || guild.name == "mysecondguild" {
                     assert_eq!(guild.roles[0], "myrole");
                     assert_eq!(guild.roles[1], "mysecondrole");
                 } else {
-                    assert_eq!(guild.name == "yellow-guild");
+                    assert_eq!(guild.name, "yellow-guild");
                     assert_eq!(guild.roles[0], "canary-role");
                 }
             }
