@@ -37,7 +37,7 @@ jobs:
           build-args: |
             ETHEREUM_RPC=${{ secrets.ETHEREUM_RPC }}
             POLYGON_RPC=${{ secrets.POLYGON_RPC }}
-            GOERLI_RPC=${{ secrets.GOERLI_RPC }}
+            BSC_RPC=${{ secrets.BSC_RPC }}
+            GNOSIS_RPC=${{ secrets.GNOSIS_RPC }}
             ARBITRUM_RPC=${{ secrets.ARBITRUM_RPC }}
-            PALM_RPC=${{ secrets.PALM_RPC }}
-            METIS_RPC=${{ secrets.METIS_RPC }}
+            GOERLI_RPC=${{ secrets.GOERLI_RPC }}
