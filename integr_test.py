@@ -84,7 +84,7 @@ def main():
         command = "cargo run --release --example guild --features external-oracle -- --example "
 
         status = run_tests(command + "join",
-                           command + "token", timeout=180)
+                           command + "token", timeout=90)
         if status != 0:
             sys.stderr.write("Cleaning up processes\n")
             sys.stderr.flush()
@@ -92,7 +92,6 @@ def main():
             oracle.kill()
             os._exit(status)
 
-        oracle_monitor.join()
     except KeyboardInterrupt:
         node.kill()
         oracle.kill()
