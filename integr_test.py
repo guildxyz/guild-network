@@ -55,7 +55,6 @@ def monitor_process(process):
             sys.stderr.buffer.flush()
         retcode = process.poll()
         if retcode is not None:
-            print(f"Process exit status: {retcode}")
             return retcode
 
 
@@ -63,9 +62,8 @@ def run_tests(*commands, timeout=300):
     try:
         for cmd in commands:
             test = run(shlex.split(cmd), timeout=timeout)
-            if test.returncode != 0:
-                return test.returncode
-        return 0
+            print("Test finished with return code:", test.returncode)
+            return test.returncode
     except TimeoutExpired:
         sys.stderr.write("Test timeout expired\n")
         sys.stderr.flush()
@@ -85,16 +83,17 @@ def main():
 
         status = run_tests(command + "join",
                            command + "token", timeout=90)
-        if status != 0:
-            sys.stderr.write("Cleaning up processes\n")
-            sys.stderr.flush()
-            node.kill()
-            oracle.kill()
-            os._exit(status)
+        node.send_signal(15)
+        oracle.send_signal(15)
+        while node.poll() is None or oracle.poll() is None:
+            pass
+        os._exit(status)
 
     except KeyboardInterrupt:
         node.kill()
         oracle.kill()
+        while node.poll() is None or oracle.poll() is None:
+            pass
 
 
 main()
