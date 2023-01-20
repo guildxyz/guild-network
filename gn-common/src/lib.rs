@@ -24,11 +24,15 @@ pub type RequestIdentifier = u64;
 #[derive(Encode, Decode, TypeInfo, Clone, Debug)]
 pub struct Request<T> {
     pub requester: T,
-    pub data: RequestData,
+    pub data: RequestData<T>,
 }
 
 #[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Debug)]
-pub enum RequestData {
+pub enum RequestData<T> {
     Register(SpVec<identities::IdentityWithAuth>),
-    Join { guild: GuildName, role: RoleName },
+    ReqCheck {
+        account: T,
+        guild: GuildName,
+        role: RoleName,
+    },
 }

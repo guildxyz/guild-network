@@ -212,7 +212,11 @@ async fn join_request_tx(
     role_name: &RoleName,
     accounts: &Accounts,
 ) -> Result<Hash, subxt::Error> {
-    let tx_payload = join_guild(*guild_name, *role_name);
+    let tx_payload = manage_role(
+        accounts.substrate.account_id().clone(),
+        *guild_name,
+        *role_name,
+    );
     send_tx_in_block(api, &tx_payload, Arc::clone(&accounts.substrate)).await
 }
 

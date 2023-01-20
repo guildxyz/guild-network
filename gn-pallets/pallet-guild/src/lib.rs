@@ -122,7 +122,9 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         GuildCreated(T::AccountId, GuildName),
-        GuildJoined(T::AccountId, GuildName, RoleName),
+        UserRegistered(T::AccountId),
+        RoleAssigned(T::AccountId, GuildName, RoleName),
+        RoleStripped(T::AccountId, GuildName, RoleName),
     }
 
     #[pallet::error]
@@ -134,8 +136,6 @@ pub mod pallet {
         InvalidOracleAnswer,
         InvalidRequestData,
         IdentityTypeAlreadyExists,
-        JoinRequestDoesNotExist,
-        UserAlreadyJoined,
         UserNotRegistered,
         CodecError,
         MaxRolesPerGuildExceeded,
@@ -148,24 +148,11 @@ pub mod pallet {
     #[pallet::generate_store(pub(super) trait Store)]
     pub struct Pallet<T>(_);
 
-    impl<T: Config> Pallet<T> {
-        fn get_and_increment_nonce() -> SerializedData {
-            let nonce = Nonce::<T>::get();
-            Nonce::<T>::put(nonce.wrapping_add(1));
-            nonce.encode()
-        }
-
-        fn get_random_uuid() -> T::Hash {
-            let nonce = Self::get_and_increment_nonce();
-            let (random_value, _) = T::MyRandomness::random(&nonce);
-            random_value
-        }
-    }
-
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        #[pallet::call_index(0)]
         #[pallet::weight(1000)] //T::WeightInfo::register())]
-        pub fn register(origin: OriginFor<T>, data: RequestData) -> DispatchResult {
+        pub fn register(origin: OriginFor<T>, data: RequestData<T::AccountId>) -> DispatchResult {
             let requester = ensure_signed(origin.clone())?;
 
             // check data variant
@@ -215,7 +202,8 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1000)] //T::WeightInfo::create_guild())]
+        #[pallet::call_index(1)]
+        #[pallet::weight(10000000)] //T::WeightInfo::create_guild())]
         pub fn create_guild(
             origin: OriginFor<T>,
             guild_name: GuildName,
@@ -275,28 +263,49 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1000)] //T::WeightInfo::join_guild())]
-        pub fn join_guild(origin: OriginFor<T>, data: RequestData) -> DispatchResult {
+        #[pallet::call_index(2)]
+        #[pallet::weight(10000000)]
+        pub fn manage_role(
+            origin: OriginFor<T>,
+            data: RequestData<T::AccountId>,
+        ) -> DispatchResult {
             let requester = ensure_signed(origin.clone())?;
 
             // check data variant
-            match data {
-                RequestData::Join {
+            match &data {
+                RequestData::ReqCheck {
+                    account,
                     guild: guild_name,
                     role: role_name,
-                } => Self::join_request_check(&requester, &guild_name, &role_name)?,
+                } => {
+                    let role_id = Self::request_check(account, guild_name, role_name)?;
+                    // if account == signer then the user either wants to join or leave
+                    match (
+                        account == &requester,
+                        Members::<T>::contains_key(role_id, account),
+                    ) {
+                        (true, true) => {
+                            // user wants to be stripped of role
+                            Members::<T>::remove(role_id, account);
+                            Self::deposit_event(Event::RoleStripped(
+                                account.clone(),
+                                *guild_name,
+                                *role_name,
+                            ));
+                            return Ok(());
+                        }
+                        // invalid account in request data (you cannot request
+                        // other accounts to get assigned a role)
+                        (false, false) => return Err(DispatchError::BadOrigin),
+                        // (false, true) keeper wants to request a check
+                        // (true, false) user wants to get a role assigned
+                        _ => {}
+                    }
+                }
                 _ => return Err(Error::<T>::InvalidRequestData.into()),
-            };
+            }
 
-            // check user has registered
-            ensure!(
-                <UserData<T>>::contains_key(&requester),
-                Error::<T>::UserNotRegistered
-            );
-
-            // after all successful checks, we can create our request
-            let request = Request::<T::AccountId> { requester, data };
-
+            let request = Request { requester, data };
             let call: <T as OracleConfig>::Callback = Call::callback {
                 result: SpVec::new(),
             };
@@ -306,6 +315,7 @@ pub mod pallet {
             Ok(())
         }
 
+        #[pallet::call_index(3)]
         #[pallet::weight(0)]
         pub fn callback(origin: OriginFor<T>, result: SerializedData) -> DispatchResult {
             // NOTE this ensures that only the root can call this function via
@@ -320,28 +330,37 @@ pub mod pallet {
             ensure!(answer.result.len() == 1, Error::<T>::InvalidOracleAnswer);
 
             let access = answer.result[0] == 1;
-            // if we deposit and event here, it does not appear if an error is
-            // returned
-            ensure!(access, Error::<T>::AccessDenied);
 
             let request = Request::<T::AccountId>::decode(&mut answer.data.as_slice())
                 .map_err(|_| Error::<T>::CodecError)?;
 
             match request.data {
-                RequestData::Join {
+                RequestData::ReqCheck {
+                    account,
                     guild: guild_name,
                     role: role_name,
                 } => {
-                    let role_id =
-                        Self::join_request_check(&request.requester, &guild_name, &role_name)?;
-                    Members::<T>::insert(role_id, &request.requester, true);
-                    Self::deposit_event(Event::GuildJoined(
-                        request.requester,
-                        guild_name,
-                        role_name,
-                    ));
+                    let role_id = Self::request_check(&account, &guild_name, &role_name)?;
+                    match (access, Members::<T>::contains_key(role_id, &account)) {
+                        (true, false) => {
+                            Members::<T>::insert(role_id, &account, true);
+                            Self::deposit_event(Event::RoleAssigned(
+                                account, guild_name, role_name,
+                            ));
+                        }
+                        (false, true) => {
+                            // TODO send locked rewards to requester
+                            Members::<T>::remove(role_id, &account);
+                            Self::deposit_event(Event::RoleStripped(
+                                account, guild_name, role_name,
+                            ));
+                        }
+                        (false, false) => return Err(Error::<T>::AccessDenied.into()),
+                        (true, true) => {} // nothing happens, requirements are still satisfied
+                    }
                 }
                 RequestData::Register(identities_with_auth) => {
+                    ensure!(access, Error::<T>::AccessDenied);
                     let identities = identities_with_auth
                         .into_iter()
                         .map(Into::into)
@@ -360,6 +379,7 @@ pub mod pallet {
                             }
                         })
                     }
+                    Self::deposit_event(Event::UserRegistered(request.requester));
                 }
             }
 
@@ -368,21 +388,33 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        fn join_request_check(
-            requester: &T::AccountId,
+        fn request_check(
+            account: &T::AccountId,
             guild_name: &GuildName,
             role_name: &RoleName,
         ) -> Result<T::Hash, DispatchError> {
             let guild_id = Self::guild_id(guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
-
             let role_id = Self::role_id(guild_id, role_name).ok_or(Error::<T>::RoleDoesNotExist)?;
 
+            // check the requester is registered
             ensure!(
-                !Members::<T>::contains_key(role_id, requester),
-                Error::<T>::UserAlreadyJoined
+                <UserData<T>>::contains_key(account),
+                Error::<T>::UserNotRegistered
             );
 
             Ok(role_id)
+        }
+
+        fn get_and_increment_nonce() -> SerializedData {
+            let nonce = Nonce::<T>::get();
+            Nonce::<T>::put(nonce.wrapping_add(1));
+            nonce.encode()
+        }
+
+        fn get_random_uuid() -> T::Hash {
+            let nonce = Self::get_and_increment_nonce();
+            let (random_value, _) = T::MyRandomness::random(&nonce);
+            random_value
         }
     }
 

@@ -48,7 +48,7 @@ benchmarks! {
         assert!(Oracle::<T>::request(0).is_some())
     }
 
-    join_guild {
+    manage_role {
         let caller: T::AccountId = whitelisted_caller();
         let operator: T::AccountId = whitelisted_caller();
 
@@ -63,7 +63,7 @@ benchmarks! {
         T::Currency::make_free_balance_be(&caller, T::Currency::minimum_balance() + 2_000_000_000u32.into());
         Oracle::<T>::register_operator(RawOrigin::Signed(operator).into())?;
         Guild::<T>::create_guild(RawOrigin::Signed(caller.clone()).into(), guild_name, guild_metadata, roles)?;
-    }: _(RawOrigin::Signed(caller), RequestData::Join { guild: guild_name, role: [10u8; 32] })
+    }: _(RawOrigin::Signed(caller), RequestData::ReqCheck { account: caller.clone(), guild: guild_name, role: [10u8; 32] })
     verify {
         assert!(Oracle::<T>::request(0).is_some());
     }

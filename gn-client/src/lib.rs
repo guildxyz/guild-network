@@ -38,7 +38,7 @@ pub type OracleRequest = runtime::runtime_types::pallet_oracle::pallet::GenericR
     BalanceOf,
 >;
 pub type Request = gn_common::Request<AccountId>;
-pub type RequestData = runtime::runtime_types::gn_common::RequestData;
+pub type RequestData = runtime::runtime_types::gn_common::RequestData<AccountId>;
 pub type RuntimeIdentity = runtime::runtime_types::gn_common::identities::Identity;
 pub type RuntimeIdentityWithAuth = runtime::runtime_types::gn_common::identities::IdentityWithAuth;
 pub type Signature = <ClientConfig as subxt::Config>::Signature;

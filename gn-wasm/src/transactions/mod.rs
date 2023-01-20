@@ -1,9 +1,9 @@
 mod create_guild;
-mod join_guild;
+mod manage_role;
 mod register;
 
 pub use create_guild::create_guild;
-pub use join_guild::join_guild;
+pub use manage_role::manage_role;
 pub use register::register;
 
 use gn_client::transactions::{track_progress, TxStatus};
@@ -18,7 +18,7 @@ pub async fn send_tx(
     prepared: &PreparedMsgWithParams,
     tx_status: TxStatus,
 ) -> Result<Option<Hash>, SubxtError> {
-    let sr_sig = SrSignature::from_slice(&signature)
+    let sr_sig = SrSignature::from_slice(signature)
         .ok_or_else(|| SubxtError::Other("invalid signature bytes".to_string()))?;
     let signature = Signature::Sr25519(sr_sig);
 
@@ -65,8 +65,8 @@ mod test {
         let prepared = register(
             api.clone(),
             signer.account_id(),
-            Some(hex::encode(&evm_address)),
-            Some(hex::encode(&evm_signature)),
+            Some(hex::encode(evm_address)),
+            Some(hex::encode(evm_signature)),
             Some(123.to_string()),
             None,
         )
@@ -111,23 +111,28 @@ mod test {
             _ => panic!("should be sr signature"),
         };
 
-        let i = (0..1000).fold(0u32, |acc, x| acc + x * 2);
-        println!("{i}");
-
-        // send transaction
-        let maybe_hash = send_tx(
-            api.clone(),
-            signer.address(),
-            &signature,
-            &prepared,
-            TxStatus::InBlock,
-        )
-        .await
-        .expect("failed to send tx");
-        assert!(maybe_hash.is_some());
+        let mut i = 0;
+        loop {
+            // send transaction
+            let result = send_tx(
+                api.clone(),
+                signer.address(),
+                &signature,
+                &prepared,
+                TxStatus::InBlock,
+            )
+            .await;
+            if result.is_ok() {
+                assert!(maybe_hash.is_some());
+                break;
+            } else if i == 100 {
+                panic!("failed to send msg")
+            }
+            i += 1;
+        }
 
         // 3) join the guild with the free role
-        let prepared = join_guild(
+        let prepared = manage_role(
             api.clone(),
             signer.account_id(),
             guild_name.to_string(),
