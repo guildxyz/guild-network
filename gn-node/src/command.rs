@@ -5,15 +5,12 @@ use crate::{
 
 #[cfg(feature = "runtime-benchmarks")]
 use crate::command_benchmark::{inherent_benchmark_data, BenchmarkExtrinsicBuilder};
-#[cfg(feature = "node")]
 use crate::service;
 
 #[cfg(feature = "runtime-benchmarks")]
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
-#[cfg(feature = "node")]
 use gn_runtime::Block;
 use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
-#[cfg(feature = "node")]
 use sc_service::PartialComponents;
 
 impl SubstrateCli for Cli {
@@ -66,7 +63,6 @@ pub fn run() -> sc_cli::Result<()> {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| cmd.run(config.chain_spec, config.network))
         }
-        #[cfg(feature = "node")]
         Some(Subcommand::CheckBlock(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
@@ -79,7 +75,6 @@ pub fn run() -> sc_cli::Result<()> {
                 Ok((cmd.run(client, import_queue), task_manager))
             })
         }
-        #[cfg(feature = "node")]
         Some(Subcommand::ExportBlocks(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
@@ -91,7 +86,6 @@ pub fn run() -> sc_cli::Result<()> {
                 Ok((cmd.run(client, config.database), task_manager))
             })
         }
-        #[cfg(feature = "node")]
         Some(Subcommand::ExportState(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
@@ -103,7 +97,6 @@ pub fn run() -> sc_cli::Result<()> {
                 Ok((cmd.run(client, config.chain_spec), task_manager))
             })
         }
-        #[cfg(feature = "node")]
         Some(Subcommand::ImportBlocks(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
@@ -120,7 +113,6 @@ pub fn run() -> sc_cli::Result<()> {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| cmd.run(config.database))
         }
-        #[cfg(feature = "node")]
         Some(Subcommand::Revert(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
@@ -206,19 +198,15 @@ pub fn run() -> sc_cli::Result<()> {
         Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the node. \
 				You can enable it with `--features try-runtime`."
             .into()),
-        #[cfg(feature = "node")]
         Some(Subcommand::ChainInfo(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| cmd.run::<Block>(&config))
         }
-        #[cfg(feature = "node")]
         None => {
             let runner = cli.create_runner(&cli.run)?;
             runner.run_node_until_exit(|config| async move {
                 service::new_full(config).map_err(sc_cli::Error::Service)
             })
         }
-        #[cfg(not(feature = "node"))]
-        None => panic!("no cli command provided, try running with the `node` feature enabled"),
     }
 }

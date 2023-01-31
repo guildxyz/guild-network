@@ -19,26 +19,21 @@ pub enum Subcommand {
     BuildSpec(sc_cli::BuildSpecCmd),
 
     /// Validate blocks.
-    #[cfg(feature = "node")]
     CheckBlock(sc_cli::CheckBlockCmd),
 
     /// Export blocks.
-    #[cfg(feature = "node")]
     ExportBlocks(sc_cli::ExportBlocksCmd),
 
     /// Export the state of a given block into a chain spec.
-    #[cfg(feature = "node")]
     ExportState(sc_cli::ExportStateCmd),
 
     /// Import blocks.
-    #[cfg(feature = "node")]
     ImportBlocks(sc_cli::ImportBlocksCmd),
 
     /// Remove the whole chain.
     PurgeChain(sc_cli::PurgeChainCmd),
 
     /// Revert the chain to a previous state.
-    #[cfg(feature = "node")]
     Revert(sc_cli::RevertCmd),
 
     /// Sub-commands concerned with benchmarking.
@@ -55,6 +50,5 @@ pub enum Subcommand {
     TryRuntime,
 
     /// Db meta columns information.
-    #[cfg(feature = "node")]
     ChainInfo(sc_cli::ChainInfoCmd),
 }

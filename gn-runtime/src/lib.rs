@@ -25,7 +25,8 @@ use sp_std::prelude::*;
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
-pub use pallet_guild::Call as OracleCallback;
+// TODO
+//pub use pallet_guild::Call as OracleCallback;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -47,8 +48,9 @@ use pallet_transaction_payment::CurrencyAdapter;
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 
-pub use pallet_guild;
-pub use pallet_oracle;
+// TODO
+//pub use pallet_guild;
+//pub use pallet_oracle;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -270,6 +272,7 @@ impl pallet_sudo::Config for Runtime {
     type Call = Call;
 }
 
+/*
 impl pallet_guild::Config for Runtime {
     type Event = Event;
     type WeightInfo = pallet_guild::weights::SubstrateWeight<Runtime>;
@@ -287,6 +290,7 @@ impl pallet_oracle::Config for Runtime {
     type ValidityPeriod = ValidityPeriod;
     type MinimumFee = MinimumFee;
 }
+*/
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -303,8 +307,8 @@ construct_runtime!(
         Balances: pallet_balances,
         TransactionPayment: pallet_transaction_payment,
         Sudo: pallet_sudo,
-        Guild: pallet_guild,
-        Oracle: pallet_oracle,
+        //Guild: pallet_guild,
+        //Oracle: pallet_oracle,
     }
 );
 
@@ -338,6 +342,7 @@ pub type Executive = frame_executive::Executive<
     AllPalletsWithSystem,
 >;
 
+/*
 #[cfg(feature = "runtime-benchmarks")]
 #[macro_use]
 extern crate frame_benchmarking;
@@ -353,6 +358,7 @@ mod benches {
         [pallet_oracle, Oracle]
     );
 }
+*/
 
 impl_runtime_apis! {
     impl sp_api::Core<Block> for Runtime {
@@ -485,6 +491,7 @@ impl_runtime_apis! {
         }
     }
 
+    /*
     #[cfg(feature = "runtime-benchmarks")]
     impl frame_benchmarking::Benchmark<Block> for Runtime {
         fn benchmark_metadata(extra: bool) -> (
@@ -533,6 +540,7 @@ impl_runtime_apis! {
             Ok(batches)
         }
     }
+    */
 
     #[cfg(feature = "try-runtime")]
     impl frame_try_runtime::TryRuntime<Block> for Runtime {
