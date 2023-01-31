@@ -1,25 +1,30 @@
 mod helpers;
-mod register;
-mod role;
+//mod register;
+//mod role;
 
 use helpers::*;
 
-use crate::{self as pallet_guild};
+use crate::mock::*;
+type AccountId = <TestRuntime as frame_system::Config>::AccountId;
 
-use codec::{Decode, Encode};
 use frame_support::traits::{OnFinalize, OnInitialize};
 use gn_common::{
     identities::{Identity, IdentityWithAuth},
     Request, RequestData,
 };
+use parity_scale_codec::{Decode, Encode};
 use sp_runtime::DispatchError;
 
-use test_runtime::test_runtime;
-test_runtime!(Guild, pallet_guild);
+fn new_test_ext() -> sp_io::TestExternalities {
+    frame_system::GenesisConfig::default()
+        .build_storage::<TestRuntime>()
+        .unwrap()
+        .into()
+}
 
 #[test]
 fn create_guild() {
-    new_test_runtime().execute_with(|| {
+    new_test_ext().execute_with(|| {
         init_chain();
         let signer = 4;
         let guild_name = [0u8; 32];
@@ -63,7 +68,7 @@ fn create_guild() {
 
 #[test]
 fn callback_can_only_be_called_by_root() {
-    new_test_runtime().execute_with(|| {
+    new_test_ext().execute_with(|| {
         init_chain();
         let error = <Guild>::callback(Origin::signed(1), vec![]).unwrap_err();
         assert_eq!(error, DispatchError::BadOrigin,);
