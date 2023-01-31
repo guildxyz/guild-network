@@ -1,9 +1,9 @@
-#[cfg(feature = "with-checks")]
+#[cfg(feature = "reqcheck")]
 mod impls;
-#[cfg(feature = "with-checks")]
+#[cfg(feature = "reqcheck")]
 mod map;
 
-#[cfg(feature = "with-checks")]
+#[cfg(feature = "reqcheck")]
 pub use map::IdentityMap;
 
 use crate::{Decode, Encode, TypeInfo};
