@@ -1,22 +1,25 @@
 [package]
 name = "gn-common"
-version = "0.1.0"
+version = "0.0.0-alpha"
 edition = "2021"
 
 [features]
+reqcheck = ["anyhow", "ethers-core", "providers", "std"]
 default = ["std"]
 std = [
-    "codec/std",
+    "parity-scale-codec/std",
     "scale-info/std",
 ]
-with-checks = ["anyhow", "ethers-core", "providers", "std"]
 
 [dependencies]
-anyhow = { version = "1.0", default-features = false, optional = true }
-codec = { package = "parity-scale-codec", version = "3.2.1", default-features = false, features = ["derive"] }
-ethers-core = { version = "0.11.0", default-features = false, optional = true }
+# local
 providers = { path = "../rusty-gate/providers", optional = true }
-scale-info = { version = "2.3.0", default-features = false, features = ["derive"] }
+
+# general
+anyhow = { version = "1.0", default-features = false, optional = true }
+ethers-core = { version = "0.11.0", default-features = false, optional = true }
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive"] }
 serde = { version = "1.0.144", default-features = false, features = ["derive"] }
 
 [dev-dependencies]

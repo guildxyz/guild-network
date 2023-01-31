@@ -2,12 +2,12 @@
 exclude = ["rusty-gate"]
 members = [
 #    "gn-client",
-#    "gn-common",
+    "gn-common",
 #    "gn-frontend",
     "gn-node",
 #    "gn-oracle",
-#    "gn-pallets/pallet-oracle",
-#    "gn-pallets/pallet-guild",
+    "gn-pallets/pallet-oracle",
+    "gn-pallets/pallet-guild",
 #    "gn-pallets/pallet-test-caller",
     "gn-runtime",
 #    "gn-test-data",

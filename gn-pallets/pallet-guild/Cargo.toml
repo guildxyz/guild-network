@@ -1,38 +1,37 @@
 [package]
 edition = "2021"
 name = "pallet-guild"
-version = "0.1.0-alpha"
+version = "0.0.0-alpha"
 
 [features]
 default = ["std"]
 runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
 std = [
-  "codec/std",
-  "frame-support/std",
-  "frame-system/std",
   "gn-common/std",
   "pallet-oracle/std",
+  "parity-scale-codec/std",
   "scale-info/std",
+  "frame-support/std",
+  "frame-system/std",
   "sp-std/std",
 ]
 try-runtime = ["frame-support/try-runtime"]
 
 [dependencies]
-gn-common = { path = "../../gn-common", default-features = false }
+# local
+gn-common = { version = "0.0.0-alpha", path = "../../gn-common", default-features = false }
+pallet-oracle = { version = "0.0.0-alpha", path = "../pallet-oracle", default-features = false }
 
-codec = { package = "parity-scale-codec", version = "3.2.1", default-features = false, features = ["derive"] }
-frame-benchmarking = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25", optional = true }
-frame-support = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
-frame-system = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
-hashbrown = "0.13.1"
-pallet-oracle = { version = "0.0.1-alpha", default-features = false, path = "../pallet-oracle" }
-scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
-sp-std = { default-features = false, version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
+# general
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive"] }
+
+# substrate frame
+frame-benchmarking = { workspace = true, optional = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+
+# substrate primitives
+sp-std = { workspace = true }
 
 [dev-dependencies]
-pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
-pallet-randomness-collective-flip = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
-sp-core = { default-features = false, version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
-sp-io = { default-features = false, version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
-sp-runtime = { default-features = false, version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
-test-runtime = { package = "gn-test-runtime", path = "../../gn-test-runtime" }

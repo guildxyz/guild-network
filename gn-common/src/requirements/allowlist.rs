@@ -1,4 +1,4 @@
-use codec::alloc::vec::Vec;
+use parity_scale_codec::alloc::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

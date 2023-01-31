@@ -9,6 +9,18 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [features]
 default = ["std"]
+runtime-benchmarks = [
+  "hex-literal",
+  "frame-benchmarking/runtime-benchmarks",
+  "frame-support/runtime-benchmarks",
+  "frame-system-benchmarking",
+  "frame-system/runtime-benchmarks",
+  "pallet-balances/runtime-benchmarks",
+#  #"pallet-guild/runtime-benchmarks",
+#  #"pallet-oracle/runtime-benchmarks",
+  "pallet-timestamp/runtime-benchmarks",
+  "sp-runtime/runtime-benchmarks",
+]
 std = [
   "parity-scale-codec/std",
   "scale-info/std",
@@ -40,18 +52,6 @@ std = [
   "sp-std/std",
   "sp-transaction-pool/std",
   "sp-version/std",
-]
-runtime-benchmarks = [
-  "hex-literal",
-  "frame-benchmarking/runtime-benchmarks",
-  "frame-support/runtime-benchmarks",
-  "frame-system-benchmarking",
-  "frame-system/runtime-benchmarks",
-  "pallet-balances/runtime-benchmarks",
-#  #"pallet-guild/runtime-benchmarks",
-#  #"pallet-oracle/runtime-benchmarks",
-  "pallet-timestamp/runtime-benchmarks",
-  "sp-runtime/runtime-benchmarks",
 ]
 try-runtime = [
   "frame-executive/try-runtime",

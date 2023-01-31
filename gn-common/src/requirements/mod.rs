@@ -1,7 +1,7 @@
 pub mod allowlist;
 pub mod balance;
 pub mod chains;
-#[cfg(feature = "with-checks")]
+#[cfg(feature = "reqcheck")]
 mod check;
 
 use allowlist::Allowlist;
@@ -26,6 +26,6 @@ pub enum Requirement {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RequirementsWithLogic {
-    pub logic: codec::alloc::string::String,
-    pub requirements: codec::alloc::vec::Vec<Requirement>,
+    pub logic: parity_scale_codec::alloc::string::String,
+    pub requirements: parity_scale_codec::alloc::vec::Vec<Requirement>,
 }

@@ -24,12 +24,12 @@ mod weights;
 
 pub use pallet::*;
 
-use codec::Codec;
 use frame_support::{
     dispatch::DispatchResult,
     traits::{BalanceStatus, Currency, Get, ReservableCurrency, UnfilteredDispatchable},
     Parameter,
 };
+use parity_scale_codec::Codec;
 use sp_std::{prelude::*, vec::Vec as SpVec};
 use weights::WeightInfo;
 
