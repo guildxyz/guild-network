@@ -10,7 +10,6 @@ members = [
     "gn-pallets/pallet-guild",
     "gn-runtime",
 #    "gn-test-data",
-#    "gn-test-runtime",
 #    "gn-wasm",
 ]
 # don't include wasm in the build process
@@ -23,7 +22,6 @@ members = [
 #    "gn-pallets/pallet-guild",
 #    "gn-runtime",
 #    "gn-test-data",
-#    "gn-test-runtime",
 #]
 
 [profile.release]
