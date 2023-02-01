@@ -78,13 +78,10 @@ fn initiate_requests_valid() {
             Event::Oracle(pallet_oracle::Event::OperatorRegistered(ACCOUNT_0))
         );
 
-        assert!(<Oracle>::initiate_request(
-            Origin::signed(ACCOUNT_1),
-            callback.clone(),
-            data.clone(),
-            fee,
-        )
-        .is_ok());
+        assert!(
+            <Oracle>::initiate_request(Origin::signed(ACCOUNT_1), callback, data.clone(), fee,)
+                .is_ok()
+        );
 
         assert_eq!(
             last_event(),
@@ -108,7 +105,7 @@ fn initiate_requests_valid() {
                 request_id,
                 operator: ACCOUNT_0,
                 fee,
-                result: result,
+                result,
             })
         );
     });
@@ -133,85 +130,72 @@ fn linear_request_delegation() {
         assert!(<Oracle>::register_operator(Origin::signed(operator_2)).is_ok());
         assert!(<Oracle>::register_operator(Origin::signed(operator_3)).is_ok());
 
-        assert!(<Oracle>::initiate_request(
-            Origin::signed(ACCOUNT_0),
-            callback.clone(),
-            data.clone(),
-            fee,
-        )
-        .is_ok());
+        assert!(
+            <Oracle>::initiate_request(Origin::signed(ACCOUNT_0), callback, data.clone(), fee,)
+                .is_ok()
+        );
 
         assert_eq!(
             last_event(),
             Event::Oracle(pallet_oracle::Event::OracleRequest {
                 request_id,
                 operator: operator_0,
-                callback: callback.clone(),
-                fee,
-            })
-        );
-        request_id += 1;
-
-        assert!(<Oracle>::initiate_request(
-            Origin::signed(ACCOUNT_0),
-            callback.clone(),
-            data.clone(),
-            fee,
-        )
-        .is_ok());
-
-        assert_eq!(
-            last_event(),
-            Event::Oracle(pallet_oracle::Event::OracleRequest {
-                request_id,
-                operator: operator_1,
-                callback: callback.clone(),
-                fee,
-            })
-        );
-        request_id += 1;
-
-        assert!(<Oracle>::initiate_request(
-            Origin::signed(ACCOUNT_0),
-            callback.clone(),
-            data.clone(),
-            fee,
-        )
-        .is_ok());
-
-        assert_eq!(
-            last_event(),
-            Event::Oracle(pallet_oracle::Event::OracleRequest {
-                request_id,
-                operator: operator_2,
-                callback: callback.clone(),
-                fee,
-            })
-        );
-        request_id += 1;
-
-        assert!(<Oracle>::initiate_request(
-            Origin::signed(ACCOUNT_0),
-            callback.clone(),
-            data.clone(),
-            fee,
-        )
-        .is_ok());
-
-        assert_eq!(
-            last_event(),
-            Event::Oracle(pallet_oracle::Event::OracleRequest {
-                request_id,
-                operator: operator_3,
-                callback: callback.clone(),
+                callback,
                 fee,
             })
         );
         request_id += 1;
 
         assert!(
-            <Oracle>::initiate_request(Origin::signed(ACCOUNT_0), callback.clone(), data, fee,)
+            <Oracle>::initiate_request(Origin::signed(ACCOUNT_0), callback, data.clone(), fee,)
                 .is_ok()
+        );
+
+        assert_eq!(
+            last_event(),
+            Event::Oracle(pallet_oracle::Event::OracleRequest {
+                request_id,
+                operator: operator_1,
+                callback,
+                fee,
+            })
+        );
+        request_id += 1;
+
+        assert!(
+            <Oracle>::initiate_request(Origin::signed(ACCOUNT_0), callback, data.clone(), fee,)
+                .is_ok()
+        );
+
+        assert_eq!(
+            last_event(),
+            Event::Oracle(pallet_oracle::Event::OracleRequest {
+                request_id,
+                operator: operator_2,
+                callback,
+                fee,
+            })
+        );
+        request_id += 1;
+
+        assert!(
+            <Oracle>::initiate_request(Origin::signed(ACCOUNT_0), callback, data.clone(), fee,)
+                .is_ok()
+        );
+
+        assert_eq!(
+            last_event(),
+            Event::Oracle(pallet_oracle::Event::OracleRequest {
+                request_id,
+                operator: operator_3,
+                callback,
+                fee,
+            })
+        );
+        request_id += 1;
+
+        assert!(
+            <Oracle>::initiate_request(Origin::signed(ACCOUNT_0), callback, data, fee,).is_ok()
         );
 
         assert_eq!(
@@ -229,7 +213,6 @@ fn linear_request_delegation() {
 #[test]
 fn initiate_requests_invalid_unknown_operator() {
     new_test_ext().execute_with(|| {
-        // No operator registered error
         let error = <Oracle>::initiate_request(
             Origin::signed(ACCOUNT_0),
             MockCallback(false),
@@ -245,7 +228,6 @@ fn initiate_requests_invalid_unknown_operator() {
 fn initiate_requests_invalid_insufficient_fee() {
     new_test_ext().execute_with(|| {
         assert!(<Oracle>::register_operator(Origin::signed(ACCOUNT_0)).is_ok());
-        // Insufficient fee error
         let error = <Oracle>::initiate_request(
             Origin::signed(ACCOUNT_1),
             MockCallback(true),
@@ -262,8 +244,6 @@ fn initiate_requests_invalid_insufficient_fee() {
 fn initiate_requests_invalid_insufficient_balance_for_fee() {
     new_test_ext().execute_with(|| {
         assert!(<Oracle>::register_operator(Origin::signed(ACCOUNT_0)).is_ok());
-
-        // Insufficient balance error (System error)
         let error = <Oracle>::initiate_request(
             Origin::signed(ACCOUNT_1),
             MockCallback(true),
@@ -286,7 +266,6 @@ fn initiate_requests_invalid_wrong_operator() {
             minimum_fee(),
         )
         .is_ok());
-        // Wrong operator error
         let error = <Oracle>::callback(Origin::signed(99), 0, vec![1]).unwrap_err();
         assert_eq!(error_msg(error), "WrongOperator");
     });
@@ -295,7 +274,6 @@ fn initiate_requests_invalid_wrong_operator() {
 #[test]
 fn unknown_request() {
     new_test_ext().execute_with(|| {
-        // Unknown request error
         let error = <Oracle>::callback(Origin::signed(ACCOUNT_0), 0, 10.encode()).unwrap_err();
         assert_eq!(error_msg(error), "UnknownRequest");
     });

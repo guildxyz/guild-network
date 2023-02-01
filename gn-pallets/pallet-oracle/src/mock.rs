@@ -63,7 +63,7 @@ impl frame_system::Config for TestRuntime {
 
 impl pallet_balances::Config for TestRuntime {
     type MaxLocks = ();
-    type Balance = Balance; 
+    type Balance = Balance;
     type Event = Event;
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
@@ -89,7 +89,7 @@ impl EncodeLike<bool> for MockCallback {}
 
 impl pallet_oracle::CallbackWithParameter for MockCallback {
     fn with_result(&self, result: SpVec<u8>) -> Option<Self> {
-        if result == &[0, 0] {
+        if result == [0, 0] {
             None
         } else {
             Some(Self(true))

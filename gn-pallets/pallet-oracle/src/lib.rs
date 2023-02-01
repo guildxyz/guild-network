@@ -240,10 +240,7 @@ pub mod pallet {
             // tokens are only moved from the `free` balance of an account and
             // it is not stored in a totally new account However, a minimum
             // amount of fee is a good idea to disincentivize spam requests
-            ensure!(
-                fee >= T::MinimumFee::get().into(),
-                Error::<T>::InsufficientFee
-            );
+            ensure!(fee >= T::MinimumFee::get(), Error::<T>::InsufficientFee);
 
             T::Currency::reserve(&who, fee)?;
 
@@ -328,7 +325,7 @@ pub mod pallet {
             // Dispatch the result to the original callback registered by the caller
             let callback = request
                 .callback
-                .with_result(dbg!(answer.encode()))
+                .with_result(answer.encode())
                 .ok_or(Error::<T>::UnknownCallback)?;
             callback
                 .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
