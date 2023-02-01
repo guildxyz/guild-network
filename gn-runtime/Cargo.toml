@@ -16,8 +16,8 @@ runtime-benchmarks = [
   "frame-system-benchmarking",
   "frame-system/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
-#  #"pallet-guild/runtime-benchmarks",
-#  #"pallet-oracle/runtime-benchmarks",
+  "pallet-guild/runtime-benchmarks",
+  "pallet-oracle/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
@@ -33,9 +33,9 @@ std = [
   "pallet-aura/std",
   "pallet-balances/std",
   "pallet-grandpa/std",
-#  "pallet-guild/std",
+  "pallet-guild/std",
   "pallet-nicks/std",
-#  "pallet-oracle/std",
+  "pallet-oracle/std",
   "pallet-randomness-collective-flip/std",
   "pallet-sudo/std",
   "pallet-timestamp/std",
@@ -67,8 +67,8 @@ try-runtime = [
 
 [dependencies]
 # local
-#pallet-guild = { version = 0.0.0-alpha, path = "../gn-pallets/pallet-guild", default-features = false }
-#pallet-oracle = { version = 0.0.0-alpha, path = "../gn-pallets/pallet-oracle", default-features = false }
+pallet-guild = { version = "0.0.0-alpha", path = "../gn-pallets/pallet-guild", default-features = false }
+pallet-oracle = { version = "0.0.0-alpha", path = "../gn-pallets/pallet-oracle", default-features = false }
 
 # general
 hex-literal = { version = "0.3.4", optional = true }

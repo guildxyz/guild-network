@@ -25,32 +25,17 @@ use sp_std::prelude::*;
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
-// TODO
-//pub use pallet_guild::Call as OracleCallback;
-
-// A few exports that help ease life for downstream crates.
-pub use frame_support::{
+use frame_support::{
     construct_runtime, parameter_types,
-    traits::{
-        ConstU128, ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem, Randomness, StorageInfo,
-    },
+    traits::{ConstU128, ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem},
     weights::{
-        constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-        IdentityFee, Weight,
+        constants::{RocksDbWeight, WEIGHT_PER_SECOND},
+        IdentityFee,
     },
-    StorageValue,
 };
-pub use frame_system::Call as SystemCall;
-pub use pallet_balances::Call as BalancesCall;
-pub use pallet_timestamp::Call as TimestampCall;
-use pallet_transaction_payment::CurrencyAdapter;
-#[cfg(any(feature = "std", test))]
-pub use sp_runtime::BuildStorage;
-pub use sp_runtime::{Perbill, Permill};
 
-// TODO
-//pub use pallet_guild;
-//pub use pallet_oracle;
+#[cfg(feature = "try-runtime")]
+use frame_support::weights::Weight;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -99,8 +84,8 @@ pub mod opaque {
 //   https://docs.substrate.io/v3/runtime/upgrades#runtime-versioning
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-    spec_name: create_runtime_str!("node-template"),
-    impl_name: create_runtime_str!("node-template"),
+    spec_name: create_runtime_str!("guild-network"),
+    impl_name: create_runtime_str!("guild-network"),
     authoring_version: 1,
     // The version of the runtime specification. A full node will not attempt to use its native
     //   runtime in substitute for the on-chain Wasm runtime unless all of `spec_name`,
@@ -140,7 +125,7 @@ pub fn native_version() -> NativeVersion {
     }
 }
 
-const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
+const NORMAL_DISPATCH_RATIO: sp_runtime::Perbill = sp_runtime::Perbill::from_percent(75);
 
 parameter_types! {
     pub const BlockHashCount: BlockNumber = 2400;
@@ -260,7 +245,7 @@ impl pallet_balances::Config for Runtime {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    type OnChargeTransaction = pallet_transaction_payment::CurrencyAdapter<Balances, ()>;
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = IdentityFee<Balance>;
     type LengthToFee = IdentityFee<Balance>;
@@ -272,7 +257,6 @@ impl pallet_sudo::Config for Runtime {
     type Call = Call;
 }
 
-/*
 impl pallet_guild::Config for Runtime {
     type Event = Event;
     type WeightInfo = pallet_guild::weights::SubstrateWeight<Runtime>;
@@ -286,11 +270,10 @@ impl pallet_oracle::Config for Runtime {
     type WeightInfo = ();
     type Event = Event;
     type Currency = Balances;
-    type Callback = OracleCallback<Runtime>;
+    type Callback = pallet_guild::Call<Runtime>;
     type ValidityPeriod = ValidityPeriod;
     type MinimumFee = MinimumFee;
 }
-*/
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -299,16 +282,16 @@ construct_runtime!(
         NodeBlock = opaque::Block,
         UncheckedExtrinsic = UncheckedExtrinsic
     {
-        System: frame_system,
+        Aura: pallet_aura,
+        Balances: pallet_balances,
+        Grandpa: pallet_grandpa,
+        Guild: pallet_guild,
+        Oracle: pallet_oracle,
         RandomnessCollectiveFlip: pallet_randomness_collective_flip,
         Timestamp: pallet_timestamp,
-        Aura: pallet_aura,
-        Grandpa: pallet_grandpa,
-        Balances: pallet_balances,
         TransactionPayment: pallet_transaction_payment,
         Sudo: pallet_sudo,
-        //Guild: pallet_guild,
-        //Oracle: pallet_oracle,
+        System: frame_system,
     }
 );
 
@@ -342,7 +325,6 @@ pub type Executive = frame_executive::Executive<
     AllPalletsWithSystem,
 >;
 
-/*
 #[cfg(feature = "runtime-benchmarks")]
 #[macro_use]
 extern crate frame_benchmarking;
@@ -358,7 +340,6 @@ mod benches {
         [pallet_oracle, Oracle]
     );
 }
-*/
 
 impl_runtime_apis! {
     impl sp_api::Core<Block> for Runtime {
@@ -491,7 +472,6 @@ impl_runtime_apis! {
         }
     }
 
-    /*
     #[cfg(feature = "runtime-benchmarks")]
     impl frame_benchmarking::Benchmark<Block> for Runtime {
         fn benchmark_metadata(extra: bool) -> (
@@ -540,7 +520,6 @@ impl_runtime_apis! {
             Ok(batches)
         }
     }
-    */
 
     #[cfg(feature = "try-runtime")]
     impl frame_try_runtime::TryRuntime<Block> for Runtime {

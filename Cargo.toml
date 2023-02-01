@@ -3,14 +3,14 @@ exclude = ["rusty-gate"]
 members = [
     "gn-client",
     "gn-common",
-#    "gn-frontend",
+#    "gn-frontend", # only experimental for now
     "gn-node",
     "gn-oracle",
     "gn-pallets/pallet-oracle",
     "gn-pallets/pallet-guild",
     "gn-runtime",
     "gn-test-data",
-#    "gn-wasm",
+    "gn-wasm",
 ]
 # don't include wasm in the build process
 default-members = [
