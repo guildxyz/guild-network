@@ -4,13 +4,12 @@ use gn_client::data::*;
 #[cfg(not(feature = "external-oracle"))]
 use gn_client::queries::*;
 use gn_client::transactions::*;
-use gn_client::{
-    AccountId, AccountKeyring, Api, Hash, Keypair, RuntimeIdentityWithAuth, Signer, TraitPair,
-};
+use gn_client::{AccountId, Api, Hash, Keypair, RuntimeIdentityWithAuth, Signer, TraitPair};
 use gn_common::requirements::{Requirement, RequirementsWithLogic};
 use gn_common::{EvmAddress, EvmSignature, GuildName, RoleName};
 use gn_test_data::*;
 use rand::{rngs::StdRng, SeedableRng};
+use sp_keyring::AccountKeyring;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;

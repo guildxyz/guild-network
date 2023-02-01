@@ -1,6 +1,6 @@
 [package]
 name = "gn-client"
-version = "0.1.0"
+version = "0.0.0-alpha"
 edition = "2021"
 
 [features]
@@ -9,22 +9,30 @@ external-oracle = []
 wasm = ["subxt/jsonrpsee-web"]
 
 [dependencies]
+# local
+gn-common = { version = "0.0.0-alpha", path = "../gn-common" }
+subxt = { git = "https://github.com/agoraxyz/subxt", branch = "wasm-sig", default-features = false }
+
+# general
 anyhow = "1"
 futures = "0.3.25"
 log = { version = "0.4.17", default-features = false }
-gn-common = { path = "../gn-common" }
 hex = "0.4.3"
-parity-scale-codec = { version = "3.2.1", default-features = false } # required for the runtime subxt macro
-sp-keyring = { version = "6.0.0", default-features = false }
+parity-scale-codec = { workspace = true } # required for the runtime subxt macro
 serde = { version = "1.0.144", features = ["derive"] }
 serde_cbor = "0.11.2"
-subxt = { git = "https://github.com/agoraxyz/subxt", branch = "wasm-sig", default-features = false }
 
 [dev-dependencies]
-ethers = "0.6.2"
+# local
 gn-test-data = { path = "../gn-test-data" }
+subxt = { git = "https://github.com/agoraxyz/subxt", branch = "wasm-sig" }
+
+# general
+ethers = "0.6.2"
 rand = { version = "0.8.5", default-features = false, features = ["std_rng"] }
 serde_json = "1"
 structopt = { version = "0.3", default-features = false }
-subxt = { git = "https://github.com/agoraxyz/subxt", branch = "wasm-sig" }
 tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
+
+# substrate primitives
+sp-keyring = { workspace = true }
