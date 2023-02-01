@@ -26,6 +26,9 @@ frame_support::construct_runtime!(
 parameter_types! {
     pub const ExistentialDeposit: Balance = 0;
     pub const MinimumFee: Balance = 0;
+    pub const MaxRolesPerGuild: u32 = 10;
+    pub const MaxReqsPerRole: u32 = 10;
+    pub const MaxSerializedReqLen: u32 = 10;
     pub const ValidityPeriod: u64 = 10;
 }
 
@@ -72,9 +75,9 @@ impl pallet_guild::Config for TestRuntime {
     type WeightInfo = ();
     type Event = Event;
     type MyRandomness = RandomnessCollectiveFlip;
-    type MaxRolesPerGuild = ConstU32<64>;
-    type MaxReqsPerRole = ConstU32<64>;
-    type MaxSerializedReqLen = ConstU32<64>;
+    type MaxRolesPerGuild = MaxRolesPerGuild;
+    type MaxReqsPerRole = MaxReqsPerRole;
+    type MaxSerializedReqLen = MaxSerializedReqLen;
 }
 
 impl pallet_oracle::Config for TestRuntime {

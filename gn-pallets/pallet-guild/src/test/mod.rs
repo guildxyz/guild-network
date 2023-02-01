@@ -67,6 +67,46 @@ fn create_guild() {
 }
 
 #[test]
+fn bound_checks_on_creating_guild() {
+    new_test_ext().execute_with(|| {
+        init_chain();
+        let max_roles_per_guild =
+            <TestRuntime as pallet_guild::Config>::MaxRolesPerGuild::get() as usize;
+        let max_reqs_per_role =
+            <TestRuntime as pallet_guild::Config>::MaxReqsPerRole::get() as usize;
+        let max_serialized_req_len =
+            <TestRuntime as pallet_guild::Config>::MaxSerializedReqLen::get() as usize;
+
+        let test_data = vec![
+            (
+                vec![([0u8; 32], (vec![], vec![])); max_roles_per_guild + 1],
+                "MaxRolesPerGuildExceeded",
+            ),
+            (
+                vec![
+                    ([0u8; 32], (vec![], vec![vec![]; max_reqs_per_role + 1]));
+                    max_roles_per_guild
+                ],
+                "MaxReqsPerRoleExceeded",
+            ),
+            (
+                vec![(
+                    [0u8; 32],
+                    (vec![], vec![vec![0; max_serialized_req_len + 1]]),
+                )],
+                "MaxSerializedReqLenExceeded",
+            ),
+        ];
+
+        for (roles, raw_error) in test_data {
+            let error =
+                <Guild>::create_guild(Origin::signed(0), [0; 32], vec![], roles).unwrap_err();
+            assert_eq!(error_msg(error), raw_error);
+        }
+    });
+}
+
+#[test]
 fn callback_can_only_be_called_by_root() {
     new_test_ext().execute_with(|| {
         init_chain();
