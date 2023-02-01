@@ -20,25 +20,26 @@
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod test;
 mod weights;
 
 pub use pallet::*;
 
-use frame_support::{
-    dispatch::DispatchResult,
-    traits::{BalanceStatus, Currency, Get, ReservableCurrency, UnfilteredDispatchable},
-    Parameter,
-};
-use parity_scale_codec::Codec;
-use sp_std::{prelude::*, vec::Vec as SpVec};
-use weights::WeightInfo;
-
 #[frame_support::pallet]
 pub mod pallet {
-    use super::*;
-    use frame_support::{ensure, pallet_prelude::*};
+    use super::weights::WeightInfo;
+    use frame_support::dispatch::DispatchResult;
+    use frame_support::traits::{
+        BalanceStatus, Currency, Get, ReservableCurrency, UnfilteredDispatchable,
+    };
+    use frame_support::{ensure, pallet_prelude::*, Parameter};
     use frame_system::{ensure_signed, pallet_prelude::*};
     use gn_common::{OperatorIdentifier, RequestIdentifier};
+    use parity_scale_codec::Codec;
+    use sp_std::{prelude::*, vec::Vec as SpVec};
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
@@ -56,7 +57,7 @@ pub mod pallet {
         type ValidityPeriod: Get<Self::BlockNumber>;
         // Minimum fee paid for all requests to disincentivize spam requests
         #[pallet::constant]
-        type MinimumFee: Get<u32>;
+        type MinimumFee: Get<<Self::Currency as Currency<Self::AccountId>>::Balance>;
     }
 
     pub type BalanceOf<T> =
@@ -73,20 +74,18 @@ pub mod pallet {
     pub enum Error<T> {
         /// No oracle operator has registered yet
         NoRegisteredOperators,
+        /// An operator is already registered.
+        OperatorAlreadyRegistered,
+        /// Callback cannot be deserialized
+        UnknownCallback,
         /// Manipulating an unknown operator
         UnknownOperator,
         /// Manipulating an unknown request
         UnknownRequest,
         /// Not the expected operator
         WrongOperator,
-        /// An operator is already registered.
-        OperatorAlreadyRegistered,
-        /// Callback cannot be deserialized
-        UnknownCallback,
         /// Fee provided does not match minimum required fee
         InsufficientFee,
-        /// Request has already been served by the operator
-        RequestAlreadyServed,
         /// Reserved balance is less than the specified fee for the request
         InsufficientReservedBalance,
     }
@@ -329,7 +328,7 @@ pub mod pallet {
             // Dispatch the result to the original callback registered by the caller
             let callback = request
                 .callback
-                .with_result(answer.encode())
+                .with_result(dbg!(answer.encode()))
                 .ok_or(Error::<T>::UnknownCallback)?;
             callback
                 .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
