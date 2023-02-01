@@ -35,7 +35,7 @@ mod test {
     use super::*;
     use gn_client::data::{Guild, Role};
     use gn_client::queries::{self, GuildFilter};
-    use gn_client::{AccountKeyring, Api, Signature, Signer, TxSignerTrait};
+    use gn_client::{Api, Signature, Signer, TxSignerTrait};
     use gn_common::identities::Identity;
     use gn_common::pad::pad_to_32_bytes;
     use gn_common::requirements::{Requirement, RequirementsWithLogic};
@@ -56,7 +56,7 @@ mod test {
             147, 63, 252, 142, 192, 125, 104, 52, 76, 113, 228, 109, 237, 55, 74, 78, 35, 147, 185,
             84, 65, 144, 90, 70, 80, 9, 28,
         ];
-        let signer = Signer::new(AccountKeyring::Alice.pair());
+        let signer = Signer::new(sp_keyring::AccountKeyring::Alice.pair());
         let api = Api::from_url(gn_test_data::URL)
             .await
             .expect("failed to establish websocket connection");
