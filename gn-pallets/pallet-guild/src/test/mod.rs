@@ -1,6 +1,6 @@
 mod helpers;
-//mod register;
-//mod role;
+mod register;
+mod role;
 
 use helpers::*;
 

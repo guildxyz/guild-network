@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn basic_checks() {
-    new_test_runtime().execute_with(|| {
+    new_test_ext().execute_with(|| {
         init_chain();
         let signer = 1;
         let guild_name = [0u8; 32];
@@ -45,7 +45,7 @@ fn basic_checks() {
 
 #[test]
 fn advanced_checks() {
-    new_test_runtime().execute_with(|| {
+    new_test_ext().execute_with(|| {
         init_chain();
         let signer = 1;
         let guild_name = [0u8; 32];
@@ -105,7 +105,7 @@ fn advanced_checks() {
 #[test]
 #[rustfmt::skip]
 fn storage_checks() {
-    new_test_runtime().execute_with(|| {
+    new_test_ext().execute_with(|| {
         init_chain();
         // setup two guilds
         let signer_1 = 1;

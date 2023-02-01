@@ -1,12 +1,13 @@
 pub use crate as pallet_guild;
 
+use frame_support::parameter_types;
 use sp_core::H256;
 use sp_runtime::testing::Header;
 use sp_runtime::traits::{BlakeTwo256, ConstU32, ConstU64, IdentityLookup};
 
+type Balance = u64;
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<TestRuntime>;
 type Block = frame_system::mocking::MockBlock<TestRuntime>;
-type BlockNumber = u64;
 
 frame_support::construct_runtime!(
     pub enum TestRuntime where
@@ -14,20 +15,26 @@ frame_support::construct_runtime!(
         NodeBlock = Block,
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
-        Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-        Guild: pallet_guild::{Pallet, Storage},
+        Balances: pallet_balances,
+        Guild: pallet_guild::{Pallet, Storage, Event<T>},
         Oracle: pallet_oracle::{Pallet, Call, Storage, Event<T>},
         RandomnessCollectiveFlip: pallet_randomness_collective_flip,
         System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
     }
 );
 
+parameter_types! {
+    pub const ExistentialDeposit: Balance = 0;
+    pub const MinimumFee: Balance = 0;
+    pub const ValidityPeriod: u64 = 10;
+}
+
 impl frame_system::Config for TestRuntime {
     type BaseCallFilter = frame_support::traits::Everything;
     type Origin = Origin;
     type Call = Call;
     type Index = u64;
-    type BlockNumber = BlockNumber;
+    type BlockNumber = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
@@ -40,7 +47,7 @@ impl frame_system::Config for TestRuntime {
     type BlockLength = ();
     type Version = ();
     type PalletInfo = PalletInfo;
-    type AccountData = ();
+    type AccountData = pallet_balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
@@ -74,8 +81,8 @@ impl pallet_oracle::Config for TestRuntime {
     type Event = Event;
     type Currency = pallet_balances::Pallet<TestRuntime>;
     type Callback = pallet_guild::Call<TestRuntime>;
-    type ValidityPeriod = ConstU32<10>;
-    type MinimumFee = ConstU32<0>; // TODO shouldn't this be a Balance type?
+    type ValidityPeriod = ValidityPeriod;
+    type MinimumFee = MinimumFee;
     type WeightInfo = ();
 }
 

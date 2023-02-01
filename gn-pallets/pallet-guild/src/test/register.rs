@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn successful_registration() {
-    new_test_runtime().execute_with(|| {
+    new_test_ext().execute_with(|| {
         init_chain();
         let operator = 0;
         let user_1 = 1;
@@ -97,7 +97,7 @@ fn successful_registration() {
 
 #[test]
 fn invalid_multiple_type() {
-    new_test_runtime().execute_with(|| {
+    new_test_ext().execute_with(|| {
         init_chain();
         let operator = 0;
         let user = 2;
