@@ -28,8 +28,8 @@ try-runtime = [
 gn-runtime = { path = "../gn-runtime" }
 
 # general
-clap = {version = "3.1.18", features = ["derive"]}
-jsonrpsee = { version = "0.14.0", features = ["server"] }
+clap = {version = "4.0.9", features = ["derive"]}
+jsonrpsee = { version = "0.16.2", features = ["server"] }
 
 # substrate frame
 frame-benchmarking = { workspace = true, optional = true }
