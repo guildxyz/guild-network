@@ -78,8 +78,8 @@ sp-consensus-aura = { version = "0.19.0", default-features = false }
 sp-core = { version = "15.0.0", default-features = false }
 sp-finality-grandpa = { version = "13.0.0", default-features = false }
 sp-inherents = { version = "13.0.0", default-features = false }
-sp-io = { version = "7.0.0", default-features = false }
-sp-keyring = { version = "7.0.0", default-features = false }
+sp-io = { version = "16.0.0", default-features = false }
+sp-keyring = { version = "17.0.0", default-features = false }
 sp-offchain = { version = "13.0.0", default-features = false }
 sp-runtime = { version = "17.0.0", default-features = false }
 sp-session = { version = "14.0.0", default-features = false }
