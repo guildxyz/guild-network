@@ -63,9 +63,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Guild Roles (r:0 w:2)
 	/// The range of component `r` is `[0, 100]`.
 	fn create_guild(r: u64, ) -> Weight {
-		Weight::from(19_413_000)
+		Weight::from_parts(19_413_000, 19_413_000)
 			// Standard Error: 3_000
-			.saturating_add(Weight::from(2_651_000).saturating_mul(r))
+			.saturating_add(Weight::from_parts(2_651_000, 2_651_000).saturating_mul(r))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 			.saturating_add(T::DbWeight::get().writes(r))
@@ -78,7 +78,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Guild JoinRequests (r:0 w:1)
 	// Storage: Chainlink Requests (r:0 w:1)
 	fn join_guild() -> Weight {
-		Weight::from(53_270_000)
+		Weight::from_parts(53_270_000, 53_270_000)
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(5))
 	}
@@ -90,9 +90,9 @@ impl WeightInfo for () {
 	// Storage: Guild Roles (r:0 w:2)
 	/// The range of component `r` is `[0, 100]`.
 	fn create_guild(r: u64, ) -> Weight {
-		Weight::from(19_413_000)
+		Weight::from_parts(19_413_000, 19_413_000)
 			// Standard Error: 3_000
-			.saturating_add(Weight::from(2_651_000).saturating_mul(r))
+			.saturating_add(Weight::from_parts(2_651_000, 2_651_000).saturating_mul(r))
 			.saturating_add(RocksDbWeight::get().reads(1))
 			.saturating_add(RocksDbWeight::get().writes(1))
 			.saturating_add(RocksDbWeight::get().writes(r))
@@ -105,7 +105,7 @@ impl WeightInfo for () {
 	// Storage: Guild JoinRequests (r:0 w:1)
 	// Storage: Chainlink Requests (r:0 w:1)
 	fn join_guild() -> Weight {
-		Weight::from(53_270_000)
+		Weight::from_parts(53_270_000, 53_270_000)
 			.saturating_add(RocksDbWeight::get().reads(5))
 			.saturating_add(RocksDbWeight::get().writes(5))
 	}
