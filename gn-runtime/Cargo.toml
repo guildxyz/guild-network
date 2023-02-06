@@ -34,7 +34,6 @@ std = [
   "pallet-balances/std",
   "pallet-grandpa/std",
   "pallet-guild/std",
-  "pallet-nicks/std",
   "pallet-oracle/std",
   "pallet-randomness-collective-flip/std",
   "pallet-sudo/std",
@@ -88,7 +87,6 @@ frame-try-runtime = { workspace = true, optional = true }
 pallet-aura = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-grandpa = { workspace = true }
-pallet-nicks = { workspace = true  }
 pallet-randomness-collective-flip = { workspace = true }
 pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
@@ -109,4 +107,4 @@ sp-transaction-pool = { workspace = true }
 sp-version = { workspace = true }
 
 [build-dependencies]
-substrate-wasm-builder = { version = "5.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.25" }
+substrate-wasm-builder = "7.0.0"

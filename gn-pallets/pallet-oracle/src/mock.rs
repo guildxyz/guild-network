@@ -36,8 +36,8 @@ parameter_types! {
 
 impl frame_system::Config for TestRuntime {
     type BaseCallFilter = frame_support::traits::Everything;
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -45,7 +45,7 @@ impl frame_system::Config for TestRuntime {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type DbWeight = ();
     type BlockWeights = ();
@@ -64,7 +64,7 @@ impl frame_system::Config for TestRuntime {
 impl pallet_balances::Config for TestRuntime {
     type MaxLocks = ();
     type Balance = Balance;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
@@ -75,7 +75,7 @@ impl pallet_balances::Config for TestRuntime {
 
 impl pallet_oracle::Config for TestRuntime {
     type WeightInfo = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Currency = pallet_balances::Pallet<TestRuntime>;
     type Callback = MockCallback;
     type ValidityPeriod = ValidityPeriod;
@@ -98,8 +98,8 @@ impl pallet_oracle::CallbackWithParameter for MockCallback {
 }
 
 impl UnfilteredDispatchable for MockCallback {
-    type Origin = <TestRuntime as frame_system::Config>::Origin;
-    fn dispatch_bypass_filter(self, _origin: Self::Origin) -> DispatchResultWithPostInfo {
+    type RuntimeOrigin = <TestRuntime as frame_system::Config>::RuntimeOrigin;
+    fn dispatch_bypass_filter(self, _origin: Self::RuntimeOrigin) -> DispatchResultWithPostInfo {
         Ok(PostDispatchInfo {
             actual_weight: None,
             pays_fee: Pays::No,

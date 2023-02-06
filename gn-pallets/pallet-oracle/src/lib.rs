@@ -44,11 +44,11 @@ pub mod pallet {
     #[pallet::config]
     pub trait Config: frame_system::Config {
         type WeightInfo: WeightInfo;
-        type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type Currency: ReservableCurrency<Self::AccountId>;
         // A reference to an Extrinsic that can have a result injected. Used as Oracle callback
         type Callback: Parameter
-            + UnfilteredDispatchable<Origin = Self::Origin>
+            + UnfilteredDispatchable<RuntimeOrigin = Self::RuntimeOrigin>
             + Codec
             + Eq
             + CallbackWithParameter;
@@ -175,6 +175,7 @@ pub mod pallet {
         ///
         /// Fails with `OperatorAlreadyRegistered` if this Operator (identified
         /// by `origin`) has already been registered.
+        #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::register_operator())]
         pub fn register_operator(origin: OriginFor<T>) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
@@ -191,6 +192,7 @@ pub mod pallet {
         }
 
         /// Deregisters an already registered Operator
+        #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::deregister_operator())]
         pub fn deregister_operator(origin: OriginFor<T>) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
@@ -218,6 +220,7 @@ pub mod pallet {
         /// required information to perform the request and provide back
         /// the result.
         // TODO check weight
+        #[pallet::call_index(2)]
         #[pallet::weight(50_000)]
         pub fn initiate_request(
             origin: OriginFor<T>,
@@ -282,6 +285,7 @@ pub mod pallet {
         /// callback. The fee reserved during `initiate_request` is transferred
         /// as soon as this callback is called.
         //TODO check weight
+        #[pallet::call_index(3)]
         #[pallet::weight(50_000)]
         pub fn callback(
             origin: OriginFor<T>,
