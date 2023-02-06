@@ -34,8 +34,8 @@ parameter_types! {
 
 impl frame_system::Config for TestRuntime {
     type BaseCallFilter = frame_support::traits::Everything;
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -43,7 +43,7 @@ impl frame_system::Config for TestRuntime {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type DbWeight = ();
     type BlockWeights = ();
@@ -62,7 +62,7 @@ impl frame_system::Config for TestRuntime {
 impl pallet_balances::Config for TestRuntime {
     type MaxLocks = ();
     type Balance = Balance;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
@@ -72,20 +72,20 @@ impl pallet_balances::Config for TestRuntime {
 }
 
 impl pallet_guild::Config for TestRuntime {
-    type WeightInfo = ();
-    type Event = Event;
-    type MyRandomness = RandomnessCollectiveFlip;
     type MaxRolesPerGuild = MaxRolesPerGuild;
     type MaxReqsPerRole = MaxReqsPerRole;
     type MaxSerializedReqLen = MaxSerializedReqLen;
+    type MyRandomness = RandomnessCollectiveFlip;
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
 }
 
 impl pallet_oracle::Config for TestRuntime {
-    type Event = Event;
     type Currency = pallet_balances::Pallet<TestRuntime>;
     type Callback = pallet_guild::Call<TestRuntime>;
-    type ValidityPeriod = ValidityPeriod;
     type MinimumFee = MinimumFee;
+    type RuntimeEvent = RuntimeEvent;
+    type ValidityPeriod = ValidityPeriod;
     type WeightInfo = ();
 }
 

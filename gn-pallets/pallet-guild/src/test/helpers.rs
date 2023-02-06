@@ -23,12 +23,12 @@ pub fn init_chain() {
     }
 }
 
-pub fn last_event() -> Event {
+pub fn last_event() -> pallet_guild::Event<TestRuntime> {
     System::events()
         .into_iter()
         .filter_map(|e| {
-            if let Event::Guild(inner) = e.event {
-                Some(Event::Guild(inner))
+            if let RuntimeEvent::Guild(inner) = e.event {
+                Some(inner)
             } else {
                 None
             }
@@ -83,7 +83,11 @@ pub fn new_guild(signer: AccountId, guild_name: [u8; 32]) {
         ),
     ];
 
-    assert!(
-        <Guild>::create_guild(Origin::signed(signer), guild_name, METADATA.to_vec(), roles).is_ok()
-    );
+    assert!(<Guild>::create_guild(
+        RuntimeOrigin::signed(signer),
+        guild_name,
+        METADATA.to_vec(),
+        roles
+    )
+    .is_ok());
 }

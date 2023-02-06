@@ -12,6 +12,7 @@ use gn_common::{
     identities::{Identity, IdentityWithAuth},
     Request, RequestData,
 };
+use pallet_guild::Event as GuildEvent;
 use parity_scale_codec::{Decode, Encode};
 use sp_runtime::DispatchError;
 
@@ -31,10 +32,7 @@ fn create_guild() {
 
         new_guild(signer, guild_name);
 
-        assert_eq!(
-            last_event(),
-            Event::Guild(pallet_guild::Event::GuildCreated(signer, guild_name))
-        );
+        assert_eq!(last_event(), GuildEvent::GuildCreated(signer, guild_name));
 
         let guild_id = <Guild>::guild_id(guild_name).unwrap();
         let guild = <Guild>::guild(guild_id).unwrap();
@@ -99,8 +97,8 @@ fn bound_checks_on_creating_guild() {
         ];
 
         for (roles, raw_error) in test_data {
-            let error =
-                <Guild>::create_guild(Origin::signed(0), [0; 32], vec![], roles).unwrap_err();
+            let error = <Guild>::create_guild(RuntimeOrigin::signed(0), [0; 32], vec![], roles)
+                .unwrap_err();
             assert_eq!(error_msg(error), raw_error);
         }
     });
@@ -110,16 +108,9 @@ fn bound_checks_on_creating_guild() {
 fn callback_can_only_be_called_by_root() {
     new_test_ext().execute_with(|| {
         init_chain();
-        let error = <Guild>::callback(Origin::signed(1), vec![]).unwrap_err();
-        assert_eq!(error, DispatchError::BadOrigin,);
 
-        let error = <Guild>::callback(Origin::root(), vec![1]).unwrap_err();
-        assert_eq!(error_msg(error), "CodecError");
-
-        let no_access = dummy_answer(vec![u8::from(false)], 1, RequestData::Register(vec![]));
-        let error = <Guild>::callback(Origin::root(), no_access.encode()).unwrap_err();
-        assert_eq!(error_msg(error), "AccessDenied");
-
+        let no_access =
+            dummy_answer(vec![u8::from(false)], 1, RequestData::Register(vec![])).encode();
         let access = dummy_answer(
             vec![u8::from(true)],
             2,
@@ -128,8 +119,30 @@ fn callback_can_only_be_called_by_root() {
                 guild: [0; 32],
                 role: [1; 32],
             },
-        );
-        let error = <Guild>::callback(Origin::root(), access.encode()).unwrap_err();
-        assert_eq!(error_msg(error), "GuildDoesNotExist");
+        )
+        .encode();
+
+        let test_data = vec![
+            (
+                <Guild>::callback(RuntimeOrigin::signed(1), vec![]),
+                "BadOrigin",
+            ),
+            (
+                <Guild>::callback(RuntimeOrigin::root(), vec![1]),
+                "CodecError",
+            ),
+            (
+                <Guild>::callback(RuntimeOrigin::root(), no_access),
+                "AccessDenied",
+            ),
+            (
+                <Guild>::callback(RuntimeOrigin::root(), access),
+                "GuildDoesNotExist",
+            ),
+        ];
+
+        for (call, raw_error) in test_data {
+            assert_eq!(error_msg(call.unwrap_err()), raw_error);
+        }
     });
 }

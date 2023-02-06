@@ -43,8 +43,6 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        type WeightInfo: WeightInfo;
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type Currency: ReservableCurrency<Self::AccountId>;
         // A reference to an Extrinsic that can have a result injected. Used as Oracle callback
         type Callback: Parameter
@@ -52,12 +50,14 @@ pub mod pallet {
             + Codec
             + Eq
             + CallbackWithParameter;
-        // Period during which a request is valid
-        #[pallet::constant]
-        type ValidityPeriod: Get<Self::BlockNumber>;
         // Minimum fee paid for all requests to disincentivize spam requests
         #[pallet::constant]
         type MinimumFee: Get<<Self::Currency as Currency<Self::AccountId>>::Balance>;
+        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        // Period during which a request is valid
+        #[pallet::constant]
+        type ValidityPeriod: Get<Self::BlockNumber>;
+        type WeightInfo: WeightInfo;
     }
 
     pub type BalanceOf<T> =

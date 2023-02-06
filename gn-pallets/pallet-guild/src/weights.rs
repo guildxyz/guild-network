@@ -52,7 +52,7 @@ use sp_std::marker::PhantomData;
 
 /// Weight functions needed for pallet_guild.
 pub trait WeightInfo {
-	fn create_guild(r: u32, ) -> Weight;
+	fn create_guild(r: u64, ) -> Weight;
 	fn join_guild() -> Weight;
 }
 
@@ -62,13 +62,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Guild Guilds (r:1 w:1)
 	// Storage: Guild Roles (r:0 w:2)
 	/// The range of component `r` is `[0, 100]`.
-	fn create_guild(r: u32, ) -> Weight {
-		(19_413_000 as Weight)
+	fn create_guild(r: u64, ) -> Weight {
+		Weight::from(19_413_000)
 			// Standard Error: 3_000
-			.saturating_add((2_651_000 as Weight).saturating_mul(r as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(r as Weight)))
+			.saturating_add(Weight::from(2_651_000).saturating_mul(r))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
+			.saturating_add(T::DbWeight::get().writes(r))
 	}
 	// Storage: Guild Roles (r:1 w:0)
 	// Storage: Guild NextRequestIdentifier (r:1 w:1)
@@ -78,9 +78,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Guild JoinRequests (r:0 w:1)
 	// Storage: Chainlink Requests (r:0 w:1)
 	fn join_guild() -> Weight {
-		(53_270_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(5 as Weight))
+		Weight::from(53_270_000)
+			.saturating_add(T::DbWeight::get().reads(5))
+			.saturating_add(T::DbWeight::get().writes(5))
 	}
 }
 
@@ -89,13 +89,13 @@ impl WeightInfo for () {
 	// Storage: Guild Guilds (r:1 w:1)
 	// Storage: Guild Roles (r:0 w:2)
 	/// The range of component `r` is `[0, 100]`.
-	fn create_guild(r: u32, ) -> Weight {
-		(19_413_000 as Weight)
+	fn create_guild(r: u64, ) -> Weight {
+		Weight::from(19_413_000)
 			// Standard Error: 3_000
-			.saturating_add((2_651_000 as Weight).saturating_mul(r as Weight))
-			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
-			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
-			.saturating_add(RocksDbWeight::get().writes((1 as Weight).saturating_mul(r as Weight)))
+			.saturating_add(Weight::from(2_651_000).saturating_mul(r))
+			.saturating_add(RocksDbWeight::get().reads(1))
+			.saturating_add(RocksDbWeight::get().writes(1))
+			.saturating_add(RocksDbWeight::get().writes(r))
 	}
 	// Storage: Guild Roles (r:1 w:0)
 	// Storage: Guild NextRequestIdentifier (r:1 w:1)
@@ -105,8 +105,8 @@ impl WeightInfo for () {
 	// Storage: Guild JoinRequests (r:0 w:1)
 	// Storage: Chainlink Requests (r:0 w:1)
 	fn join_guild() -> Weight {
-		(53_270_000 as Weight)
-			.saturating_add(RocksDbWeight::get().reads(5 as Weight))
-			.saturating_add(RocksDbWeight::get().writes(5 as Weight))
+		Weight::from(53_270_000)
+			.saturating_add(RocksDbWeight::get().reads(5))
+			.saturating_add(RocksDbWeight::get().writes(5))
 	}
 }

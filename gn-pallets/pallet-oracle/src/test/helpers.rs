@@ -18,12 +18,12 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     sp_io::TestExternalities::new(storage)
 }
 
-pub fn last_event() -> RuntimeEvent {
+pub fn last_event() -> pallet_oracle::Event<TestRuntime> {
     System::events()
         .into_iter()
         .filter_map(|e| {
             if let RuntimeEvent::Oracle(inner) = e.event {
-                Some(RuntimeEvent::Oracle(inner))
+                Some(inner)
             } else {
                 None
             }

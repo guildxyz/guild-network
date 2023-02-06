@@ -3,6 +3,7 @@ use helpers::*;
 
 use crate::mock::*;
 use frame_support::traits::OnFinalize;
+use pallet_oracle::Event as OracleEvent;
 use parity_scale_codec::{Decode, Encode};
 
 #[test]
@@ -13,10 +14,7 @@ fn operator_registration_valid() {
 
         assert!(<Oracle>::operators().is_empty());
         assert!(<Oracle>::register_operator(RuntimeOrigin::signed(1)).is_ok());
-        assert_eq!(
-            last_event(),
-            RuntimeEvent::Oracle(pallet_oracle::Event::OperatorRegistered(1))
-        );
+        assert_eq!(last_event(), OracleEvent::OperatorRegistered(1));
         assert_eq!(<Oracle>::operators(), vec![1]);
     });
 }
@@ -44,10 +42,7 @@ fn operator_unregistration_valid() {
         assert!(<Oracle>::deregister_operator(RuntimeOrigin::signed(1)).is_ok());
         assert!(<Oracle>::operators().is_empty());
 
-        assert_eq!(
-            last_event(),
-            RuntimeEvent::Oracle(pallet_oracle::Event::OperatorDeregistered(1))
-        );
+        assert_eq!(last_event(), OracleEvent::OperatorDeregistered(1));
     });
 }
 
@@ -73,10 +68,7 @@ fn initiate_requests_valid() {
         let request_id = 0;
 
         assert!(<Oracle>::register_operator(RuntimeOrigin::signed(ACCOUNT_0)).is_ok());
-        assert_eq!(
-            last_event(),
-            RuntimeEvent::Oracle(pallet_oracle::Event::OperatorRegistered(ACCOUNT_0))
-        );
+        assert_eq!(last_event(), OracleEvent::OperatorRegistered(ACCOUNT_0));
 
         assert!(<Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_1),
@@ -88,12 +80,12 @@ fn initiate_requests_valid() {
 
         assert_eq!(
             last_event(),
-            RuntimeEvent::Oracle(pallet_oracle::Event::OracleRequest {
+            OracleEvent::OracleRequest {
                 request_id,
                 operator: ACCOUNT_0,
                 callback,
                 fee,
-            })
+            }
         );
 
         let r = <(Vec<u8>, Vec<u8>)>::decode(&mut &data[..]).unwrap();
@@ -104,12 +96,12 @@ fn initiate_requests_valid() {
 
         assert_eq!(
             last_event(),
-            RuntimeEvent::Oracle(pallet_oracle::Event::OracleAnswer {
+            OracleEvent::OracleAnswer {
                 request_id,
                 operator: ACCOUNT_0,
                 fee,
                 result,
-            })
+            }
         );
     });
 }
@@ -143,12 +135,12 @@ fn linear_request_delegation() {
 
         assert_eq!(
             last_event(),
-            RuntimeEvent::Oracle(pallet_oracle::Event::OracleRequest {
+            OracleEvent::OracleRequest {
                 request_id,
                 operator: operator_0,
                 callback,
                 fee,
-            })
+            }
         );
         request_id += 1;
 
@@ -162,12 +154,12 @@ fn linear_request_delegation() {
 
         assert_eq!(
             last_event(),
-            RuntimeEvent::Oracle(pallet_oracle::Event::OracleRequest {
+            OracleEvent::OracleRequest {
                 request_id,
                 operator: operator_1,
                 callback,
                 fee,
-            })
+            }
         );
         request_id += 1;
 
@@ -181,12 +173,12 @@ fn linear_request_delegation() {
 
         assert_eq!(
             last_event(),
-            RuntimeEvent::Oracle(pallet_oracle::Event::OracleRequest {
+            OracleEvent::OracleRequest {
                 request_id,
                 operator: operator_2,
                 callback,
                 fee,
-            })
+            }
         );
         request_id += 1;
 
@@ -200,12 +192,12 @@ fn linear_request_delegation() {
 
         assert_eq!(
             last_event(),
-            RuntimeEvent::Oracle(pallet_oracle::Event::OracleRequest {
+            OracleEvent::OracleRequest {
                 request_id,
                 operator: operator_3,
                 callback,
                 fee,
-            })
+            }
         );
         request_id += 1;
 
@@ -216,12 +208,12 @@ fn linear_request_delegation() {
 
         assert_eq!(
             last_event(),
-            RuntimeEvent::Oracle(pallet_oracle::Event::OracleRequest {
+            OracleEvent::OracleRequest {
                 request_id,
                 operator: operator_0,
                 callback,
                 fee,
-            })
+            }
         );
     });
 }
