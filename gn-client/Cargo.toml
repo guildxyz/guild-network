@@ -4,14 +4,14 @@ version = "0.0.0-alpha"
 edition = "2021"
 
 [features]
-default = ["subxt/jsonrpsee-ws"]
+default = ["subxt/default"]
 external-oracle = []
 wasm = ["subxt/jsonrpsee-web"]
 
 [dependencies]
 # local
 gn-common = { version = "0.0.0-alpha", path = "../gn-common" }
-subxt = { git = "https://github.com/agoraxyz/subxt", branch = "wasm-sig", default-features = false }
+subxt = { path = "../../subxt/subxt", default-features = false }
 
 # general
 anyhow = "1"
@@ -25,7 +25,6 @@ serde_cbor = "0.11.2"
 [dev-dependencies]
 # local
 gn-test-data = { path = "../gn-test-data" }
-subxt = { git = "https://github.com/agoraxyz/subxt", branch = "wasm-sig" }
 
 # general
 ethers = "1.0.2"

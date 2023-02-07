@@ -32,6 +32,3 @@ gn-test-data = { path = "../gn-test-data" }
 # general
 tracing-wasm = "0.2.1"
 wasm-bindgen-test = "0.3.24"
-
-# substrate primitives
-sp-keyring = { workspace = true }
