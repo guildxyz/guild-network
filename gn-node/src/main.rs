@@ -4,10 +4,10 @@
 mod chain_spec;
 #[macro_use]
 mod service;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 mod cli;
 mod command;
-#[cfg(feature = "runtime-benchmarks")]
-mod command_benchmark;
 mod rpc;
 
 fn main() -> sc_cli::Result<()> {

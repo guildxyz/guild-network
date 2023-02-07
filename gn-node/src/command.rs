@@ -1,14 +1,12 @@
+#[cfg(feature = "runtime-benchmarks")]
+use crate::benchmarking::{inherent_benchmark_data, RemarkBuilder, TransferKeepAliveBuilder};
 use crate::{
     chain_spec,
     cli::{Cli, Subcommand},
+    service,
 };
-
 #[cfg(feature = "runtime-benchmarks")]
-use crate::command_benchmark::{inherent_benchmark_data, BenchmarkExtrinsicBuilder};
-use crate::service;
-
-#[cfg(feature = "runtime-benchmarks")]
-use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
+use frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE};
 use gn_runtime::Block;
 use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
@@ -138,14 +136,6 @@ pub fn run() -> sc_cli::Result<()> {
                 // which sub-commands it wants to support.
                 match cmd {
                     BenchmarkCmd::Pallet(cmd) => {
-                        if !cfg!(feature = "runtime-benchmarks") {
-                            return Err(
-                                "Runtime benchmarking wasn't enabled when building the node. \
-			        You can enable it with `--features runtime-benchmarks`."
-                                    .into(),
-                            );
-                        }
-
                         cmd.run::<Block, service::ExecutorDispatch>(config)
                     }
                     BenchmarkCmd::Block(cmd) => {
@@ -163,7 +153,7 @@ pub fn run() -> sc_cli::Result<()> {
                     }
                     BenchmarkCmd::Overhead(cmd) => {
                         let PartialComponents { client, .. } = service::new_partial(&config)?;
-                        let ext_builder = BenchmarkExtrinsicBuilder::new(client.clone());
+                        let ext_builder = RemarkBuilder::new(client.clone());
 
                         cmd.run(
                             config,
@@ -173,7 +163,20 @@ pub fn run() -> sc_cli::Result<()> {
                             &ext_builder,
                         )
                     }
-                    BenchmarkCmd::Extrinsic(_cmd) => todo!(),
+                    BenchmarkCmd::Extrinsic(cmd) => {
+                        let PartialComponents { client, .. } = service::new_partial(&config)?;
+                        // Register the *Remark* and *TKA* builders.
+                        let ext_factory = ExtrinsicFactory(vec![
+                            Box::new(RemarkBuilder::new(client.clone())),
+                            Box::new(TransferKeepAliveBuilder::new(
+                                client.clone(),
+                                sp_keyring::Sr25519Keyring::Alice.to_account_id(),
+                                gn_runtime::ExistentialDeposit::get(),
+                            )),
+                        ]);
+
+                        cmd.run(client, inherent_benchmark_data()?, Vec::new(), &ext_factory)
+                    }
                     BenchmarkCmd::Machine(cmd) => {
                         cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone())
                     }
@@ -201,10 +204,6 @@ pub fn run() -> sc_cli::Result<()> {
                 ))
             })
         }
-        #[cfg(not(feature = "try-runtime"))]
-        Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the node. \
-				You can enable it with `--features try-runtime`."
-            .into()),
         Some(Subcommand::ChainInfo(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| cmd.run::<Block>(&config))

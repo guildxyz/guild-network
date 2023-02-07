@@ -1,6 +1,6 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use gn_runtime::{opaque::Block, RuntimeApi};
+use gn_runtime::{self, opaque::Block, RuntimeApi};
 use sc_client_api::BlockBackend;
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 pub use sc_executor::NativeElseWasmExecutor;
@@ -110,7 +110,7 @@ pub fn new_partial(
 
     let (grandpa_block_import, grandpa_link) = sc_finality_grandpa::block_import(
         client.clone(),
-        &(client.clone() as Arc<_>),
+        &client,
         select_chain.clone(),
         telemetry.as_ref().map(|x| x.handle()),
     )?;
@@ -126,10 +126,10 @@ pub fn new_partial(
                 let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
                 let slot =
-		    sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-			*timestamp,
-			slot_duration,
-		    );
+					sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+						*timestamp,
+						slot_duration,
+					);
 
                 Ok((slot, timestamp))
             },
@@ -177,7 +177,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
             Ok(k) => keystore_container.set_remote_keystore(k),
             Err(e) => {
                 return Err(ServiceError::Other(format!(
-                    "Error hooking up remote keystore for {url}: {e}"
+                    "Error hooking up remote keystore for {url}: {e}",
                 )))
             }
         };
@@ -306,27 +306,27 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
             .spawn_blocking("aura", Some("block-authoring"), aura);
     }
 
-    // if the node isn't actively participating in consensus then it doesn't
-    // need a keystore, regardless of which protocol we use below.
-    let keystore = if role.is_authority() {
-        Some(keystore_container.sync_keystore())
-    } else {
-        None
-    };
-
-    let grandpa_config = sc_finality_grandpa::Config {
-        // FIXME #1578 make this available through chainspec
-        gossip_duration: Duration::from_millis(333),
-        justification_period: 512,
-        name: Some(name),
-        observer_enabled: false,
-        keystore,
-        local_role: role,
-        telemetry: telemetry.as_ref().map(|x| x.handle()),
-        protocol_name: grandpa_protocol_name,
-    };
-
     if enable_grandpa {
+        // if the node isn't actively participating in consensus then it doesn't
+        // need a keystore, regardless of which protocol we use below.
+        let keystore = if role.is_authority() {
+            Some(keystore_container.sync_keystore())
+        } else {
+            None
+        };
+
+        let grandpa_config = sc_finality_grandpa::Config {
+            // FIXME #1578 make this available through chainspec
+            gossip_duration: Duration::from_millis(333),
+            justification_period: 512,
+            name: Some(name),
+            observer_enabled: false,
+            keystore,
+            local_role: role,
+            telemetry: telemetry.as_ref().map(|x| x.handle()),
+            protocol_name: grandpa_protocol_name,
+        };
+
         // start the full GRANDPA voter
         // NOTE: non-authorities could run the GRANDPA observer protocol, but at
         // this point the full voter should provide better guarantees of block

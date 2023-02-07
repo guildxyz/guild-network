@@ -2,17 +2,18 @@ use sc_cli::RunCmd;
 
 #[derive(Debug, clap::Parser)]
 pub struct Cli {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     pub subcommand: Option<Subcommand>,
 
     #[clap(flatten)]
     pub run: RunCmd,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, clap::Subcommand)]
 pub enum Subcommand {
     /// Key management cli utilities
-    #[clap(subcommand)]
+    #[command(subcommand)]
     Key(sc_cli::KeySubcommand),
 
     /// Build a chain specification.
@@ -38,16 +39,12 @@ pub enum Subcommand {
 
     /// Sub-commands concerned with benchmarking.
     #[cfg(feature = "runtime-benchmarks")]
-    #[clap(subcommand)]
+    #[command(subcommand)]
     Benchmark(frame_benchmarking_cli::BenchmarkCmd),
 
     /// Try some command against runtime state.
     #[cfg(feature = "try-runtime")]
     TryRuntime(try_runtime_cli::TryRuntimeCmd),
-
-    /// Try some command against runtime state. Note: `try-runtime` feature must be enabled.
-    #[cfg(not(feature = "try-runtime"))]
-    TryRuntime,
 
     /// Db meta columns information.
     ChainInfo(sc_cli::ChainInfoCmd),
