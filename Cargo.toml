@@ -1,7 +1,7 @@
 [workspace]
 exclude = ["rusty-gate"]
 members = [
-#    "gn-client",
+    "gn-client",
     "gn-common",
 #    "gn-frontend", # only experimental for now
     "gn-node",
@@ -14,7 +14,7 @@ members = [
 ]
 # don't include wasm in the build process
 default-members = [
-#    "gn-client",
+    "gn-client",
     "gn-common",
     "gn-node",
 #    "gn-oracle",
