@@ -5,7 +5,7 @@ members = [
     "gn-common",
 #    "gn-frontend", # only experimental for now
     "gn-node",
-#    "gn-oracle",
+    "gn-oracle",
     "gn-pallets/pallet-oracle",
     "gn-pallets/pallet-guild",
     "gn-runtime",
@@ -17,7 +17,7 @@ default-members = [
     "gn-client",
     "gn-common",
     "gn-node",
-#    "gn-oracle",
+    "gn-oracle",
     "gn-pallets/pallet-oracle",
     "gn-pallets/pallet-guild",
     "gn-runtime",

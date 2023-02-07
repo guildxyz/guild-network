@@ -22,6 +22,6 @@ RUN cargo check --color=always --tests --examples --features runtime-benchmarks
 # with try-runtime
 RUN cargo check --color=always --tests --examples --features try-runtime
 
-RUN cargo clippy --color=always --tests --examples --all-features
+RUN cargo clippy --color=always --tests --examples --features runtime-benchmarks try-runtime
 
 RUN cargo test --release --all-features --workspace --exclude gn-node --exclude gn-wasm --exclude gn-frontend
