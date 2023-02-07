@@ -47,7 +47,15 @@ impl BenchmarkExtrinsicBuilder {
 }
 
 impl frame_benchmarking_cli::ExtrinsicBuilder for BenchmarkExtrinsicBuilder {
-    fn remark(&self, nonce: u32) -> std::result::Result<OpaqueExtrinsic, &'static str> {
+    fn pallet(&self) -> &str {
+        "system"
+    }
+
+    fn extrinsic(&self) -> &str {
+        "remark"
+    }
+
+    fn build(&self, nonce: u32) -> std::result::Result<OpaqueExtrinsic, &'static str> {
         let acc = Sr25519Keyring::Bob.pair();
         let extrinsic: OpaqueExtrinsic = create_benchmark_extrinsic(
             self.client.as_ref(),
@@ -67,7 +75,7 @@ impl frame_benchmarking_cli::ExtrinsicBuilder for BenchmarkExtrinsicBuilder {
 pub fn create_benchmark_extrinsic(
     client: &FullClient,
     sender: sp_core::sr25519::Pair,
-    call: runtime::Call,
+    call: runtime::RuntimeCall,
     nonce: u32,
 ) -> runtime::UncheckedExtrinsic {
     let genesis_hash = client
@@ -128,8 +136,7 @@ pub fn inherent_benchmark_data() -> Result<InherentData> {
     let d = Duration::from_millis(0);
     let timestamp = sp_timestamp::InherentDataProvider::new(d.into());
 
-    timestamp
-        .provide_inherent_data(&mut inherent_data)
+    futures::executor::block_on(timestamp.provide_inherent_data(&mut inherent_data))
         .map_err(|e| format!("creating inherent data: {e:?}"))?;
     Ok(inherent_data)
 }

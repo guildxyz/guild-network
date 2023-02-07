@@ -8,6 +8,8 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+#[cfg(feature = "runtime-benchmarks")]
+pub use frame_system::Call as SystemCall;
 use pallet_grandpa::{
     fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
@@ -27,7 +29,7 @@ use sp_version::RuntimeVersion;
 
 use frame_support::{
     construct_runtime, parameter_types,
-    traits::{ConstU128, ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem},
+    traits::{ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem},
     weights::{
         constants::{RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
         IdentityFee, Weight,
@@ -135,6 +137,7 @@ parameter_types! {
     pub const SS58Prefix: u8 = 42;
     pub const ValidityPeriod: u32 = 50;
     pub const MinimumFee: u32 = 0;
+    pub const ExistentialDeposit: Balance = 500;
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -231,7 +234,7 @@ impl pallet_balances::Config for Runtime {
     /// The ubiquitous event type.
     type RuntimeEvent = RuntimeEvent;
     type DustRemoval = ();
-    type ExistentialDeposit = ConstU128<500>;
+    type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
