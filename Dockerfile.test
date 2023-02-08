@@ -22,6 +22,24 @@ RUN cargo check --color=always --tests --examples --features runtime-benchmarks
 # with try-runtime
 RUN cargo check --color=always --tests --examples --features try-runtime
 
+# clippy with all features
 RUN cargo clippy --color=always --tests --examples --features runtime-benchmarks,try-runtime
 
 RUN cargo test --release --features runtime-benchmarks,try-runtime --workspace --exclude gn-node --exclude gn-wasm --exclude gn-frontend
+
+RUN cargo build --release
+
+ARG ETHEREUM_RPC
+ARG POLYGON_RPC
+ARG BSC_RPC
+ARG GNOSIS_RPC
+ARG ARBITRUM_RPC
+ARG GOERLI_RPC
+
+RUN ETHEREUM_RPC=$ETHEREUM_RPC \
+    POLYGON_RPC=$POLYGON_RPC \
+    BSC_RPC=$BSC_RPC \
+    GNOSIS_RPC=$GNOSIS_RPC \
+    ARBITRUM_RPC=$ARBITRUM_RPC \
+    GOERLI_RPC=$GOERLI_RPC\ 
+    python3 integr_test.py
