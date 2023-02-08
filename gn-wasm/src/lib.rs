@@ -192,7 +192,7 @@ mod test {
                 .await
                 .unwrap();
             let members_vec: Vec<AccountId> = deserialize_from_value(members_js).unwrap();
-            assert!(members_vec.contains(account_id));
+            assert!(members_vec.contains(&account_id));
 
             let identities_js = query_user_identity(TEST_ADDRESS.to_string(), URL.to_string())
                 .await

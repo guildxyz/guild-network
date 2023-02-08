@@ -1,4 +1,4 @@
-//// re-exports
+// re-exports
 pub use serde_cbor::{from_slice as cbor_deserialize, to_vec as cbor_serialize};
 pub use subxt::utils::MultiAddress;
 pub use subxt::utils::H256 as Hash;
