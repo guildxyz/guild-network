@@ -142,7 +142,6 @@ mod test {
     #[cfg(feature = "queries")]
     mod queries {
         use super::*;
-        use gn_client::{Keypair, Signer, TraitPair};
         use gn_common::identities::Identity;
         use serde_wasm_bindgen::from_value as deserialize_from_value;
 
@@ -187,19 +186,15 @@ mod test {
 
         #[wasm_bindgen_test]
         async fn test_query_user_identity() {
-            let signer = Signer::new(Keypair::from_seed(&ACCOUNT_SEED));
-
-            let address_string = signer.account_id().to_string();
-            let converted_id = AccountId::from_str(&address_string).unwrap();
-            assert_eq!(&converted_id, signer.account_id());
+            let account_id = AccountId::from_str(TEST_ADDRESS).unwrap();
 
             let members_js = query_members("".to_string(), "".to_string(), URL.to_string())
                 .await
                 .unwrap();
             let members_vec: Vec<AccountId> = deserialize_from_value(members_js).unwrap();
-            assert!(members_vec.contains(signer.account_id()));
+            assert!(members_vec.contains(account_id));
 
-            let identities_js = query_user_identity(address_string, URL.to_string())
+            let identities_js = query_user_identity(TEST_ADDRESS.to_string(), URL.to_string())
                 .await
                 .unwrap();
 

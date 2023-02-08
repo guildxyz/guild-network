@@ -44,7 +44,7 @@ pub async fn prefunded_accounts(
             };
             (accounts.substrate.as_ref().account_id().clone(), accounts)
         })
-        .inspect(|(id, _)| println!("new account: {id:?}"))
+        .inspect(|(id, _)| println!("new account: {id}"))
         .collect::<BTreeMap<AccountId, Accounts>>();
 
     let amount = 1_000_000_000_000_000u128;

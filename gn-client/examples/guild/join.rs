@@ -63,7 +63,9 @@ pub async fn join(api: Api, alice: Arc<Signer>) {
             .expect("failed to fetch registered members");
         if all_members.len() == N_TEST_ACCOUNTS {
             println!("ALL MEMBERS");
-            println!("{all_members:#?}");
+            all_members
+                .into_iter()
+                .for_each(|member| println!("\t{member}"));
             break;
         }
     }
@@ -72,46 +74,52 @@ pub async fn join(api: Api, alice: Arc<Signer>) {
         name: FIRST_GUILD,
         role: None,
     };
-    let first_guild_members = query::members(api.clone(), Some(&filter), PAGE_SIZE)
-        .await
-        .expect("failed to fetch members");
     println!("FIRST GUILD MEMBERS");
-    println!("{first_guild_members:#?}");
-
-    filter.name = SECOND_GUILD;
-    let second_guild_members = query::members(api.clone(), Some(&filter), PAGE_SIZE)
+    query::members(api.clone(), Some(&filter), PAGE_SIZE)
         .await
-        .expect("failed to fetch members");
-    println!("SECOND GUILD MEMBERS");
-    println!("{second_guild_members:#?}");
+        .expect("failed to fetch members")
+        .into_iter()
+        .for_each(|member| println!("\t{member}"));
 
+    println!("SECOND GUILD MEMBERS");
+    filter.name = SECOND_GUILD;
+    query::members(api.clone(), Some(&filter), PAGE_SIZE)
+        .await
+        .expect("failed to fetch members")
+        .into_iter()
+        .for_each(|member| println!("\t{member}"));
+
+    println!("FIRST GUILD FIRST ROLE MEMBERS");
     filter.name = FIRST_GUILD;
     filter.role = Some(FIRST_ROLE);
-    let first_guild_first_role_members = query::members(api.clone(), Some(&filter), PAGE_SIZE)
+    query::members(api.clone(), Some(&filter), PAGE_SIZE)
         .await
-        .expect("failed to fetch members");
-    println!("FIRST GUILD FIRST ROLE MEMBERS");
-    println!("{first_guild_first_role_members:#?}");
+        .expect("failed to fetch members")
+        .into_iter()
+        .for_each(|member| println!("\t{member}"));
 
-    filter.role = Some(SECOND_ROLE);
-    let first_guild_second_role_members = query::members(api.clone(), Some(&filter), PAGE_SIZE)
-        .await
-        .expect("failed to fetch members");
     println!("FIRST GUILD SECOND ROLE MEMBERS");
-    println!("{first_guild_second_role_members:#?}");
+    filter.role = Some(SECOND_ROLE);
+    query::members(api.clone(), Some(&filter), PAGE_SIZE)
+        .await
+        .expect("failed to fetch members")
+        .into_iter()
+        .for_each(|member| println!("\t{member}"));
 
+    println!("SECOND GUILD FIRST ROLE MEMBERS");
     filter.name = SECOND_GUILD;
     filter.role = Some(FIRST_ROLE);
-    let second_guild_first_role_members = query::members(api.clone(), Some(&filter), PAGE_SIZE)
+    query::members(api.clone(), Some(&filter), PAGE_SIZE)
         .await
-        .expect("failed to fetch members");
-    println!("SECOND GUILD FIRST ROLE MEMBERS");
-    println!("{second_guild_first_role_members:#?}");
+        .expect("failed to fetch members")
+        .into_iter()
+        .for_each(|member| println!("\t{member}"));
 
-    filter.role = Some(SECOND_ROLE);
-    let second_guild_second_role_members = query::members(api.clone(), Some(&filter), PAGE_SIZE)
-        .await
-        .expect("failed to fetch members");
     println!("SECOND GUILD SECOND ROLE MEMBERS");
-    println!("{second_guild_second_role_members:#?}");
+    filter.role = Some(SECOND_ROLE);
+    query::members(api.clone(), Some(&filter), PAGE_SIZE)
+        .await
+        .expect("failed to fetch members")
+        .into_iter()
+        .for_each(|member| println!("\t{member}"));
 }

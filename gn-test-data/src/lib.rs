@@ -1,5 +1,7 @@
 pub const ACCOUNT_SEED: [u8; 32] = [10; 32];
 
+pub const TEST_ADDRESS: &str = "5FNBFaSJG2Fw641xDdK2YTKHp12jGrenjS4raLPn1aoWGyMg";
+
 // myrole
 pub const FIRST_ROLE: [u8; 32] = [
     109, 121, 114, 111, 108, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
