@@ -1,11 +1,13 @@
+/*
 mod signer;
 mod transactions;
 
 use signer::WasmSigner;
+*/
 
 use gn_client::data::Guild;
 use gn_client::queries::{self, GuildFilter};
-use gn_client::transactions::TxStatus;
+//use gn_client::transactions::TxStatus;
 use gn_client::{AccountId, Api};
 use gn_common::{pad::pad_to_32_bytes, utils, GuildName};
 pub use serde_cbor::to_vec as cbor_serialize;
@@ -104,6 +106,7 @@ pub async fn verification_msg(address: String) -> String {
     utils::verification_msg(address)
 }
 
+/*
 #[wasm_bindgen(js_name = "registerTx")]
 pub async fn register_tx(
     evm_address: Option<String>,
@@ -202,6 +205,7 @@ pub async fn create_guild_tx_payload(guild: JsValue, url: String) -> Result<JsVa
 
     serialize_to_value(&maybe_hash).map_err(|e| JsValue::from(e.to_string()))
 }
+*/
 
 #[wasm_bindgen(js_name = "createGuildEncodeParams")]
 pub async fn create_guild_encode_params(guild: JsValue) -> Result<JsValue, JsValue> {
