@@ -11,7 +11,7 @@ wasm = ["subxt/jsonrpsee-web"]
 [dependencies]
 # local
 gn-common = { version = "0.0.0-alpha", path = "../gn-common" }
-subxt = { path = "../../subxt/subxt", default-features = false }
+subxt = { git = "https://github.com/agoraxyz/subxt", branch = "bumped-wasm", default-features = false }
 
 # general
 anyhow = "1"
