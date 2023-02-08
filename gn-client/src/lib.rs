@@ -7,18 +7,17 @@
 //
 //// re-exports
 pub use serde_cbor::{from_slice as cbor_deserialize, to_vec as cbor_serialize};
-//pub use subxt::ext::sp_core::crypto::Pair as TraitPair;
-//pub use subxt::ext::sp_core::sr25519::Pair as Keypair;
-//pub use subxt::ext::sp_core::sr25519::Signature as SrSignature;
+pub use subxt::utils::MultiAddress;
 pub use subxt::utils::H256 as Hash;
-//pub use subxt::tx::{PreparedMsgWithParams, Signer as TxSignerTrait};
 pub use subxt::PolkadotConfig as ClientConfig;
 
 #[subxt::subxt(runtime_metadata_path = "./artifacts/metadata.scale")]
 pub mod runtime {}
 pub mod data;
-pub mod queries;
-//pub mod transactions;
+pub mod query;
+#[cfg(feature = "tx")]
+pub mod tx;
+
 pub type Api = subxt::OnlineClient<ClientConfig>;
 pub type AccountId = subxt::utils::AccountId32;
 //pub type SubstrateAddress = <ClientConfig as subxt::Config>::Address;
@@ -35,14 +34,13 @@ pub type AccountId = subxt::utils::AccountId32;
 //    BalanceOf,
 //>;
 pub type Request = gn_common::Request<AccountId>;
-//pub type RequestData = runtime::runtime_types::gn_common::RequestData<AccountId>;
+pub type RequestData = runtime::runtime_types::gn_common::RequestData<AccountId>;
 pub type RuntimeIdentity = runtime::runtime_types::gn_common::identities::Identity;
-//pub type RuntimeIdentityWithAuth = runtime::runtime_types::gn_common::identities::IdentityWithAuth;
+pub type RuntimeIdentityWithAuth = runtime::runtime_types::gn_common::identities::IdentityWithAuth;
 //pub type Signature = <ClientConfig as subxt::Config>::Signature;
-//pub type Signer = PairSigner<ClientConfig, Keypair>;
 pub type SubxtError = subxt::Error;
-//pub type TransactionProgress = TxProgress<ClientConfig, Api>;
-//pub type TransactionStatus = SubTxStatus<ClientConfig, Api>;
+pub type TransactionProgress = subxt::tx::TxProgress<ClientConfig, Api>;
+pub type TransactionStatus = subxt::tx::TxStatus<ClientConfig, Api>;
 //
 //pub type FilteredEvents<'a, T> =
 //    FilterEvents<'a, EventSubscription<ClientConfig, Api, BlockSubscription>, ClientConfig, T>;

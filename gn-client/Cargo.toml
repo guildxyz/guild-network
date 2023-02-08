@@ -4,8 +4,9 @@ version = "0.0.0-alpha"
 edition = "2021"
 
 [features]
-default = ["subxt/default"]
+default = ["subxt/default", "tx"]
 external-oracle = []
+tx = ["sp-core"]
 wasm = ["subxt/jsonrpsee-web"]
 
 [dependencies]
@@ -21,6 +22,9 @@ hex = "0.4.3"
 parity-scale-codec = { workspace = true } # required for the runtime subxt macro
 serde = { version = "1.0.144", features = ["derive"] }
 serde_cbor = "0.11.2"
+
+# substrate core
+sp-core = { workspace = true, optional = true }
 
 [dev-dependencies]
 # local

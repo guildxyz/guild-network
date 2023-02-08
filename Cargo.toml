@@ -3,7 +3,6 @@ exclude = ["rusty-gate"]
 members = [
     "gn-client",
     "gn-common",
-#    "gn-frontend", # only experimental for now
     "gn-node",
     "gn-oracle",
     "gn-pallets/pallet-oracle",
