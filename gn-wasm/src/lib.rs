@@ -1,3 +1,7 @@
+#![deny(clippy::all)]
+#![deny(clippy::dbg_macro)]
+#![deny(unused_crate_dependencies)]
+
 use gn_client::data::Guild;
 use gn_client::query::{self, GuildFilter};
 use gn_client::{AccountId, Api};

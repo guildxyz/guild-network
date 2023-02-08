@@ -1,3 +1,6 @@
+#![deny(clippy::all)]
+#![deny(clippy::dbg_macro)]
+
 // re-exports
 pub use serde_cbor::{from_slice as cbor_deserialize, to_vec as cbor_serialize};
 pub use subxt::utils::MultiAddress;

@@ -10,7 +10,6 @@ gn-common = { version = "0.0.0-alpha", path = "../gn-common", features = ["reqch
 requiem = { git = "https://github.com/agoraxyz/requiem" }
 
 # general
-anyhow = "1"
 env_logger = "0.9.0"
 futures = "0.3.25"
 log = { version = "0.4.17", default-features = false }

@@ -24,7 +24,6 @@ runtime-benchmarks = [
 std = [
   "parity-scale-codec/std",
   "scale-info/std",
-  "frame-benchmarking/std",
   "frame-executive/std",
   "frame-support/std",
   "frame-system/std",

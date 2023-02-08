@@ -1,3 +1,7 @@
+#![deny(clippy::all)]
+#![deny(clippy::dbg_macro)]
+#![deny(unused_crate_dependencies)]
+
 use futures::StreamExt;
 use gn_client::runtime::oracle::events::OracleRequest;
 use gn_client::{
@@ -80,14 +84,15 @@ async fn main() {
         .await
         .expect("failed to subscribe to blocks");
 
-    while let Some(maybe_block) = subscription.next().await {
-        match maybe_block {
+    while let Some(block_result) = subscription.next().await {
+        match block_result {
             Ok(block) => match block.events().await {
-                Ok(maybe_events) => {
-                    maybe_events
+                Ok(events) => {
+                    events
                         .iter()
-                        .filter_map(|maybe_event| {
-                            maybe_event.unwrap().as_event::<OracleRequest>().unwrap()
+                        .filter_map(|event_result| event_result.ok())
+                        .filter_map(|event_details| {
+                            event_details.as_event::<OracleRequest>().ok().flatten()
                         })
                         .for_each(|oracle_request| {
                             submit_answer(api.clone(), Arc::clone(&signer), oracle_request)

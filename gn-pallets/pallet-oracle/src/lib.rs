@@ -17,6 +17,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(clippy::all)]
 #![deny(clippy::dbg_macro)]
+#![deny(unused_crate_dependencies)]
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;

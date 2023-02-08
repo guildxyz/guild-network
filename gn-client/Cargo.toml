@@ -15,10 +15,8 @@ gn-common = { version = "0.0.0-alpha", path = "../gn-common" }
 subxt = { git = "https://github.com/agoraxyz/subxt", branch = "bumped-wasm", default-features = false }
 
 # general
-anyhow = "1"
 futures = "0.3.25"
 log = { version = "0.4.17", default-features = false }
-hex = "0.4.3"
 parity-scale-codec = { workspace = true } # required for the runtime subxt macro
 serde = { version = "1.0.144", features = ["derive"] }
 serde_cbor = "0.11.2"
@@ -32,6 +30,7 @@ gn-test-data = { path = "../gn-test-data" }
 
 # general
 ethers = "1.0.2"
+hex = "0.4.3"
 rand = { version = "0.8.5", default-features = false, features = ["std_rng"] }
 serde_json = "1"
 structopt = { version = "0.3", default-features = false }
