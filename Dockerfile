@@ -14,10 +14,8 @@ COPY --from=planner app/recipe.json recipe.json
 # Build dependencies - this is the caching Docker layer!
 RUN apt update -y \
     && apt upgrade -y \
-    # && apt install build-essential git librocksdb-dev clang cmake llvm llvm-dev libssl-dev pkg-config -y
-    && apt install build-essential librocksdb-dev libclang-dev clang cmake libssl-dev pkg-config -y
+    && apt install build-essential librocksdb-dev libclang-dev clang cmake libssl-dev pkg-config protobuf-compiler -y
 
-#RUN rustup toolchain install nightly \
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly
 
 RUN cargo +nightly chef cook --release --recipe-path recipe.json
