@@ -12,7 +12,7 @@ def start_node():
 
     start = time.time()
     line = b""
-    while b"creating instance on iface" not in line:
+    while b"Running JSON-RPC" not in line:
         line = node.stderr.readline()
         if int(time.time() - start) == 10:
             print("Node startup timeout, exiting...")
