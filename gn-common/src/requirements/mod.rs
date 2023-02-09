@@ -8,14 +8,10 @@ use allowlist::Allowlist;
 use balance::RequiredBalance;
 use chains::EvmChain;
 
-use crate::{EvmAddress, U256};
 use serde::{Deserialize, Serialize};
 
-// NOTE example stuff to be implemented
-// SolanaBalance(RequiredBalance<Pubkey, u64, SolChain>),
-// NearBalance(RequiredBalance<NearAddress, u128, NearChain>),
-// SolanaAllowlist(Allowlist<Pubkey>),
-// NearAllowlist(Allowlist<NearAddress>),
+pub type EvmAddress = [u8; 20];
+pub type U256 = [u8; 32];
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum Requirement {

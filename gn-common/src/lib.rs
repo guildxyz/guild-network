@@ -3,7 +3,7 @@
 #![deny(clippy::dbg_macro)]
 #![deny(unused_crate_dependencies)]
 
-pub mod identities;
+pub mod identity;
 pub mod pad;
 #[cfg(feature = "std")]
 pub mod requirements;
@@ -13,11 +13,8 @@ pub use parity_scale_codec::alloc::vec::Vec as SpVec;
 pub use parity_scale_codec::{Decode, Encode};
 pub use scale_info::TypeInfo;
 
-pub type EvmAddress = [u8; 20];
-pub type EvmSignature = [u8; 65];
 pub type GuildName = [u8; 32];
 pub type RoleName = [u8; 32];
-pub type U256 = [u8; 32];
 
 pub type OperatorIdentifier = u64;
 pub type RequestIdentifier = u64;
@@ -30,7 +27,10 @@ pub struct Request<T> {
 
 #[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Debug)]
 pub enum RequestData<T> {
-    Register(SpVec<identities::IdentityWithAuth>),
+    Register {
+        identity_with_auth: identity::IdentityWithAuth,
+        index: u8,
+    },
     ReqCheck {
         account: T,
         guild: GuildName,

@@ -22,11 +22,10 @@ pub mod pallet {
         traits::Currency,
     };
     use frame_system::pallet_prelude::*;
-    use gn_common::identities::Identity;
-    use gn_common::identities::Platform;
-    use gn_common::utils::detect_duplicates;
+    use gn_common::identity::{Identity, IdentityWithAuth};
     use gn_common::{GuildName, Request, RequestData, RequestIdentifier, RoleName};
     use pallet_oracle::{CallbackWithParameter, Config as OracleConfig, OracleAnswer};
+    use sp_std::collections::btree_map::BTreeMap;
     use sp_std::vec::Vec as SpVec;
 
     type BalanceOf<T> = <<T as OracleConfig>::Currency as Currency<
@@ -106,7 +105,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn user_data)]
     pub type UserData<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::AccountId, SpVec<Identity>, OptionQuery>;
+        StorageMap<_, Blake2_128Concat, T::AccountId, BTreeMap<u8, Identity>, OptionQuery>;
 
     #[pallet::config]
     pub trait Config: OracleConfig<Callback = Call<Self>> + frame_system::Config {
@@ -116,6 +115,8 @@ pub mod pallet {
         type MaxReqsPerRole: Get<u32>;
         #[pallet::constant]
         type MaxSerializedReqLen: Get<u32>;
+        #[pallet::constant]
+        type MaxIdentities: Get<u8>;
         type MyRandomness: Randomness<Self::Hash, Self::BlockNumber>;
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type WeightInfo: WeightInfo;
@@ -125,7 +126,7 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         GuildCreated(T::AccountId, GuildName),
-        UserRegistered(T::AccountId),
+        IdRegistered(T::AccountId, u8),
         RoleAssigned(T::AccountId, GuildName, RoleName),
         RoleStripped(T::AccountId, GuildName, RoleName),
     }
@@ -138,9 +139,9 @@ pub mod pallet {
         RoleDoesNotExist,
         InvalidOracleAnswer,
         InvalidRequestData,
-        IdentityTypeAlreadyExists,
         UserNotRegistered,
         CodecError,
+        MaxIdentitiesExceeded,
         MaxRolesPerGuildExceeded,
         MaxReqsPerRoleExceeded,
         MaxSerializedReqLenExceeded,
@@ -158,49 +159,57 @@ pub mod pallet {
         pub fn register(origin: OriginFor<T>, data: RequestData<T::AccountId>) -> DispatchResult {
             let requester = ensure_signed(origin.clone())?;
 
-            // check data variant
-            //
-            // note that we don't check whether the user submits actual identities
-            // because users can join free roles without identities
-            //
-            // users could later add identities to their "guild passport"
-            //
-            // TODO we could immediately register a user if they submit an empty identity vector
-            let mut identities = SpVec::new();
+            let (identity_with_auth, index) = if let RequestData::Register {
+                identity_with_auth,
+                index,
+            } = &data
+            {
+                (identity_with_auth, index)
+            } else {
+                return Err(Error::<T>::InvalidRequestData.into());
+            };
+
             ensure!(
-                // if request is the wrong variant, or has duplicate Platforms, returns false
-                match &data {
-                    RequestData::Register(ids) => {
-                        for id_with_auth in ids {
-                            identities.push(Platform::from(id_with_auth));
-                        }
-                        !detect_duplicates(&identities)
-                    }
-                    _ => false,
-                },
-                Error::<T>::InvalidRequestData
+                index <= &T::MaxIdentities::get(),
+                Error::<T>::MaxIdentitiesExceeded
             );
 
-            // if user has already registered, and tries to register an already existing platform again, throw error
-            if <UserData<T>>::contains_key(&requester) {
-                let registered_ids = UserData::<T>::get(&requester).unwrap();
-
-                for id in registered_ids {
-                    identities.push(Platform::from(&id));
+            match identity_with_auth {
+                IdentityWithAuth::Other(Identity::Other(_), _) => {
+                    let request = Request::<T::AccountId> { requester, data };
+                    let call: <T as OracleConfig>::Callback = Call::callback {
+                        result: SpVec::new(),
+                    };
+                    let fee = BalanceOf::<T>::unique_saturated_from(
+                        <T as OracleConfig>::MinimumFee::get(),
+                    );
+                    <pallet_oracle::Pallet<T>>::initiate_request(
+                        origin,
+                        call,
+                        request.encode(),
+                        fee,
+                    )?;
+                }
+                id_with_auth => {
+                    let msg = gn_common::utils::verification_msg(&requester);
+                    if id_with_auth.verify(msg) {
+                        let identity = Identity::from(id_with_auth);
+                        if !UserData::<T>::contains_key(&requester) {
+                            let mut map = BTreeMap::new();
+                            map.insert(index, identity);
+                            UserData::<T>::insert(&requester, map);
+                        } else {
+                            UserData::<T>::mutate(&requester, |maybe_value| {
+                                let Some(value) = maybe_value else { return };
+                                value.insert(*index, identity);
+                            })
+                        }
+                        Self::deposit_event(Event::IdRegistered(requester, *index));
+                    } else {
+                        return Err(Error::<T>::AccessDenied.into());
+                    }
                 }
             }
-            ensure!(
-                !detect_duplicates(&identities),
-                Error::<T>::IdentityTypeAlreadyExists
-            );
-
-            let request = Request::<T::AccountId> { requester, data };
-
-            let call: <T as OracleConfig>::Callback = Call::callback {
-                result: SpVec::new(),
-            };
-            let fee = BalanceOf::<T>::unique_saturated_from(<T as OracleConfig>::MinimumFee::get());
-            <pallet_oracle::Pallet<T>>::initiate_request(origin, call, request.encode(), fee)?;
 
             Ok(())
         }
@@ -362,27 +371,23 @@ pub mod pallet {
                         (true, true) => {} // nothing happens, requirements are still satisfied
                     }
                 }
-                RequestData::Register(identities_with_auth) => {
+                RequestData::Register {
+                    identity_with_auth,
+                    index,
+                } => {
                     ensure!(access, Error::<T>::AccessDenied);
-                    let identities = identities_with_auth
-                        .into_iter()
-                        .map(Into::into)
-                        .collect::<SpVec<Identity>>();
-
+                    let identity = Identity::from(identity_with_auth);
                     if !UserData::<T>::contains_key(&request.requester) {
-                        UserData::<T>::insert(&request.requester, identities);
+                        let mut map = BTreeMap::new();
+                        map.insert(index, identity);
+                        UserData::<T>::insert(&request.requester, map);
                     } else {
-                        UserData::<T>::mutate(&request.requester, |maybe_reg_id| {
-                            if let Some(registered_identities) = maybe_reg_id {
-                                for new_id in identities.into_iter() {
-                                    if !registered_identities.contains(&new_id) {
-                                        registered_identities.push(new_id)
-                                    }
-                                }
-                            }
+                        UserData::<T>::mutate(&request.requester, |maybe_value| {
+                            let Some(value) = maybe_value else { return };
+                            value.insert(index, identity);
                         })
                     }
-                    Self::deposit_event(Event::UserRegistered(request.requester));
+                    Self::deposit_event(Event::IdRegistered(request.requester, index));
                 }
             }
 

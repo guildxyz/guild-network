@@ -10,11 +10,11 @@ use sp_core::keccak_256;
 pub const ETHEREUM_HASH_PREFIX: &str = "\x19Ethereum Signed Message:\n";
 pub const SR_SIGNING_CTX: &[u8] = b"substrate";
 
-#[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Copy, Debug)]
 pub enum Identity {
     Address20([u8; 20]),
     Address32([u8; 32]),
-    Raw(Vec<u8>),
+    Other([u8; 64]),
 }
 
 #[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Debug)]
@@ -22,7 +22,7 @@ pub enum IdentityWithAuth {
     Ecdsa(Identity, sp_core::ecdsa::Signature),
     Ed25519(Identity, sp_core::ed25519::Signature),
     Sr25519(Identity, sp_core::sr25519::Signature),
-    Raw(Identity, Vec<u8>),
+    Other(Identity, [u8; 64]),
 }
 
 impl IdentityWithAuth {
@@ -70,8 +70,30 @@ impl IdentityWithAuth {
                     .verify_simple(SR_SIGNING_CTX, msg.as_ref(), &sr_sig)
                     .is_ok()
             }
-            Self::Raw(_, _) => true, // not authenticating for now
+            Self::Other(Identity::Other(_), _) => true,
             _ => false,
+        }
+    }
+}
+
+impl From<IdentityWithAuth> for Identity {
+    fn from(id_with_auth: IdentityWithAuth) -> Self {
+        match id_with_auth {
+            IdentityWithAuth::Ecdsa(id, _) => id,
+            IdentityWithAuth::Ed25519(id, _) => id,
+            IdentityWithAuth::Sr25519(id, _) => id,
+            IdentityWithAuth::Other(id, _) => id,
+        }
+    }
+}
+
+impl From<&IdentityWithAuth> for Identity {
+    fn from(id_with_auth: &IdentityWithAuth) -> Self {
+        match id_with_auth {
+            IdentityWithAuth::Ecdsa(id, _) => *id,
+            IdentityWithAuth::Ed25519(id, _) => *id,
+            IdentityWithAuth::Sr25519(id, _) => *id,
+            IdentityWithAuth::Other(id, _) => *id,
         }
     }
 }
@@ -191,9 +213,25 @@ mod test {
     }
 
     #[test]
-    fn raw_unchecked() {
-        let id_with_auth = IdentityWithAuth::Raw(Identity::Raw(vec![1, 2, 3]), vec![]);
+    fn other_identities() {
+        let id_with_auth = IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]);
         assert!(id_with_auth.verify(b""));
-        assert!(id_with_auth.verify(b"hello"));
+        let id_with_auth = IdentityWithAuth::Other(Identity::Address20([0u8; 20]), [0u8; 64]);
+        assert!(!id_with_auth.verify(b""));
+        let id_with_auth = IdentityWithAuth::Other(Identity::Address32([0u8; 32]), [0u8; 64]);
+        assert!(!id_with_auth.verify(b""));
+    }
+
+    #[test]
+    fn invalid_crypto_signatures() {
+        let address = Identity::Address20([0u8; 20]);
+        let signature = sp_core::ed25519::Signature([0u8; 64]);
+        let id_with_auth = IdentityWithAuth::Ed25519(address, signature);
+        assert!(!id_with_auth.verify(""));
+
+        let address = Identity::Address20([0u8; 20]);
+        let signature = sp_core::sr25519::Signature([0u8; 64]);
+        let id_with_auth = IdentityWithAuth::Sr25519(address, signature);
+        assert!(!id_with_auth.verify(""));
     }
 }
