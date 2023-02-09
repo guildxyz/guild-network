@@ -2,17 +2,17 @@ use super::*;
 
 #[test]
 fn successful_registration() {
-    new_test_runtime().execute_with(|| {
+    new_test_ext().execute_with(|| {
         init_chain();
         let operator = 0;
         let user_1 = 1;
         let user_2 = 2;
 
-        <Oracle>::register_operator(Origin::signed(operator)).unwrap();
+        <Oracle>::register_operator(RuntimeOrigin::signed(operator)).unwrap();
 
         // wrong request data variant
         let error = <Guild>::register(
-            Origin::signed(operator),
+            RuntimeOrigin::signed(operator),
             RequestData::ReqCheck {
                 account: 1,
                 guild: [0; 32],
@@ -25,9 +25,9 @@ fn successful_registration() {
         // register without identities
         let identities_with_auth = vec![];
         let request_data = RequestData::Register(identities_with_auth);
-        <Guild>::register(Origin::signed(user_1), request_data.clone()).unwrap();
+        <Guild>::register(RuntimeOrigin::signed(user_1), request_data.clone()).unwrap();
         let answer = dummy_answer(vec![u8::from(true)], user_1, request_data);
-        <Guild>::callback(Origin::root(), answer.encode()).unwrap();
+        <Guild>::callback(RuntimeOrigin::root(), answer.encode()).unwrap();
         assert_eq!(<Guild>::user_data(&user_1), Some(vec![]));
 
         // register identities for already registered user
@@ -36,18 +36,15 @@ fn successful_registration() {
             IdentityWithAuth::Discord(123, ()),
         ];
         let request_data = RequestData::Register(identities_with_auth);
-        <Guild>::register(Origin::signed(user_1), request_data.clone()).unwrap();
+        <Guild>::register(RuntimeOrigin::signed(user_1), request_data.clone()).unwrap();
         let answer = dummy_answer(vec![u8::from(true)], user_1, request_data);
-        <Guild>::callback(Origin::root(), answer.encode()).unwrap();
+        <Guild>::callback(RuntimeOrigin::root(), answer.encode()).unwrap();
         assert_eq!(
             <Guild>::user_data(&user_1),
             Some(vec![Identity::EvmChain([0; 20]), Identity::Discord(123)])
         );
 
-        assert_eq!(
-            last_event(),
-            Event::Guild(pallet_guild::Event::UserRegistered(user_1))
-        );
+        assert_eq!(last_event(), GuildEvent::UserRegistered(user_1));
 
         // re-register identities but only new ones are pushed
         // NOTE: this behavior should be purposefully broken
@@ -56,11 +53,12 @@ fn successful_registration() {
             IdentityWithAuth::Telegram(99, ()),
         ];
         let request_data = RequestData::Register(identities_with_auth);
-        let error = <Guild>::register(Origin::signed(user_1), request_data.clone()).unwrap_err();
+        let error =
+            <Guild>::register(RuntimeOrigin::signed(user_1), request_data.clone()).unwrap_err();
         assert_eq!(error_msg(error), "IdentityTypeAlreadyExists");
 
         let answer = dummy_answer(vec![u8::from(true)], user_1, request_data);
-        <Guild>::callback(Origin::root(), answer.encode()).unwrap();
+        <Guild>::callback(RuntimeOrigin::root(), answer.encode()).unwrap();
         assert_eq!(
             <Guild>::user_data(&user_1),
             Some(vec![
@@ -77,9 +75,9 @@ fn successful_registration() {
             IdentityWithAuth::Telegram(33, ()),
         ];
         let request_data = RequestData::Register(identities_with_auth);
-        <Guild>::register(Origin::signed(user_2), request_data.clone()).unwrap();
+        <Guild>::register(RuntimeOrigin::signed(user_2), request_data.clone()).unwrap();
         let answer = dummy_answer(vec![u8::from(true)], user_2, request_data);
-        <Guild>::callback(Origin::root(), answer.encode()).unwrap();
+        <Guild>::callback(RuntimeOrigin::root(), answer.encode()).unwrap();
         assert_eq!(
             <Guild>::user_data(&user_2),
             Some(vec![
@@ -88,21 +86,18 @@ fn successful_registration() {
                 Identity::Telegram(33)
             ])
         );
-        assert_eq!(
-            last_event(),
-            Event::Guild(pallet_guild::Event::UserRegistered(user_2))
-        );
+        assert_eq!(last_event(), GuildEvent::UserRegistered(user_2));
     });
 }
 
 #[test]
 fn invalid_multiple_type() {
-    new_test_runtime().execute_with(|| {
+    new_test_ext().execute_with(|| {
         init_chain();
         let operator = 0;
         let user = 2;
 
-        <Oracle>::register_operator(Origin::signed(operator)).unwrap();
+        <Oracle>::register_operator(RuntimeOrigin::signed(operator)).unwrap();
 
         let identities_with_auth = vec![
             IdentityWithAuth::EvmChain([11; 20], [92; 65]),
@@ -111,7 +106,7 @@ fn invalid_multiple_type() {
             IdentityWithAuth::Telegram(33, ()),
         ];
         let request_data = RequestData::Register(identities_with_auth);
-        let error = <Guild>::register(Origin::signed(user), request_data).unwrap_err();
+        let error = <Guild>::register(RuntimeOrigin::signed(user), request_data).unwrap_err();
         assert_eq!(error_msg(error), "InvalidRequestData");
     });
 }

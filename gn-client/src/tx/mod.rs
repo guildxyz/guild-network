@@ -1,13 +1,17 @@
 mod status;
+pub use sp_core::crypto::Pair as PairT;
+pub use sp_core::sr25519::Pair as Keypair;
 pub use status::TxStatus;
+pub use subxt::tx::Signer as SignerT;
+
+pub type Signer = subxt::tx::PairSigner<ClientConfig, Keypair>;
 
 use crate::{
-    cbor_serialize, data::Guild, runtime, AccountId, Api, Hash, RequestData,
-    RuntimeIdentityWithAuth, Signer, SubxtError, TransactionProgress,
+    cbor_serialize, data::Guild, runtime, AccountId, Api, ClientConfig, Hash, MultiAddress,
+    RequestData, RuntimeIdentityWithAuth, SubxtError, TransactionProgress,
 };
 use futures::StreamExt;
 use gn_common::{GuildName, RoleName};
-use subxt::ext::sp_runtime::MultiAddress;
 use subxt::tx::TxPayload;
 
 use std::sync::Arc;

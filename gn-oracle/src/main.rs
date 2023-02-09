@@ -1,10 +1,14 @@
+#![deny(clippy::all)]
+#![deny(clippy::dbg_macro)]
+#![deny(unused_crate_dependencies)]
+
 use futures::StreamExt;
-use gn_client::queries::{oracle_request, requirements, user_identity};
 use gn_client::runtime::oracle::events::OracleRequest;
-use gn_client::transactions::{
-    oracle_callback, register_operator, send_tx_in_block, send_tx_ready,
+use gn_client::{
+    query,
+    tx::{self, Signer},
 };
-use gn_client::{Api, FilteredEvents, GuildCall, Signer, SubxtError};
+use gn_client::{Api, GuildCall, SubxtError};
 use gn_common::identities::IdentityMap;
 use gn_common::utils::{matches_variant, verification_msg};
 use gn_common::{RequestData, RequestIdentifier};
@@ -12,7 +16,6 @@ use sp_keyring::AccountKeyring;
 use structopt::StructOpt;
 
 use std::collections::HashMap;
-use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -42,7 +45,7 @@ struct Opt {
 }
 
 #[tokio::main]
-async fn main() -> ! {
+async fn main() {
     let opt = Opt::from_args();
 
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(opt.log)).init();
@@ -68,33 +71,39 @@ async fn main() -> ! {
         .expect("failed to start api client");
 
     if opt.register {
-        send_tx_in_block(api.clone(), &register_operator(), Arc::clone(&signer))
+        tx::send_tx_in_block(api.clone(), &tx::register_operator(), Arc::clone(&signer))
             .await
             .expect("failed to register operator");
 
         log::info!("operator registration request submitted");
     }
 
-    let mut events = api
-        .events()
-        .subscribe()
+    let mut subscription = api
+        .blocks()
+        .subscribe_best()
         .await
-        .expect("failed to subscribe to events")
-        .filter_events::<(OracleRequest,)>();
+        .expect("failed to subscribe to blocks");
 
-    loop {
-        match next_event(&mut events).await {
-            Ok(oracle_request) => submit_answer(api.clone(), Arc::clone(&signer), oracle_request),
-            Err(err) => {
-                log::error!("{err}");
-                if let SubxtError::Io(io_error) = err {
-                    if io_error.kind() == IoErrorKind::ConnectionAborted {
-                        panic!("connection aborted, restart needed")
-                    }
+    while let Some(block_result) = subscription.next().await {
+        match block_result {
+            Ok(block) => match block.events().await {
+                Ok(events) => {
+                    events
+                        .iter()
+                        .filter_map(|event_result| event_result.ok())
+                        .filter_map(|event_details| {
+                            event_details.as_event::<OracleRequest>().ok().flatten()
+                        })
+                        .for_each(|oracle_request| {
+                            submit_answer(api.clone(), Arc::clone(&signer), oracle_request)
+                        });
                 }
-            }
+                Err(err) => log::error!("invalid block events: {err}"),
+            },
+            Err(err) => log::error!("invalid block: {err}"),
         }
     }
+    log::error!("block subscription aborted");
 }
 
 fn submit_answer(api: Api, signer: Arc<Signer>, request: OracleRequest) {
@@ -138,7 +147,7 @@ async fn try_submit_answer(
     signer: Arc<Signer>,
     request_id: RequestIdentifier,
 ) -> Result<(), SubxtError> {
-    let oracle_request = oracle_request(api.clone(), request_id).await?;
+    let oracle_request = query::oracle_request(api.clone(), request_id).await?;
 
     let oracle_answer = match oracle_request.data {
         RequestData::Register(identities) => {
@@ -169,12 +178,12 @@ async fn try_submit_answer(
                 role
             );
             // fetch requirements
-            let requirements_with_logic = requirements(api.clone(), guild, role).await?;
+            let requirements_with_logic = query::requirements(api.clone(), guild, role).await?;
             // build requireemnt tree from logic
             let requirement_tree = requiem::LogicTree::from_str(&requirements_with_logic.logic)
                 .map_err(|e| SubxtError::Other(e.to_string()))?;
             let identity_map =
-                IdentityMap::from_identities(user_identity(api.clone(), &account).await?);
+                IdentityMap::from_identities(query::user_identity(api.clone(), &account).await?);
             let requirement_futures = requirements_with_logic
                 .requirements
                 .iter()
@@ -200,10 +209,10 @@ async fn try_submit_answer(
     };
 
     let result = vec![u8::from(oracle_answer)];
-    let tx = oracle_callback(request_id, result);
+    let tx = tx::oracle_callback(request_id, result);
     let mut retries = 1;
     while retries <= TX_RETRIES {
-        match send_tx_ready(api.clone(), &tx, Arc::clone(&signer)).await {
+        match tx::send_tx_ready(api.clone(), &tx, Arc::clone(&signer)).await {
             Ok(()) => {
                 log::info!(
                     "oracle answer ({}) submitted: {}",
@@ -220,17 +229,4 @@ async fn try_submit_answer(
         }
     }
     Ok(())
-}
-
-async fn next_event(
-    events: &mut FilteredEvents<'_, (OracleRequest,)>,
-) -> Result<OracleRequest, SubxtError> {
-    if let Some(event) = events.next().await {
-        let oracle_request = event?.event;
-        Ok(oracle_request)
-    } else {
-        Err(SubxtError::Io(IoError::from(
-            IoErrorKind::ConnectionAborted,
-        )))
-    }
 }

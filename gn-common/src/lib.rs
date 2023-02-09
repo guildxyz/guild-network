@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(clippy::all)]
 #![deny(clippy::dbg_macro)]
+#![deny(unused_crate_dependencies)]
 
 pub mod identities;
 pub mod pad;
@@ -8,8 +9,8 @@ pub mod pad;
 pub mod requirements;
 pub mod utils;
 
-pub use codec::alloc::vec::Vec as SpVec;
-pub use codec::{Decode, Encode};
+pub use parity_scale_codec::alloc::vec::Vec as SpVec;
+pub use parity_scale_codec::{Decode, Encode};
 pub use scale_info::TypeInfo;
 
 pub type EvmAddress = [u8; 20];

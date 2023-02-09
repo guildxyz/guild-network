@@ -10,19 +10,21 @@ crate-type = ["cdylib", "lib"]
 queries = []
 
 [dependencies]
-anyhow = { version = "1", default-features = false }
-console_error_panic_hook = "0.1.7"
-gn-client = { path = "../gn-client", default-features = false, features = ["wasm"] }
-gn-common = { path = "../gn-common" }
-hex = "0.4.3"
-js-sys = "0.3.6"
+# local
+gn-client = { version = "0.0.0-alpha", path = "../gn-client", default-features = false, features = ["wasm"] }
+gn-common = { version = "0.0.0-alpha", path = "../gn-common" }
+
+# general
 serde-wasm-bindgen = "0.4.5"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3.60", features = ["console"] }
 serde_cbor = "0.11.2"
 
 [dev-dependencies]
+# local
 gn-test-data = { path = "../gn-test-data" }
+
+# general
+console_error_panic_hook = "0.1.7"
 tracing-wasm = "0.2.1"
 wasm-bindgen-test = "0.3.24"

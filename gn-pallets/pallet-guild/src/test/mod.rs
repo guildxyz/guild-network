@@ -4,32 +4,35 @@ mod role;
 
 use helpers::*;
 
-use crate::{self as pallet_guild};
+use crate::mock::*;
+type AccountId = <TestRuntime as frame_system::Config>::AccountId;
 
-use codec::{Decode, Encode};
 use frame_support::traits::{OnFinalize, OnInitialize};
 use gn_common::{
     identities::{Identity, IdentityWithAuth},
     Request, RequestData,
 };
+use pallet_guild::Event as GuildEvent;
+use parity_scale_codec::{Decode, Encode};
 use sp_runtime::DispatchError;
 
-use test_runtime::test_runtime;
-test_runtime!(Guild, pallet_guild);
+fn new_test_ext() -> sp_io::TestExternalities {
+    frame_system::GenesisConfig::default()
+        .build_storage::<TestRuntime>()
+        .unwrap()
+        .into()
+}
 
 #[test]
 fn create_guild() {
-    new_test_runtime().execute_with(|| {
+    new_test_ext().execute_with(|| {
         init_chain();
         let signer = 4;
         let guild_name = [0u8; 32];
 
         new_guild(signer, guild_name);
 
-        assert_eq!(
-            last_event(),
-            Event::Guild(pallet_guild::Event::GuildCreated(signer, guild_name))
-        );
+        assert_eq!(last_event(), GuildEvent::GuildCreated(signer, guild_name));
 
         let guild_id = <Guild>::guild_id(guild_name).unwrap();
         let guild = <Guild>::guild(guild_id).unwrap();
@@ -62,19 +65,52 @@ fn create_guild() {
 }
 
 #[test]
-fn callback_can_only_be_called_by_root() {
-    new_test_runtime().execute_with(|| {
+fn bound_checks_on_creating_guild() {
+    new_test_ext().execute_with(|| {
         init_chain();
-        let error = <Guild>::callback(Origin::signed(1), vec![]).unwrap_err();
-        assert_eq!(error, DispatchError::BadOrigin,);
+        let max_roles_per_guild =
+            <TestRuntime as pallet_guild::Config>::MaxRolesPerGuild::get() as usize;
+        let max_reqs_per_role =
+            <TestRuntime as pallet_guild::Config>::MaxReqsPerRole::get() as usize;
+        let max_serialized_req_len =
+            <TestRuntime as pallet_guild::Config>::MaxSerializedReqLen::get() as usize;
 
-        let error = <Guild>::callback(Origin::root(), vec![1]).unwrap_err();
-        assert_eq!(error_msg(error), "CodecError");
+        let test_data = vec![
+            (
+                vec![([0u8; 32], (vec![], vec![])); max_roles_per_guild + 1],
+                "MaxRolesPerGuildExceeded",
+            ),
+            (
+                vec![
+                    ([0u8; 32], (vec![], vec![vec![]; max_reqs_per_role + 1]));
+                    max_roles_per_guild
+                ],
+                "MaxReqsPerRoleExceeded",
+            ),
+            (
+                vec![(
+                    [0u8; 32],
+                    (vec![], vec![vec![0; max_serialized_req_len + 1]]),
+                )],
+                "MaxSerializedReqLenExceeded",
+            ),
+        ];
 
-        let no_access = dummy_answer(vec![u8::from(false)], 1, RequestData::Register(vec![]));
-        let error = <Guild>::callback(Origin::root(), no_access.encode()).unwrap_err();
-        assert_eq!(error_msg(error), "AccessDenied");
+        for (roles, raw_error) in test_data {
+            let error = <Guild>::create_guild(RuntimeOrigin::signed(0), [0; 32], vec![], roles)
+                .unwrap_err();
+            assert_eq!(error_msg(error), raw_error);
+        }
+    });
+}
 
+#[test]
+fn callback_can_only_be_called_by_root() {
+    new_test_ext().execute_with(|| {
+        init_chain();
+
+        let no_access =
+            dummy_answer(vec![u8::from(false)], 1, RequestData::Register(vec![])).encode();
         let access = dummy_answer(
             vec![u8::from(true)],
             2,
@@ -83,8 +119,30 @@ fn callback_can_only_be_called_by_root() {
                 guild: [0; 32],
                 role: [1; 32],
             },
-        );
-        let error = <Guild>::callback(Origin::root(), access.encode()).unwrap_err();
-        assert_eq!(error_msg(error), "GuildDoesNotExist");
+        )
+        .encode();
+
+        let test_data = vec![
+            (
+                <Guild>::callback(RuntimeOrigin::signed(1), vec![]),
+                "BadOrigin",
+            ),
+            (
+                <Guild>::callback(RuntimeOrigin::root(), vec![1]),
+                "CodecError",
+            ),
+            (
+                <Guild>::callback(RuntimeOrigin::root(), no_access),
+                "AccessDenied",
+            ),
+            (
+                <Guild>::callback(RuntimeOrigin::root(), access),
+                "GuildDoesNotExist",
+            ),
+        ];
+
+        for (call, raw_error) in test_data {
+            assert_eq!(error_msg(call.unwrap_err()), raw_error);
+        }
     });
 }

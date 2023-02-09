@@ -17,46 +17,48 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(clippy::all)]
 #![deny(clippy::dbg_macro)]
+#![deny(unused_crate_dependencies)]
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod test;
 mod weights;
 
 pub use pallet::*;
 
-use codec::Codec;
-use frame_support::{
-    dispatch::DispatchResult,
-    traits::{BalanceStatus, Currency, Get, ReservableCurrency, UnfilteredDispatchable},
-    Parameter,
-};
-use sp_std::{prelude::*, vec::Vec as SpVec};
-use weights::WeightInfo;
-
 #[frame_support::pallet]
 pub mod pallet {
-    use super::*;
-    use frame_support::{ensure, pallet_prelude::*};
+    use super::weights::WeightInfo;
+    use frame_support::dispatch::DispatchResult;
+    use frame_support::traits::{
+        BalanceStatus, Currency, Get, ReservableCurrency, UnfilteredDispatchable,
+    };
+    use frame_support::{ensure, pallet_prelude::*, Parameter};
     use frame_system::{ensure_signed, pallet_prelude::*};
     use gn_common::{OperatorIdentifier, RequestIdentifier};
+    use parity_scale_codec::Codec;
+    use sp_std::{prelude::*, vec::Vec as SpVec};
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        type WeightInfo: WeightInfo;
-        type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         type Currency: ReservableCurrency<Self::AccountId>;
         // A reference to an Extrinsic that can have a result injected. Used as Oracle callback
         type Callback: Parameter
-            + UnfilteredDispatchable<Origin = Self::Origin>
+            + UnfilteredDispatchable<RuntimeOrigin = Self::RuntimeOrigin>
             + Codec
             + Eq
             + CallbackWithParameter;
+        // Minimum fee paid for all requests to disincentivize spam requests
+        #[pallet::constant]
+        type MinimumFee: Get<<Self::Currency as Currency<Self::AccountId>>::Balance>;
+        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         // Period during which a request is valid
         #[pallet::constant]
         type ValidityPeriod: Get<Self::BlockNumber>;
-        // Minimum fee paid for all requests to disincentivize spam requests
-        #[pallet::constant]
-        type MinimumFee: Get<u32>;
+        type WeightInfo: WeightInfo;
     }
 
     pub type BalanceOf<T> =
@@ -73,20 +75,18 @@ pub mod pallet {
     pub enum Error<T> {
         /// No oracle operator has registered yet
         NoRegisteredOperators,
+        /// An operator is already registered.
+        OperatorAlreadyRegistered,
+        /// Callback cannot be deserialized
+        UnknownCallback,
         /// Manipulating an unknown operator
         UnknownOperator,
         /// Manipulating an unknown request
         UnknownRequest,
         /// Not the expected operator
         WrongOperator,
-        /// An operator is already registered.
-        OperatorAlreadyRegistered,
-        /// Callback cannot be deserialized
-        UnknownCallback,
         /// Fee provided does not match minimum required fee
         InsufficientFee,
-        /// Request has already been served by the operator
-        RequestAlreadyServed,
         /// Reserved balance is less than the specified fee for the request
         InsufficientReservedBalance,
     }
@@ -176,6 +176,7 @@ pub mod pallet {
         ///
         /// Fails with `OperatorAlreadyRegistered` if this Operator (identified
         /// by `origin`) has already been registered.
+        #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::register_operator())]
         pub fn register_operator(origin: OriginFor<T>) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
@@ -192,6 +193,7 @@ pub mod pallet {
         }
 
         /// Deregisters an already registered Operator
+        #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::deregister_operator())]
         pub fn deregister_operator(origin: OriginFor<T>) -> DispatchResult {
             let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
@@ -219,6 +221,7 @@ pub mod pallet {
         /// required information to perform the request and provide back
         /// the result.
         // TODO check weight
+        #[pallet::call_index(2)]
         #[pallet::weight(50_000)]
         pub fn initiate_request(
             origin: OriginFor<T>,
@@ -241,10 +244,7 @@ pub mod pallet {
             // tokens are only moved from the `free` balance of an account and
             // it is not stored in a totally new account However, a minimum
             // amount of fee is a good idea to disincentivize spam requests
-            ensure!(
-                fee >= T::MinimumFee::get().into(),
-                Error::<T>::InsufficientFee
-            );
+            ensure!(fee >= T::MinimumFee::get(), Error::<T>::InsufficientFee);
 
             T::Currency::reserve(&who, fee)?;
 
@@ -286,6 +286,7 @@ pub mod pallet {
         /// callback. The fee reserved during `initiate_request` is transferred
         /// as soon as this callback is called.
         //TODO check weight
+        #[pallet::call_index(3)]
         #[pallet::weight(50_000)]
         pub fn callback(
             origin: OriginFor<T>,

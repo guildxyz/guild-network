@@ -1,11 +1,9 @@
-mod signer;
-mod transactions;
-
-use signer::WasmSigner;
+#![deny(clippy::all)]
+#![deny(clippy::dbg_macro)]
+#![deny(unused_crate_dependencies)]
 
 use gn_client::data::Guild;
-use gn_client::queries::{self, GuildFilter};
-use gn_client::transactions::TxStatus;
+use gn_client::query::{self, GuildFilter};
 use gn_client::{AccountId, Api};
 use gn_common::{pad::pad_to_32_bytes, utils, GuildName};
 pub use serde_cbor::to_vec as cbor_serialize;
@@ -36,7 +34,7 @@ pub async fn query_members(guild: String, role: String, url: String) -> Result<J
         });
     }
 
-    let members = queries::members(api, guild_filter.as_ref(), 10)
+    let members = query::members(api, guild_filter.as_ref(), 10)
         .await
         .map_err(|e| JsValue::from(e.to_string()))?;
 
@@ -54,7 +52,7 @@ pub async fn query_guilds(guild: String, url: String) -> Result<JsValue, JsValue
         guild_name = Some(pad_to_32_bytes(&guild));
     }
 
-    let guilds = queries::guilds(api, guild_name, 10)
+    let guilds = query::guilds(api, guild_name, 10)
         .await
         .map_err(|e| JsValue::from(e.to_string()))?;
 
@@ -77,7 +75,7 @@ pub async fn query_requirements(
         let guild_name = pad_to_32_bytes(&guild);
         let role_name = pad_to_32_bytes(&role);
 
-        let requirements = queries::requirements(api, guild_name, role_name)
+        let requirements = query::requirements(api, guild_name, role_name)
             .await
             .map_err(|e| JsValue::from(e.to_string()))?;
 
@@ -92,7 +90,7 @@ pub async fn query_user_identity(address: String, url: String) -> Result<JsValue
         .await
         .map_err(|e| JsValue::from(e.to_string()))?;
 
-    let identities = queries::user_identity(api, &id)
+    let identities = query::user_identity(api, &id)
         .await
         .map_err(|e| JsValue::from(e.to_string()))?;
 
@@ -102,105 +100,6 @@ pub async fn query_user_identity(address: String, url: String) -> Result<JsValue
 #[wasm_bindgen(js_name = "verificationMsg")]
 pub async fn verification_msg(address: String) -> String {
     utils::verification_msg(address)
-}
-
-#[wasm_bindgen(js_name = "registerTx")]
-pub async fn register_tx(
-    evm_address: Option<String>,
-    evm_signature: Option<String>,
-    discord: Option<String>,
-    telegram: Option<String>,
-    url: String,
-) -> Result<JsValue, JsValue> {
-    let api = Api::from_url(&url)
-        .await
-        .map_err(|e| JsValue::from(e.to_string()))?;
-
-    let signer = WasmSigner::new().await.map_err(JsValue::from)?;
-
-    let prepared = transactions::register(
-        api.clone(),
-        signer.account_id(),
-        evm_address,
-        evm_signature,
-        discord,
-        telegram,
-    )
-    .await
-    .map_err(|e| JsValue::from(e.to_string()))?;
-
-    let signature = signer.sign(&prepared.prepared_msg).await?;
-
-    let maybe_hash = transactions::send_tx(
-        api,
-        signer.address().clone(),
-        &signature,
-        &prepared,
-        TxStatus::InBlock,
-    )
-    .await
-    .map_err(|e| JsValue::from(e.to_string()))?;
-
-    serialize_to_value(&maybe_hash).map_err(|e| JsValue::from(e.to_string()))
-}
-
-#[wasm_bindgen(js_name = "joinGuildTxPayload")]
-pub async fn join_guild_tx_payload(
-    guild: String,
-    role: String,
-    url: String,
-) -> Result<JsValue, JsValue> {
-    let api = Api::from_url(&url)
-        .await
-        .map_err(|e| JsValue::from(e.to_string()))?;
-
-    let signer = WasmSigner::new().await.map_err(JsValue::from)?;
-
-    let prepared = transactions::manage_role(api.clone(), signer.account_id(), guild, role)
-        .await
-        .map_err(|e| JsValue::from(e.to_string()))?;
-
-    let signature = signer.sign(&prepared.prepared_msg).await?;
-
-    let maybe_hash = transactions::send_tx(
-        api,
-        signer.address().clone(),
-        &signature,
-        &prepared,
-        TxStatus::InBlock,
-    )
-    .await
-    .map_err(|e| JsValue::from(e.to_string()))?;
-
-    serialize_to_value(&maybe_hash).map_err(|e| JsValue::from(e.to_string()))
-}
-
-#[wasm_bindgen(js_name = "createGuildTxPayload")]
-pub async fn create_guild_tx_payload(guild: JsValue, url: String) -> Result<JsValue, JsValue> {
-    let api = Api::from_url(&url)
-        .await
-        .map_err(|e| JsValue::from(e.to_string()))?;
-    let signer = WasmSigner::new().await.map_err(JsValue::from)?;
-
-    let guild = deserialize_from_value(guild).map_err(|e| JsValue::from(e.to_string()))?;
-
-    let prepared = transactions::create_guild(api.clone(), signer.account_id(), guild)
-        .await
-        .map_err(|e| JsValue::from(e.to_string()))?;
-
-    let signature = signer.sign(&prepared.prepared_msg).await?;
-
-    let maybe_hash = transactions::send_tx(
-        api,
-        signer.address().clone(),
-        &signature,
-        &prepared,
-        TxStatus::InBlock,
-    )
-    .await
-    .map_err(|e| JsValue::from(e.to_string()))?;
-
-    serialize_to_value(&maybe_hash).map_err(|e| JsValue::from(e.to_string()))
 }
 
 #[wasm_bindgen(js_name = "createGuildEncodeParams")]
@@ -247,7 +146,6 @@ mod test {
     #[cfg(feature = "queries")]
     mod queries {
         use super::*;
-        use gn_client::{Keypair, Signer, TraitPair};
         use gn_common::identities::Identity;
         use serde_wasm_bindgen::from_value as deserialize_from_value;
 
@@ -270,15 +168,10 @@ mod test {
             let guilds_vec: Vec<gn_client::data::GuildData> =
                 deserialize_from_value(guilds).unwrap();
 
-            assert!(guilds_vec.len() >= 2);
+            assert!(guilds_vec.len() == 2);
             for guild in &guilds_vec {
-                if guild.name == "myguild" || guild.name == "mysecondguild" {
-                    assert_eq!(guild.roles[0], "myrole");
-                    assert_eq!(guild.roles[1], "mysecondrole");
-                } else {
-                    assert_eq!(guild.name, "yellow-guild");
-                    assert_eq!(guild.roles[0], "canary-role");
-                }
+                assert_eq!(guild.roles[0], "myrole");
+                assert_eq!(guild.roles[1], "mysecondrole");
             }
         }
 
@@ -297,19 +190,15 @@ mod test {
 
         #[wasm_bindgen_test]
         async fn test_query_user_identity() {
-            let signer = Signer::new(Keypair::from_seed(&ACCOUNT_SEED));
-
-            let address_string = signer.account_id().to_string();
-            let converted_id = AccountId::from_str(&address_string).unwrap();
-            assert_eq!(&converted_id, signer.account_id());
+            let account_id = AccountId::from_str(TEST_ADDRESS).unwrap();
 
             let members_js = query_members("".to_string(), "".to_string(), URL.to_string())
                 .await
                 .unwrap();
             let members_vec: Vec<AccountId> = deserialize_from_value(members_js).unwrap();
-            assert!(members_vec.contains(signer.account_id()));
+            assert!(members_vec.contains(&account_id));
 
-            let identities_js = query_user_identity(address_string, URL.to_string())
+            let identities_js = query_user_identity(TEST_ADDRESS.to_string(), URL.to_string())
                 .await
                 .unwrap();
 

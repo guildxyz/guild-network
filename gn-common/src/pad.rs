@@ -1,4 +1,4 @@
-use codec::alloc::string::String;
+use parity_scale_codec::alloc::string::String;
 
 /// Panics if the input is more than 32 bytes long.
 pub fn pad_to_32_bytes(input: &str) -> [u8; 32] {

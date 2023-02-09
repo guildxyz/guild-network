@@ -2,59 +2,50 @@ use sc_cli::RunCmd;
 
 #[derive(Debug, clap::Parser)]
 pub struct Cli {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     pub subcommand: Option<Subcommand>,
 
     #[clap(flatten)]
     pub run: RunCmd,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, clap::Subcommand)]
 pub enum Subcommand {
     /// Key management cli utilities
-    #[clap(subcommand)]
+    #[command(subcommand)]
     Key(sc_cli::KeySubcommand),
 
     /// Build a chain specification.
     BuildSpec(sc_cli::BuildSpecCmd),
 
     /// Validate blocks.
-    #[cfg(feature = "node")]
     CheckBlock(sc_cli::CheckBlockCmd),
 
     /// Export blocks.
-    #[cfg(feature = "node")]
     ExportBlocks(sc_cli::ExportBlocksCmd),
 
     /// Export the state of a given block into a chain spec.
-    #[cfg(feature = "node")]
     ExportState(sc_cli::ExportStateCmd),
 
     /// Import blocks.
-    #[cfg(feature = "node")]
     ImportBlocks(sc_cli::ImportBlocksCmd),
 
     /// Remove the whole chain.
     PurgeChain(sc_cli::PurgeChainCmd),
 
     /// Revert the chain to a previous state.
-    #[cfg(feature = "node")]
     Revert(sc_cli::RevertCmd),
 
     /// Sub-commands concerned with benchmarking.
     #[cfg(feature = "runtime-benchmarks")]
-    #[clap(subcommand)]
+    #[command(subcommand)]
     Benchmark(frame_benchmarking_cli::BenchmarkCmd),
 
     /// Try some command against runtime state.
     #[cfg(feature = "try-runtime")]
     TryRuntime(try_runtime_cli::TryRuntimeCmd),
 
-    /// Try some command against runtime state. Note: `try-runtime` feature must be enabled.
-    #[cfg(not(feature = "try-runtime"))]
-    TryRuntime,
-
     /// Db meta columns information.
-    #[cfg(feature = "node")]
     ChainInfo(sc_cli::ChainInfoCmd),
 }

@@ -1,4 +1,4 @@
-use codec::alloc::vec::Vec;
+use parity_scale_codec::alloc::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -25,7 +25,7 @@ mod test {
 
     #[test]
     fn is_member() {
-        let allowlist = Allowlist(codec::alloc::vec![0, 2]);
+        let allowlist = Allowlist(parity_scale_codec::alloc::vec![0, 2]);
 
         assert!(allowlist.is_member(&0));
         assert!(!allowlist.is_member(&1));

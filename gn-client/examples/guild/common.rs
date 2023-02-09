@@ -2,15 +2,14 @@ use ethers::signers::{LocalWallet, Signer as EthSigner};
 use futures::future::try_join_all;
 use gn_client::data::*;
 #[cfg(not(feature = "external-oracle"))]
-use gn_client::queries::*;
-use gn_client::transactions::*;
-use gn_client::{
-    AccountId, AccountKeyring, Api, Hash, Keypair, RuntimeIdentityWithAuth, Signer, TraitPair,
-};
+use gn_client::query;
+use gn_client::tx::{self, Keypair, PairT, Signer, TxStatus};
+use gn_client::{AccountId, Api, Hash, RuntimeIdentityWithAuth};
 use gn_common::requirements::{Requirement, RequirementsWithLogic};
 use gn_common::{EvmAddress, EvmSignature, GuildName, RoleName};
 use gn_test_data::*;
 use rand::{rngs::StdRng, SeedableRng};
+use sp_keyring::AccountKeyring;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -28,7 +27,6 @@ pub async fn api_with_alice(url: String) -> (Api, Arc<Signer>) {
 
     (api, alice)
 }
-
 pub async fn prefunded_accounts(
     api: Api,
     faucet: Arc<Signer>,
@@ -46,7 +44,7 @@ pub async fn prefunded_accounts(
             };
             (accounts.substrate.as_ref().account_id().clone(), accounts)
         })
-        .inspect(|(id, _)| println!("new account: {id:?}"))
+        .inspect(|(id, _)| println!("new account: {id}"))
         .collect::<BTreeMap<AccountId, Accounts>>();
 
     let amount = 1_000_000_000_000_000u128;
@@ -54,14 +52,14 @@ pub async fn prefunded_accounts(
     // skip first
     let skipped_account = keys.next().unwrap();
     for account in keys {
-        let tx = fund_account(account, amount);
-        send_tx(api.clone(), &tx, Arc::clone(&faucet), TxStatus::Ready)
+        let tx = tx::fund_account(account, amount);
+        tx::send_tx(api.clone(), &tx, Arc::clone(&faucet), TxStatus::Ready)
             .await
             .expect("failed to fund account");
     }
     // wait for the skipped one to be included in a block
-    let tx = fund_account(skipped_account, amount);
-    send_tx(api.clone(), &tx, faucet, TxStatus::InBlock)
+    let tx = tx::fund_account(skipped_account, amount);
+    tx::send_tx(api.clone(), &tx, faucet, TxStatus::InBlock)
         .await
         .expect("failed to fund account");
 
@@ -74,9 +72,9 @@ pub async fn prefunded_accounts(
 pub async fn register_operators(api: Api, accounts: impl Iterator<Item = &Accounts>) {
     let register_operator_futures = accounts
         .map(|account| {
-            send_owned_tx(
+            tx::send_owned_tx(
                 api.clone(),
-                register_operator(),
+                tx::register_operator(),
                 Arc::clone(&account.substrate),
                 TxStatus::InBlock,
             )
@@ -127,16 +125,16 @@ pub async fn create_dummy_guilds(
         roles,
     };
 
-    send_tx_ready(
+    tx::send_tx_ready(
         api.clone(),
-        &create_guild(first_guild).expect("Failed to serialize requirements"),
+        &tx::create_guild(first_guild).expect("Failed to serialize requirements"),
         Arc::clone(&signer),
     )
     .await
     .expect("failed to create guild");
-    send_tx_in_block(
+    tx::send_tx_in_block(
         api.clone(),
-        &create_guild(second_guild).expect("Failed to serialize requirements"),
+        &tx::create_guild(second_guild).expect("Failed to serialize requirements"),
         signer,
     )
     .await
@@ -182,7 +180,7 @@ pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {
         .zip(users.iter())
         .enumerate()
         .map(|(i, (sig, (_, accounts)))| {
-            let tx_payload = register(vec![
+            let tx_payload = tx::register(vec![
                 RuntimeIdentityWithAuth::EvmChain(
                     accounts.eth.address().to_fixed_bytes(),
                     // NOTE unwrap is fine because byte lengths always match
@@ -190,7 +188,7 @@ pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {
                 ),
                 RuntimeIdentityWithAuth::Discord(i as u64, ()),
             ]);
-            send_owned_tx(
+            tx::send_owned_tx(
                 api.clone(),
                 tx_payload,
                 Arc::clone(&accounts.substrate),
@@ -212,26 +210,26 @@ async fn join_request_tx(
     role_name: &RoleName,
     accounts: &Accounts,
 ) -> Result<Hash, subxt::Error> {
-    let tx_payload = manage_role(
+    let tx_payload = tx::manage_role(
         accounts.substrate.account_id().clone(),
         *guild_name,
         *role_name,
     );
-    send_tx_in_block(api, &tx_payload, Arc::clone(&accounts.substrate)).await
+    tx::send_tx_in_block(api, &tx_payload, Arc::clone(&accounts.substrate)).await
 }
 
 #[cfg(not(feature = "external-oracle"))]
 pub async fn send_dummy_oracle_answers(api: Api, operators: &BTreeMap<AccountId, Accounts>) {
-    let oracle_requests = oracle_requests(api.clone(), PAGE_SIZE)
+    let oracle_requests = query::oracle_requests(api.clone(), PAGE_SIZE)
         .await
         .expect("failed to fetch oracle requests");
 
     let oracle_answer_futures = oracle_requests
         .into_iter()
         .map(|(request_id, operator)| {
-            let tx = oracle_callback(request_id, vec![u8::from(true)]);
+            let tx = tx::oracle_callback(request_id, vec![u8::from(true)]);
             let accounts = operators.get(&operator).unwrap();
-            send_owned_tx(
+            tx::send_owned_tx(
                 api.clone(),
                 tx,
                 Arc::clone(&accounts.substrate),

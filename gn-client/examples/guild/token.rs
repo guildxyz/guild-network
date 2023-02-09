@@ -2,7 +2,11 @@
 use crate::common::*;
 use ethers::types::{Address, U256};
 use gn_client::data::{Guild, Role};
-use gn_client::{queries, transactions, Api, RuntimeIdentityWithAuth, Signer};
+use gn_client::{
+    query,
+    tx::{self, Signer},
+    Api, RuntimeIdentityWithAuth,
+};
 use gn_common::identities::Identity;
 use gn_common::requirements::balance::{Relation, RequiredBalance, TokenType};
 use gn_common::requirements::chains::EvmChain;
@@ -38,7 +42,7 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
     {
         let registering_operators = operators.values();
         register_operators(api.clone(), registering_operators).await;
-        let registered_operators = queries::registered_operators(api.clone())
+        let registered_operators = query::registered_operators(api.clone())
             .await
             .expect("failed to fetch registered operators");
 
@@ -52,8 +56,8 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
     // register alice with test evm address + signature
     let evm_identity = RuntimeIdentityWithAuth::EvmChain(address, signature);
 
-    let tx_payload = transactions::register(vec![evm_identity]);
-    transactions::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
+    let tx_payload = tx::register(vec![evm_identity]);
+    tx::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
         .await
         .expect("failed to register");
 
@@ -61,7 +65,7 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
     send_dummy_oracle_answers(api.clone(), &operators).await;
 
     loop {
-        let user_identity = queries::user_identity(api.clone(), alice.account_id())
+        let user_identity = query::user_identity(api.clone(), alice.account_id())
             .await
             .expect("failed to fetch user identities");
         if user_identity.len() == 1 {
@@ -140,19 +144,19 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
         roles,
     };
 
-    let tx_payload = transactions::create_guild(guild).expect("failed to serialize requirements");
-    transactions::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
+    let tx_payload = tx::create_guild(guild).expect("failed to serialize requirements");
+    tx::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
         .await
         .expect("failed to create guild");
 
     println!("GUILD CREATED");
 
-    let tx_payload = transactions::manage_role(alice.account_id().clone(), TOKEN_GUILD, FIRST_ROLE);
-    transactions::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
+    let tx_payload = tx::manage_role(alice.account_id().clone(), TOKEN_GUILD, FIRST_ROLE);
+    tx::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
         .await
         .expect("failed to join guild");
 
-    let guild_filter = queries::GuildFilter {
+    let guild_filter = query::GuildFilter {
         name: TOKEN_GUILD,
         role: Some(FIRST_ROLE),
     };
@@ -161,7 +165,7 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
     send_dummy_oracle_answers(api.clone(), &operators).await;
 
     loop {
-        let members = queries::members(api.clone(), Some(&guild_filter), PAGE_SIZE)
+        let members = query::members(api.clone(), Some(&guild_filter), PAGE_SIZE)
             .await
             .expect("failed to query members");
         if members.len() == 1 {
@@ -172,13 +176,12 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
 
     println!("FIRST_ROLE JOINED");
 
-    let tx_payload =
-        transactions::manage_role(alice.account_id().clone(), TOKEN_GUILD, SECOND_ROLE);
-    transactions::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
+    let tx_payload = tx::manage_role(alice.account_id().clone(), TOKEN_GUILD, SECOND_ROLE);
+    tx::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
         .await
         .expect("failed to join guild");
 
-    let guild_filter = queries::GuildFilter {
+    let guild_filter = query::GuildFilter {
         name: TOKEN_GUILD,
         role: Some(SECOND_ROLE),
     };
@@ -187,7 +190,7 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
     send_dummy_oracle_answers(api.clone(), &operators).await;
 
     loop {
-        let members = queries::members(api.clone(), Some(&guild_filter), PAGE_SIZE)
+        let members = query::members(api.clone(), Some(&guild_filter), PAGE_SIZE)
             .await
             .expect("failed to query members");
         if members.len() == 1 {
