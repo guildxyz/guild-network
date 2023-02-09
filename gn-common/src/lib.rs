@@ -30,7 +30,7 @@ pub struct Request<T> {
 
 #[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Debug)]
 pub enum RequestData<T> {
-    Register(SpVec<identities::IdentityWithAuth>),
+    Register(SpVec<identities::IdentityWithAuth<T>>),
     ReqCheck {
         account: T,
         guild: GuildName,

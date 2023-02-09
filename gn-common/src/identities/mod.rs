@@ -1,68 +1,88 @@
-#[cfg(feature = "reqcheck")]
-mod impls;
-#[cfg(feature = "reqcheck")]
-mod map;
-
-#[cfg(feature = "reqcheck")]
-pub use map::IdentityMap;
-
 use crate::{Decode, Encode, TypeInfo};
-use crate::{EvmAddress, EvmSignature};
-use serde::{Deserialize, Serialize};
+use ed25519_zebra::{Signature as EdSig, VerificationKey as EdKey};
+use schnorrkel::{PublicKey as SrKey, Signature as SrSig};
+use sp_core::keccak_256;
 
-#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
-pub enum Platform {
-    EvmChain,
-    Discord,
-    Telegram,
+pub const SIGNING_CTX: &[u8] = b"guild-network";
+
+pub type MultiAddress<T> = sp_runtime::MultiAddress<T, u32>;
+
+#[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Debug)]
+pub enum IdentityWithAuth<T> {
+    Ecdsa(MultiAddress<T>, sp_core::ecdsa::Signature),
+    Ed25519(MultiAddress<T>, sp_core::ed25519::Signature),
+    Sr25519(MultiAddress<T>, sp_core::sr25519::Signature),
+    Raw(MultiAddress<T>, Vec<u8>),
 }
 
-#[derive(Serialize, Deserialize, Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Copy, Debug)]
-pub enum Identity {
-    EvmChain(EvmAddress),
-    Discord(u64),
-    Telegram(u64),
-}
+impl<T> IdentityWithAuth<T> {
+    pub fn verify<M: AsRef<[u8]>>(&self, msg: M) -> bool {
+        match self {
+            Self::Ecdsa(MultiAddress::Address20(address), sig) => {
+                let Some(recovered_pk) = sig.recover(msg) else {
+                    return false
+                };
+                debug_assert_eq!(recovered_pk.0[0], 0x04);
+                &keccak_256(&recovered_pk.0[1..])[12..] == address
+            }
+            Self::Ecdsa(MultiAddress::Address32(pubkey), sig) => {
+                let Some(recovered_pk) = sig.recover(msg) else {
+                    return false
+                };
+                debug_assert_eq!(recovered_pk.0[0], 0x04);
+                &recovered_pk.0[1..] == pubkey
+            }
+            Self::Ed25519(MultiAddress::Address32(pubkey), sig) => {
+                let Ok(ed_key) = EdKey::try_from(pubkey.as_ref()) else {
+                    return false
+                };
 
-#[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Copy, Debug)]
-pub enum IdentityWithAuth {
-    EvmChain(EvmAddress, EvmSignature),
-    Discord(u64, ()),  // not authenticating for now
-    Telegram(u64, ()), // not authenticating for now
-}
+                let Ok(ed_sig) = EdSig::try_from(&sig.0[..]) else {
+                    return false
+                };
 
-impl From<IdentityWithAuth> for Identity {
-    fn from(value: IdentityWithAuth) -> Self {
-        match value {
-            IdentityWithAuth::EvmChain(address, _) => Self::EvmChain(address),
-            IdentityWithAuth::Discord(id, _) => Self::Discord(id),
-            IdentityWithAuth::Telegram(id, _) => Self::Telegram(id),
+                ed_key.verify(&ed_sig, msg.as_ref()).is_ok()
+            }
+            Self::Sr25519(MultiAddress::Address32(pubkey), sig) => {
+                let Ok(sr_key) = SrKey::from_bytes(pubkey.as_ref()) else {
+                    return false
+                };
+
+                let Ok(sr_sig) = SrSig::from_bytes(&sig.0) else {
+                    return false
+                };
+
+                sr_key
+                    .verify_simple(SIGNING_CTX, msg.as_ref(), &sr_sig)
+                    .is_ok()
+            }
+            Self::Raw(_, _) => true, // not authenticating for now
+            _ => false,
         }
     }
 }
 
-impl From<Platform> for u64 {
-    fn from(value: Platform) -> Self {
-        value as u64
-    }
-}
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::utils::verification_msg;
+    use ethers::signers::{LocalWallet, Signer as EthSigner};
+    use sp_core::ecdsa::Signature as EcdsaSig;
 
-impl From<&IdentityWithAuth> for Platform {
-    fn from(value: &IdentityWithAuth) -> Self {
-        match value {
-            IdentityWithAuth::EvmChain(_, _) => Self::EvmChain,
-            IdentityWithAuth::Discord(_, _) => Self::Discord,
-            IdentityWithAuth::Telegram(_, _) => Self::Telegram,
-        }
-    }
-}
+    const TEST_ACCOUNT: &str = "test-account-0xabcde";
 
-impl From<&Identity> for Platform {
-    fn from(value: &Identity) -> Self {
-        match value {
-            Identity::EvmChain(_) => Self::EvmChain,
-            Identity::Discord(_) => Self::Discord,
-            Identity::Telegram(_) => Self::Telegram,
-        }
+    #[tokio::test]
+    async fn ecdsa_sig() {
+        let mut rng = StdRng::seed_from_u64(0);
+        let signer = LocalWallet::new(&mut rng);
+
+        let signature = signer
+            .sign_message(verification_msg(TEST_ACCOUNT))
+            .await
+            .unwrap();
+        let address = signer.address();
+
+        let sp_signature = MultiSignature::Ecdsa(EcdsaSig::from_raw(signature.as_bytes()));
+        let sp_address = MultiAddress::Address20(address.to_fixed_bytes());
     }
 }

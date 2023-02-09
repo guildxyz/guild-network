@@ -4,11 +4,14 @@ version = "0.0.0-alpha"
 edition = "2021"
 
 [features]
-reqcheck = ["anyhow", "ethers-core", "providers", "std"]
+reqcheck = ["anyhow", "providers", "std"]
 default = ["std"]
 std = [
+    "ed25519-zebra/std",
     "parity-scale-codec/std",
     "scale-info/std",
+    "sp-core/std",
+    "sp-runtime/std",
 ]
 
 [dependencies]
@@ -17,11 +20,17 @@ providers = { path = "../rusty-gate/providers", optional = true }
 
 # general
 anyhow = { version = "1.0", default-features = false, optional = true }
-ethers-core = { version = "1.0.2", default-features = false, optional = true }
+ed25519-zebra = { version  = "3.1.0", default-features = false }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
+schnorrkel = { version = "0.9.1", default-features = false }
 serde = { version = "1.0.144", default-features = false, features = ["derive"] }
+
+# substrate primitives
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
 
 [dev-dependencies]
 async-trait = { version = "0.1.57", default-features = false }
+ethers = "1.0.2"
 tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
