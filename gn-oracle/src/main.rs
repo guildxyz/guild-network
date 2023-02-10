@@ -9,7 +9,7 @@ use gn_client::{
     tx::{self, Signer},
 };
 use gn_client::{Api, GuildCall, SubxtError};
-use gn_common::identities::IdentityMap;
+use gn_common::identity::Identity;
 use gn_common::utils::{matches_variant, verification_msg};
 use gn_common::{RequestData, RequestIdentifier};
 use sp_keyring::AccountKeyring;
@@ -150,21 +150,14 @@ async fn try_submit_answer(
     let oracle_request = query::oracle_request(api.clone(), request_id).await?;
 
     let oracle_answer = match oracle_request.data {
-        RequestData::Register(identities) => {
+        RequestData::Register {
+            identity_with_auth,
+            index: _,
+        } => {
             log::info!("[registration request] acc: {}", oracle_request.requester);
             // deserialize user identities
             let expected_msg = verification_msg(&oracle_request.requester);
-            match identities
-                .iter()
-                .map(|id| id.verify(&expected_msg))
-                .collect::<Result<Vec<_>, _>>()
-            {
-                Ok(_) => true,
-                Err(error) => {
-                    log::warn!("identity check failed: {}", error);
-                    false
-                }
-            }
+            identity_with_auth.verify(&expected_msg)
         }
         RequestData::ReqCheck {
             account,
@@ -182,28 +175,36 @@ async fn try_submit_answer(
             // build requireemnt tree from logic
             let requirement_tree = requiem::LogicTree::from_str(&requirements_with_logic.logic)
                 .map_err(|e| SubxtError::Other(e.to_string()))?;
-            let identity_map =
-                IdentityMap::from_identities(query::user_identity(api.clone(), &account).await?);
-            let requirement_futures = requirements_with_logic
-                .requirements
-                .iter()
-                .map(|req| req.check(&identity_map))
-                .collect::<Vec<_>>();
-            match futures::future::try_join_all(requirement_futures).await {
-                Ok(boolean_vec) => {
-                    let requirement_check_map: HashMap<u32, bool> = boolean_vec
-                        .into_iter()
-                        .enumerate()
-                        .map(|(i, b)| (i as u32, b))
-                        .collect();
-                    requirement_tree
-                        .evaluate(&requirement_check_map)
-                        .unwrap_or(false)
+            let identity_map = query::user_identity(api.clone(), &account).await?;
+            let maybe_address = identity_map
+                .values()
+                .find(|&x| matches_variant(x, &Identity::Address20([0u8; 20])));
+
+            if let Some(address) = maybe_address {
+                let requirement_futures = requirements_with_logic
+                    .requirements
+                    .iter()
+                    .map(|req| req.check(&address))
+                    .collect::<Vec<_>>();
+                match futures::future::try_join_all(requirement_futures).await {
+                    Ok(boolean_vec) => {
+                        let requirement_check_map: HashMap<u32, bool> = boolean_vec
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, b)| (i as u32, b))
+                            .collect();
+                        requirement_tree
+                            .evaluate(&requirement_check_map)
+                            .unwrap_or(false)
+                    }
+                    Err(error) => {
+                        log::warn!("requirement check failed: {}", error);
+                        false
+                    }
                 }
-                Err(error) => {
-                    log::warn!("requirement check failed: {}", error);
-                    false
-                }
+            } else {
+                log::warn!("requirement check failed: no registered evm identity");
+                false
             }
         }
     };

@@ -1,27 +1,27 @@
 use super::Requirement;
-use crate::identity::IdentityMap;
+use crate::identity::Identity;
 
 mod evm;
 
 impl Requirement {
-    pub async fn check(&self, identity_map: &IdentityMap) -> Result<bool, anyhow::Error> {
+    pub async fn check(&self, identity: &Identity) -> Result<bool, anyhow::Error> {
         match self {
             Self::Free => Ok(true),
             Self::EvmBalance(req_balance) => {
-                if let Some(address) = identity_map.evm_address() {
+                if let Identity::Address20(address) = identity {
                     let balance =
                         evm::get_balance(&req_balance.token_type, address, req_balance.chain)
                             .await?;
                     Ok(req_balance.relation.assert(&balance))
                 } else {
-                    Err(anyhow::anyhow!("missing evm identity"))
+                    Err(anyhow::anyhow!("invalid evm identity"))
                 }
             }
             Self::EvmAllowlist(allowlist) => {
-                if let Some(address) = identity_map.evm_address() {
+                if let Identity::Address20(address) = identity {
                     Ok(allowlist.is_member(address))
                 } else {
-                    Err(anyhow::anyhow!("missing evm identity"))
+                    Err(anyhow::anyhow!("invalid evm identity"))
                 }
             }
         }
