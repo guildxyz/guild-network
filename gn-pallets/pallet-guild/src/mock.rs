@@ -26,6 +26,7 @@ frame_support::construct_runtime!(
 parameter_types! {
     pub const ExistentialDeposit: Balance = 0;
     pub const MinimumFee: Balance = 0;
+    pub const MaxIdentities: u8 = 3;
     pub const MaxRolesPerGuild: u32 = 10;
     pub const MaxReqsPerRole: u32 = 10;
     pub const MaxSerializedReqLen: u32 = 10;
@@ -72,6 +73,7 @@ impl pallet_balances::Config for TestRuntime {
 }
 
 impl pallet_guild::Config for TestRuntime {
+    type MaxIdentities = MaxIdentities;
     type MaxRolesPerGuild = MaxRolesPerGuild;
     type MaxReqsPerRole = MaxReqsPerRole;
     type MaxSerializedReqLen = MaxSerializedReqLen;

@@ -98,7 +98,7 @@ impl From<&IdentityWithAuth> for Identity {
     }
 }
 
-fn eth_recover_prehashed(
+pub fn eth_recover_prehashed(
     message: [u8; 32],
     signature: &sp_core::ecdsa::Signature,
 ) -> Option<secp256k1::PublicKey> {
@@ -111,7 +111,7 @@ fn eth_recover_prehashed(
         .ok()
 }
 
-fn eth_hash_message<M: AsRef<[u8]>>(message: M) -> [u8; 32] {
+pub fn eth_hash_message<M: AsRef<[u8]>>(message: M) -> [u8; 32] {
     let mut eth_message = format!("{ETHEREUM_HASH_PREFIX}{}", message.as_ref().len()).into_bytes();
     eth_message.extend_from_slice(message.as_ref());
     keccak_256(&eth_message)
@@ -161,7 +161,7 @@ mod test {
 
         // check a signature generated via ethers
         let sp_signature = sp_core::ecdsa::Signature::from_raw(eth_signature.try_into().unwrap());
-        let sp_address = Identity::Address20(eth_signer.address().to_fixed_bytes());
+        let sp_address = Identity::Address20(dbg!(eth_signer.address().to_fixed_bytes()));
         let id_with_auth = IdentityWithAuth::Ecdsa(sp_address, sp_signature);
 
         assert!(id_with_auth.verify(&msg));

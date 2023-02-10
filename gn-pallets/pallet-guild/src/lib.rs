@@ -170,7 +170,7 @@ pub mod pallet {
             };
 
             ensure!(
-                index <= &T::MaxIdentities::get(),
+                index < &T::MaxIdentities::get(),
                 Error::<T>::MaxIdentitiesExceeded
             );
 

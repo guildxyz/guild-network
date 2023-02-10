@@ -9,7 +9,16 @@ fn basic_checks() {
         new_guild(signer, guild_name);
 
         let test_data = vec![
-            (RequestData::Register(vec![]), "InvalidRequestData"),
+            (
+                RequestData::Register {
+                    identity_with_auth: IdentityWithAuth::Other(
+                        Identity::Other([0u8; 64]),
+                        [0u8; 64],
+                    ),
+                    index: 0,
+                },
+                "InvalidRequestData",
+            ),
             (
                 RequestData::ReqCheck {
                     account: signer,
@@ -51,7 +60,10 @@ fn advanced_checks() {
         let guild_name = [0u8; 32];
         new_guild(signer, guild_name);
 
-        let register_payload = RequestData::Register(vec![]);
+        let register_payload = RequestData::Register {
+            identity_with_auth: IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]),
+            index: 0,
+        };
         let reqcheck_payload = RequestData::ReqCheck {
             account: signer,
             guild: guild_name,
@@ -140,8 +152,14 @@ fn storage_checks() {
         // register a single operator
         <Oracle>::register_operator(RuntimeOrigin::signed(signer_1)).unwrap();
         // register both users to guild
-        <Guild>::register(RuntimeOrigin::signed(signer_1), RequestData::Register(vec![])).unwrap();
-        <Guild>::register(RuntimeOrigin::signed(signer_2), RequestData::Register(vec![])).unwrap();
+        <Guild>::register(RuntimeOrigin::signed(signer_1), RequestData::Register {
+            identity_with_auth: IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]),
+            index: 0,
+        }).unwrap();
+        <Guild>::register(RuntimeOrigin::signed(signer_2), RequestData::Register {
+            identity_with_auth: IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]),
+            index: 0,
+        }).unwrap();
 
         // both register requests are accepted
         <Oracle>::callback(RuntimeOrigin::signed(signer_1), request_id, vec![u8::from(true)]).unwrap();

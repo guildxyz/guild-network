@@ -9,7 +9,7 @@ type AccountId = <TestRuntime as frame_system::Config>::AccountId;
 
 use frame_support::traits::{OnFinalize, OnInitialize};
 use gn_common::{
-    identities::{Identity, IdentityWithAuth},
+    identity::{Identity, IdentityWithAuth},
     Request, RequestData,
 };
 use pallet_guild::Event as GuildEvent;
@@ -109,8 +109,15 @@ fn callback_can_only_be_called_by_root() {
     new_test_ext().execute_with(|| {
         init_chain();
 
-        let no_access =
-            dummy_answer(vec![u8::from(false)], 1, RequestData::Register(vec![])).encode();
+        let no_access = dummy_answer(
+            vec![u8::from(false)],
+            1,
+            RequestData::Register {
+                identity_with_auth: IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]),
+                index: 0,
+            },
+        )
+        .encode();
         let access = dummy_answer(
             vec![u8::from(true)],
             2,
