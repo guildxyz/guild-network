@@ -23,6 +23,7 @@ providers = { path = "../rusty-gate/providers", optional = true }
 # general
 anyhow = { version = "1.0", default-features = false, optional = true }
 ed25519-zebra = { version  = "3.1.0", default-features = false }
+hex = { version = "0.4.3", default-features = false }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
 schnorrkel = { version = "0.9.1", default-features = false, features = ["u64_backend"] }

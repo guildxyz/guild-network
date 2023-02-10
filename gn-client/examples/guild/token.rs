@@ -1,6 +1,5 @@
 #[cfg(not(feature = "external-oracle"))]
 use crate::common::*;
-use ethers::signers::{LocalWallet, Signer as SignerT};
 use ethers::types::{Address, U256};
 use gn_client::runtime::runtime_types::sp_core::ecdsa::Signature as RuntimeEcdsaSignature;
 use gn_client::{
@@ -14,7 +13,6 @@ use gn_common::requirements::balance::{Relation, RequiredBalance, TokenType};
 use gn_common::requirements::chains::EvmChain;
 use gn_common::requirements::{Requirement, RequirementsWithLogic};
 use gn_test_data::*;
-use rand::SeedableRng;
 
 use std::str::FromStr;
 use std::sync::Arc;
@@ -29,19 +27,16 @@ const GNOSIS_ERC721_ID_0: &str = "5752323";
 const GNOSIS_ERC721_ADDRESS_1: &str = "22c1f6050e56d2876009903609a2cc3fef83b415";
 const GNOSIS_ERC721_ID_1: &str = "5819774";
 
+const ADDRESS: &str = "e43878ce78934fe8007748ff481f03b8ee3b97de";
+const SIGNATURE: &str = "a7d8263c96a8bb689d462b2782a45b81f02777607c27d1b322a1c46910482e274320fbf353a543a1504dc3c0ded9c2930dffc4b15541d97da7b240f40416f12a1b";
+
 pub async fn token(api: Api, alice: Arc<Signer>) {
-    let mut rng = rand::rngs::StdRng::seed_from_u64(0);
-    let wallet = LocalWallet::new(&mut rng);
-    let msg = gn_common::utils::verification_msg(alice.account_id());
-    let mut signature: [u8; 65] = wallet
-        .sign_message(msg)
-        .await
-        .unwrap()
-        .to_vec()
-        .try_into()
-        .unwrap();
-    signature[64] -= 27;
-    let address = wallet.address().to_fixed_bytes();
+    let mut signature = [0u8; 65];
+    hex::decode_to_slice(SIGNATURE, &mut signature).expect("this should not fail");
+    signature[64] -= 27; // ethereum's eip-115 normalization stuff
+    let mut address = [0u8; 20];
+    hex::decode_to_slice(ADDRESS, &mut address).expect("this should not fail");
+    // TODO check with identity with auth
 
     #[cfg(not(feature = "external-oracle"))]
     let operators = prefunded_accounts(api.clone(), Arc::clone(&alice), N_TEST_ACCOUNTS).await;
