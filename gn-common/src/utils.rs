@@ -1,7 +1,7 @@
-use scale_info::prelude::fmt::Debug;
+use crate::Encode;
 use scale_info::prelude::format;
 use scale_info::prelude::string::String as SpString;
 
-pub fn verification_msg<T: Debug>(id: T) -> SpString {
-    format!("This is my ({id:?}) registration request to Guild Network")
+pub fn verification_msg<T: Encode>(id: T) -> SpString {
+    format!("Guild Network registration id: {:?}", id.encode())
 }

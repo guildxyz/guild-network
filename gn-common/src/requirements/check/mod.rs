@@ -1,5 +1,5 @@
 use super::Requirement;
-use crate::identities::IdentityMap;
+use crate::identity::IdentityMap;
 
 mod evm;
 

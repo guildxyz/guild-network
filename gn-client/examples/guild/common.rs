@@ -186,15 +186,9 @@ pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {
     let register_address_payloads = signatures
         .into_iter()
         .zip(users.iter())
-        .map(|(sig, (id, accounts))| {
-            let mut sig: [u8; 65] = dbg!(sig).to_vec().try_into().unwrap();
+        .map(|(sig, (_, accounts))| {
+            let mut sig: [u8; 65] = sig.to_vec().try_into().unwrap();
             sig[64] -= 27; // due to eip-155 stuff in ethers
-            let id_with_auth = gn_common::identity::IdentityWithAuth::Ecdsa(
-                gn_common::identity::Identity::Address20(accounts.eth.address().to_fixed_bytes()),
-                gn_common::identity::EcdsaSignature(sig),
-            );
-            let msg = gn_common::utils::verification_msg(id);
-            assert!(id_with_auth.verify(msg));
             let id_with_auth = RuntimeIdentityWithAuth::Ecdsa(
                 RuntimeIdentity::Address20(accounts.eth.address().to_fixed_bytes()),
                 RuntimeEcdsaSignature(sig),

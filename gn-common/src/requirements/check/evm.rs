@@ -1,6 +1,6 @@
 use crate::requirements::balance::TokenType;
 use crate::requirements::chains::EvmChain;
-use crate::{EvmAddress, U256};
+use crate::requirements::{EvmAddress, U256};
 use providers::{evm::general::PROVIDERS, BalanceQuerier, EvmChain as RustyEvmChain};
 
 // only compute this once
