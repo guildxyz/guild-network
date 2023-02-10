@@ -5,7 +5,7 @@ use secp256k1::{
     ecdsa::{RecoverableSignature, RecoveryId},
     Message, Secp256k1,
 };
-use sp_core::keccak_256;
+use sp_io::hashing::keccak_256;
 
 pub const ETHEREUM_HASH_PREFIX: &str = "\x19Ethereum Signed Message:\n";
 pub const SR_SIGNING_CTX: &[u8] = b"substrate";
@@ -31,20 +31,13 @@ impl IdentityWithAuth {
             // Ethereum specific ecdsa
             Self::Ecdsa(Identity::Address20(address), sig) => {
                 let prehashed_msg = eth_hash_message(msg);
-                let Some(recovered_pk) = eth_recover_prehashed(prehashed_msg, sig) else {
+                let Some(recovered_pk) = recover_prehashed(prehashed_msg, sig) else {
                     return false
                 };
 
                 let serialized_pk = recovered_pk.serialize_uncompressed();
                 debug_assert_eq!(serialized_pk[0], 0x04);
                 &keccak_256(&serialized_pk[1..])[12..] == address
-            }
-            // generic ecdsa
-            Self::Ecdsa(Identity::Address32(pubkey), sig) => {
-                let Some(recovered_pk) = sig.recover(&msg) else {
-                    return false
-                };
-                &recovered_pk.0[1..] == pubkey
             }
             Self::Ed25519(Identity::Address32(pubkey), sig) => {
                 let Ok(ed_key) = EdKey::try_from(pubkey.as_ref()) else {
@@ -98,7 +91,7 @@ impl From<&IdentityWithAuth> for Identity {
     }
 }
 
-pub fn eth_recover_prehashed(
+pub fn recover_prehashed(
     message: [u8; 32],
     signature: &sp_core::ecdsa::Signature,
 ) -> Option<secp256k1::PublicKey> {
@@ -112,7 +105,9 @@ pub fn eth_recover_prehashed(
 }
 
 pub fn eth_hash_message<M: AsRef<[u8]>>(message: M) -> [u8; 32] {
-    let mut eth_message = format!("{ETHEREUM_HASH_PREFIX}{}", message.as_ref().len()).into_bytes();
+    let mut eth_message =
+        scale_info::prelude::format!("{ETHEREUM_HASH_PREFIX}{}", message.as_ref().len())
+            .into_bytes();
     eth_message.extend_from_slice(message.as_ref());
     keccak_256(&eth_message)
 }
@@ -161,27 +156,11 @@ mod test {
 
         // check a signature generated via ethers
         let sp_signature = sp_core::ecdsa::Signature::from_raw(eth_signature.try_into().unwrap());
-        let sp_address = Identity::Address20(dbg!(eth_signer.address().to_fixed_bytes()));
+        let sp_address = Identity::Address20(eth_signer.address().to_fixed_bytes());
         let id_with_auth = IdentityWithAuth::Ecdsa(sp_address, sp_signature);
 
         assert!(id_with_auth.verify(&msg));
         assert!(!id_with_auth.verify(b"wrong msg"))
-    }
-
-    #[test]
-    fn generic_ecdsa() {
-        let msg = verification_msg(TEST_ACCOUNT);
-        let seed = [2u8; 32];
-        let signer = sp_core::ecdsa::Pair::from_seed_slice(&seed).unwrap();
-
-        let signature = signer.sign(msg.as_ref());
-        let recovered_key = signature.recover(&msg).unwrap();
-        assert_eq!(recovered_key, signer.public());
-        let address = Identity::Address32(signer.public().0[1..].try_into().unwrap());
-        let id_with_auth = IdentityWithAuth::Ecdsa(address, signature);
-
-        assert!(id_with_auth.verify(&msg));
-        assert!(!id_with_auth.verify(b"wrong msg"));
     }
 
     #[test]
@@ -232,6 +211,11 @@ mod test {
         let address = Identity::Address20([0u8; 20]);
         let signature = sp_core::sr25519::Signature([0u8; 64]);
         let id_with_auth = IdentityWithAuth::Sr25519(address, signature);
+        assert!(!id_with_auth.verify(""));
+
+        let address = Identity::Address32([0u8; 32]);
+        let signature = sp_core::ecdsa::Signature([0u8; 65]);
+        let id_with_auth = IdentityWithAuth::Ecdsa(address, signature);
         assert!(!id_with_auth.verify(""));
     }
 }

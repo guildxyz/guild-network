@@ -4,7 +4,7 @@ use crate::Pallet as Guild;
 use frame_benchmarking::{benchmarks, whitelisted_caller};
 use frame_support::traits::Currency;
 use frame_system::RawOrigin;
-use gn_common::identities::IdentityWithAuth;
+use gn_common::identity::{Identity, IdentityWithAuth};
 use gn_common::RequestData;
 use pallet_oracle::Pallet as Oracle;
 use sp_std::vec;
@@ -35,14 +35,10 @@ benchmarks! {
         Oracle::<T>::register_operator(RawOrigin::Signed(operator).into())?;
     }: _(
         RawOrigin::Signed(caller),
-        RequestData::Register(vec![
-            IdentityWithAuth::EvmChain([0; 20],[1; 65]),
-            IdentityWithAuth::EvmChain([2; 20],[3; 65]),
-            IdentityWithAuth::EvmChain([4; 20],[5; 65]),
-            IdentityWithAuth::EvmChain([6; 20],[7; 65]),
-            IdentityWithAuth::Discord(11234, ()),
-            IdentityWithAuth::Telegram(9999999, ()),
-        ])
+        RequestData::Register {
+            identity_with_auth: IdentityWithAuth::Other(Identity::Other([0; 64]),[1; 64]),
+            index: 0
+        }
     )
     verify {
         assert!(Oracle::<T>::request(0).is_some())

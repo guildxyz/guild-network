@@ -9,9 +9,8 @@ pub mod pad;
 pub mod requirements;
 pub mod utils;
 
-pub use parity_scale_codec::alloc::vec::Vec as SpVec;
-pub use parity_scale_codec::{Decode, Encode};
-pub use scale_info::TypeInfo;
+use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
 
 pub type GuildName = [u8; 32];
 pub type RoleName = [u8; 32];

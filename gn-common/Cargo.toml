@@ -10,7 +10,10 @@ std = [
     "ed25519-zebra/std",
     "parity-scale-codec/std",
     "scale-info/std",
+    "schnorrkel/std",
+    "serde",
     "sp-core/std",
+    "sp-io/std",
 ]
 
 [dependencies]
@@ -22,12 +25,13 @@ anyhow = { version = "1.0", default-features = false, optional = true }
 ed25519-zebra = { version  = "3.1.0", default-features = false }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
-schnorrkel = { version = "0.9.1", default-features = false }
+schnorrkel = { version = "0.9.1", default-features = false, features = ["u64_backend"] }
 secp256k1 = { version = "0.26.0", default-features = false, features = ["alloc", "recovery"] }
-serde = { version = "1.0.144", default-features = false, features = ["derive"] }
+serde = { version = "1.0.144", default-features = false, features = ["derive"], optional = true }
 
 # substrate primitives
 sp-core = { workspace = true }
+sp-io = { workspace = true }
 
 [dev-dependencies]
 ethers = "1.0.2"
