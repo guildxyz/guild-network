@@ -1,7 +1,7 @@
 use crate::common::*;
 use ethers::signers::Signer as EthSigner;
 use gn_client::{query, tx::Signer, Api};
-use gn_common::identities::Identity;
+use gn_common::identity::Identity;
 use gn_test_data::*;
 use std::sync::Arc;
 
@@ -38,11 +38,14 @@ pub async fn join(api: Api, alice: Arc<Signer>) {
                     .await
                     .expect("failed to fetch individual identity");
 
-                let expected = &[
-                    Identity::EvmChain(accounts.eth.address().to_fixed_bytes()),
-                    Identity::Discord(i as u64),
-                ];
-                assert_eq!(user_identities.get(id).unwrap(), expected);
+                let eth_address = accounts.eth.address().to_fixed_bytes();
+                let expected = vec![
+                    (0, Identity::Address20(eth_address)),
+                    (1, Identity::Other(discord_id(i as u64))),
+                ]
+                .into_iter()
+                .collect();
+                assert_eq!(user_identities.get(id).unwrap(), &expected);
                 assert_eq!(user_identity, expected);
             }
             println!("USER IDENTITIES MATCH");

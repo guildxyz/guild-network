@@ -1,3 +1,7 @@
+pub use sp_core::ecdsa::Signature as EcdsaSignature;
+pub use sp_core::ed25519::Signature as Ed25519Signature;
+pub use sp_core::sr25519::Signature as Sr25519Signature;
+
 use crate::{Decode, Encode, TypeInfo};
 use ed25519_zebra::{Signature as EdSig, VerificationKey as EdKey};
 use schnorrkel::{PublicKey as SrKey, Signature as SrSig};
@@ -19,9 +23,9 @@ pub enum Identity {
 
 #[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Debug)]
 pub enum IdentityWithAuth {
-    Ecdsa(Identity, sp_core::ecdsa::Signature),
-    Ed25519(Identity, sp_core::ed25519::Signature),
-    Sr25519(Identity, sp_core::sr25519::Signature),
+    Ecdsa(Identity, EcdsaSignature),
+    Ed25519(Identity, Ed25519Signature),
+    Sr25519(Identity, Sr25519Signature),
     Other(Identity, [u8; 64]),
 }
 
@@ -93,7 +97,7 @@ impl From<&IdentityWithAuth> for Identity {
 
 pub fn recover_prehashed(
     message: [u8; 32],
-    signature: &sp_core::ecdsa::Signature,
+    signature: &EcdsaSignature,
 ) -> Option<secp256k1::PublicKey> {
     let rid = RecoveryId::from_i32(signature.0[64] as i32).ok()?;
     let sig = RecoverableSignature::from_compact(&signature.0[..64], rid).ok()?;
@@ -155,7 +159,7 @@ mod test {
         assert_eq!(&recovered_key.0, eth_pk.as_bytes());
 
         // check a signature generated via ethers
-        let sp_signature = sp_core::ecdsa::Signature::from_raw(eth_signature.try_into().unwrap());
+        let sp_signature = EcdsaSignature::from_raw(eth_signature.try_into().unwrap());
         let sp_address = Identity::Address20(eth_signer.address().to_fixed_bytes());
         let id_with_auth = IdentityWithAuth::Ecdsa(sp_address, sp_signature);
 
@@ -204,17 +208,17 @@ mod test {
     #[test]
     fn invalid_crypto_signatures() {
         let address = Identity::Address20([0u8; 20]);
-        let signature = sp_core::ed25519::Signature([0u8; 64]);
+        let signature = Ed25519Signature([0u8; 64]);
         let id_with_auth = IdentityWithAuth::Ed25519(address, signature);
         assert!(!id_with_auth.verify(""));
 
         let address = Identity::Address20([0u8; 20]);
-        let signature = sp_core::sr25519::Signature([0u8; 64]);
+        let signature = Sr25519Signature([0u8; 64]);
         let id_with_auth = IdentityWithAuth::Sr25519(address, signature);
         assert!(!id_with_auth.verify(""));
 
         let address = Identity::Address32([0u8; 32]);
-        let signature = sp_core::ecdsa::Signature([0u8; 65]);
+        let signature = EcdsaSignature([0u8; 65]);
         let id_with_auth = IdentityWithAuth::Ecdsa(address, signature);
         assert!(!id_with_auth.verify(""));
     }

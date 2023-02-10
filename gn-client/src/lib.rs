@@ -22,8 +22,28 @@ pub type Index = u32;
 pub type OracleRequest = runtime::oracle::events::OracleRequest;
 pub type Request = gn_common::Request<AccountId>;
 pub type RequestData = runtime::runtime_types::gn_common::RequestData<AccountId>;
-pub type RuntimeIdentity = runtime::runtime_types::gn_common::identities::Identity;
-pub type RuntimeIdentityWithAuth = runtime::runtime_types::gn_common::identities::IdentityWithAuth;
+pub type RuntimeIdentity = runtime::runtime_types::gn_common::identity::Identity;
+pub type RuntimeIdentityWithAuth = runtime::runtime_types::gn_common::identity::IdentityWithAuth;
 pub type SubxtError = subxt::Error;
 pub type TransactionProgress = subxt::tx::TxProgress<ClientConfig, Api>;
 pub type TransactionStatus = subxt::tx::TxStatus<ClientConfig, Api>;
+
+const PAD_BYTES: usize = 32;
+
+use gn_common::identity::{Identity, IdentityWithAuth};
+
+pub fn id_rt2canon(input: RuntimeIdentity) -> Identity {
+    unsafe { std::mem::transmute::<RuntimeIdentity, Identity>(input) }
+}
+
+pub fn id_canon2rt(input: Identity) -> RuntimeIdentity {
+    unsafe { std::mem::transmute::<Identity, RuntimeIdentity>(input) }
+}
+
+pub fn idwa_rt2canon(input: RuntimeIdentityWithAuth) -> IdentityWithAuth {
+    unsafe { std::mem::transmute::<RuntimeIdentityWithAuth, IdentityWithAuth>(input) }
+}
+
+pub fn idwa_canon2rt(input: IdentityWithAuth) -> RuntimeIdentityWithAuth {
+    unsafe { std::mem::transmute::<IdentityWithAuth, RuntimeIdentityWithAuth>(input) }
+}

@@ -3,16 +3,24 @@ use futures::future::try_join_all;
 use gn_client::data::*;
 #[cfg(not(feature = "external-oracle"))]
 use gn_client::query;
+use gn_client::runtime::runtime_types::sp_core::ecdsa::Signature as RuntimeEcdsaSignature;
 use gn_client::tx::{self, Keypair, PairT, Signer, TxStatus};
-use gn_client::{AccountId, Api, Hash, RuntimeIdentityWithAuth};
-use gn_common::requirements::{Requirement, RequirementsWithLogic};
-use gn_common::{EvmAddress, EvmSignature, GuildName, RoleName};
+use gn_client::{AccountId, Api, Hash, RuntimeIdentity, RuntimeIdentityWithAuth};
+use gn_common::pad::pad_to_n_bytes;
+use gn_common::requirements::{EvmAddress, Requirement, RequirementsWithLogic};
+use gn_common::{GuildName, RoleName};
 use gn_test_data::*;
 use rand::{rngs::StdRng, SeedableRng};
 use sp_keyring::AccountKeyring;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
+
+pub fn discord_id(i: u64) -> [u8; 64] {
+    let mut tmp = Vec::from(b"discord:".as_ref());
+    tmp.extend_from_slice(i.to_le_bytes().as_ref());
+    pad_to_n_bytes::<64, _>(tmp)
+}
 
 pub struct Accounts {
     pub substrate: Arc<Signer>,
@@ -175,19 +183,44 @@ pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {
         .await
         .expect("failed to sign messages");
 
-    let register_futures = signatures
+    let register_address_payloads = signatures
         .into_iter()
         .zip(users.iter())
+        .map(|(sig, (id, accounts))| {
+            let mut sig: [u8; 65] = dbg!(sig).to_vec().try_into().unwrap();
+            sig[64] -= 27; // due to eip-155 stuff in ethers
+            let id_with_auth = gn_common::identity::IdentityWithAuth::Ecdsa(
+                gn_common::identity::Identity::Address20(accounts.eth.address().to_fixed_bytes()),
+                gn_common::identity::EcdsaSignature(sig),
+            );
+            let msg = gn_common::utils::verification_msg(id);
+            assert!(id_with_auth.verify(msg));
+            let id_with_auth = RuntimeIdentityWithAuth::Ecdsa(
+                RuntimeIdentity::Address20(accounts.eth.address().to_fixed_bytes()),
+                RuntimeEcdsaSignature(sig),
+            );
+            tx::register(id_with_auth, 0)
+        })
+        .collect::<Vec<_>>();
+
+    let register_discord_payloads = users
+        .iter()
         .enumerate()
-        .map(|(i, (sig, (_, accounts)))| {
-            let tx_payload = tx::register(vec![
-                RuntimeIdentityWithAuth::EvmChain(
-                    accounts.eth.address().to_fixed_bytes(),
-                    // NOTE unwrap is fine because byte lengths always match
-                    EvmSignature::try_from(sig.to_vec()).unwrap(),
+        .map(|(i, _)| {
+            tx::register(
+                RuntimeIdentityWithAuth::Other(
+                    RuntimeIdentity::Other(discord_id(i as u64)),
+                    [0u8; 64],
                 ),
-                RuntimeIdentityWithAuth::Discord(i as u64, ()),
-            ]);
+                1,
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let register_futures = register_address_payloads
+        .into_iter()
+        .zip(users.iter())
+        .map(|(tx_payload, (_, accounts))| {
             tx::send_owned_tx(
                 api.clone(),
                 tx_payload,
@@ -201,7 +234,26 @@ pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {
         .await
         .expect("failed to register accounts");
 
-    println!("registrations successfully submitted");
+    println!("address registrations successfully submitted");
+
+    let register_futures = register_discord_payloads
+        .into_iter()
+        .zip(users.iter())
+        .map(|(tx_payload, (_, accounts))| {
+            tx::send_owned_tx(
+                api.clone(),
+                tx_payload,
+                Arc::clone(&accounts.substrate),
+                TxStatus::InBlock,
+            )
+        })
+        .collect::<Vec<_>>();
+
+    try_join_all(register_futures)
+        .await
+        .expect("failed to register discord");
+
+    println!("discord registrations successfully submitted");
 }
 
 async fn join_request_tx(

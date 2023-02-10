@@ -1,13 +1,14 @@
 #[cfg(not(feature = "external-oracle"))]
 use crate::common::*;
 use ethers::types::{Address, U256};
-use gn_client::data::{Guild, Role};
+use gn_client::runtime::runtime_types::sp_core::ecdsa::Signature as RuntimeEcdsaSignature;
 use gn_client::{
+    data::{Guild, Role},
     query,
     tx::{self, Signer},
-    Api, RuntimeIdentityWithAuth,
 };
-use gn_common::identities::Identity;
+use gn_client::{Api, RuntimeIdentity, RuntimeIdentityWithAuth};
+use gn_common::identity::Identity;
 use gn_common::requirements::balance::{Relation, RequiredBalance, TokenType};
 use gn_common::requirements::chains::EvmChain;
 use gn_common::requirements::{Requirement, RequirementsWithLogic};
@@ -30,7 +31,7 @@ const GNOSIS_ERC721_ID_1: &str = "5819774";
 pub async fn token(api: Api, alice: Arc<Signer>) {
     let mut signature = [0u8; 65];
     hex::decode_to_slice(
-"cfc5dd009163cc4d884946f0ccae5ea3a37794337b64cf5f076e6cd4c2af81a8727e044672704ce6026d6a440527943fccd9c044f7398c892c75090a1b0cadb71c", &mut  signature).expect("this should not fail");
+"cfc5dd009163cc4d884946f0ccae5ea3a37794337b64cf5f076e6cd4c2af81a8727e044672704ce6026d6a440527943fccd9c044f7398c892c75090a1b0cadb701", &mut  signature).expect("this should not fail");
     let mut address = [0u8; 20];
     hex::decode_to_slice("e43878ce78934fe8007748ff481f03b8ee3b97de", &mut address)
         .expect("this should not fail");
@@ -54,9 +55,13 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
     }
 
     // register alice with test evm address + signature
-    let evm_identity = RuntimeIdentityWithAuth::EvmChain(address, signature);
+    let evm_identity = RuntimeIdentityWithAuth::Ecdsa(
+        RuntimeIdentity::Address20(address),
+        RuntimeEcdsaSignature(signature),
+    );
 
-    let tx_payload = tx::register(vec![evm_identity]);
+    let index = 0;
+    let tx_payload = tx::register(evm_identity, index);
     tx::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
         .await
         .expect("failed to register");
@@ -69,7 +74,10 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
             .await
             .expect("failed to fetch user identities");
         if user_identity.len() == 1 {
-            assert_eq!(user_identity, &[Identity::EvmChain(address)]);
+            assert_eq!(
+                user_identity.get(&index),
+                Some(&Identity::Address20(address))
+            );
             break;
         }
     }

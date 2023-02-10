@@ -47,10 +47,11 @@ pub fn create_guild(guild: Guild) -> Result<impl TxPayload, serde_cbor::Error> {
         .create_guild(guild.name, guild.metadata, roles))
 }
 
-pub fn register(identities: Vec<RuntimeIdentityWithAuth>) -> impl TxPayload {
-    runtime::tx()
-        .guild()
-        .register(RequestData::Register(identities))
+pub fn register(identity_with_auth: RuntimeIdentityWithAuth, index: u8) -> impl TxPayload {
+    runtime::tx().guild().register(RequestData::Register {
+        identity_with_auth,
+        index,
+    })
 }
 
 pub fn manage_role(

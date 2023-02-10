@@ -1,5 +1,5 @@
 use super::*;
-use gn_common::identity::{eth_hash_message, eth_recover_prehashed};
+use gn_common::identity::{eth_hash_message, recover_prehashed};
 use sp_core::Pair as PairT;
 
 #[test]
@@ -126,7 +126,7 @@ fn successful_on_chain_registrations() {
         let sig_ristretto = keypair_ristretto.sign(msg.as_ref());
 
         // generate identities with auth
-        let ecdsa_pubkey = eth_recover_prehashed(eth_hash_message(&msg), &sig_ecdsa).unwrap();
+        let ecdsa_pubkey = recover_prehashed(eth_hash_message(&msg), &sig_ecdsa).unwrap();
         let ecdsa_address: [u8; 20] =
             sp_core::keccak_256(&ecdsa_pubkey.serialize_uncompressed()[1..])[12..]
                 .try_into()

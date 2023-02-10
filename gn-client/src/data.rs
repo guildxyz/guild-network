@@ -1,6 +1,6 @@
 use crate::runtime::runtime_types::pallet_guild::pallet::Guild as RuntimeGuildData;
-use crate::AccountId;
-use gn_common::pad::unpad_from_32_bytes;
+use crate::{AccountId, PAD_BYTES};
+use gn_common::pad::unpad_from_n_bytes;
 use gn_common::requirements::RequirementsWithLogic;
 use gn_common::{GuildName, RoleName};
 use serde::{Deserialize, Serialize};
@@ -29,14 +29,14 @@ pub struct GuildData {
 impl From<RuntimeGuildData<AccountId>> for GuildData {
     fn from(value: RuntimeGuildData<AccountId>) -> Self {
         Self {
-            name: unpad_from_32_bytes(&value.name),
+            name: unpad_from_n_bytes::<PAD_BYTES>(&value.name),
             owner: value.data.owner,
             metadata: value.data.metadata,
             roles: value
                 .data
                 .roles
                 .into_iter()
-                .map(|role| unpad_from_32_bytes(&role))
+                .map(|role| unpad_from_n_bytes::<PAD_BYTES>(&role))
                 .collect(),
         }
     }
@@ -45,8 +45,9 @@ impl From<RuntimeGuildData<AccountId>> for GuildData {
 #[cfg(test)]
 mod test {
     use super::*;
-    use gn_common::pad::pad_to_32_bytes;
-    use gn_common::{EvmAddress, U256};
+    use crate::PAD_BYTES;
+    use gn_common::pad::pad_to_n_bytes;
+    use gn_common::requirements::{EvmAddress, U256};
 
     fn address(num: u32) -> EvmAddress {
         let mut n = [0; 20];
@@ -115,7 +116,7 @@ mod test {
             .into_iter()
             .zip(logics.into_iter().zip(requirements.into_iter()))
             .map(|(name, (logic, requirements))| Role {
-                name: pad_to_32_bytes(name),
+                name: pad_to_n_bytes::<PAD_BYTES, _>(name),
                 reqs: RequirementsWithLogic {
                     logic: logic.to_string(),
                     requirements,
@@ -124,7 +125,7 @@ mod test {
             .collect();
 
         let guild = Guild {
-            name: pad_to_32_bytes(guild_name),
+            name: pad_to_n_bytes::<PAD_BYTES, _>(guild_name),
             metadata: vec![1, 2, 3],
             roles,
         };
