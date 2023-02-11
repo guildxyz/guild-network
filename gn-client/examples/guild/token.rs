@@ -36,7 +36,6 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
     signature[64] -= 27; // ethereum's eip-115 normalization stuff
     let mut address = [0u8; 20];
     hex::decode_to_slice(ADDRESS, &mut address).expect("this should not fail");
-    // TODO check with identity with auth
 
     #[cfg(not(feature = "external-oracle"))]
     let operators = prefunded_accounts(api.clone(), Arc::clone(&alice), N_TEST_ACCOUNTS).await;

@@ -5,6 +5,9 @@ use gn_common::identity::Identity;
 use gn_test_data::*;
 use std::sync::Arc;
 
+const RETRIES: u8 = 10;
+const SLEEP_DURATION_MS: u64 = 500;
+
 pub async fn join(api: Api, alice: Arc<Signer>) {
     let operators = prefunded_accounts(api.clone(), Arc::clone(&alice), N_TEST_ACCOUNTS).await;
 
@@ -28,29 +31,42 @@ pub async fn join(api: Api, alice: Arc<Signer>) {
     #[cfg(not(feature = "external-oracle"))]
     send_dummy_oracle_answers(api.clone(), &operators).await;
 
+    // wait for all transactions to be finalized
+    let mut i = 0;
     loop {
-        let user_identities = query::user_identities(api.clone(), PAGE_SIZE)
+        let oracle_requests = query::oracle_requests(api.clone(), PAGE_SIZE)
             .await
-            .expect("failed to fetch user identities");
-        if user_identities.len() == N_TEST_ACCOUNTS {
-            for (i, (id, accounts)) in operators.iter().enumerate() {
-                let user_identity = query::user_identity(api.clone(), id)
-                    .await
-                    .expect("failed to fetch individual identity");
-
-                let eth_address = accounts.eth.address().to_fixed_bytes();
-                let expected = vec![
-                    (0, Identity::Address20(eth_address)),
-                    (1, Identity::Other(discord_id(i as u64))),
-                ]
-                .into_iter()
-                .collect();
-                assert_eq!(user_identities.get(id).unwrap(), &expected);
-                assert_eq!(user_identity, expected);
+            .expect("failed to fetch oracle requests");
+        if oracle_requests.len() > 0 {
+            i += 1;
+            if i == RETRIES {
+                panic!("ran out of retries while checking oracle requests")
             }
-            println!("USER IDENTITIES MATCH");
+            tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
+        } else {
             break;
         }
+    }
+
+    let user_identities = query::user_identities(api.clone(), PAGE_SIZE)
+        .await
+        .expect("failed to fetch user identities");
+    assert_eq!(user_identities.len(), N_TEST_ACCOUNTS);
+    for (i, (id, accounts)) in operators.iter().enumerate() {
+        let user_identity = query::user_identity(api.clone(), id)
+            .await
+            .expect("failed to fetch individual identity");
+
+        let eth_address = accounts.eth.address().to_fixed_bytes();
+        let expected = vec![
+            (0, Identity::Address20(eth_address)),
+            (1, Identity::Other(discord_id(i as u64))),
+        ]
+        .into_iter()
+        .collect();
+
+        assert_eq!(user_identity, expected);
+        assert_eq!(user_identities.get(&id), Some(&expected));
     }
 
     create_dummy_guilds(api.clone(), alice, operators.values()).await;
