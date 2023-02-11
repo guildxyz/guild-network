@@ -4,16 +4,14 @@ version = "0.0.0-alpha"
 edition = "2021"
 
 [features]
-reqcheck = ["anyhow", "providers", "std"]
 default = ["std"]
+reqcheck = ["anyhow", "providers", "std"]
 std = [
     "ed25519-zebra/std",
     "parity-scale-codec/std",
     "scale-info/std",
     "schnorrkel/std",
-    "serde",
-    "sp-core/std",
-    "sp-io/std",
+    "sha3/std",
 ]
 
 [dependencies]
@@ -28,12 +26,15 @@ parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
 schnorrkel = { version = "0.9.1", default-features = false, features = ["u64_backend"] }
 secp256k1 = { version = "0.26.0", default-features = false, features = ["alloc", "recovery"] }
-serde = { version = "1.0.144", default-features = false, features = ["derive"], optional = true }
-
-# substrate primitives
-sp-core = { workspace = true }
-sp-io = { workspace = true }
+serde = { version = "1.0.144", default-features = false, features = ["derive"] }
+sha3 = { version = "0.10.6", default-features = false }
 
 [dev-dependencies]
+# general
+async-trait = { version = "0.1.57", default-features = false }
 ethers = "1.0.2"
+serde_test = "1"
 tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
+
+# substrate primitives
+sp-core = { workspace = true, features = ["std"] }

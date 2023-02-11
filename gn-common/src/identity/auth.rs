@@ -1,7 +1,4 @@
-pub use sp_core::ecdsa::Signature as EcdsaSignature;
-pub use sp_core::ed25519::Signature as Ed25519Signature;
-pub use sp_core::sr25519::Signature as Sr25519Signature;
-
+use super::Identity;
 use crate::{Decode, Encode, TypeInfo};
 use ed25519_zebra::{Signature as EdSig, VerificationKey as EdKey};
 use schnorrkel::{PublicKey as SrKey, Signature as SrSig};
@@ -9,19 +6,19 @@ use secp256k1::{
     ecdsa::{RecoverableSignature, RecoveryId},
     Message, Secp256k1,
 };
-use sp_io::hashing::keccak_256;
+use sha3::Digest;
 
-pub const ETHEREUM_HASH_PREFIX: &str = "\x19Ethereum Signed Message:\n";
-pub const SR_SIGNING_CTX: &[u8] = b"substrate";
+const ETHEREUM_HASH_PREFIX: &str = "\x19Ethereum Signed Message:\n";
+const SR_SIGNING_CTX: &[u8] = b"substrate";
 
 #[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Copy, Debug)]
-pub enum Identity {
-    Address20([u8; 20]),
-    Address32([u8; 32]),
-    Other([u8; 64]),
-}
+pub struct EcdsaSignature(pub [u8; 65]);
+#[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Copy, Debug)]
+pub struct Ed25519Signature(pub [u8; 64]);
+#[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Copy, Debug)]
+pub struct Sr25519Signature(pub [u8; 64]);
 
-#[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Copy, Debug)]
 pub enum IdentityWithAuth {
     Ecdsa(Identity, EcdsaSignature),
     Ed25519(Identity, Ed25519Signature),
@@ -41,7 +38,18 @@ impl IdentityWithAuth {
 
                 let serialized_pk = recovered_pk.serialize_uncompressed();
                 debug_assert_eq!(serialized_pk[0], 0x04);
-                &keccak_256(&serialized_pk[1..])[12..] == address
+                &keccak256(&serialized_pk[1..])[12..] == address
+            }
+            // generic ecdsa - only works with prehashed messages because
+            // everyone might choose different hashing algorithms
+            Self::Ecdsa(Identity::Address32(address), sig) => {
+                let Ok(prehashed_msg) = msg.as_ref().try_into() else {
+                    return false
+                };
+                let Some(recovered_pk) = recover_prehashed(prehashed_msg,  sig) else {
+                    return false
+                };
+                &recovered_pk.serialize()[1..] == address
             }
             Self::Ed25519(Identity::Address32(pubkey), sig) => {
                 let Ok(ed_key) = EdKey::try_from(pubkey.as_ref()) else {
@@ -73,28 +81,6 @@ impl IdentityWithAuth {
     }
 }
 
-impl From<IdentityWithAuth> for Identity {
-    fn from(id_with_auth: IdentityWithAuth) -> Self {
-        match id_with_auth {
-            IdentityWithAuth::Ecdsa(id, _) => id,
-            IdentityWithAuth::Ed25519(id, _) => id,
-            IdentityWithAuth::Sr25519(id, _) => id,
-            IdentityWithAuth::Other(id, _) => id,
-        }
-    }
-}
-
-impl From<&IdentityWithAuth> for Identity {
-    fn from(id_with_auth: &IdentityWithAuth) -> Self {
-        match id_with_auth {
-            IdentityWithAuth::Ecdsa(id, _) => *id,
-            IdentityWithAuth::Ed25519(id, _) => *id,
-            IdentityWithAuth::Sr25519(id, _) => *id,
-            IdentityWithAuth::Other(id, _) => *id,
-        }
-    }
-}
-
 pub fn recover_prehashed(
     message: [u8; 32],
     signature: &EcdsaSignature,
@@ -108,12 +94,20 @@ pub fn recover_prehashed(
         .ok()
 }
 
+pub fn keccak256<T: AsRef<[u8]>>(input: T) -> [u8; 32] {
+    let mut output = [0u8; 32];
+    let mut hasher = sha3::Keccak256::new();
+    hasher.update(input.as_ref());
+    hasher.finalize_into((&mut output).into());
+    output
+}
+
 pub fn eth_hash_message<M: AsRef<[u8]>>(message: M) -> [u8; 32] {
     let mut eth_message =
         scale_info::prelude::format!("{ETHEREUM_HASH_PREFIX}{}", message.as_ref().len())
             .into_bytes();
     eth_message.extend_from_slice(message.as_ref());
-    keccak_256(&eth_message)
+    keccak256(&eth_message)
 }
 
 #[cfg(test)]
@@ -159,12 +153,35 @@ mod test {
         assert_eq!(&recovered_key.0, eth_pk.as_bytes());
 
         // check a signature generated via ethers
-        let sp_signature = EcdsaSignature::from_raw(eth_signature.try_into().unwrap());
+        let sp_signature = EcdsaSignature(eth_signature.try_into().unwrap());
         let sp_address = Identity::Address20(eth_signer.address().to_fixed_bytes());
         let id_with_auth = IdentityWithAuth::Ecdsa(sp_address, sp_signature);
 
         assert!(id_with_auth.verify(&msg));
         assert!(!id_with_auth.verify(b"wrong msg"))
+    }
+
+    #[tokio::test]
+    async fn prehashed_ecdsa() {
+        // signer
+        let seed = [2u8; 32];
+        let signer = sp_core::ecdsa::Pair::from_seed_slice(&seed).unwrap();
+
+        // prehashed msg
+        let msg = verification_msg(TEST_ACCOUNT);
+        let mut prehashed_msg = [0u8; 32];
+        let mut hasher = sha3::Sha3_256::new();
+        hasher.update(&msg);
+        hasher.finalize_into((&mut prehashed_msg).into());
+
+        // signature
+        let signature = EcdsaSignature(signer.sign_prehashed(&prehashed_msg).0);
+        let id = Identity::Address32(signer.public().0[1..].try_into().unwrap());
+        let id_with_auth = IdentityWithAuth::Ecdsa(id, signature);
+
+        assert!(id_with_auth.verify(prehashed_msg));
+        // doesn't work with the original msg
+        assert!(!id_with_auth.verify(msg));
     }
 
     #[test]
@@ -173,7 +190,7 @@ mod test {
         let seed = [2u8; 32];
         let signer = sp_core::ed25519::Pair::from_seed_slice(&seed).unwrap();
 
-        let signature = signer.sign(msg.as_ref());
+        let signature = Ed25519Signature(signer.sign(msg.as_ref()).0);
         let address = Identity::Address32(signer.public().0);
         let id_with_auth = IdentityWithAuth::Ed25519(address, signature);
 
@@ -187,7 +204,7 @@ mod test {
         let seed = [2u8; 32];
         let signer = sp_core::sr25519::Pair::from_seed_slice(&seed).unwrap();
 
-        let signature = signer.sign(msg.as_ref());
+        let signature = Sr25519Signature(signer.sign(msg.as_ref()).0);
         let address = Identity::Address32(signer.public().0);
         let id_with_auth = IdentityWithAuth::Sr25519(address, signature);
 

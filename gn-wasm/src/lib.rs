@@ -5,7 +5,7 @@
 use gn_client::data::Guild;
 use gn_client::query::{self, GuildFilter};
 use gn_client::{AccountId, Api};
-use gn_common::{pad::pad_to_32_bytes, utils, GuildName};
+use gn_common::{pad::pad_to_n_bytes, utils, GuildName};
 pub use serde_cbor::to_vec as cbor_serialize;
 use serde_wasm_bindgen::{from_value as deserialize_from_value, to_value as serialize_to_value};
 use wasm_bindgen::prelude::*;
@@ -21,9 +21,9 @@ pub async fn query_members(guild: String, role: String, url: String) -> Result<J
     let mut guild_filter: Option<GuildFilter> = None;
 
     if !guild.is_empty() && guild.len() < 32 {
-        let guild_name = pad_to_32_bytes(&guild);
+        let guild_name = pad_to_n_bytes::<32, _>(&guild);
         let role_name = if !role.is_empty() && role.len() < 32 {
-            Some(pad_to_32_bytes(&role))
+            Some(pad_to_n_bytes::<32, _>(&role))
         } else {
             None
         };
@@ -49,7 +49,7 @@ pub async fn query_guilds(guild: String, url: String) -> Result<JsValue, JsValue
 
     let mut guild_name: Option<GuildName> = None;
     if !guild.is_empty() && guild.len() < 32 {
-        guild_name = Some(pad_to_32_bytes(&guild));
+        guild_name = Some(pad_to_n_bytes::<32, _>(&guild));
     }
 
     let guilds = query::guilds(api, guild_name, 10)
@@ -72,8 +72,8 @@ pub async fn query_requirements(
     if guild.len() > 32 || role.len() > 32 {
         Err(JsValue::from("too long input name"))
     } else {
-        let guild_name = pad_to_32_bytes(&guild);
-        let role_name = pad_to_32_bytes(&role);
+        let guild_name = pad_to_n_bytes::<32, _>(&guild);
+        let role_name = pad_to_n_bytes::<32, _>(&role);
 
         let requirements = query::requirements(api, guild_name, role_name)
             .await
@@ -146,8 +146,10 @@ mod test {
     #[cfg(feature = "queries")]
     mod queries {
         use super::*;
-        use gn_common::identities::Identity;
+        use gn_common::identity::Identity;
         use serde_wasm_bindgen::from_value as deserialize_from_value;
+
+        use std::collections::BTreeMap;
 
         #[wasm_bindgen_test]
         async fn test_query_members() {
@@ -202,13 +204,11 @@ mod test {
                 .await
                 .unwrap();
 
-            let identities: Vec<Identity> = deserialize_from_value(identities_js).unwrap();
+            let identities: BTreeMap<u8, Identity> = deserialize_from_value(identities_js).unwrap_or_default();
 
             assert_eq!(identities.len(), 2);
-            match identities[1] {
-                Identity::Discord(id) => assert!(id < 10),
-                _ => panic!("identity mismatch"),
-            }
+            assert_eq!(identities.get(&0), Some(&Identity::Address20([0u8; 20])));
+            assert_eq!(identities.get(&1), Some(&Identity::Other([0u8; 64])));
         }
     }
 }

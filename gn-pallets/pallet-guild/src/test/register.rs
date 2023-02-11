@@ -1,5 +1,5 @@
 use super::*;
-use gn_common::identity::{eth_hash_message, recover_prehashed};
+use gn_common::identity::*;
 use sp_core::Pair as PairT;
 
 #[test]
@@ -52,7 +52,7 @@ fn unsuccessful_registrations() {
                     RequestData::Register {
                         identity_with_auth: IdentityWithAuth::Ecdsa(
                             Identity::Address20([0u8; 20]),
-                            sp_core::ecdsa::Signature([0u8; 65]),
+                            EcdsaSignature([0u8; 65]),
                         ),
                         index: <TestRuntime as pallet_guild::Config>::MaxIdentities::get() - 1,
                     },
@@ -65,7 +65,7 @@ fn unsuccessful_registrations() {
                     RequestData::Register {
                         identity_with_auth: IdentityWithAuth::Ecdsa(
                             Identity::Address32([0u8; 32]),
-                            sp_core::ecdsa::Signature([0u8; 65]),
+                            EcdsaSignature([0u8; 65]),
                         ),
                         index: 0,
                     },
@@ -78,7 +78,7 @@ fn unsuccessful_registrations() {
                     RequestData::Register {
                         identity_with_auth: IdentityWithAuth::Ed25519(
                             Identity::Address32([1u8; 32]),
-                            sp_core::ed25519::Signature([0u8; 64]),
+                            Ed25519Signature([0u8; 64]),
                         ),
                         index: 1,
                     },
@@ -91,7 +91,7 @@ fn unsuccessful_registrations() {
                     RequestData::Register {
                         identity_with_auth: IdentityWithAuth::Sr25519(
                             Identity::Address32([1u8; 32]),
-                            sp_core::sr25519::Signature([0u8; 64]),
+                            Sr25519Signature([0u8; 64]),
                         ),
                         index: <TestRuntime as pallet_guild::Config>::MaxIdentities::get() - 1,
                     },
@@ -121,9 +121,9 @@ fn successful_on_chain_registrations() {
 
         // sign message
         let msg = gn_common::utils::verification_msg(user);
-        let sig_ecdsa = keypair_ecdsa.sign(msg.as_ref());
-        let sig_edwards = keypair_edwards.sign(msg.as_ref());
-        let sig_ristretto = keypair_ristretto.sign(msg.as_ref());
+        let sig_ecdsa = EcdsaSignature(keypair_ecdsa.sign(msg.as_ref()).0);
+        let sig_edwards = Ed25519Signature(keypair_edwards.sign(msg.as_ref()).0);
+        let sig_ristretto = Sr25519Signature(keypair_ristretto.sign(msg.as_ref()).0);
 
         // generate identities with auth
         let ecdsa_pubkey = recover_prehashed(eth_hash_message(&msg), &sig_ecdsa).unwrap();
@@ -253,7 +253,7 @@ fn successful_idenity_overrides() {
         let seed = [12u8; 32];
         let msg = gn_common::utils::verification_msg(user);
         let keypair_edwards = sp_core::ed25519::Pair::from_seed_slice(&seed).unwrap();
-        let sig_edwards = keypair_edwards.sign(msg.as_ref());
+        let sig_edwards = Ed25519Signature(keypair_edwards.sign(msg.as_ref()).0);
         let id_edwards = Identity::Address32(keypair_edwards.public().0);
         let id_zero = Identity::Other([0u8; 64]);
         let id_one = Identity::Other([1u8; 64]);

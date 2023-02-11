@@ -6,7 +6,6 @@ use gn_client::query;
 use gn_client::runtime::runtime_types::sp_core::ecdsa::Signature as RuntimeEcdsaSignature;
 use gn_client::tx::{self, Keypair, PairT, Signer, TxStatus};
 use gn_client::{AccountId, Api, Hash, RuntimeIdentity, RuntimeIdentityWithAuth};
-use gn_common::pad::pad_to_n_bytes;
 use gn_common::requirements::{EvmAddress, Requirement, RequirementsWithLogic};
 use gn_common::{GuildName, RoleName};
 use gn_test_data::*;
@@ -15,12 +14,6 @@ use sp_keyring::AccountKeyring;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
-
-pub fn discord_id(i: u64) -> [u8; 64] {
-    let mut tmp = Vec::from(b"discord:".as_ref());
-    tmp.extend_from_slice(i.to_le_bytes().as_ref());
-    pad_to_n_bytes::<64, _>(tmp)
-}
 
 pub struct Accounts {
     pub substrate: Arc<Signer>,
@@ -203,7 +196,7 @@ pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {
         .map(|(i, _)| {
             tx::register(
                 RuntimeIdentityWithAuth::Other(
-                    RuntimeIdentity::Other(discord_id(i as u64)),
+                    RuntimeIdentity::Other(gn_common::pad::padded_id(b"discord:", i as u64)),
                     [0u8; 64],
                 ),
                 1,

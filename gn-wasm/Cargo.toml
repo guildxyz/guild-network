@@ -12,7 +12,7 @@ queries = []
 [dependencies]
 # local
 gn-client = { version = "0.0.0-alpha", path = "../gn-client", default-features = false, features = ["wasm"] }
-gn-common = { version = "0.0.0-alpha", path = "../gn-common" }
+gn-common = { version = "0.0.0-alpha", path = "../gn-common", default-features = false }
 
 # general
 serde-wasm-bindgen = "0.4.5"

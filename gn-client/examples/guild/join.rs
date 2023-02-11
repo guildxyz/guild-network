@@ -2,6 +2,7 @@ use crate::common::*;
 use ethers::signers::Signer as EthSigner;
 use gn_client::{query, tx::Signer, Api};
 use gn_common::identity::Identity;
+use gn_common::pad::padded_id;
 use gn_test_data::*;
 use std::sync::Arc;
 
@@ -37,7 +38,7 @@ pub async fn join(api: Api, alice: Arc<Signer>) {
         let oracle_requests = query::oracle_requests(api.clone(), PAGE_SIZE)
             .await
             .expect("failed to fetch oracle requests");
-        if oracle_requests.len() > 0 {
+        if !oracle_requests.is_empty() {
             i += 1;
             if i == RETRIES {
                 panic!("ran out of retries while checking oracle requests")
@@ -60,13 +61,13 @@ pub async fn join(api: Api, alice: Arc<Signer>) {
         let eth_address = accounts.eth.address().to_fixed_bytes();
         let expected = vec![
             (0, Identity::Address20(eth_address)),
-            (1, Identity::Other(discord_id(i as u64))),
+            (1, Identity::Other(padded_id(b"discord:", i as u64))),
         ]
         .into_iter()
         .collect();
 
         assert_eq!(user_identity, expected);
-        assert_eq!(user_identities.get(&id), Some(&expected));
+        assert_eq!(user_identities.get(id), Some(&expected));
     }
 
     create_dummy_guilds(api.clone(), alice, operators.values()).await;

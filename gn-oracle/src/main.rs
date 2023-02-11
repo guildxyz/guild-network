@@ -184,7 +184,7 @@ async fn try_submit_answer(
                 let requirement_futures = requirements_with_logic
                     .requirements
                     .iter()
-                    .map(|req| req.check(&address))
+                    .map(|req| req.check(address))
                     .collect::<Vec<_>>();
                 match futures::future::try_join_all(requirement_futures).await {
                     Ok(boolean_vec) => {

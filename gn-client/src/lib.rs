@@ -30,7 +30,7 @@ pub type TransactionStatus = subxt::tx::TxStatus<ClientConfig, Api>;
 
 const PAD_BYTES: usize = 32;
 
-use gn_common::identity::{Identity, IdentityWithAuth};
+use gn_common::identity::Identity;
 
 pub fn id_rt2canon(input: RuntimeIdentity) -> Identity {
     unsafe { std::mem::transmute::<RuntimeIdentity, Identity>(input) }
@@ -38,12 +38,4 @@ pub fn id_rt2canon(input: RuntimeIdentity) -> Identity {
 
 pub fn id_canon2rt(input: Identity) -> RuntimeIdentity {
     unsafe { std::mem::transmute::<Identity, RuntimeIdentity>(input) }
-}
-
-pub fn idwa_rt2canon(input: RuntimeIdentityWithAuth) -> IdentityWithAuth {
-    unsafe { std::mem::transmute::<RuntimeIdentityWithAuth, IdentityWithAuth>(input) }
-}
-
-pub fn idwa_canon2rt(input: IdentityWithAuth) -> RuntimeIdentityWithAuth {
-    unsafe { std::mem::transmute::<IdentityWithAuth, RuntimeIdentityWithAuth>(input) }
 }
