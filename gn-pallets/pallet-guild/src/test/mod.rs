@@ -109,18 +109,40 @@ fn callback_can_only_be_called_by_root() {
     new_test_ext().execute_with(|| {
         init_chain();
 
-        let no_access = dummy_answer(
+        let register_no_access = dummy_answer(
             vec![u8::from(false)],
-            1,
+            0,
             RequestData::Register {
                 identity_with_auth: IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]),
                 index: 0,
             },
         )
         .encode();
-        let access = dummy_answer(
+
+        let register_access = dummy_answer(
             vec![u8::from(true)],
+            1,
+            RequestData::Register {
+                identity_with_auth: IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]),
+                index: <TestRuntime as pallet_guild::Config>::MaxIdentities::get(),
+            },
+        )
+        .encode();
+
+        let reqcheck_no_access = dummy_answer(
+            vec![u8::from(false)],
             2,
+            RequestData::ReqCheck {
+                account: 1,
+                guild: [0; 32],
+                role: [1; 32],
+            },
+        )
+        .encode();
+
+        let reqcheck_access = dummy_answer(
+            vec![u8::from(true)],
+            3,
             RequestData::ReqCheck {
                 account: 1,
                 guild: [0; 32],
@@ -139,11 +161,19 @@ fn callback_can_only_be_called_by_root() {
                 "CodecError",
             ),
             (
-                <Guild>::callback(RuntimeOrigin::root(), no_access),
+                <Guild>::callback(RuntimeOrigin::root(), register_no_access),
                 "AccessDenied",
             ),
             (
-                <Guild>::callback(RuntimeOrigin::root(), access),
+                <Guild>::callback(RuntimeOrigin::root(), register_access),
+                "MaxIdentitiesExceeded",
+            ),
+            (
+                <Guild>::callback(RuntimeOrigin::root(), reqcheck_no_access),
+                "GuildDoesNotExist", // sanity checks precede access check
+            ),
+            (
+                <Guild>::callback(RuntimeOrigin::root(), reqcheck_access),
                 "GuildDoesNotExist",
             ),
         ];

@@ -19,13 +19,12 @@ pub mod pallet {
     use frame_support::traits::Randomness;
     use frame_support::{
         dispatch::DispatchResult, pallet_prelude::*, sp_runtime::traits::UniqueSaturatedFrom,
-        traits::Currency,
+        traits::Currency, StorageDoubleMap as StorageDoubleMapT,
     };
     use frame_system::pallet_prelude::*;
     use gn_common::identity::{Identity, IdentityWithAuth};
     use gn_common::{GuildName, Request, RequestData, RequestIdentifier, RoleName};
     use pallet_oracle::{CallbackWithParameter, Config as OracleConfig, OracleAnswer};
-    use sp_std::collections::btree_map::BTreeMap;
     use sp_std::vec::Vec as SpVec;
 
     type BalanceOf<T> = <<T as OracleConfig>::Currency as Currency<
@@ -104,8 +103,15 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn user_data)]
-    pub type UserData<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::AccountId, BTreeMap<u8, Identity>, OptionQuery>;
+    pub type UserData<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        T::AccountId,
+        Blake2_128Concat,
+        u8,
+        Identity,
+        OptionQuery,
+    >;
 
     #[pallet::config]
     pub trait Config: OracleConfig<Callback = Call<Self>> + frame_system::Config {
@@ -170,7 +176,7 @@ pub mod pallet {
             };
 
             ensure!(
-                index < &T::MaxIdentities::get(),
+                *index < T::MaxIdentities::get(),
                 Error::<T>::MaxIdentitiesExceeded
             );
 
@@ -193,17 +199,11 @@ pub mod pallet {
                 id_with_auth => {
                     let msg = gn_common::utils::verification_msg(&requester);
                     if id_with_auth.verify(msg) {
-                        let identity = Identity::from(id_with_auth);
-                        if !UserData::<T>::contains_key(&requester) {
-                            let mut map = BTreeMap::new();
-                            map.insert(index, identity);
-                            UserData::<T>::insert(&requester, map);
-                        } else {
-                            UserData::<T>::mutate(&requester, |maybe_value| {
-                                let Some(value) = maybe_value else { return };
-                                value.insert(*index, identity);
-                            })
-                        }
+                        UserData::<T>::insert(
+                            &requester,
+                            index,
+                            Identity::from(identity_with_auth),
+                        );
                         Self::deposit_event(Event::IdRegistered(requester, *index));
                     } else {
                         return Err(Error::<T>::AccessDenied.into());
@@ -376,17 +376,15 @@ pub mod pallet {
                     index,
                 } => {
                     ensure!(access, Error::<T>::AccessDenied);
-                    let identity = Identity::from(identity_with_auth);
-                    if !UserData::<T>::contains_key(&request.requester) {
-                        let mut map = BTreeMap::new();
-                        map.insert(index, identity);
-                        UserData::<T>::insert(&request.requester, map);
-                    } else {
-                        UserData::<T>::mutate(&request.requester, |maybe_value| {
-                            let Some(value) = maybe_value else { return };
-                            value.insert(index, identity);
-                        })
-                    }
+                    ensure!(
+                        index < T::MaxIdentities::get(),
+                        Error::<T>::MaxIdentitiesExceeded
+                    );
+                    UserData::<T>::insert(
+                        &request.requester,
+                        index,
+                        Identity::from(identity_with_auth),
+                    );
                     Self::deposit_event(Event::IdRegistered(request.requester, index));
                 }
             }
@@ -406,7 +404,7 @@ pub mod pallet {
 
             // check the requester is registered
             ensure!(
-                <UserData<T>>::contains_key(account),
+                <UserData<T>>::contains_prefix(account),
                 Error::<T>::UserNotRegistered
             );
 

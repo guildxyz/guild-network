@@ -147,6 +147,7 @@ fn storage_checks() {
         let g2r2_id = <Guild>::role_id(guild_id, ROLE_2).unwrap();
         let g2r3_id = <Guild>::role_id(guild_id, ROLE_3).unwrap();
 
+        let index = 0;
         let mut request_id = 0;
 
         // register a single operator
@@ -154,11 +155,11 @@ fn storage_checks() {
         // register both users to guild
         <Guild>::register(RuntimeOrigin::signed(signer_1), RequestData::Register {
             identity_with_auth: IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]),
-            index: 0,
+            index,
         }).unwrap();
         <Guild>::register(RuntimeOrigin::signed(signer_2), RequestData::Register {
             identity_with_auth: IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]),
-            index: 0,
+            index,
         }).unwrap();
 
         // both register requests are accepted
@@ -166,8 +167,8 @@ fn storage_checks() {
         request_id += 1;
         <Oracle>::callback(RuntimeOrigin::signed(signer_1), request_id, vec![u8::from(true)]).unwrap();
         request_id += 1;
-        assert!(<Guild>::user_data(signer_1).is_some());
-        assert!(<Guild>::user_data(signer_2).is_some());
+        assert!(<Guild>::user_data(signer_1, index).is_some());
+        assert!(<Guild>::user_data(signer_2, index).is_some());
 
         // assign some roles to signer_1
         <Guild>::manage_role(RuntimeOrigin::signed(signer_1), RequestData::ReqCheck { account: signer_1, guild: guild_1, role: ROLE_1 }).unwrap();

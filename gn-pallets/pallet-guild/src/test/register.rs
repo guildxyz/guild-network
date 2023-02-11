@@ -152,8 +152,8 @@ fn successful_on_chain_registrations() {
         .unwrap();
         assert_eq!(last_event(), GuildEvent::IdRegistered(user, index));
         assert_eq!(
-            <Guild>::user_data(user).unwrap().get(&index),
-            Some(&Identity::Address20(ecdsa_address))
+            <Guild>::user_data(user, index),
+            Some(Identity::Address20(ecdsa_address))
         );
         index += 1;
         <Guild>::register(
@@ -166,8 +166,8 @@ fn successful_on_chain_registrations() {
         .unwrap();
         assert_eq!(last_event(), GuildEvent::IdRegistered(user, index));
         assert_eq!(
-            <Guild>::user_data(user).unwrap().get(&index),
-            Some(&Identity::Address32(keypair_edwards.public().0))
+            <Guild>::user_data(user, index),
+            Some(Identity::Address32(keypair_edwards.public().0))
         );
         index += 1;
         <Guild>::register(
@@ -179,12 +179,10 @@ fn successful_on_chain_registrations() {
         )
         .unwrap();
         assert_eq!(
-            <Guild>::user_data(user).unwrap().get(&index),
-            Some(&Identity::Address32(keypair_ristretto.public().0))
+            <Guild>::user_data(user, index),
+            Some(Identity::Address32(keypair_ristretto.public().0))
         );
         assert_eq!(last_event(), GuildEvent::IdRegistered(user, index));
-        index += 1;
-        assert_eq!(<Guild>::user_data(user).unwrap().len(), usize::from(index));
     });
 }
 
@@ -210,10 +208,7 @@ fn successful_off_chain_registrations() {
         // pallet receives a dummy oracle answer
         let answer = dummy_answer(vec![u8::from(true)], user, request_data);
         <Guild>::callback(RuntimeOrigin::root(), answer.encode()).unwrap();
-        assert_eq!(
-            <Guild>::user_data(user).unwrap().get(&index),
-            Some(&id_zero)
-        );
+        assert_eq!(<Guild>::user_data(user, index), Some(id_zero));
         assert_eq!(last_event(), GuildEvent::IdRegistered(user, index));
         // user overrides previous id that requires off-chain verification
         let request_data = RequestData::Register {
@@ -224,8 +219,7 @@ fn successful_off_chain_registrations() {
         // pallet receives a dummy oracle answer
         let answer = dummy_answer(vec![u8::from(true)], user, request_data);
         <Guild>::callback(RuntimeOrigin::root(), answer.encode()).unwrap();
-        assert_eq!(<Guild>::user_data(user).unwrap().get(&index), Some(&id_one));
-        assert_eq!(<Guild>::user_data(user).unwrap().len(), 1);
+        assert_eq!(<Guild>::user_data(user, index), Some(id_one));
         assert_eq!(last_event(), GuildEvent::IdRegistered(user, index));
         // user tries to override again
         let request_data = RequestData::Register {
@@ -239,8 +233,7 @@ fn successful_off_chain_registrations() {
             error_msg(<Guild>::callback(RuntimeOrigin::root(), answer.encode()).unwrap_err()),
             "AccessDenied"
         );
-        assert_eq!(<Guild>::user_data(user).unwrap().get(&index), Some(&id_one));
-        assert_eq!(<Guild>::user_data(user).unwrap().len(), 1);
+        assert_eq!(<Guild>::user_data(user, index), Some(id_one));
     });
 }
 
@@ -269,38 +262,26 @@ fn successful_idenity_overrides() {
             index,
         };
         <Guild>::register(RuntimeOrigin::signed(user), request_data.clone()).unwrap();
-        assert!(<Guild>::user_data(user).is_none()); // no id registered yet
+        assert!(<Guild>::user_data(user, index).is_none()); // no id registered yet
         let answer = dummy_answer(vec![u8::from(true)], user, request_data);
         <Guild>::callback(RuntimeOrigin::root(), answer.encode()).unwrap();
-        assert_eq!(
-            <Guild>::user_data(user).unwrap().get(&index),
-            Some(&id_zero)
-        );
-        assert_eq!(<Guild>::user_data(user).unwrap().len(), 1);
+        assert_eq!(<Guild>::user_data(user, index), Some(id_zero));
         // user overrides an off-chain-verified identity with an on-chain id
         let request_data: RequestData<AccountId> = RequestData::Register {
             identity_with_auth: IdentityWithAuth::Ed25519(id_edwards, sig_edwards),
             index,
         };
         <Guild>::register(RuntimeOrigin::signed(user), request_data).unwrap();
-        assert_eq!(
-            <Guild>::user_data(user).unwrap().get(&index),
-            Some(&id_edwards)
-        );
-        assert_eq!(<Guild>::user_data(user).unwrap().len(), 1);
+        assert_eq!(<Guild>::user_data(user, index), Some(id_edwards));
         // user overrides an on-chain-verified identity with an off-chain id
         let request_data: RequestData<AccountId> = RequestData::Register {
             identity_with_auth: IdentityWithAuth::Other(id_one, auth),
             index,
         };
         <Guild>::register(RuntimeOrigin::signed(user), request_data.clone()).unwrap();
-        assert_eq!(
-            <Guild>::user_data(user).unwrap().get(&index),
-            Some(&id_edwards)
-        );
+        assert_eq!(<Guild>::user_data(user, index), Some(id_edwards));
         let answer = dummy_answer(vec![u8::from(true)], user, request_data);
         <Guild>::callback(RuntimeOrigin::root(), answer.encode()).unwrap();
-        assert_eq!(<Guild>::user_data(user).unwrap().get(&index), Some(&id_one));
-        assert_eq!(<Guild>::user_data(user).unwrap().len(), 1);
+        assert_eq!(<Guild>::user_data(user, index), Some(id_one));
     });
 }
