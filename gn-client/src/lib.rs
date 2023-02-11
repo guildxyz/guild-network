@@ -23,7 +23,8 @@ pub type OracleRequest = runtime::oracle::events::OracleRequest;
 pub type Request = gn_common::Request<AccountId>;
 pub type RequestData = runtime::runtime_types::gn_common::RequestData<AccountId>;
 pub type RuntimeIdentity = runtime::runtime_types::gn_common::identity::Identity;
-pub type RuntimeIdentityWithAuth = runtime::runtime_types::gn_common::identity::IdentityWithAuth;
+pub type RuntimeIdentityWithAuth =
+    runtime::runtime_types::gn_common::identity::auth::IdentityWithAuth;
 pub type SubxtError = subxt::Error;
 pub type TransactionProgress = subxt::tx::TxProgress<ClientConfig, Api>;
 pub type TransactionStatus = subxt::tx::TxStatus<ClientConfig, Api>;

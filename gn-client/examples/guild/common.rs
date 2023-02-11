@@ -3,7 +3,7 @@ use futures::future::try_join_all;
 use gn_client::data::*;
 #[cfg(not(feature = "external-oracle"))]
 use gn_client::query;
-use gn_client::runtime::runtime_types::sp_core::ecdsa::Signature as RuntimeEcdsaSignature;
+use gn_client::runtime::runtime_types::gn_common::identity::auth::EcdsaSignature as RuntimeEcdsaSignature;
 use gn_client::tx::{self, Keypair, PairT, Signer, TxStatus};
 use gn_client::{AccountId, Api, Hash, RuntimeIdentity, RuntimeIdentityWithAuth};
 use gn_common::requirements::{EvmAddress, Requirement, RequirementsWithLogic};

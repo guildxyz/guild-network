@@ -1,7 +1,7 @@
 #[cfg(not(feature = "external-oracle"))]
 use crate::common::*;
 use ethers::types::{Address, U256};
-use gn_client::runtime::runtime_types::sp_core::ecdsa::Signature as RuntimeEcdsaSignature;
+use gn_client::runtime::runtime_types::gn_common::identity::auth::EcdsaSignature as RuntimeEcdsaSignature;
 use gn_client::{
     data::{Guild, Role},
     query,
@@ -76,7 +76,7 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
             .expect("failed to fetch user identities");
         if user_identity.len() == 1 {
             assert_eq!(
-                user_identity.get(&index),
+                user_identity.get(index as usize),
                 Some(&Identity::Address20(address))
             );
             break;

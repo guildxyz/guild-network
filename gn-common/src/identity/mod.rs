@@ -51,12 +51,12 @@ impl<'de> Deserialize<'de> for Identity {
     where
         D: Deserializer<'de>,
     {
-        let b = <&[u8]>::deserialize(deserializer)?;
+        let b = <serde_bytes::ByteBuf>::deserialize(deserializer)?;
         // NOTE unwraps are fine because we check the array's length
         match b.len() {
-            20 => Ok(Identity::Address20(b.try_into().unwrap())),
-            32 => Ok(Identity::Address32(b.try_into().unwrap())),
-            64 => Ok(Identity::Other(b.try_into().unwrap())),
+            20 => Ok(Identity::Address20(b.as_ref().try_into().unwrap())),
+            32 => Ok(Identity::Address32(b.as_ref().try_into().unwrap())),
+            64 => Ok(Identity::Other(b.as_ref().try_into().unwrap())),
             _ => Err(serde::de::Error::invalid_length(b.len(), &"20, 32 or 64")),
         }
     }
@@ -89,6 +89,9 @@ mod test {
             let id = Identity::$variant([0u8; $len]);
             let expected = Token::BorrowedBytes(&[0u8; $len]);
             assert_tokens(&id, &[expected]);
+
+            let serialized = serde_json::to_vec(&id).unwrap();
+            assert_eq!(serde_json::from_slice::<Identity>(&serialized).unwrap(), id);
         };
     }
 

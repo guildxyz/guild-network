@@ -1,6 +1,6 @@
 use crate::data::GuildData;
 use crate::{cbor_deserialize, runtime};
-use crate::{AccountId, Api, Hash, Request, RuntimeIdentity, SubxtError};
+use crate::{AccountId, Api, Hash, Request, SubxtError};
 use gn_common::identity::Identity;
 use gn_common::requirements::RequirementsWithLogic;
 use gn_common::{GuildName, RequestIdentifier, RoleName};
@@ -26,45 +26,20 @@ pub async fn registered_operators(api: Api) -> Result<Vec<AccountId>, SubxtError
         .unwrap_or_default())
 }
 
-pub async fn user_identities(
-    api: Api,
-    page_size: u32,
-) -> Result<BTreeMap<AccountId, BTreeMap<u8, Identity>>, SubxtError> {
-    let root = runtime::storage().guild().user_data_root();
-    let mut map = BTreeMap::new();
-    let mut iter = api.storage().at(None).await?.iter(root, page_size).await?;
-    while let Some((key, identities)) = iter.next().await? {
-        let identities = convert_identities(identities);
-        // NOTE unwrap is fine because we convert a 32 byte long slice
-        let id: [u8; 32] = key.0[48..80].try_into().unwrap();
-        let account_id = AccountId::from(id);
-        map.insert(account_id, identities);
-    }
-    Ok(map)
-}
-
-pub async fn user_identity(
-    api: Api,
-    user_id: &AccountId,
-) -> Result<BTreeMap<u8, Identity>, SubxtError> {
-    let key = runtime::storage().guild().user_data(user_id);
-    let identities = api
+pub async fn user_identity(api: Api, user_id: &AccountId) -> Result<Vec<Identity>, SubxtError> {
+    let mut i = 0u8;
+    let mut identities = Vec::new();
+    while let Some(identity) = api
         .storage()
         .at(None)
         .await?
-        .fetch(&key)
+        .fetch(&runtime::storage().guild().user_data(user_id, i))
         .await?
-        .unwrap_or_default();
-    Ok(convert_identities(identities))
-}
-
-fn convert_identities(identities: Vec<(u8, RuntimeIdentity)>) -> BTreeMap<u8, Identity> {
-    identities
-        .into_iter()
-        // NOTE safety: these are the same types defined at two different
-        // places by the subxt macro
-        .map(|(index, identity)| (index, crate::id_rt2canon(identity)))
-        .collect()
+    {
+        identities.push(crate::id_rt2canon(identity));
+        i += 1;
+    }
+    Ok(identities)
 }
 
 pub async fn members(

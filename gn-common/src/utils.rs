@@ -9,7 +9,6 @@ pub fn verification_msg<T: Encode>(id: T) -> SpString {
     )
 }
 
-#[cfg(feature = "std")]
 pub fn matches_variant<T>(a: &T, b: &T) -> bool {
-    std::mem::discriminant(a) == std::mem::discriminant(b)
+    core::mem::discriminant(a) == core::mem::discriminant(b)
 }

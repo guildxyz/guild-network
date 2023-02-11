@@ -175,9 +175,9 @@ async fn try_submit_answer(
             // build requireemnt tree from logic
             let requirement_tree = requiem::LogicTree::from_str(&requirements_with_logic.logic)
                 .map_err(|e| SubxtError::Other(e.to_string()))?;
-            let identity_map = query::user_identity(api.clone(), &account).await?;
-            let maybe_address = identity_map
-                .values()
+            let identities = query::user_identity(api.clone(), &account).await?;
+            let maybe_address = identities
+                .iter()
                 .find(|&x| matches_variant(x, &Identity::Address20([0u8; 20])));
 
             if let Some(address) = maybe_address {

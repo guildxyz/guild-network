@@ -120,6 +120,7 @@ pub async fn create_guild_encode_params(guild: JsValue) -> Result<JsValue, JsVal
 #[cfg(test)]
 mod test {
     use super::*;
+    use gn_common::utils::matches_variant;
     use gn_test_data::*;
     use wasm_bindgen_test::*;
 
@@ -148,8 +149,6 @@ mod test {
         use super::*;
         use gn_common::identity::Identity;
         use serde_wasm_bindgen::from_value as deserialize_from_value;
-
-        use std::collections::BTreeMap;
 
         #[wasm_bindgen_test]
         async fn test_query_members() {
@@ -204,11 +203,17 @@ mod test {
                 .await
                 .unwrap();
 
-            let identities: BTreeMap<u8, Identity> = deserialize_from_value(identities_js).unwrap_or_default();
+            let identities: Vec<Identity> = deserialize_from_value(identities_js).unwrap();
 
             assert_eq!(identities.len(), 2);
-            assert_eq!(identities.get(&0), Some(&Identity::Address20([0u8; 20])));
-            assert_eq!(identities.get(&1), Some(&Identity::Other([0u8; 64])));
+            assert!(matches_variant(
+                identities.get(0).unwrap(),
+                &Identity::Address20([0u8; 20])
+            ));
+            assert!(matches_variant(
+                identities.get(1).unwrap(),
+                &Identity::Other([0u8; 64])
+            ));
         }
     }
 }

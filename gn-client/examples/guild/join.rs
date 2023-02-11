@@ -49,10 +49,6 @@ pub async fn join(api: Api, alice: Arc<Signer>) {
         }
     }
 
-    let user_identities = query::user_identities(api.clone(), PAGE_SIZE)
-        .await
-        .expect("failed to fetch user identities");
-    assert_eq!(user_identities.len(), N_TEST_ACCOUNTS);
     for (i, (id, accounts)) in operators.iter().enumerate() {
         let user_identity = query::user_identity(api.clone(), id)
             .await
@@ -60,14 +56,11 @@ pub async fn join(api: Api, alice: Arc<Signer>) {
 
         let eth_address = accounts.eth.address().to_fixed_bytes();
         let expected = vec![
-            (0, Identity::Address20(eth_address)),
-            (1, Identity::Other(padded_id(b"discord:", i as u64))),
-        ]
-        .into_iter()
-        .collect();
+            Identity::Address20(eth_address),
+            Identity::Other(padded_id(b"discord:", i as u64)),
+        ];
 
         assert_eq!(user_identity, expected);
-        assert_eq!(user_identities.get(id), Some(&expected));
     }
 
     create_dummy_guilds(api.clone(), alice, operators.values()).await;
