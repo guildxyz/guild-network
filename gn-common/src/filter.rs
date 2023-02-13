@@ -1,4 +1,5 @@
 use crate::{GuildName, RoleName};
+use crate::identity::Identity;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 
@@ -16,17 +17,16 @@ pub enum Logic {
 
 #[derive(Encode, Decode, TypeInfo, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Filter<Root> {
-    Allowlist(Root, Logic),
+    Allowlist(Root, Logic, u32),
     Guild(Guild, Logic),
 }
 
-pub fn allowlist_filter<H, A>(allowlist: A, logic: Logic) -> Filter<H::Out>
+pub fn allowlist_filter<H>(allowlist: &[Identity], logic: Logic) -> Filter<H::Out>
 where
-    A: IntoIterator,
-    A::Item: AsRef<[u8]>,
     H: hash_db::Hasher,
     H::Out: PartialOrd,
 {
+    let length = allowlist.len();
     let root = merkle::merkle_root::<H, _>(allowlist);
-    Filter::Allowlist(root, logic)
+    Filter::Allowlist(root, logic, length as u32)
 }

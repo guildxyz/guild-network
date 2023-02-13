@@ -29,7 +29,7 @@ parameter_types! {
     pub const MaxIdentities: u8 = 3;
     pub const MaxRolesPerGuild: u32 = 10;
     pub const MaxReqsPerRole: u32 = 10;
-    pub const MaxSerializedReqLen: u32 = 10;
+    pub const MaxSerializedLen: u32 = 10;
     pub const ValidityPeriod: u64 = 10;
 }
 
@@ -76,7 +76,7 @@ impl pallet_guild::Config for TestRuntime {
     type MaxIdentities = MaxIdentities;
     type MaxRolesPerGuild = MaxRolesPerGuild;
     type MaxReqsPerRole = MaxReqsPerRole;
-    type MaxSerializedReqLen = MaxSerializedReqLen;
+    type MaxSerializedLen = MaxSerializedLen;
     type MyRandomness = RandomnessCollectiveFlip;
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();

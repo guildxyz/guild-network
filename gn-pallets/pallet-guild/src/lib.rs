@@ -25,11 +25,9 @@ pub mod pallet {
         StorageDoubleMap as StorageDoubleMapT,
     };
     use frame_system::pallet_prelude::*;
+    use gn_common::filter::Logic as FilterLogic;
     use gn_common::identity::{Identity, IdentityWithAuth};
-    use gn_common::{
-        Guild, GuildName, Request, RequestData, RequestIdentifier, RoleName, SerializedData,
-        SerializedRequirements,
-    };
+    use gn_common::*;
     use pallet_oracle::{CallbackWithParameter, Config as OracleConfig, OracleAnswer};
     use sp_std::vec::Vec as SpVec;
 
@@ -137,6 +135,7 @@ pub mod pallet {
         MaxRolesPerGuildExceeded,
         MaxReqsPerRoleExceeded,
         MaxSerializedLenExceeded,
+        MissingAllowlistProof,
     }
 
     #[pallet::pallet]
@@ -204,6 +203,7 @@ pub mod pallet {
             account: T::AccountId,
             guild_name: GuildName,
             role_name: RoleName,
+            proof: Option<MerkleProof<RootHash>>,
         ) -> DispatchResult {
             let requester = ensure_signed(origin.clone())?;
 
@@ -226,19 +226,100 @@ pub mod pallet {
                 // (true, false) user wants to get a role assigned
                 _ => {}
             }
-            let data = RequestData::ReqCheck {
-                account,
-                guild_name,
-                role_name,
-            };
-            let request = Request { requester, data };
-            let call: <T as OracleConfig>::Callback = Call::callback {
-                result: SpVec::new(),
-            };
-            let fee = BalanceOf::<T>::unique_saturated_from(<T as OracleConfig>::MinimumFee::get());
-            <pallet_oracle::Pallet<T>>::initiate_request(origin, call, request.encode(), fee)?;
 
-            Ok(())
+            // should not throw an error because we already checked
+            // role_id exists
+            let role_data = Roles::<T>::get(role_id).ok_or(Error::<T>::RoleDoesNotExist)?;
+            // check the onchain filter first
+            let (onchain_access, logic) = match role_data.filter {
+                Some(Filter::Guild(guild, logic)) => {
+                    let guild_id =
+                        Self::guild_id(guild.name).ok_or(Error::<T>::GuildDoesNotExist)?;
+                    let access = if let Some(parent_role_name) = guild.role {
+                        let role_id = Self::role_id(guild_id, parent_role_name)
+                            .ok_or(Error::<T>::RoleDoesNotExist)?;
+                        Self::member(role_id, &account).is_some()
+                    } else {
+                        let mut access = false;
+                        // not a very expensive computation if we allow a sensible amount (<30) of roles
+                        let guild = Self::guild(guild_id).ok_or(Error::<T>::GuildDoesNotExist)?;
+                        for role_name in guild.roles.iter() {
+                            let role_id = Self::role_id(guild_id, role_name)
+                                .ok_or(Error::<T>::RoleDoesNotExist)?;
+                            if Self::member(role_id, &account).is_some() {
+                                access = true;
+                                break;
+                            }
+                        }
+                        access
+                    };
+                    (access, logic)
+                }
+                Some(Filter::Allowlist(root, logic, n_leaves)) => {
+                    let Some(proof) = proof else {
+                        return Err(Error::<T>::MissingAllowlistProof.into())
+                    };
+                    let id = Self::user_data(&account, proof.id_index)
+                        .ok_or(Error::<T>::UserNotRegistered)?;
+                    let leaf = MerkleLeaf::Value(id.as_ref());
+                    let access = verify_merkle_proof::<'_, Keccak256, _, _>(
+                        &root,
+                        proof.path,
+                        n_leaves as usize,
+                        proof.leaf_index as usize,
+                        leaf,
+                    );
+                    (access, logic)
+                }
+                None => (true, FilterLogic::And),
+            };
+
+            match (onchain_access, logic, role_data.requirements.is_some()) {
+                // access is granted without the need for an oracle check if
+                // T || T
+                // T || F
+                // T && F
+                (true, FilterLogic::Or, _) | (true, _, false) => {
+                    Members::<T>::insert(role_id, &account, true);
+                    Self::deposit_event(Event::RoleAssigned(account, guild_name, role_name));
+                    Ok(())
+                }
+                // access is denied without the need of an oracle check if
+                // F && T
+                // F && F
+                // F || F
+                (false, FilterLogic::And, _) | (false, FilterLogic::Or, false) => {
+                    Err(Error::<T>::AccessDenied.into())
+                }
+                // else we need external oracle checks
+                // T && T
+                // F || T
+                (true, FilterLogic::And, true) | (false, FilterLogic::Or, true) => {
+                    let data = RequestData::ReqCheck {
+                        account,
+                        guild_name,
+                        role_name,
+                    };
+                    let request = Request { requester, data };
+                    let call: <T as OracleConfig>::Callback = Call::callback {
+                        result: SpVec::new(),
+                    };
+                    let fee = BalanceOf::<T>::unique_saturated_from(
+                        <T as OracleConfig>::MinimumFee::get(),
+                    );
+
+                    if role_data.requirements.is_some() {
+                        <pallet_oracle::Pallet<T>>::initiate_request(
+                            origin,
+                            call,
+                            request.encode(),
+                            fee,
+                        )?;
+                    }
+
+                    Ok(())
+                }
+            }
         }
 
         #[pallet::call_index(2)]
@@ -282,7 +363,8 @@ pub mod pallet {
             guild_name: GuildName,
             role_name: RoleName,
         ) -> DispatchResult {
-            Self::add_role(origin, guild_name, role_name, None, None)
+            Self::add_role(origin, guild_name, role_name, None, None)?;
+            Ok(())
         }
 
         #[pallet::call_index(4)]
@@ -295,10 +377,14 @@ pub mod pallet {
             filter_logic: gn_common::filter::Logic,
             requirements: Option<SerializedRequirements>,
         ) -> DispatchResult {
-            let filter =
-                gn_common::filter::allowlist_filter::<Keccak256, _>(&allowlist, filter_logic);
-            // TODO save to off-chain indexed storage
-            Self::add_role(origin, guild_name, role_name, Some(filter), requirements)
+            let filter = gn_common::filter::allowlist_filter::<Keccak256>(&allowlist, filter_logic);
+            let role_id =
+                Self::add_role(origin, guild_name, role_name, Some(filter), requirements)?;
+
+            let mut offchain_key = SpVec::from(gn_common::OFFCHAIN_ALLOWLIST_INDEX_PREFIX);
+            offchain_key.extend_from_slice(role_id.as_ref());
+            sp_io::offchain_index::set(&offchain_key, &allowlist.encode());
+            Ok(())
         }
 
         #[pallet::call_index(5)]
@@ -311,8 +397,14 @@ pub mod pallet {
             filter_logic: gn_common::filter::Logic,
             requirements: Option<SerializedRequirements>,
         ) -> DispatchResult {
+            let guild_id = Self::guild_id(filter.name).ok_or(Error::<T>::GuildDoesNotExist)?;
+            ensure!(
+                RoleIdMap::<T>::contains_key(guild_id, role_name),
+                Error::<T>::RoleDoesNotExist
+            );
             let filter = Filter::Guild(filter, filter_logic);
-            Self::add_role(origin, guild_name, role_name, Some(filter), requirements)
+            Self::add_role(origin, guild_name, role_name, Some(filter), requirements)?;
+            Ok(())
         }
 
         #[pallet::call_index(6)]
@@ -323,7 +415,8 @@ pub mod pallet {
             role_name: RoleName,
             requirements: SerializedRequirements,
         ) -> DispatchResult {
-            Self::add_role(origin, guild_name, role_name, None, Some(requirements))
+            Self::add_role(origin, guild_name, role_name, None, Some(requirements))?;
+            Ok(())
         }
 
         #[pallet::call_index(7)]
@@ -428,13 +521,30 @@ pub mod pallet {
             role_name: RoleName,
             filter: Option<Filter>,
             requirements: Option<SerializedRequirements>,
-        ) -> DispatchResult {
+        ) -> Result<T::Hash, DispatchError> {
             let signer = ensure_signed(origin)?;
             let guild_id = Self::guild_id(guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
             ensure!(
                 !RoleIdMap::<T>::contains_key(guild_id, role_name),
                 Error::<T>::RoleAlreadyExists
             );
+
+            if let Some((reqs, logic)) = requirements.as_ref() {
+                ensure!(
+                    reqs.len() < T::MaxReqsPerRole::get() as usize,
+                    Error::<T>::MaxReqsPerRoleExceeded
+                );
+                ensure!(
+                    logic.len() < T::MaxSerializedLen::get() as usize,
+                    Error::<T>::MaxSerializedLenExceeded
+                );
+                for req in reqs {
+                    ensure!(
+                        req.len() < T::MaxSerializedLen::get() as usize,
+                        Error::<T>::MaxSerializedLenExceeded
+                    );
+                }
+            }
 
             Guilds::<T>::try_mutate(guild_id, |maybe_guild| {
                 if let Some(guild) = maybe_guild {
@@ -464,7 +574,7 @@ pub mod pallet {
                 },
             );
             Self::deposit_event(Event::RoleAdded(signer, guild_name, role_name));
-            Ok(())
+            Ok(role_id)
         }
     }
 
