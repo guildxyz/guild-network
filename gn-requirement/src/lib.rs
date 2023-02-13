@@ -1,10 +1,14 @@
-pub mod allowlist;
+#![cfg_attr(not(feature = "std"), no_std)]
+#![deny(clippy::all)]
+#![deny(clippy::dbg_macro)]
+#![deny(unused_crate_dependencies)]
+
 pub mod balance;
 pub mod chains;
 #[cfg(feature = "reqcheck")]
 mod check;
+pub mod filter;
 
-use allowlist::Allowlist;
 use balance::RequiredBalance;
 use chains::EvmChain;
 
@@ -15,9 +19,7 @@ pub type U256 = [u8; 32];
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum Requirement {
-    Free,
     EvmBalance(RequiredBalance<EvmAddress, U256, EvmChain>),
-    EvmAllowlist(Allowlist<EvmAddress>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

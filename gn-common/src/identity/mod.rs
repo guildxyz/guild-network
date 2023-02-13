@@ -11,6 +11,16 @@ pub enum Identity {
     Other([u8; 64]),
 }
 
+impl AsRef<[u8]> for Identity {
+    fn as_ref(&self) -> &[u8] {
+        match self {
+            Self::Address20(x) => x,
+            Self::Address32(x) => x,
+            Self::Other(x) => x,
+        }
+    }
+}
+
 impl From<IdentityWithAuth> for Identity {
     fn from(id_with_auth: IdentityWithAuth) -> Self {
         match id_with_auth {

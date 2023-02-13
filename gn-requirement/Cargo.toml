@@ -5,16 +5,21 @@ edition = "2021"
 
 [features]
 default = ["std"]
-reqcheck = ["gn-common", "providers", "std"]
-std = []
+reqcheck = ["providers", "std"]
+std = [
+    "gn-common/std",
+    "merkle/std",
+]
 
 [dependencies]
 # local
-gn-common = { path = "../gn-common", optional = true }
+gn-common = { path = "../gn-common", default-features = false }
 providers = { path = "../rusty-gate/providers", optional = true }
 
 # general
-anyhow = { version = "1", default-features = false }
+anyhow = { version = "1", default-features = false, optional = true }
+hash-db = { version = "0.15.2", default-features = false }
+merkle = { package = "binary-merkle-tree", version = "4.0.0", default-features = false }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 serde = { version = "1", default-features = false, features = ["derive"] }
 

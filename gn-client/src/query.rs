@@ -2,18 +2,13 @@ use crate::data::GuildData;
 use crate::{cbor_deserialize, runtime};
 use crate::{AccountId, Api, Hash, Request, SubxtError};
 use gn_common::identity::Identity;
-use gn_common::requirements::RequirementsWithLogic;
 use gn_common::{GuildName, RequestIdentifier, RoleName};
+use gn_requirement::RequirementsWithLogic;
+use gn_requirement::filter::Guild as GuildFilter;
 use subxt::ext::codec::Decode;
 use subxt::storage::address::{StorageHasher, StorageMapKey};
 
 use std::collections::BTreeMap;
-
-#[derive(Clone, Debug)]
-pub struct GuildFilter {
-    pub name: GuildName,
-    pub role: Option<RoleName>,
-}
 
 pub async fn registered_operators(api: Api) -> Result<Vec<AccountId>, SubxtError> {
     let operators = runtime::storage().oracle().operators();
