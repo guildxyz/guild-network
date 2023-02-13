@@ -23,7 +23,7 @@ pub mod pallet {
     };
     use frame_system::pallet_prelude::*;
     use gn_common::identity::{Identity, IdentityWithAuth};
-    use gn_common::{GuildName, Request, RequestData, RequestIdentifier, RoleName, Guild, Role};
+    use gn_common::{Guild, GuildName, Request, RequestData, RequestIdentifier, Role, RoleName};
     use gn_requirement::filter::{Guild as GuildFilter, Logic as FilterLogic};
     use pallet_oracle::{CallbackWithParameter, Config as OracleConfig, OracleAnswer};
     use sp_std::vec::Vec as SpVec;

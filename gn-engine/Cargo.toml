@@ -4,7 +4,12 @@ version = "0.0.0-alpha"
 edition = "2021"
 
 [features]
-check = ["providers", "std", "gn-common" ]
+check = [
+    "anyhow",
+    "gn-common",
+    "providers",
+    "std", 
+]
 default = ["std"]
 std = ["parity-scale-codec/std"]
 

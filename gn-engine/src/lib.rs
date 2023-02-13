@@ -26,3 +26,13 @@ pub struct RequirementsWithLogic {
     pub requirements: parity_scale_codec::alloc::vec::Vec<Requirement>,
     pub logic: parity_scale_codec::alloc::string::String,
 }
+
+// to avoid unused crate dependencies
+//
+// these dev-dependencies are used only when the `check` feature is enabled,
+// but dev-dependencies cannot be optional
+#[cfg(test)]
+mod test {
+    use async_trait as _;
+    use tokio as _;
+}

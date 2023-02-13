@@ -3,8 +3,8 @@ use crate::{cbor_deserialize, runtime};
 use crate::{AccountId, Api, Hash, Request, SubxtError};
 use gn_common::identity::Identity;
 use gn_common::{GuildName, RequestIdentifier, RoleName};
-use gn_requirement::RequirementsWithLogic;
 use gn_requirement::filter::Guild as GuildFilter;
+use gn_requirement::RequirementsWithLogic;
 use subxt::ext::codec::Decode;
 use subxt::storage::address::{StorageHasher, StorageMapKey};
 
