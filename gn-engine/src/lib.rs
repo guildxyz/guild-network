@@ -26,4 +26,3 @@ pub struct RequirementsWithLogic {
     pub requirements: parity_scale_codec::alloc::vec::Vec<Requirement>,
     pub logic: parity_scale_codec::alloc::string::String,
 }
-

@@ -4,17 +4,18 @@ version = "0.0.0-alpha"
 edition = "2021"
 
 [features]
-check = ["providers", "std"]
+check = ["providers", "std", "gn-common" ]
 default = ["std"]
-std = ["gn-common/std"]
+std = ["parity-scale-codec/std"]
 
 [dependencies]
 # local
-gn-common = { path = "../gn-common", default-features = false }
+gn-common = { path = "../gn-common", optional = true }
 providers = { path = "../rusty-gate/providers", optional = true }
 
 # general
 anyhow = { version = "1", default-features = false, optional = true }
+parity-scale-codec = { workspace = true }
 serde = { version = "1", default-features = false, features = ["derive"] }
 
 [dev-dependencies]
