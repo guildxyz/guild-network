@@ -4,7 +4,7 @@ pub use auth::*;
 use crate::{Decode, Encode, TypeInfo};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Copy, Debug)]
+#[derive(Encode, Decode, TypeInfo, Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Identity {
     Address20([u8; 20]),
     Address32([u8; 32]),

@@ -3,11 +3,11 @@ exclude = ["rusty-gate"]
 members = [
     "gn-client",
     "gn-common",
+    "gn-engine",
     "gn-node",
     "gn-oracle",
     "gn-pallets/pallet-oracle",
     "gn-pallets/pallet-guild",
-    "gn-requirement",
     "gn-runtime",
     "gn-test-data",
     "gn-wasm",
@@ -16,11 +16,11 @@ members = [
 default-members = [
     "gn-client",
     "gn-common",
+    "gn-engine",
     "gn-node",
     "gn-oracle",
     "gn-pallets/pallet-oracle",
     "gn-pallets/pallet-guild",
-    "gn-requirement",
     "gn-runtime",
     "gn-test-data",
 ]

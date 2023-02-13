@@ -23,7 +23,8 @@ pub mod pallet {
     };
     use frame_system::pallet_prelude::*;
     use gn_common::identity::{Identity, IdentityWithAuth};
-    use gn_common::{GuildName, Request, RequestData, RequestIdentifier, RoleName};
+    use gn_common::{GuildName, Request, RequestData, RequestIdentifier, RoleName, Guild, Role};
+    use gn_requirement::filter::{Guild as GuildFilter, Logic as FilterLogic};
     use pallet_oracle::{CallbackWithParameter, Config as OracleConfig, OracleAnswer};
     use sp_std::vec::Vec as SpVec;
 
@@ -31,33 +32,9 @@ pub mod pallet {
         <T as frame_system::Config>::AccountId,
     >>::Balance;
 
-    type SerializedData = SpVec<u8>;
-    type RequirementLogic = SerializedData;
-    type Requirement = SerializedData;
-    type SerializedRole = (RoleName, (RequirementLogic, SpVec<Requirement>));
-
     #[pallet::storage]
     #[pallet::getter(fn nonce)]
     pub type Nonce<T: Config> = StorageValue<_, u64, ValueQuery>;
-
-    #[derive(Encode, Decode, Clone, TypeInfo)]
-    pub struct Guild<AccountId> {
-        pub name: GuildName,
-        pub data: GuildData<AccountId>,
-    }
-
-    #[derive(Encode, Decode, Clone, TypeInfo)]
-    pub struct GuildData<AccountId> {
-        pub owner: AccountId,
-        pub metadata: SerializedData,
-        pub roles: SpVec<RoleName>,
-    }
-
-    #[derive(Encode, Decode, Clone, TypeInfo)]
-    pub struct RoleData {
-        pub logic: SerializedData,
-        pub requirements: SpVec<SerializedData>,
-    }
 
     #[pallet::storage]
     #[pallet::getter(fn next_request_id)]
@@ -144,7 +121,6 @@ pub mod pallet {
         GuildDoesNotExist,
         RoleDoesNotExist,
         InvalidOracleAnswer,
-        InvalidRequestData,
         UserNotRegistered,
         CodecError,
         MaxIdentitiesExceeded,
@@ -162,27 +138,28 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
         #[pallet::weight(1000)] //T::WeightInfo::register())]
-        pub fn register(origin: OriginFor<T>, data: RequestData<T::AccountId>) -> DispatchResult {
-            let requester = ensure_signed(origin.clone())?;
-
-            let (identity_with_auth, index) = if let RequestData::Register {
-                identity_with_auth,
-                index,
-            } = &data
-            {
-                (identity_with_auth, index)
-            } else {
-                return Err(Error::<T>::InvalidRequestData.into());
-            };
+        pub fn register(
+            origin: OriginFor<T>,
+            identity_with_auth: IdentityWithAuth,
+            index: u8,
+        ) -> DispatchResult {
+            let signer = ensure_signed(origin.clone())?;
 
             ensure!(
-                *index < T::MaxIdentities::get(),
+                index < T::MaxIdentities::get(),
                 Error::<T>::MaxIdentitiesExceeded
             );
 
             match identity_with_auth {
                 IdentityWithAuth::Other(Identity::Other(_), _) => {
-                    let request = Request::<T::AccountId> { requester, data };
+                    let data = RequestData::Register {
+                        identity_with_auth,
+                        index,
+                    };
+                    let request = Request::<T::AccountId> {
+                        requester: signer,
+                        data,
+                    };
                     let call: <T as OracleConfig>::Callback = Call::callback {
                         result: SpVec::new(),
                     };
@@ -197,14 +174,10 @@ pub mod pallet {
                     )?;
                 }
                 id_with_auth => {
-                    let msg = gn_common::utils::verification_msg(&requester);
+                    let msg = gn_common::utils::verification_msg(&signer);
                     if id_with_auth.verify(msg) {
-                        UserData::<T>::insert(
-                            &requester,
-                            index,
-                            Identity::from(identity_with_auth),
-                        );
-                        Self::deposit_event(Event::IdRegistered(requester, *index));
+                        UserData::<T>::insert(&signer, index, Identity::from(identity_with_auth));
+                        Self::deposit_event(Event::IdRegistered(signer, index));
                     } else {
                         return Err(Error::<T>::AccessDenied.into());
                     }
@@ -215,108 +188,39 @@ pub mod pallet {
         }
 
         #[pallet::call_index(1)]
-        #[pallet::weight(10000000)] //T::WeightInfo::create_guild())]
-        pub fn create_guild(
-            origin: OriginFor<T>,
-            guild_name: GuildName,
-            metadata: SerializedData,
-            roles: SpVec<SerializedRole>,
-        ) -> DispatchResult {
-            let sender = ensure_signed(origin)?;
-            ensure!(
-                !GuildIdMap::<T>::contains_key(guild_name),
-                Error::<T>::GuildAlreadyExists
-            );
-            ensure!(
-                roles.len() <= T::MaxRolesPerGuild::get() as usize,
-                Error::<T>::MaxRolesPerGuildExceeded
-            );
-            ensure!(
-                roles
-                    .iter()
-                    .all(|role: &SerializedRole| role.1 .1.len()
-                        <= T::MaxReqsPerRole::get() as usize),
-                Error::<T>::MaxReqsPerRoleExceeded
-            );
-            ensure!(
-                roles.iter().all(|role: &SerializedRole| (role.1)
-                    .1
-                    .iter()
-                    .all(|req: &Requirement| req.len() <= T::MaxSerializedReqLen::get() as usize)),
-                Error::<T>::MaxSerializedReqLenExceeded
-            );
-
-            let guild_id = Self::get_random_uuid();
-            GuildIdMap::<T>::insert(guild_name, guild_id);
-
-            let guild_data = GuildData {
-                owner: sender.clone(),
-                metadata,
-                roles: roles.iter().map(|(role_name, _)| *role_name).collect(),
-            };
-
-            let guild = Guild {
-                name: guild_name,
-                data: guild_data,
-            };
-            Guilds::<T>::insert(guild_id, guild);
-
-            for (role_name, role_metadata) in roles.into_iter() {
-                let role_id = Self::get_random_uuid();
-                RoleIdMap::<T>::insert(guild_id, role_name, role_id);
-                let role_data = RoleData {
-                    logic: role_metadata.0,
-                    requirements: role_metadata.1,
-                };
-                Roles::<T>::insert(role_id, role_data);
-            }
-
-            Self::deposit_event(Event::GuildCreated(sender, guild_name));
-            Ok(())
-        }
-
-        #[pallet::call_index(2)]
         #[pallet::weight(10000000)]
-        pub fn manage_role(
+        pub fn request_check(
             origin: OriginFor<T>,
-            data: RequestData<T::AccountId>,
+            account: T::AccountId,
+            guild_name: GuildName,
+            role_name: RoleName,
         ) -> DispatchResult {
             let requester = ensure_signed(origin.clone())?;
 
-            // check data variant
-            match &data {
-                RequestData::ReqCheck {
-                    account,
-                    guild: guild_name,
-                    role: role_name,
-                } => {
-                    let role_id = Self::request_check(account, guild_name, role_name)?;
-                    // if account == signer then the user either wants to join or leave
-                    match (
-                        account == &requester,
-                        Members::<T>::contains_key(role_id, account),
-                    ) {
-                        (true, true) => {
-                            // user wants to be stripped of role
-                            Members::<T>::remove(role_id, account);
-                            Self::deposit_event(Event::RoleStripped(
-                                account.clone(),
-                                *guild_name,
-                                *role_name,
-                            ));
-                            return Ok(());
-                        }
-                        // invalid account in request data (you cannot request
-                        // other accounts to get assigned a role)
-                        (false, false) => return Err(DispatchError::BadOrigin),
-                        // (false, true) keeper wants to request a check
-                        // (true, false) user wants to get a role assigned
-                        _ => {}
-                    }
+            let role_id = Self::checked_role_id(&account, &guild_name, &role_name)?;
+            // if account == signer then the user either wants to join or leave
+            match (
+                account == requester,
+                Members::<T>::contains_key(role_id, &account),
+            ) {
+                (true, true) => {
+                    // user wants to be stripped of role
+                    Members::<T>::remove(role_id, &account);
+                    Self::deposit_event(Event::RoleStripped(account, guild_name, role_name));
+                    return Ok(());
                 }
-                _ => return Err(Error::<T>::InvalidRequestData.into()),
+                // invalid account in request data (you cannot request
+                // other accounts to get assigned a role)
+                (false, false) => return Err(DispatchError::BadOrigin),
+                // (false, true) keeper wants to request a check
+                // (true, false) user wants to get a role assigned
+                _ => {}
             }
-
+            let data = RequestData::ReqCheck {
+                account,
+                guild_name,
+                role_name,
+            };
             let request = Request { requester, data };
             let call: <T as OracleConfig>::Callback = Call::callback {
                 result: SpVec::new(),
@@ -327,7 +231,52 @@ pub mod pallet {
             Ok(())
         }
 
+        #[pallet::call_index(2)]
+        #[pallet::weight(10000000)]
+        pub fn create_guild(
+            origin: OriginFor<T>,
+            guild_name: GuildName,
+            metadata: SerializedData,
+        ) -> DispatchResult {
+            let signer = ensure_signed(origin)?;
+            ensure!(
+                !GuildIdMap::<T>::contains_key(guild_name),
+                Error::<T>::GuildAlreadyExists
+            );
+
+            // TODO
+            //ensure!(
+            //    metadata.length() < T::MaxMetadataLength::get() as usize,
+            //    Error::<T>::GuildAlreadyExists
+            //);
+
+            let guild_id = Self::get_random_uuid();
+            GuildIdMap::<T>::insert(guild_name, guild_id);
+
+            let guild = Guild {
+                name: guild_name,
+                owner: signer.clone(),
+                metadata,
+                roles: SpVec::new(),
+            };
+
+            Guilds::<T>::insert(guild_id, guild);
+
+            Self::deposit_event(Event::GuildCreated(signer, guild_name));
+            Ok(())
+        }
+
         #[pallet::call_index(3)]
+        #[pallet::weight(10000000)]
+        pub fn add_role(
+            origin: OriginFor<T>,
+            guild_name: GuildName,
+            role_name: RoleName,
+        ) -> DispatchResult {
+            todo!()
+        }
+
+        #[pallet::call_index(4)]
         #[pallet::weight(0)]
         pub fn callback(origin: OriginFor<T>, result: SerializedData) -> DispatchResult {
             // NOTE this ensures that only the root can call this function via
@@ -349,10 +298,10 @@ pub mod pallet {
             match request.data {
                 RequestData::ReqCheck {
                     account,
-                    guild: guild_name,
-                    role: role_name,
+                    guild_name,
+                    role_name,
                 } => {
-                    let role_id = Self::request_check(&account, &guild_name, &role_name)?;
+                    let role_id = Self::checked_role_id(&account, &guild_name, &role_name)?;
                     match (access, Members::<T>::contains_key(role_id, &account)) {
                         (true, false) => {
                             Members::<T>::insert(role_id, &account, true);
@@ -394,7 +343,7 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        fn request_check(
+        fn checked_role_id(
             account: &T::AccountId,
             guild_name: &GuildName,
             role_name: &RoleName,

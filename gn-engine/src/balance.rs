@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct RequiredBalance<T, U, V> {
+pub struct Balance<T, U, V> {
     pub token_type: Option<TokenType<T, U>>,
     pub relation: Relation<U>,
     pub chain: V,
@@ -10,8 +10,7 @@ pub struct RequiredBalance<T, U, V> {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum TokenType<T, U> {
     Fungible { address: T },
-    NonFungible { address: T, id: U },
-    Special { address: T, metadata: [u8; 32] },
+    NonFungible { address: T, id: Option<U> },
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

@@ -3,10 +3,12 @@
 #![deny(clippy::dbg_macro)]
 #![deny(unused_crate_dependencies)]
 
+pub mod filter;
 pub mod identity;
 pub mod pad;
 pub mod utils;
 
+use parity_scale_codec::alloc::vec::Vec as SpVec;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 
@@ -15,6 +17,8 @@ pub type RoleName = [u8; 32];
 
 pub type OperatorIdentifier = u64;
 pub type RequestIdentifier = u64;
+type SerializedData = SpVec<u8>;
+type SerializedRequirements = (SpVec<SerializedData>, SerializedData);
 
 #[derive(Encode, Decode, TypeInfo, Clone, Debug)]
 pub struct Request<T> {
@@ -22,7 +26,7 @@ pub struct Request<T> {
     pub data: RequestData<T>,
 }
 
-#[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq)]
 pub enum RequestData<T> {
     Register {
         identity_with_auth: identity::IdentityWithAuth,
@@ -30,7 +34,21 @@ pub enum RequestData<T> {
     },
     ReqCheck {
         account: T,
-        guild: GuildName,
-        role: RoleName,
+        guild_name: GuildName,
+        role_name: RoleName,
     },
+}
+
+#[derive(Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq)]
+pub struct Guild<T> {
+    pub name: GuildName,
+    pub owner: T,
+    pub metadata: SerializedData,
+    pub roles: SpVec<RoleName>,
+}
+
+#[derive(Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq)]
+pub struct Role<H> {
+    pub filter: Option<filter::Filter<H>>,
+    pub requirements: Option<SerializedRequirements>,
 }

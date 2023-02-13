@@ -5,11 +5,10 @@
 
 pub mod balance;
 pub mod chains;
-#[cfg(feature = "reqcheck")]
+#[cfg(feature = "check")]
 mod check;
-pub mod filter;
 
-use balance::RequiredBalance;
+use balance::Balance;
 use chains::EvmChain;
 
 use serde::{Deserialize, Serialize};
@@ -19,11 +18,12 @@ pub type U256 = [u8; 32];
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum Requirement {
-    EvmBalance(RequiredBalance<EvmAddress, U256, EvmChain>),
+    EvmBalance(Balance<EvmAddress, U256, EvmChain>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RequirementsWithLogic {
-    pub logic: parity_scale_codec::alloc::string::String,
     pub requirements: parity_scale_codec::alloc::vec::Vec<Requirement>,
+    pub logic: parity_scale_codec::alloc::string::String,
 }
+
