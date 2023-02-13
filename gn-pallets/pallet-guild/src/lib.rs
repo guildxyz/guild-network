@@ -126,9 +126,10 @@ pub mod pallet {
         AccessDenied,
         GuildAlreadyExists,
         GuildDoesNotExist,
-        RoleDoesNotExist,
         RoleAlreadyExists,
+        RoleDoesNotExist,
         InvalidOracleAnswer,
+        InvalidOracleRequest,
         UserNotRegistered,
         CodecError,
         MaxIdentitiesExceeded,
@@ -198,68 +199,28 @@ pub mod pallet {
 
         #[pallet::call_index(1)]
         #[pallet::weight(10000000)]
-        pub fn request_check(
+        pub fn join(
             origin: OriginFor<T>,
-            account: T::AccountId,
             guild_name: GuildName,
             role_name: RoleName,
             proof: Option<MerkleProof<RootHash>>,
         ) -> DispatchResult {
-            let requester = ensure_signed(origin.clone())?;
-
-            let role_id = Self::checked_role_id(&account, &guild_name, &role_name)?;
-            // if account == signer then the user either wants to join or leave
-            match (
-                account == requester,
-                Members::<T>::contains_key(role_id, &account),
-            ) {
-                (true, true) => {
-                    // user wants to be stripped of role
-                    Members::<T>::remove(role_id, &account);
-                    Self::deposit_event(Event::RoleStripped(account, guild_name, role_name));
-                    return Ok(());
-                }
-                // invalid account in request data (you cannot request
-                // other accounts to get assigned a role)
-                (false, false) => return Err(DispatchError::BadOrigin),
-                // (false, true) keeper wants to request a check
-                // (true, false) user wants to get a role assigned
-                _ => {}
-            }
-
-            // should not throw an error because we already checked
-            // role_id exists
+            let signer = ensure_signed(origin.clone())?;
+            let role_id = Self::checked_role_id(&signer, &guild_name, &role_name)?;
+            // should not throw an error because we already checked that
+            // 'role_id' exists
             let role_data = Roles::<T>::get(role_id).ok_or(Error::<T>::RoleDoesNotExist)?;
             // check the onchain filter first
             let (onchain_access, logic) = match role_data.filter {
-                Some(Filter::Guild(guild, logic)) => {
-                    let guild_id =
-                        Self::guild_id(guild.name).ok_or(Error::<T>::GuildDoesNotExist)?;
-                    let access = if let Some(parent_role_name) = guild.role {
-                        let role_id = Self::role_id(guild_id, parent_role_name)
-                            .ok_or(Error::<T>::RoleDoesNotExist)?;
-                        Self::member(role_id, &account).is_some()
-                    } else {
-                        let mut access = false;
-                        // not a very expensive computation if we allow a sensible amount (<30) of roles
-                        let guild = Self::guild(guild_id).ok_or(Error::<T>::GuildDoesNotExist)?;
-                        for role_name in guild.roles.iter() {
-                            let role_id = Self::role_id(guild_id, role_name)
-                                .ok_or(Error::<T>::RoleDoesNotExist)?;
-                            if Self::member(role_id, &account).is_some() {
-                                access = true;
-                                break;
-                            }
-                        }
-                        access
-                    };
+                Some(Filter::Guild(filter, logic)) => {
+                    let access = Self::check_parent_role(&signer, &filter);
                     (access, logic)
                 }
                 Some(Filter::Allowlist(root, logic, n_leaves)) => {
                     let Some(proof) = proof else {
                         return Err(Error::<T>::MissingAllowlistProof.into())
                     };
-                    let id = Self::user_data(&account, proof.id_index)
+                    let id = Self::user_data(&signer, proof.id_index)
                         .ok_or(Error::<T>::UserNotRegistered)?;
                     let leaf = MerkleLeaf::Value(id.as_ref());
                     let access = verify_merkle_proof::<'_, Keccak256, _, _>(
@@ -280,8 +241,8 @@ pub mod pallet {
                 // T || F
                 // T && F
                 (true, FilterLogic::Or, _) | (true, _, false) => {
-                    Members::<T>::insert(role_id, &account, true);
-                    Self::deposit_event(Event::RoleAssigned(account, guild_name, role_name));
+                    Members::<T>::insert(role_id, &signer, true);
+                    Self::deposit_event(Event::RoleAssigned(signer, guild_name, role_name));
                     Ok(())
                 }
                 // access is denied without the need of an oracle check if
@@ -296,11 +257,14 @@ pub mod pallet {
                 // F || T
                 (true, FilterLogic::And, true) | (false, FilterLogic::Or, true) => {
                     let data = RequestData::ReqCheck {
-                        account,
+                        account: signer.clone(),
                         guild_name,
                         role_name,
                     };
-                    let request = Request { requester, data };
+                    let request = Request {
+                        requester: signer,
+                        data,
+                    };
                     let call: <T as OracleConfig>::Callback = Call::callback {
                         result: SpVec::new(),
                     };
@@ -323,6 +287,55 @@ pub mod pallet {
         }
 
         #[pallet::call_index(2)]
+        #[pallet::weight(10000000)]
+        pub fn leave(
+            origin: OriginFor<T>,
+            guild_name: GuildName,
+            role_name: RoleName,
+        ) -> DispatchResult {
+            let signer = ensure_signed(origin.clone())?;
+            let role_id = Self::checked_role_id(&signer, &guild_name, &role_name)?;
+            Members::<T>::remove(role_id, &signer);
+            Self::deposit_event(Event::RoleStripped(signer, guild_name, role_name));
+            Ok(())
+        }
+
+        #[pallet::call_index(3)]
+        #[pallet::weight(10000000)]
+        pub fn request_oracle_check(
+            origin: OriginFor<T>,
+            account: T::AccountId,
+            guild_name: GuildName,
+            role_name: RoleName,
+        ) -> DispatchResult {
+            let requester = ensure_signed(origin.clone())?;
+
+            let role_id = Self::checked_role_id(&account, &guild_name, &role_name)?;
+            // self checking is not allowed, users should just call 'leave'
+            ensure!(account != requester, DispatchError::BadOrigin);
+            let role_data = Self::role(role_id).ok_or(Error::<T>::RoleDoesNotExist)?;
+
+            if role_data.requirements.is_some() {
+                let data = RequestData::ReqCheck {
+                    account,
+                    guild_name,
+                    role_name,
+                };
+                let request = Request { requester, data };
+                let call: <T as OracleConfig>::Callback = Call::callback {
+                    result: SpVec::new(),
+                };
+                let fee =
+                    BalanceOf::<T>::unique_saturated_from(<T as OracleConfig>::MinimumFee::get());
+
+                <pallet_oracle::Pallet<T>>::initiate_request(origin, call, request.encode(), fee)?;
+                Ok(())
+            } else {
+                Err(Error::<T>::InvalidOracleRequest.into())
+            }
+        }
+
+        #[pallet::call_index(4)]
         #[pallet::weight(10000000)]
         pub fn create_guild(
             origin: OriginFor<T>,
@@ -356,7 +369,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::call_index(3)]
+        #[pallet::call_index(5)]
         #[pallet::weight(10000000)]
         pub fn add_free_role(
             origin: OriginFor<T>,
@@ -367,7 +380,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::call_index(4)]
+        #[pallet::call_index(6)]
         #[pallet::weight(10000000)]
         pub fn add_role_with_allowlist(
             origin: OriginFor<T>,
@@ -387,7 +400,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::call_index(5)]
+        #[pallet::call_index(7)]
         #[pallet::weight(10000000)]
         pub fn add_role_with_parent(
             origin: OriginFor<T>,
@@ -407,7 +420,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::call_index(6)]
+        #[pallet::call_index(8)]
         #[pallet::weight(10000000)]
         pub fn add_unfiltered_role(
             origin: OriginFor<T>,
@@ -419,7 +432,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::call_index(7)]
+        #[pallet::call_index(9)]
         #[pallet::weight(0)]
         pub fn callback(origin: OriginFor<T>, result: SerializedData) -> DispatchResult {
             // NOTE this ensures that only the root can call this function via
@@ -575,6 +588,27 @@ pub mod pallet {
             );
             Self::deposit_event(Event::RoleAdded(signer, guild_name, role_name));
             Ok(role_id)
+        }
+
+        fn check_parent_role(account: &T::AccountId, parent: &gn_common::filter::Guild) -> bool {
+            let Some(guild_id) = Self::guild_id(parent.name) else { return false };
+            if let Some(parent_role_name) = parent.role {
+                let Some(role_id) = Self::role_id(guild_id, parent_role_name) else { return false };
+                Self::member(role_id, account).is_some()
+            } else {
+                let mut access = false;
+                // not a very expensive computation if we allow a sensible amount (<30) of roles
+                let Some(guild) = Self::guild(guild_id) else { return false };
+                for role_name in guild.roles.iter() {
+                    let Some(role_id) =
+                        Self::role_id(guild_id, role_name) else { return false };
+                    if Self::member(role_id, account).is_some() {
+                        access = true;
+                        break;
+                    }
+                }
+                access
+            }
         }
     }
 
