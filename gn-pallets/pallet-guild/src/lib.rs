@@ -18,19 +18,27 @@ pub mod pallet {
     use super::weights::WeightInfo;
     use frame_support::traits::Randomness;
     use frame_support::{
-        dispatch::DispatchResult, pallet_prelude::*, sp_runtime::traits::UniqueSaturatedFrom,
-        traits::Currency, StorageDoubleMap as StorageDoubleMapT,
+        dispatch::DispatchResult,
+        pallet_prelude::*,
+        sp_runtime::traits::{Keccak256, UniqueSaturatedFrom},
+        traits::Currency,
+        StorageDoubleMap as StorageDoubleMapT,
     };
     use frame_system::pallet_prelude::*;
     use gn_common::identity::{Identity, IdentityWithAuth};
-    use gn_common::{Guild, GuildName, Request, RequestData, RequestIdentifier, Role, RoleName};
-    use gn_requirement::filter::{Guild as GuildFilter, Logic as FilterLogic};
+    use gn_common::{
+        Guild, GuildName, Request, RequestData, RequestIdentifier, RoleName, SerializedData,
+        SerializedRequirements,
+    };
     use pallet_oracle::{CallbackWithParameter, Config as OracleConfig, OracleAnswer};
     use sp_std::vec::Vec as SpVec;
 
     type BalanceOf<T> = <<T as OracleConfig>::Currency as Currency<
         <T as frame_system::Config>::AccountId,
     >>::Balance;
+    type Filter = gn_common::filter::Filter<RootHash>;
+    type Role = gn_common::Role<RootHash>;
+    type RootHash = <Keccak256 as sp_core::Hasher>::Out;
 
     #[pallet::storage]
     #[pallet::getter(fn nonce)]
@@ -64,7 +72,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn role)]
-    pub type Roles<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, RoleData, OptionQuery>;
+    pub type Roles<T: Config> = StorageMap<_, Blake2_128Concat, T::Hash, Role, OptionQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn member)]
@@ -97,7 +105,7 @@ pub mod pallet {
         #[pallet::constant]
         type MaxReqsPerRole: Get<u32>;
         #[pallet::constant]
-        type MaxSerializedReqLen: Get<u32>;
+        type MaxSerializedLen: Get<u32>;
         #[pallet::constant]
         type MaxIdentities: Get<u8>;
         type MyRandomness: Randomness<Self::Hash, Self::BlockNumber>;
@@ -110,6 +118,7 @@ pub mod pallet {
     pub enum Event<T: Config> {
         GuildCreated(T::AccountId, GuildName),
         IdRegistered(T::AccountId, u8),
+        RoleAdded(T::AccountId, GuildName, RoleName),
         RoleAssigned(T::AccountId, GuildName, RoleName),
         RoleStripped(T::AccountId, GuildName, RoleName),
     }
@@ -120,13 +129,14 @@ pub mod pallet {
         GuildAlreadyExists,
         GuildDoesNotExist,
         RoleDoesNotExist,
+        RoleAlreadyExists,
         InvalidOracleAnswer,
         UserNotRegistered,
         CodecError,
         MaxIdentitiesExceeded,
         MaxRolesPerGuildExceeded,
         MaxReqsPerRoleExceeded,
-        MaxSerializedReqLenExceeded,
+        MaxSerializedLenExceeded,
     }
 
     #[pallet::pallet]
@@ -137,7 +147,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
-        #[pallet::weight(1000)] //T::WeightInfo::register())]
+        #[pallet::weight(1000)]
         pub fn register(
             origin: OriginFor<T>,
             identity_with_auth: IdentityWithAuth,
@@ -244,11 +254,10 @@ pub mod pallet {
                 Error::<T>::GuildAlreadyExists
             );
 
-            // TODO
-            //ensure!(
-            //    metadata.length() < T::MaxMetadataLength::get() as usize,
-            //    Error::<T>::GuildAlreadyExists
-            //);
+            ensure!(
+                metadata.len() < T::MaxSerializedLen::get() as usize,
+                Error::<T>::MaxSerializedLenExceeded
+            );
 
             let guild_id = Self::get_random_uuid();
             GuildIdMap::<T>::insert(guild_name, guild_id);
@@ -268,15 +277,56 @@ pub mod pallet {
 
         #[pallet::call_index(3)]
         #[pallet::weight(10000000)]
-        pub fn add_role(
+        pub fn add_free_role(
             origin: OriginFor<T>,
             guild_name: GuildName,
             role_name: RoleName,
         ) -> DispatchResult {
-            todo!()
+            Self::add_role(origin, guild_name, role_name, None, None)
         }
 
         #[pallet::call_index(4)]
+        #[pallet::weight(10000000)]
+        pub fn add_role_with_allowlist(
+            origin: OriginFor<T>,
+            guild_name: GuildName,
+            role_name: RoleName,
+            allowlist: SpVec<Identity>,
+            filter_logic: gn_common::filter::Logic,
+            requirements: Option<SerializedRequirements>,
+        ) -> DispatchResult {
+            let filter =
+                gn_common::filter::allowlist_filter::<Keccak256, _>(&allowlist, filter_logic);
+            // TODO save to off-chain indexed storage
+            Self::add_role(origin, guild_name, role_name, Some(filter), requirements)
+        }
+
+        #[pallet::call_index(5)]
+        #[pallet::weight(10000000)]
+        pub fn add_role_with_parent(
+            origin: OriginFor<T>,
+            guild_name: GuildName,
+            role_name: RoleName,
+            filter: gn_common::filter::Guild,
+            filter_logic: gn_common::filter::Logic,
+            requirements: Option<SerializedRequirements>,
+        ) -> DispatchResult {
+            let filter = Filter::Guild(filter, filter_logic);
+            Self::add_role(origin, guild_name, role_name, Some(filter), requirements)
+        }
+
+        #[pallet::call_index(6)]
+        #[pallet::weight(10000000)]
+        pub fn add_unfiltered_role(
+            origin: OriginFor<T>,
+            guild_name: GuildName,
+            role_name: RoleName,
+            requirements: SerializedRequirements,
+        ) -> DispatchResult {
+            Self::add_role(origin, guild_name, role_name, None, Some(requirements))
+        }
+
+        #[pallet::call_index(7)]
         #[pallet::weight(0)]
         pub fn callback(origin: OriginFor<T>, result: SerializedData) -> DispatchResult {
             // NOTE this ensures that only the root can call this function via
@@ -370,6 +420,51 @@ pub mod pallet {
             let nonce = Self::get_and_increment_nonce();
             let (random_value, _) = T::MyRandomness::random(&nonce);
             random_value
+        }
+
+        fn add_role(
+            origin: OriginFor<T>,
+            guild_name: GuildName,
+            role_name: RoleName,
+            filter: Option<Filter>,
+            requirements: Option<SerializedRequirements>,
+        ) -> DispatchResult {
+            let signer = ensure_signed(origin)?;
+            let guild_id = Self::guild_id(guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
+            ensure!(
+                !RoleIdMap::<T>::contains_key(guild_id, role_name),
+                Error::<T>::RoleAlreadyExists
+            );
+
+            Guilds::<T>::try_mutate(guild_id, |maybe_guild| {
+                if let Some(guild) = maybe_guild {
+                    if guild.owner != signer {
+                        Err(DispatchError::BadOrigin)
+                    } else if guild.roles.len() == T::MaxRolesPerGuild::get() as usize {
+                        Err(Error::<T>::MaxRolesPerGuildExceeded.into())
+                    } else {
+                        guild.roles.push(role_name);
+                        Ok(())
+                    }
+                } else {
+                    // shouldn't occur because we already
+                    // checked that the guild id exists but
+                    // better to make sure
+                    Err(Error::<T>::GuildDoesNotExist.into())
+                }
+            })?;
+
+            let role_id = Self::get_random_uuid();
+            RoleIdMap::<T>::insert(guild_id, role_name, role_id);
+            Roles::<T>::insert(
+                role_id,
+                Role {
+                    filter,
+                    requirements,
+                },
+            );
+            Self::deposit_event(Event::RoleAdded(signer, guild_name, role_name));
+            Ok(())
         }
     }
 

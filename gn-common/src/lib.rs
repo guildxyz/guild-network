@@ -17,8 +17,8 @@ pub type RoleName = [u8; 32];
 
 pub type OperatorIdentifier = u64;
 pub type RequestIdentifier = u64;
-type SerializedData = SpVec<u8>;
-type SerializedRequirements = (SpVec<SerializedData>, SerializedData);
+pub type SerializedData = SpVec<u8>;
+pub type SerializedRequirements = (SpVec<SerializedData>, SerializedData);
 
 #[derive(Encode, Decode, TypeInfo, Clone, Debug)]
 pub struct Request<T> {
