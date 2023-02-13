@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 # local
 gn-client = { version = "0.0.0-alpha", path = "../gn-client" }
-gn-common = { version = "0.0.0-alpha", path = "../gn-common", features = ["reqcheck"] }
+gn-common = { version = "0.0.0-alpha", path = "../gn-common" }
 requiem = { git = "https://github.com/agoraxyz/requiem" }
 
 # general

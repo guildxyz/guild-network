@@ -1,11 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(clippy::all)]
 #![deny(clippy::dbg_macro)]
+#![deny(unused_crate_dependencies)]
 
 pub mod identity;
 pub mod pad;
-#[cfg(feature = "std")]
-pub mod requirements;
 pub mod utils;
 
 use parity_scale_codec::{Decode, Encode};

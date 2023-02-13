@@ -1,9 +1,8 @@
-use crate::requirements::balance::TokenType;
-use crate::requirements::chains::EvmChain;
-use crate::requirements::{EvmAddress, U256};
+use crate::balance::TokenType;
+use crate::chains::EvmChain;
+use crate::{EvmAddress, U256};
 use providers::{evm::general::PROVIDERS, BalanceQuerier, EvmChain as RustyEvmChain};
 
-// only compute this once
 const MULTIPLIER: f64 = 1_000_000_000_000_000_000.0; // 10^18
 
 pub async fn get_balance(

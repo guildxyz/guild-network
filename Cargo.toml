@@ -7,6 +7,7 @@ members = [
     "gn-oracle",
     "gn-pallets/pallet-oracle",
     "gn-pallets/pallet-guild",
+    "gn-requirement",
     "gn-runtime",
     "gn-test-data",
     "gn-wasm",
@@ -19,6 +20,7 @@ default-members = [
     "gn-oracle",
     "gn-pallets/pallet-oracle",
     "gn-pallets/pallet-guild",
+    "gn-requirement",
     "gn-runtime",
     "gn-test-data",
 ]

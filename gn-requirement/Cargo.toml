@@ -1,0 +1,23 @@
+[package]
+name = "gn-requirement"
+version = "0.0.0-alpha"
+edition = "2021"
+
+[features]
+default = ["std"]
+reqcheck = ["gn-common", "providers", "std"]
+std = []
+
+[dependencies]
+# local
+gn-common = { path = "../gn-common", optional = true }
+providers = { path = "../rusty-gate/providers", optional = true }
+
+# general
+anyhow = { version = "1", default-features = false }
+parity-scale-codec = { workspace = true, features = ["derive"] }
+serde = { version = "1", default-features = false, features = ["derive"] }
+
+[dev-dependencies]
+async-trait = "0.1"
+tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }

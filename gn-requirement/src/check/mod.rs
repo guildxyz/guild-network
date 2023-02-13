@@ -1,5 +1,5 @@
 use super::Requirement;
-use crate::identity::Identity;
+use gn_common::identity::Identity;
 
 mod evm;
 
