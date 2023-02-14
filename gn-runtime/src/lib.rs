@@ -254,10 +254,11 @@ impl pallet_sudo::Config for Runtime {
 }
 
 impl pallet_guild::Config for Runtime {
+    type MaxAllowlistLen = ConstU32<128>;
     type MaxIdentities = ConstU8<10>;
-    type MaxRolesPerGuild = ConstU32<64>;
-    type MaxReqsPerRole = ConstU32<64>;
-    type MaxSerializedReqLen = ConstU32<1024>;
+    type MaxRolesPerGuild = ConstU32<10>;
+    type MaxReqsPerRole = ConstU32<10>;
+    type MaxSerializedLen = ConstU32<256>;
     type MyRandomness = RandomnessCollectiveFlip;
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_guild::weights::SubstrateWeight<Runtime>;

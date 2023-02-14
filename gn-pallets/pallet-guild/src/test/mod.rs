@@ -12,10 +12,10 @@ use frame_support::sp_runtime::traits::Keccak256;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use gn_common::{
     identity::{Identity, IdentityWithAuth},
-    GuildName, Request, RequestData,
+    GuildName, RequestData,
 };
 use pallet_guild::Event as GuildEvent;
-use parity_scale_codec::{Decode, Encode};
+use parity_scale_codec::Encode;
 use sp_runtime::DispatchError;
 
 #[test]
@@ -65,6 +65,28 @@ fn callback_can_only_be_called_by_root() {
         )
         .encode();
 
+        let answer_with_empty_result = dummy_answer(
+            vec![],
+            4,
+            RequestData::ReqCheck {
+                account: 1,
+                guild_name: [0; 32],
+                role_name: [1; 32],
+            },
+        )
+        .encode();
+
+        let answer_with_too_long_result = dummy_answer(
+            vec![1, 2],
+            5,
+            RequestData::ReqCheck {
+                account: 1,
+                guild_name: [0; 32],
+                role_name: [1; 32],
+            },
+        )
+        .encode();
+
         let test_data = vec![
             (
                 <Guild>::callback(RuntimeOrigin::signed(1), vec![]),
@@ -93,6 +115,14 @@ fn callback_can_only_be_called_by_root() {
             (
                 <Guild>::callback(RuntimeOrigin::root(), reqcheck_access),
                 "GuildDoesNotExist",
+            ),
+            (
+                <Guild>::callback(RuntimeOrigin::root(), answer_with_empty_result),
+                "InvalidOracleAnswer",
+            ),
+            (
+                <Guild>::callback(RuntimeOrigin::root(), answer_with_too_long_result),
+                "InvalidOracleAnswer",
             ),
         ];
 
