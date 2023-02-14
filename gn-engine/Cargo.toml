@@ -1,27 +1,30 @@
 [package]
-name = "gn-requirement"
+name = "gn-engine"
 version = "0.0.0-alpha"
 edition = "2021"
 
 [features]
 check = [
     "anyhow",
-    "gn-common",
     "providers",
     "std", 
 ]
 default = ["std"]
-std = ["parity-scale-codec/std"]
+std = [
+    "gn-common/std",
+    "parity-scale-codec/std",
+]
 
 [dependencies]
 # local
-gn-common = { path = "../gn-common", optional = true }
+gn-common = { path = "../gn-common", default-features = false }
 providers = { path = "../rusty-gate/providers", optional = true }
 
 # general
 anyhow = { version = "1", default-features = false, optional = true }
 parity-scale-codec = { workspace = true }
 serde = { version = "1", default-features = false, features = ["derive"] }
+serde_cbor = "0.11.2"
 
 [dev-dependencies]
 async-trait = "0.1"

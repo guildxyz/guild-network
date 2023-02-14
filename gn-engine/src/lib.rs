@@ -12,6 +12,7 @@ use balance::Balance;
 use chains::EvmChain;
 
 use serde::{Deserialize, Serialize};
+pub use serde_cbor::{from_slice as cbor_deserialize, to_vec as cbor_serialize};
 
 pub type EvmAddress = [u8; 20];
 pub type U256 = [u8; 32];
@@ -25,6 +26,35 @@ pub enum Requirement {
 pub struct RequirementsWithLogic {
     pub requirements: parity_scale_codec::alloc::vec::Vec<Requirement>,
     pub logic: parity_scale_codec::alloc::string::String,
+}
+
+impl RequirementsWithLogic {
+    pub fn into_serialized_tuple(
+        self,
+    ) -> Result<gn_common::SerializedRequirements, serde_cbor::Error> {
+        let reqs = self
+            .requirements
+            .into_iter()
+            .map(|x| cbor_serialize(&x))
+            .collect::<Result<Vec<_>, _>>()?;
+        let logic = cbor_serialize(&self.logic)?;
+        Ok((reqs, logic))
+    }
+
+    pub fn from_serialized_tuple(
+        tuple: gn_common::SerializedRequirements,
+    ) -> Result<Self, serde_cbor::Error> {
+        let requirements = tuple
+            .0
+            .into_iter()
+            .map(|x| cbor_deserialize(&x))
+            .collect::<Result<Vec<_>, _>>()?;
+        let logic = cbor_deserialize(&tuple.1)?;
+        Ok(Self {
+            requirements,
+            logic,
+        })
+    }
 }
 
 // to avoid unused crate dependencies
