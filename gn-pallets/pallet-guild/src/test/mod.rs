@@ -1,6 +1,6 @@
 mod guild_and_role;
 mod helpers;
-//mod register;
+mod register;
 
 use helpers::*;
 

@@ -7,94 +7,82 @@ fn unsuccessful_registrations() {
     new_test_ext().execute_with(|| {
         init_chain();
         let user = 0;
+        let max_identities = <TestRuntime as pallet_guild::Config>::MaxIdentities::get();
 
         let test_data = vec![
             (
                 <Guild>::register(
-                    RuntimeOrigin::signed(user),
-                    RequestData::ReqCheck {
-                        account: 1,
-                        guild: [0; 32],
-                        role: [1; 32],
-                    },
+                    RuntimeOrigin::none(),
+                    IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]),
+                    0,
                 ),
-                "InvalidRequestData",
+                "BadOrigin",
+            ),
+            (
+                <Guild>::register(
+                    RuntimeOrigin::root(),
+                    IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]),
+                    0,
+                ),
+                "BadOrigin",
             ),
             (
                 <Guild>::register(
                     RuntimeOrigin::signed(user),
-                    RequestData::Register {
-                        identity_with_auth: IdentityWithAuth::Other(
-                            Identity::Other([0u8; 64]),
-                            [0u8; 64],
-                        ),
-                        index: <TestRuntime as pallet_guild::Config>::MaxIdentities::get(),
-                    },
+                    IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]),
+                    max_identities,
                 ),
                 "MaxIdentitiesExceeded",
             ),
             (
                 <Guild>::register(
                     RuntimeOrigin::signed(user),
-                    RequestData::Register {
-                        identity_with_auth: IdentityWithAuth::Other(
-                            Identity::Other([0u8; 64]),
-                            [0u8; 64],
-                        ),
-                        index: <TestRuntime as pallet_guild::Config>::MaxIdentities::get() - 1,
-                    },
+                    IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]),
+                    max_identities - 1,
                 ),
                 "NoRegisteredOperators",
             ),
             (
                 <Guild>::register(
                     RuntimeOrigin::signed(user),
-                    RequestData::Register {
-                        identity_with_auth: IdentityWithAuth::Ecdsa(
-                            Identity::Address20([0u8; 20]),
-                            EcdsaSignature([0u8; 65]),
-                        ),
-                        index: <TestRuntime as pallet_guild::Config>::MaxIdentities::get() - 1,
-                    },
+                    IdentityWithAuth::Ecdsa(
+                        Identity::Address20([0u8; 20]),
+                        EcdsaSignature([0u8; 65]),
+                    ),
+                    max_identities - 1,
                 ),
                 "AccessDenied",
             ),
             (
                 <Guild>::register(
                     RuntimeOrigin::signed(user),
-                    RequestData::Register {
-                        identity_with_auth: IdentityWithAuth::Ecdsa(
-                            Identity::Address32([0u8; 32]),
-                            EcdsaSignature([0u8; 65]),
-                        ),
-                        index: 0,
-                    },
+                    IdentityWithAuth::Ecdsa(
+                        Identity::Address32([0u8; 32]),
+                        EcdsaSignature([0u8; 65]),
+                    ),
+                    0,
                 ),
                 "AccessDenied",
             ),
             (
                 <Guild>::register(
                     RuntimeOrigin::signed(user),
-                    RequestData::Register {
-                        identity_with_auth: IdentityWithAuth::Ed25519(
-                            Identity::Address32([1u8; 32]),
-                            Ed25519Signature([0u8; 64]),
-                        ),
-                        index: 1,
-                    },
+                    IdentityWithAuth::Ed25519(
+                        Identity::Address32([1u8; 32]),
+                        Ed25519Signature([0u8; 64]),
+                    ),
+                    1,
                 ),
                 "AccessDenied",
             ),
             (
                 <Guild>::register(
                     RuntimeOrigin::signed(user),
-                    RequestData::Register {
-                        identity_with_auth: IdentityWithAuth::Sr25519(
-                            Identity::Address32([1u8; 32]),
-                            Sr25519Signature([0u8; 64]),
-                        ),
-                        index: <TestRuntime as pallet_guild::Config>::MaxIdentities::get() - 1,
-                    },
+                    IdentityWithAuth::Sr25519(
+                        Identity::Address32([1u8; 32]),
+                        Sr25519Signature([0u8; 64]),
+                    ),
+                    max_identities - 1,
                 ),
                 "AccessDenied",
             ),
@@ -142,42 +130,21 @@ fn successful_on_chain_registrations() {
         );
 
         // register various identities for user
-        <Guild>::register(
-            RuntimeOrigin::signed(user),
-            RequestData::Register {
-                identity_with_auth: id_with_auth_ecdsa,
-                index,
-            },
-        )
-        .unwrap();
+        <Guild>::register(RuntimeOrigin::signed(user), id_with_auth_ecdsa, index).unwrap();
         assert_eq!(last_event(), GuildEvent::IdRegistered(user, index));
         assert_eq!(
             <Guild>::user_data(user, index),
             Some(Identity::Address20(ecdsa_address))
         );
         index += 1;
-        <Guild>::register(
-            RuntimeOrigin::signed(user),
-            RequestData::Register {
-                identity_with_auth: id_with_auth_edwards,
-                index,
-            },
-        )
-        .unwrap();
+        <Guild>::register(RuntimeOrigin::signed(user), id_with_auth_edwards, index).unwrap();
         assert_eq!(last_event(), GuildEvent::IdRegistered(user, index));
         assert_eq!(
             <Guild>::user_data(user, index),
             Some(Identity::Address32(keypair_edwards.public().0))
         );
         index += 1;
-        <Guild>::register(
-            RuntimeOrigin::signed(user),
-            RequestData::Register {
-                identity_with_auth: id_with_auth_ristretto,
-                index,
-            },
-        )
-        .unwrap();
+        <Guild>::register(RuntimeOrigin::signed(user), id_with_auth_ristretto, index).unwrap();
         assert_eq!(
             <Guild>::user_data(user, index),
             Some(Identity::Address32(keypair_ristretto.public().0))
@@ -196,38 +163,40 @@ fn successful_off_chain_registrations() {
         let id_one = Identity::Other([1u8; 64]);
         let auth = [0u8; 64];
         let index = 0;
+        let id_auth_zero = IdentityWithAuth::Other(id_zero, auth);
+        let id_auth_one = IdentityWithAuth::Other(id_one, auth);
 
         // register an operator first
         <Oracle>::register_operator(RuntimeOrigin::signed(operator)).unwrap();
         // user registers id that requires off-chain verification
+        <Guild>::register(RuntimeOrigin::signed(user), id_auth_zero, index).unwrap();
+        // pallet receives a dummy oracle answer
         let request_data = RequestData::Register {
-            identity_with_auth: IdentityWithAuth::Other(id_zero, auth),
+            identity_with_auth: id_auth_zero,
             index,
         };
-        <Guild>::register(RuntimeOrigin::signed(user), request_data.clone()).unwrap();
-        // pallet receives a dummy oracle answer
         let answer = dummy_answer(vec![u8::from(true)], user, request_data);
         <Guild>::callback(RuntimeOrigin::root(), answer.encode()).unwrap();
         assert_eq!(<Guild>::user_data(user, index), Some(id_zero));
         assert_eq!(last_event(), GuildEvent::IdRegistered(user, index));
         // user overrides previous id that requires off-chain verification
+        <Guild>::register(RuntimeOrigin::signed(user), id_auth_one, index).unwrap();
+        // pallet receives a dummy oracle answer
         let request_data = RequestData::Register {
-            identity_with_auth: IdentityWithAuth::Other(id_one, auth),
+            identity_with_auth: id_auth_one,
             index,
         };
-        <Guild>::register(RuntimeOrigin::signed(user), request_data.clone()).unwrap();
-        // pallet receives a dummy oracle answer
         let answer = dummy_answer(vec![u8::from(true)], user, request_data);
         <Guild>::callback(RuntimeOrigin::root(), answer.encode()).unwrap();
         assert_eq!(<Guild>::user_data(user, index), Some(id_one));
         assert_eq!(last_event(), GuildEvent::IdRegistered(user, index));
         // user tries to override again
+        <Guild>::register(RuntimeOrigin::signed(user), id_auth_zero, index).unwrap();
+        // pallet receives a dummy oracle answer
         let request_data = RequestData::Register {
-            identity_with_auth: IdentityWithAuth::Other(id_zero, auth),
+            identity_with_auth: id_auth_zero,
             index,
         };
-        <Guild>::register(RuntimeOrigin::signed(user), request_data.clone()).unwrap();
-        // pallet receives a dummy oracle answer
         let answer = dummy_answer(vec![u8::from(false)], user, request_data);
         assert_eq!(
             error_msg(<Guild>::callback(RuntimeOrigin::root(), answer.encode()).unwrap_err()),
@@ -257,28 +226,27 @@ fn successful_idenity_overrides() {
         <Oracle>::register_operator(RuntimeOrigin::signed(operator)).unwrap();
 
         // user registers an off-chain-verified identity
+        let identity_with_auth = IdentityWithAuth::Other(id_zero, auth);
         let request_data: RequestData<AccountId> = RequestData::Register {
-            identity_with_auth: IdentityWithAuth::Other(id_zero, auth),
+            identity_with_auth,
             index,
         };
-        <Guild>::register(RuntimeOrigin::signed(user), request_data.clone()).unwrap();
+        <Guild>::register(RuntimeOrigin::signed(user), identity_with_auth, index).unwrap();
         assert!(<Guild>::user_data(user, index).is_none()); // no id registered yet
         let answer = dummy_answer(vec![u8::from(true)], user, request_data);
         <Guild>::callback(RuntimeOrigin::root(), answer.encode()).unwrap();
         assert_eq!(<Guild>::user_data(user, index), Some(id_zero));
         // user overrides an off-chain-verified identity with an on-chain id
-        let request_data: RequestData<AccountId> = RequestData::Register {
-            identity_with_auth: IdentityWithAuth::Ed25519(id_edwards, sig_edwards),
-            index,
-        };
-        <Guild>::register(RuntimeOrigin::signed(user), request_data).unwrap();
+        let identity_with_auth = IdentityWithAuth::Ed25519(id_edwards, sig_edwards);
+        <Guild>::register(RuntimeOrigin::signed(user), identity_with_auth, index).unwrap();
         assert_eq!(<Guild>::user_data(user, index), Some(id_edwards));
         // user overrides an on-chain-verified identity with an off-chain id
+        let identity_with_auth = IdentityWithAuth::Other(id_one, auth);
         let request_data: RequestData<AccountId> = RequestData::Register {
-            identity_with_auth: IdentityWithAuth::Other(id_one, auth),
+            identity_with_auth,
             index,
         };
-        <Guild>::register(RuntimeOrigin::signed(user), request_data.clone()).unwrap();
+        <Guild>::register(RuntimeOrigin::signed(user), identity_with_auth, index).unwrap();
         assert_eq!(<Guild>::user_data(user, index), Some(id_edwards));
         let answer = dummy_answer(vec![u8::from(true)], user, request_data);
         <Guild>::callback(RuntimeOrigin::root(), answer.encode()).unwrap();
