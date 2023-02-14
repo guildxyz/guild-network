@@ -1,5 +1,6 @@
 mod guild_and_role;
 mod helpers;
+mod join_and_leave;
 mod register;
 
 use helpers::*;
