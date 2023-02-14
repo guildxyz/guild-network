@@ -408,7 +408,7 @@ pub mod pallet {
 
         #[pallet::call_index(7)]
         #[pallet::weight(10000000)]
-        pub fn create_role_with_parent(
+        pub fn create_child_role(
             origin: OriginFor<T>,
             guild_name: GuildName,
             role_name: RoleName,
@@ -417,10 +417,12 @@ pub mod pallet {
             requirements: Option<SerializedRequirements>,
         ) -> DispatchResult {
             let guild_id = Self::guild_id(filter.name).ok_or(Error::<T>::GuildDoesNotExist)?;
-            ensure!(
-                RoleIdMap::<T>::contains_key(guild_id, role_name),
-                Error::<T>::RoleDoesNotExist
-            );
+            if let Some(parent_role_name) = filter.role {
+                ensure!(
+                    RoleIdMap::<T>::contains_key(guild_id, parent_role_name),
+                    Error::<T>::RoleDoesNotExist
+                );
+            }
             let filter = Filter::Guild(filter, filter_logic);
             Self::create_role(origin, guild_name, role_name, Some(filter), requirements)?;
             Ok(())
@@ -550,16 +552,16 @@ pub mod pallet {
 
             if let Some((reqs, logic)) = requirements.as_ref() {
                 ensure!(
-                    reqs.len() < T::MaxReqsPerRole::get() as usize,
+                    reqs.len() <= T::MaxReqsPerRole::get() as usize,
                     Error::<T>::MaxReqsPerRoleExceeded
                 );
                 ensure!(
-                    logic.len() < T::MaxSerializedLen::get() as usize,
+                    logic.len() <= T::MaxSerializedLen::get() as usize,
                     Error::<T>::MaxSerializedLenExceeded
                 );
                 for req in reqs {
                     ensure!(
-                        req.len() < T::MaxSerializedLen::get() as usize,
+                        req.len() <= T::MaxSerializedLen::get() as usize,
                         Error::<T>::MaxSerializedLenExceeded
                     );
                 }
