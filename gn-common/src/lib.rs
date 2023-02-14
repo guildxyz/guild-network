@@ -8,8 +8,9 @@ pub mod identity;
 pub mod pad;
 pub mod utils;
 
-pub use merkle::Leaf as MerkleLeaf;
+pub use merkle::merkle_proof as generate_merkle_proof;
 pub use merkle::verify_proof as verify_merkle_proof;
+pub use merkle::Leaf as MerkleLeaf;
 use parity_scale_codec::alloc::vec::Vec as SpVec;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
@@ -66,6 +67,5 @@ pub struct Role<H> {
 #[derive(Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq)]
 pub struct MerkleProof<T> {
     pub path: SpVec<T>,
-    pub leaf_index: u32,
     pub id_index: u8,
 }

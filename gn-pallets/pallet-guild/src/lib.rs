@@ -134,6 +134,7 @@ pub mod pallet {
         InvalidOracleAnswer,
         InvalidOracleRequest,
         UserNotRegistered,
+        IdNotRegistered,
         CodecError,
         MaxIdentitiesExceeded,
         MaxRolesPerGuildExceeded,
@@ -224,13 +225,21 @@ pub mod pallet {
                         return Err(Error::<T>::MissingAllowlistProof.into())
                     };
                     let id = Self::user_data(&signer, proof.id_index)
-                        .ok_or(Error::<T>::UserNotRegistered)?;
+                        .ok_or(Error::<T>::IdNotRegistered)?;
                     let leaf = MerkleLeaf::Value(id.as_ref());
+                    // NOTE leaf index does not play a role in verification
+                    // only a bound check is performed to ensure the index is
+                    // less than the number of leaves in the tree. Setting the
+                    // index to 0 ensures that it will never be greater. If the
+                    // number of leaves is 0, though, access will still be
+                    // denied as the proof evaluates to false. However, empty
+                    // allowlists are not allowed in the respective
+                    // 'create_role' call
                     let access = verify_merkle_proof::<'_, Keccak256, _, _>(
                         &root,
                         proof.path,
                         n_leaves as usize,
-                        proof.leaf_index as usize,
+                        0,
                         leaf,
                     );
                     (access, logic)
@@ -316,7 +325,27 @@ pub mod pallet {
             let role_id = Self::checked_role_id(&account, &guild_name, &role_name)?;
             // self checking is not allowed, users should just call 'leave'
             ensure!(account != requester, DispatchError::BadOrigin);
+            // checked account must be a joined member, otherwise the oracle
+            // could unknowingly add the user without checking on-chain filters
+            // in the callback
+            ensure!(
+                Self::member(role_id, &account).is_some(),
+                Error::<T>::InvalidOracleRequest
+            );
             let role_data = Self::role(role_id).ok_or(Error::<T>::RoleDoesNotExist)?;
+            match role_data.filter {
+                // NOTE if there is a filter with OR logic
+                // then it doesn't make sense to call an oracle check
+                // because the filter is definitely satisfied
+                Some(Filter::Guild(_, FilterLogic::Or))
+                | Some(Filter::Allowlist(_, FilterLogic::Or, _)) => {
+                    return Err(Error::<T>::InvalidOracleRequest.into())
+                }
+                // NOTE it makes sense to perform an oracle check
+                // if there's no filter or there's an AND gate
+                // between the filter and the requirements
+                _ => {}
+            }
 
             if role_data.requirements.is_some() {
                 let data = RequestData::ReqCheck {

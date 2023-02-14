@@ -1,4 +1,6 @@
 use super::*;
+use gn_common::identity::{eth_hash_message, recover_prehashed, EcdsaSignature};
+use sp_core::Pair as PairT;
 
 const STARTING_BLOCK_NUM: u64 = 2;
 
@@ -55,7 +57,6 @@ pub fn dummy_answer(
     pallet_oracle::OracleAnswer { data, result }
 }
 
-// successfully create a guild
 pub fn dummy_guild(signer: AccountId, guild_name: GuildName) {
     <Guild>::create_guild(RuntimeOrigin::signed(signer), guild_name, METADATA.to_vec()).unwrap();
     assert_eq!(last_event(), GuildEvent::GuildCreated(signer, guild_name));
@@ -65,4 +66,16 @@ pub fn dummy_guild(signer: AccountId, guild_name: GuildName) {
     assert_eq!(guild.owner, signer);
     assert_eq!(guild.metadata, METADATA);
     assert!(guild.roles.is_empty());
+}
+
+pub fn dummy_ecdsa_id_with_auth(user: AccountId, seed: [u8; 32]) -> (Identity, EcdsaSignature) {
+    let keypair_ecdsa = sp_core::ecdsa::Pair::from_seed_slice(&seed).unwrap();
+    let msg = gn_common::utils::verification_msg(user);
+    let ecdsa_sig = EcdsaSignature(keypair_ecdsa.sign(msg.as_ref()).0);
+    let ecdsa_pubkey = recover_prehashed(eth_hash_message(&msg), &ecdsa_sig).unwrap();
+    let ecdsa_address: [u8; 20] = sp_core::keccak_256(&ecdsa_pubkey.serialize_uncompressed()[1..])
+        [12..]
+        .try_into()
+        .unwrap();
+    (Identity::Address20(ecdsa_address), ecdsa_sig)
 }

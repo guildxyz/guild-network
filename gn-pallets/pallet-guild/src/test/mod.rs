@@ -12,7 +12,7 @@ use frame_support::sp_runtime::traits::Keccak256;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use gn_common::{
     identity::{Identity, IdentityWithAuth},
-    GuildName, Request, RequestData, RoleName,
+    GuildName, Request, RequestData,
 };
 use pallet_guild::Event as GuildEvent;
 use parity_scale_codec::{Decode, Encode};
