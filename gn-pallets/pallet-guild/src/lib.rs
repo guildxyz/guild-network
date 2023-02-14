@@ -99,6 +99,8 @@ pub mod pallet {
     #[pallet::config]
     pub trait Config: OracleConfig<Callback = Call<Self>> + frame_system::Config {
         #[pallet::constant]
+        type MaxAllowlistLen: Get<u32>;
+        #[pallet::constant]
         type MaxRolesPerGuild: Get<u32>;
         #[pallet::constant]
         type MaxReqsPerRole: Get<u32>;
@@ -116,7 +118,7 @@ pub mod pallet {
     pub enum Event<T: Config> {
         GuildCreated(T::AccountId, GuildName),
         IdRegistered(T::AccountId, u8),
-        RoleAdded(T::AccountId, GuildName, RoleName),
+        RoleCreated(T::AccountId, GuildName, RoleName),
         RoleAssigned(T::AccountId, GuildName, RoleName),
         RoleStripped(T::AccountId, GuildName, RoleName),
     }
@@ -128,6 +130,7 @@ pub mod pallet {
         GuildDoesNotExist,
         RoleAlreadyExists,
         RoleDoesNotExist,
+        InvalidAllowlistLen,
         InvalidOracleAnswer,
         InvalidOracleRequest,
         UserNotRegistered,
@@ -349,7 +352,7 @@ pub mod pallet {
             );
 
             ensure!(
-                metadata.len() < T::MaxSerializedLen::get() as usize,
+                metadata.len() <= T::MaxSerializedLen::get() as usize,
                 Error::<T>::MaxSerializedLenExceeded
             );
 
@@ -371,18 +374,18 @@ pub mod pallet {
 
         #[pallet::call_index(5)]
         #[pallet::weight(10000000)]
-        pub fn add_free_role(
+        pub fn create_free_role(
             origin: OriginFor<T>,
             guild_name: GuildName,
             role_name: RoleName,
         ) -> DispatchResult {
-            Self::add_role(origin, guild_name, role_name, None, None)?;
+            Self::create_role(origin, guild_name, role_name, None, None)?;
             Ok(())
         }
 
         #[pallet::call_index(6)]
         #[pallet::weight(10000000)]
-        pub fn add_role_with_allowlist(
+        pub fn create_role_with_allowlist(
             origin: OriginFor<T>,
             guild_name: GuildName,
             role_name: RoleName,
@@ -390,19 +393,22 @@ pub mod pallet {
             filter_logic: gn_common::filter::Logic,
             requirements: Option<SerializedRequirements>,
         ) -> DispatchResult {
+            ensure!(
+                !allowlist.is_empty() && allowlist.len() <= T::MaxAllowlistLen::get() as usize,
+                Error::<T>::InvalidAllowlistLen
+            );
             let filter = gn_common::filter::allowlist_filter::<Keccak256>(&allowlist, filter_logic);
             let role_id =
-                Self::add_role(origin, guild_name, role_name, Some(filter), requirements)?;
+                Self::create_role(origin, guild_name, role_name, Some(filter), requirements)?;
 
-            let mut offchain_key = SpVec::from(gn_common::OFFCHAIN_ALLOWLIST_INDEX_PREFIX);
-            offchain_key.extend_from_slice(role_id.as_ref());
+            let offchain_key = gn_common::offchain_allowlist_key(role_id.as_ref());
             sp_io::offchain_index::set(&offchain_key, &allowlist.encode());
             Ok(())
         }
 
         #[pallet::call_index(7)]
         #[pallet::weight(10000000)]
-        pub fn add_role_with_parent(
+        pub fn create_role_with_parent(
             origin: OriginFor<T>,
             guild_name: GuildName,
             role_name: RoleName,
@@ -416,19 +422,19 @@ pub mod pallet {
                 Error::<T>::RoleDoesNotExist
             );
             let filter = Filter::Guild(filter, filter_logic);
-            Self::add_role(origin, guild_name, role_name, Some(filter), requirements)?;
+            Self::create_role(origin, guild_name, role_name, Some(filter), requirements)?;
             Ok(())
         }
 
         #[pallet::call_index(8)]
         #[pallet::weight(10000000)]
-        pub fn add_unfiltered_role(
+        pub fn create_unfiltered_role(
             origin: OriginFor<T>,
             guild_name: GuildName,
             role_name: RoleName,
             requirements: SerializedRequirements,
         ) -> DispatchResult {
-            Self::add_role(origin, guild_name, role_name, None, Some(requirements))?;
+            Self::create_role(origin, guild_name, role_name, None, Some(requirements))?;
             Ok(())
         }
 
@@ -528,7 +534,7 @@ pub mod pallet {
             random_value
         }
 
-        fn add_role(
+        fn create_role(
             origin: OriginFor<T>,
             guild_name: GuildName,
             role_name: RoleName,
@@ -586,7 +592,7 @@ pub mod pallet {
                     requirements,
                 },
             );
-            Self::deposit_event(Event::RoleAdded(signer, guild_name, role_name));
+            Self::deposit_event(Event::RoleCreated(signer, guild_name, role_name));
             Ok(role_id)
         }
 

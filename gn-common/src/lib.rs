@@ -16,6 +16,12 @@ use scale_info::TypeInfo;
 
 pub const OFFCHAIN_ALLOWLIST_INDEX_PREFIX: &[u8] = b"guild-allowlist";
 
+pub fn offchain_allowlist_key(key: &[u8]) -> SpVec<u8> {
+    let mut offchain_key = SpVec::from(OFFCHAIN_ALLOWLIST_INDEX_PREFIX);
+    offchain_key.extend_from_slice(key);
+    offchain_key
+}
+
 pub type GuildName = [u8; 32];
 pub type RoleName = [u8; 32];
 

@@ -1,19 +1,16 @@
 use super::*;
 
 const STARTING_BLOCK_NUM: u64 = 2;
-pub const METADATA: &[u8] = &[9, 9, 9, 9, 0, 0, 0, 0, 0];
 
-pub const ROLE_1: [u8; 32] = [1u8; 32];
-pub const ROLE_2: [u8; 32] = [2u8; 32];
-pub const ROLE_3: [u8; 32] = [3u8; 32];
+pub const METADATA: &[u8] =
+    &[12u8; <TestRuntime as pallet_guild::Config>::MaxSerializedLen::get() as usize];
 
-pub const REQ_1: &[u8] = &[6, 7, 8, 9, 0];
-pub const REQ_2: &[u8] = &[2, 4, 6, 8];
-pub const REQ_3: &[u8] = &[1, 3, 5];
-
-pub const LOGIC_1: &[u8] = &[0];
-pub const LOGIC_2: &[u8] = &[1];
-pub const LOGIC_3: &[u8] = &[2];
+pub fn new_test_ext() -> sp_io::TestExternalities {
+    frame_system::GenesisConfig::default()
+        .build_storage::<TestRuntime>()
+        .unwrap()
+        .into()
+}
 
 pub fn init_chain() {
     for i in 0..STARTING_BLOCK_NUM {
@@ -58,36 +55,14 @@ pub fn dummy_answer(
     pallet_oracle::OracleAnswer { data, result }
 }
 
-pub fn new_guild(signer: AccountId, guild_name: [u8; 32]) {
-    let roles = vec![
-        (
-            ROLE_1,
-            (
-                LOGIC_1.to_vec(),
-                vec![REQ_1.to_vec(), REQ_2.to_vec(), REQ_3.to_vec()],
-            ),
-        ),
-        (
-            ROLE_2,
-            (
-                LOGIC_2.to_vec(),
-                vec![REQ_1.to_vec(), REQ_2.to_vec(), REQ_3.to_vec()],
-            ),
-        ),
-        (
-            ROLE_3,
-            (
-                LOGIC_3.to_vec(),
-                vec![REQ_1.to_vec(), REQ_2.to_vec(), REQ_3.to_vec()],
-            ),
-        ),
-    ];
-
-    assert!(<Guild>::create_guild(
-        RuntimeOrigin::signed(signer),
-        guild_name,
-        METADATA.to_vec(),
-        roles
-    )
-    .is_ok());
+// successfully create a guild
+pub fn dummy_guild(signer: AccountId, guild_name: GuildName) {
+    <Guild>::create_guild(RuntimeOrigin::signed(signer), guild_name, METADATA.to_vec()).unwrap();
+    assert_eq!(last_event(), GuildEvent::GuildCreated(signer, guild_name));
+    let guild_id = <Guild>::guild_id(guild_name).unwrap();
+    let guild = <Guild>::guild(guild_id).unwrap();
+    assert_eq!(guild.name, guild_name);
+    assert_eq!(guild.owner, signer);
+    assert_eq!(guild.metadata, METADATA);
+    assert!(guild.roles.is_empty());
 }
