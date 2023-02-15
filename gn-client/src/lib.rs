@@ -19,9 +19,11 @@ pub type GuildCall = runtime::runtime_types::pallet_guild::pallet::Call;
 pub type Index = u32;
 pub type OracleRequest = runtime::oracle::events::OracleRequest;
 pub type Request = gn_common::Request<AccountId>;
+pub type RuntimeGuild = runtime::runtime_types::gn_common::Guild<AccountId>;
 pub type RuntimeIdentity = runtime::runtime_types::gn_common::identity::Identity;
 pub type RuntimeIdentityWithAuth =
     runtime::runtime_types::gn_common::identity::auth::IdentityWithAuth;
+pub type RuntimeRole = runtime::runtime_types::gn_common::Role<Hash>;
 pub type SubxtError = subxt::Error;
 pub type TransactionProgress = subxt::tx::TxProgress<ClientConfig, Api>;
 pub type TransactionStatus = subxt::tx::TxStatus<ClientConfig, Api>;
@@ -29,11 +31,16 @@ pub type TransactionStatus = subxt::tx::TxStatus<ClientConfig, Api>;
 const PAD_BYTES: usize = 32;
 
 use gn_common::identity::Identity;
+use gn_common::{Guild, Role};
 
-pub fn id_rt2canon(input: RuntimeIdentity) -> Identity {
+pub fn from_runtime_id(input: RuntimeIdentity) -> Identity {
     unsafe { std::mem::transmute::<RuntimeIdentity, Identity>(input) }
 }
 
-pub fn id_canon2rt(input: Identity) -> RuntimeIdentity {
-    unsafe { std::mem::transmute::<Identity, RuntimeIdentity>(input) }
+pub fn from_runtime_guild(input: RuntimeGuild) -> Guild<AccountId> {
+    unsafe { std::mem::transmute::<RuntimeGuild, Guild<AccountId>>(input) }
+}
+
+pub fn from_runtime_role(input: RuntimeRole) -> Role<Hash> {
+    unsafe { std::mem::transmute::<RuntimeRole, Role<Hash>>(input) }
 }

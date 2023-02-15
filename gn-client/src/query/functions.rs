@@ -1,7 +1,8 @@
+use super::FilteredRequirements;
 use crate::{runtime, AccountId, Api, Hash, Request, SubxtError};
 use gn_common::filter::Guild as GuildFilter;
 use gn_common::identity::Identity;
-use gn_common::{GuildName, RequestIdentifier, RoleName};
+use gn_common::{Guild, GuildName, RequestIdentifier, RoleName};
 use gn_engine::RequirementsWithLogic;
 use subxt::ext::codec::Decode;
 use subxt::storage::address::{StorageHasher, StorageMapKey};
@@ -29,7 +30,7 @@ pub async fn user_identity(api: Api, user_id: &AccountId) -> Result<Vec<Identity
         .fetch(&runtime::storage().guild().user_data(user_id, i))
         .await?
     {
-        identities.push(crate::id_rt2canon(identity));
+        identities.push(crate::from_runtime_id(identity));
         i += 1;
     }
     Ok(identities)
@@ -174,29 +175,23 @@ pub async fn guilds(
             .fetch(&guild_addr)
             .await?
             .ok_or_else(|| SubxtError::Other(format!("no Guild with name: {name:#?}")))?;
-        guilds.push(guild);
+        guilds.push(crate::from_runtime_guild(guild));
     } else {
         let root = runtime::storage().guild().guilds_root();
         let mut iter = api.storage().at(None).await?.iter(root, page_size).await?;
         while let Some((_guild_uuid, guild)) = iter.next().await? {
             // we don't care about guild_uuid in this case
-            guilds.push(guild);
+            guilds.push(crate::from_runtime_guild(guild));
         }
     }
     Ok(guilds)
 }
 
-pub struct FilteredRequirements {}
-
-pub async fn filtered_requirements() -> Result<FilteredRequirements, SubxtError> {
-    todo!()
-}
-
-pub async fn requirements(
+pub async fn filtered_requirements(
     api: Api,
     guild_name: GuildName,
     role_name: RoleName,
-) -> Result<RequirementsWithLogic, SubxtError> {
+) -> Result<FilteredRequirements, SubxtError> {
     let filter = GuildFilter {
         name: guild_name,
         role: Some(role_name),
@@ -206,19 +201,23 @@ pub async fn requirements(
         .get(0)
         .ok_or_else(|| SubxtError::Other(format!("no role with name: {role_name:#?}")))?;
     let role_key = runtime::storage().guild().roles(role_id);
-    let serialized_requirements_with_logic = api
+    let role = api
         .storage()
         .at(None)
         .await?
         .fetch(&role_key)
         .await?
-        .ok_or_else(|| SubxtError::Other(format!("no role with name: {role_name:#?}")))?
-        .requirements
-        .ok_or_else(|| SubxtError::Other("this role doesn't have requirements".to_string()))?;
+        .ok_or_else(|| SubxtError::Other(format!("no role with name: {role_name:#?}")))?;
 
-    let requirements_with_logic =
-        RequirementsWithLogic::from_serialized_tuple(serialized_requirements_with_logic)
-            .map_err(|err| SubxtError::Other(err.to_string()))?;
+    FilteredRequirements::try_from(crate::from_runtime_role(role))
+}
 
-    Ok(requirements_with_logic)
+pub async fn requirements(
+    api: Api,
+    guild_name: GuildName,
+    role_name: RoleName,
+) -> Result<Option<RequirementsWithLogic>, SubxtError> {
+    filtered_requirements(api, guild_name, role_name)
+        .await
+        .map(|x| x.requirements)
 }
