@@ -11,7 +11,7 @@ default = [
     "tx",
 ]
 external-oracle = []
-tx = ["sp-core"]
+tx = ["sp-core", "gn-engine/check"]
 wasm = ["subxt/jsonrpsee-web"]
 
 [dependencies]

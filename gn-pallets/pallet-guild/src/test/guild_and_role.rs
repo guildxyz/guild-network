@@ -215,6 +215,8 @@ fn role_with_allowlist_filter() {
             assert_eq!(error_msg(tx.unwrap_err()), raw_error_msg);
         }
 
+        let guild_id = <Guild>::guild_id(guild_name).unwrap();
+
         <Guild>::create_role_with_allowlist(
             RuntimeOrigin::signed(signer),
             guild_name,
@@ -224,6 +226,12 @@ fn role_with_allowlist_filter() {
             None,
         )
         .unwrap();
+
+        role_id_0 = <Guild>::role_id(guild_id, role_name_0).unwrap();
+        assert_eq!(
+            last_event(),
+            GuildEvent::AllowlistWritten(gn_common::offchain_allowlist_key(role_id_0.as_ref()))
+        );
 
         let filter_0 = allowlist_filter::<Keccak256>(&allowlist_0, filter_logic_0);
 
@@ -236,17 +244,15 @@ fn role_with_allowlist_filter() {
             Some((vec![], vec![])),
         )
         .unwrap();
+        role_id_1 = <Guild>::role_id(guild_id, role_name_1).unwrap();
 
         let filter_1 = allowlist_filter::<Keccak256>(&allowlist_1, filter_logic_1);
 
-        let guild_id = <Guild>::guild_id(guild_name).unwrap();
         let guild = <Guild>::guild(guild_id).unwrap();
         assert_eq!(guild.name, guild_name);
         assert_eq!(guild.owner, signer);
         assert_eq!(guild.metadata, METADATA);
         assert_eq!(guild.roles, &[role_name_0, role_name_1]);
-        role_id_0 = <Guild>::role_id(guild_id, role_name_0).unwrap();
-        role_id_1 = <Guild>::role_id(guild_id, role_name_1).unwrap();
         let role_0 = <Guild>::role(role_id_0).unwrap();
         let role_1 = <Guild>::role(role_id_1).unwrap();
         assert_eq!(role_0.filter, Some(filter_0));

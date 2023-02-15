@@ -38,26 +38,14 @@ pub async fn user_identity(api: Api, user_id: &AccountId) -> Result<Vec<Identity
 
 pub async fn members(
     api: Api,
-    filter: Option<&GuildFilter>,
+    filter: &GuildFilter,
     page_size: u32,
 ) -> Result<Vec<AccountId>, SubxtError> {
     let mut keys = Vec::new();
-    if let Some(guild_filter) = filter {
-        let role_ids = role_ids(api.clone(), guild_filter, page_size).await?;
-        for role_id in role_ids.into_iter() {
-            let mut query_key = runtime::storage().guild().members_root().to_root_bytes();
-            StorageMapKey::new(role_id, StorageHasher::Blake2_128).to_bytes(&mut query_key);
-            let mut storage_keys = api
-                .storage()
-                .at(None)
-                .await?
-                .fetch_keys(&query_key, page_size, None)
-                .await?;
-            keys.append(&mut storage_keys);
-        }
-    } else {
-        // read everything from root
-        let query_key = runtime::storage().guild().members_root().to_root_bytes();
+    let role_ids = role_ids(api.clone(), filter, page_size).await?;
+    for role_id in role_ids.into_iter() {
+        let mut query_key = runtime::storage().guild().members_root().to_root_bytes();
+        StorageMapKey::new(role_id, StorageHasher::Blake2_128).to_bytes(&mut query_key);
         let mut storage_keys = api
             .storage()
             .at(None)
@@ -66,15 +54,16 @@ pub async fn members(
             .await?;
         keys.append(&mut storage_keys);
     }
-
     // NOTE unwrap is fine because we are creating an account id from 32 bytes
-    Ok(keys
+    let key_map: BTreeMap<AccountId, usize> = keys
         .iter()
-        .map(|key| {
+        .enumerate()
+        .map(|(i, key)| {
             let id: [u8; 32] = key.0[96..128].try_into().unwrap();
-            AccountId::from(id)
+            (AccountId::from(id), i)
         })
-        .collect())
+        .collect();
+    Ok(key_map.into_keys().collect())
 }
 
 pub async fn guild_id(api: Api, name: GuildName) -> Result<Hash, SubxtError> {
@@ -239,7 +228,7 @@ pub async fn allowlist(
     let role_id = role_id(api.clone(), guild_name, role_name).await?;
     let offchain_key = gn_common::offchain_allowlist_key(role_id.as_ref());
 
-    let maybe_encoded_allowlist = api.rpc().storage(&offchain_key, None).await?;
+    let maybe_encoded_allowlist = api.rpc().offchain(&offchain_key).await?;
     maybe_encoded_allowlist
         .map(|x| Vec::<Identity>::decode(&mut &x.0[..]))
         .transpose()

@@ -171,7 +171,7 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
     send_dummy_oracle_answers(api.clone(), &operators).await;
 
     loop {
-        let members = query::members(api.clone(), Some(&guild_filter), PAGE_SIZE)
+        let members = query::members(api.clone(), &guild_filter, PAGE_SIZE)
             .await
             .expect("failed to query members");
         if members.len() == 1 {
@@ -196,7 +196,7 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
     send_dummy_oracle_answers(api.clone(), &operators).await;
 
     loop {
-        let members = query::members(api.clone(), Some(&guild_filter), PAGE_SIZE)
+        let members = query::members(api.clone(), &guild_filter, PAGE_SIZE)
             .await
             .expect("failed to query members");
         if members.len() == 1 {

@@ -116,6 +116,7 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
+        AllowlistWritten(SpVec<u8>),
         GuildCreated(T::AccountId, GuildName),
         IdRegistered(T::AccountId, u8),
         RoleCreated(T::AccountId, GuildName, RoleName),
@@ -432,6 +433,7 @@ pub mod pallet {
 
             let offchain_key = gn_common::offchain_allowlist_key(role_id.as_ref());
             sp_io::offchain_index::set(&offchain_key, &allowlist.encode());
+            Self::deposit_event(Event::AllowlistWritten(offchain_key));
             Ok(())
         }
 

@@ -161,17 +161,19 @@ async fn try_submit_answer(
         }
         RequestData::ReqCheck {
             account,
-            guild,
-            role,
+            guild_name,
+            role_name,
         } => {
             log::info!(
                 "[requirement check request] acc: {}, guild: {:?}, role: {:?}",
                 account,
-                guild,
-                role
+                guild_name,
+                role_name,
             );
             // fetch requirements
-            let requirements_with_logic = query::requirements(api.clone(), guild, role).await?;
+            let requirements_with_logic = query::requirements(api.clone(), guild_name, role_name)
+                .await?
+                .ok_or(SubxtError::Other("no requirements found".to_string()))?;
             // build requireemnt tree from logic
             let requirement_tree = requiem::LogicTree::from_str(&requirements_with_logic.logic)
                 .map_err(|e| SubxtError::Other(e.to_string()))?;

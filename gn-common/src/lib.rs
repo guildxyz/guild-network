@@ -15,10 +15,10 @@ use parity_scale_codec::alloc::vec::Vec as SpVec;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 
-pub const OFFCHAIN_ALLOWLIST_INDEX_PREFIX: &[u8] = b"guild-allowlist";
+pub const OFFCHAIN_ALLOWLIST_PREFIX: &[u8] = b"guild-allowlist";
 
 pub fn offchain_allowlist_key(key: &[u8]) -> SpVec<u8> {
-    let mut offchain_key = SpVec::from(OFFCHAIN_ALLOWLIST_INDEX_PREFIX);
+    let mut offchain_key = SpVec::from(OFFCHAIN_ALLOWLIST_PREFIX);
     offchain_key.extend_from_slice(key);
     offchain_key
 }

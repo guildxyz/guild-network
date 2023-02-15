@@ -1,6 +1,5 @@
 use ethers::signers::{LocalWallet, Signer as EthSigner};
 use futures::future::try_join_all;
-#[cfg(not(feature = "external-oracle"))]
 use gn_client::query;
 use gn_client::tx::{self, Keypair, PairT, Signer, TxStatus};
 use gn_client::{AccountId, Api};
@@ -47,7 +46,7 @@ pub async fn prefunded_accounts(
         .inspect(|(id, _)| println!("new account: {id}"))
         .collect::<BTreeMap<AccountId, Accounts>>();
 
-    let amount = 1_000_000_000_000_000u128;
+    let amount = 1_000_000_000u128;
     let mut keys = accounts.keys();
     // skip first
     let skipped_account = keys.next().unwrap();
@@ -102,6 +101,8 @@ pub async fn create_dummy_guilds(
     .await
     .expect("failed to create guild");
 
+    println!("first guild created");
+
     tx::send_tx_in_block(
         api.clone(),
         &tx::create_guild(SECOND_GUILD, vec![4, 5, 6]),
@@ -110,13 +111,15 @@ pub async fn create_dummy_guilds(
     .await
     .expect("failed to create guild");
 
+    println!("second guild created");
+
     let allowlist: Vec<Identity> = accounts
         .map(|acc| Identity::Address20(acc.eth.address().to_fixed_bytes()))
         .collect();
 
     let filter = GuildFilter {
         name: FIRST_GUILD,
-        role: Some(SECOND_ROLE),
+        role: Some(FIRST_ROLE),
     };
     // add one free and one filtered role to each guild
     // NOTE cannot try-join them because of different `impl TxPayload` opaque types
@@ -155,6 +158,8 @@ pub async fn create_dummy_guilds(
     )
     .await
     .unwrap();
+
+    println!("all roles created");
 }
 
 pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
@@ -168,6 +173,8 @@ pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
         .collect::<Vec<_>>();
 
     try_join_all(join_request_futures).await.unwrap();
+
+    println!("first guild first role joined");
 
     // only 2 joins the allowlist
     let allowlist = query::allowlist(api.clone(), FIRST_GUILD, SECOND_ROLE)
@@ -204,6 +211,8 @@ pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
 
     try_join_all(join_request_futures).await.unwrap();
 
+    println!("first guild second role joined");
+
     // only 5 joins the child role (they are all registered in first guild's
     // first role
     let payload = tx::join(SECOND_GUILD, SECOND_ROLE, None);
@@ -217,6 +226,8 @@ pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
 
     try_join_all(join_request_futures).await.unwrap();
 
+    println!("second guild second role joined");
+
     // other 5 joins the free role of the second guild
     let payload = tx::join(SECOND_GUILD, FIRST_ROLE, None);
     let join_request_futures = users
@@ -229,7 +240,7 @@ pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
 
     try_join_all(join_request_futures).await.unwrap();
 
-    println!("join requests successfully submitted");
+    println!("second guild first role joined");
 }
 
 pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {

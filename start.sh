@@ -34,7 +34,7 @@ elif [ $1 = "node" ]; then
 elif [ $1 = "api" ]; then
 	subxt metadata -f bytes > gn-client/artifacts/metadata.scale
 elif [ $1 = "dev" ]; then
-	./target/release/gn-node --dev
+	./target/release/gn-node --dev --enable-offchain-indexing true
 elif [ $1 = "build-spec" ]; then
 	./target/release/gn-node build-spec --disable-default-bootnode > chain-spec.json
 	./target/release/gn-node build-spec --chain=chain-spec.json --raw --disable-default-bootnode > chain-spec-raw.json
