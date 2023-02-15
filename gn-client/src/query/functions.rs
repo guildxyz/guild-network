@@ -43,7 +43,7 @@ pub async fn members(
 ) -> Result<Vec<AccountId>, SubxtError> {
     let mut keys = Vec::new();
     if let Some(guild_filter) = filter {
-        let role_ids = role_id(api.clone(), guild_filter, page_size).await?;
+        let role_ids = role_ids(api.clone(), guild_filter, page_size).await?;
         for role_id in role_ids.into_iter() {
             let mut query_key = runtime::storage().guild().members_root().to_root_bytes();
             StorageMapKey::new(role_id, StorageHasher::Blake2_128).to_bytes(&mut query_key);
@@ -88,6 +88,22 @@ pub async fn guild_id(api: Api, name: GuildName) -> Result<Hash, SubxtError> {
 }
 
 pub async fn role_id(
+    api: Api,
+    guild_name: GuildName,
+    role_name: RoleName,
+) -> Result<Hash, SubxtError> {
+    let filter = GuildFilter {
+        name: guild_name,
+        role: Some(role_name),
+    };
+    let role_ids = role_ids(api.clone(), &filter, 1).await?;
+    role_ids
+        .get(0)
+        .copied()
+        .ok_or_else(|| SubxtError::Other(format!("no role with name: {role_name:#?}")))
+}
+
+pub async fn role_ids(
     api: Api,
     filter: &GuildFilter,
     page_size: u32,
@@ -192,14 +208,7 @@ pub async fn filtered_requirements(
     guild_name: GuildName,
     role_name: RoleName,
 ) -> Result<FilteredRequirements, SubxtError> {
-    let filter = GuildFilter {
-        name: guild_name,
-        role: Some(role_name),
-    };
-    let role_ids = role_id(api.clone(), &filter, 1).await?;
-    let role_id = role_ids
-        .get(0)
-        .ok_or_else(|| SubxtError::Other(format!("no role with name: {role_name:#?}")))?;
+    let role_id = role_id(api.clone(), guild_name, role_name).await?;
     let role_key = runtime::storage().guild().roles(role_id);
     let role = api
         .storage()
@@ -220,4 +229,19 @@ pub async fn requirements(
     filtered_requirements(api, guild_name, role_name)
         .await
         .map(|x| x.requirements)
+}
+
+pub async fn allowlist(
+    api: Api,
+    guild_name: GuildName,
+    role_name: RoleName,
+) -> Result<Option<Vec<Identity>>, SubxtError> {
+    let role_id = role_id(api.clone(), guild_name, role_name).await?;
+    let offchain_key = gn_common::offchain_allowlist_key(role_id.as_ref());
+
+    let maybe_encoded_allowlist = api.rpc().storage(&offchain_key, None).await?;
+    maybe_encoded_allowlist
+        .map(|x| Vec::<Identity>::decode(&mut &x.0[..]))
+        .transpose()
+        .map_err(SubxtError::Codec)
 }
