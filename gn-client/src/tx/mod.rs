@@ -7,11 +7,14 @@ pub use subxt::tx::Signer as SignerT;
 pub type Signer = subxt::tx::PairSigner<ClientConfig, Keypair>;
 
 use crate::{
-    cbor_serialize, data::Guild, runtime, AccountId, Api, ClientConfig, Hash, MultiAddress,
-    RequestData, RuntimeIdentityWithAuth, SubxtError, TransactionProgress,
+    cast, runtime, AccountId, Api, ClientConfig, Hash, MultiAddress, SubxtError,
+    TransactionProgress,
 };
 use futures::StreamExt;
-use gn_common::{GuildName, RoleName};
+use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
+use gn_common::identity::{Identity, IdentityWithAuth};
+use gn_common::{GuildName, MerkleProof, RoleName};
+use gn_engine::RequirementsWithLogic;
 use subxt::tx::TxPayload;
 
 use std::sync::Arc;
@@ -30,40 +33,72 @@ pub fn oracle_callback(request_id: u64, data: Vec<u8>) -> impl TxPayload {
     runtime::tx().oracle().callback(request_id, data)
 }
 
-pub fn create_guild(guild: Guild) -> Result<impl TxPayload, serde_cbor::Error> {
-    let mut roles = Vec::new();
-    for role in guild.roles.into_iter() {
-        let logic = cbor_serialize(&role.reqs.logic)?;
-        let mut requirements = Vec::new();
-        for req in role.reqs.requirements {
-            requirements.push(cbor_serialize(&req)?);
-        }
+pub fn create_guild(guild_name: GuildName, metadata: Vec<u8>) -> impl TxPayload {
+    runtime::tx().guild().create_guild(guild_name, metadata)
+}
 
-        roles.push((role.name, (logic, requirements)));
-    }
-
-    Ok(runtime::tx()
+pub fn create_free_role(guild_name: GuildName, role_name: RoleName) -> impl TxPayload {
+    runtime::tx()
         .guild()
-        .create_guild(guild.name, guild.metadata, roles))
+        .create_free_role(guild_name, role_name)
 }
 
-pub fn register(identity_with_auth: RuntimeIdentityWithAuth, index: u8) -> impl TxPayload {
-    runtime::tx().guild().register(RequestData::Register {
-        identity_with_auth,
-        index,
-    })
-}
-
-pub fn manage_role(
-    account: AccountId,
+pub fn create_role_with_allowlist(
     guild_name: GuildName,
     role_name: RoleName,
+    allowlist: Vec<Identity>,
+    filter_logic: FilterLogic,
+    requirements: Option<RequirementsWithLogic>,
+) -> Result<impl TxPayload, SubxtError> {
+    let serialized_requirements = requirements
+        .map(RequirementsWithLogic::into_serialized_tuple)
+        .transpose().map_err(|e| SubxtError::Other(e.to_string()))?;
+    Ok(runtime::tx().guild().create_role_with_allowlist(
+        guild_name,
+        role_name,
+        cast::id_vec::to_runtime(allowlist),
+        cast::filter_logic::to_runtime(filter_logic),
+        serialized_requirements,
+    ))
+}
+
+pub fn create_child_role(
+    guild_name: GuildName,
+    role_name: RoleName,
+    filter: GuildFilter,
+    filter_logic: FilterLogic,
+    requirements: Option<RequirementsWithLogic>,
+) -> Result<impl TxPayload, SubxtError> {
+    let serialized_requirements = requirements
+        .map(RequirementsWithLogic::into_serialized_tuple)
+        .transpose().map_err(|e| SubxtError::Other(e.to_string()))?;
+    Ok(runtime::tx().guild().create_child_role(
+        guild_name,
+        role_name,
+        cast::guild_filter::to_runtime(filter),
+        cast::filter_logic::to_runtime(filter_logic),
+        serialized_requirements,
+    ))
+}
+
+pub fn register(identity_with_auth: IdentityWithAuth, index: u8) -> impl TxPayload {
+    runtime::tx()
+        .guild()
+        .register(cast::id_with_auth::to_runtime(identity_with_auth), index)
+}
+
+pub fn join(
+    guild_name: GuildName,
+    role_name: RoleName,
+    proof: Option<MerkleProof<Hash>>,
 ) -> impl TxPayload {
-    runtime::tx().guild().manage_role(RequestData::ReqCheck {
-        account,
-        guild: guild_name,
-        role: role_name,
-    })
+    runtime::tx()
+        .guild()
+        .join(guild_name, role_name, proof.map(cast::proof::to_runtime))
+}
+
+pub fn leave(guild_name: GuildName, role_name: RoleName) -> impl TxPayload {
+    runtime::tx().guild().leave(guild_name, role_name)
 }
 
 pub async fn send_owned_tx<T: TxPayload>(

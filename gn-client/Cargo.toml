@@ -24,6 +24,7 @@ subxt = { git = "https://github.com/agoraxyz/subxt", branch = "bumped-wasm", def
 futures = "0.3.25"
 log = { version = "0.4.17", default-features = false }
 parity-scale-codec = { workspace = true } # required for the runtime subxt macro
+paste = { version = "1.0", default-features = false }
 serde = { version = "1.0.144", features = ["derive"] }
 
 # substrate core

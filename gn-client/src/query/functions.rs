@@ -1,5 +1,5 @@
 use super::FilteredRequirements;
-use crate::{runtime, AccountId, Api, Hash, Request, SubxtError};
+use crate::{cast, runtime, AccountId, Api, Hash, Request, SubxtError};
 use gn_common::filter::Guild as GuildFilter;
 use gn_common::identity::Identity;
 use gn_common::{Guild, GuildName, RequestIdentifier, RoleName};
@@ -30,7 +30,7 @@ pub async fn user_identity(api: Api, user_id: &AccountId) -> Result<Vec<Identity
         .fetch(&runtime::storage().guild().user_data(user_id, i))
         .await?
     {
-        identities.push(crate::from_runtime_id(identity));
+        identities.push(cast::id::from_runtime(identity));
         i += 1;
     }
     Ok(identities)
@@ -175,13 +175,13 @@ pub async fn guilds(
             .fetch(&guild_addr)
             .await?
             .ok_or_else(|| SubxtError::Other(format!("no Guild with name: {name:#?}")))?;
-        guilds.push(crate::from_runtime_guild(guild));
+        guilds.push(cast::guild::from_runtime(guild));
     } else {
         let root = runtime::storage().guild().guilds_root();
         let mut iter = api.storage().at(None).await?.iter(root, page_size).await?;
         while let Some((_guild_uuid, guild)) = iter.next().await? {
             // we don't care about guild_uuid in this case
-            guilds.push(crate::from_runtime_guild(guild));
+            guilds.push(cast::guild::from_runtime(guild));
         }
     }
     Ok(guilds)
@@ -209,7 +209,7 @@ pub async fn filtered_requirements(
         .await?
         .ok_or_else(|| SubxtError::Other(format!("no role with name: {role_name:#?}")))?;
 
-    FilteredRequirements::try_from(crate::from_runtime_role(role))
+    FilteredRequirements::try_from(cast::role::from_runtime(role))
 }
 
 pub async fn requirements(
