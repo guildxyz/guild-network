@@ -1,7 +1,7 @@
 #![allow(unused)]
 use crate::{runtime, AccountId, Hash};
-use gn_common::identity::{Identity, IdentityWithAuth};
 use gn_common::filter::Logic as FilterLogic;
+use gn_common::identity::{Identity, IdentityWithAuth};
 use paste::paste;
 
 type Filter = gn_common::filter::Filter<Hash>;

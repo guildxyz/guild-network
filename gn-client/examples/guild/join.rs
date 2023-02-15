@@ -1,6 +1,7 @@
 use crate::common::*;
 use ethers::signers::Signer as EthSigner;
 use gn_client::{query, tx::Signer, Api};
+use gn_common::filter::Guild as GuildFilter;
 use gn_common::identity::Identity;
 use gn_common::pad::padded_id;
 use gn_test_data::*;
@@ -83,7 +84,7 @@ pub async fn join(api: Api, alice: Arc<Signer>) {
         }
     }
 
-    let mut filter = query::GuildFilter {
+    let mut filter = GuildFilter {
         name: FIRST_GUILD,
         role: None,
     };

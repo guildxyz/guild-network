@@ -1,17 +1,16 @@
 #[cfg(not(feature = "external-oracle"))]
 use crate::common::*;
 use ethers::types::{Address, U256};
-use gn_client::runtime::runtime_types::gn_common::identity::auth::EcdsaSignature as RuntimeEcdsaSignature;
 use gn_client::{
-    data::{Guild, Role},
     query,
     tx::{self, Signer},
+    Api,
 };
-use gn_client::{Api, RuntimeIdentity, RuntimeIdentityWithAuth};
-use gn_common::identity::Identity;
-use gn_common::requirements::balance::{Relation, RequiredBalance, TokenType};
-use gn_common::requirements::chains::EvmChain;
-use gn_common::requirements::{Requirement, RequirementsWithLogic};
+use gn_common::filter::Guild as GuildFilter;
+use gn_common::identity::{EcdsaSignature, Identity, IdentityWithAuth};
+use gn_engine::balance::{Balance, Relation, TokenType};
+use gn_engine::chains::EvmChain;
+use gn_engine::{Requirement, RequirementsWithLogic};
 use gn_test_data::*;
 
 use std::str::FromStr;
@@ -56,10 +55,8 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
     }
 
     // register alice with test evm address + signature
-    let evm_identity = RuntimeIdentityWithAuth::Ecdsa(
-        RuntimeIdentity::Address20(address),
-        RuntimeEcdsaSignature(signature),
-    );
+    let evm_identity =
+        IdentityWithAuth::Ecdsa(Identity::Address20(address), EcdsaSignature(signature));
 
     let index = 0;
     let tx_payload = tx::register(evm_identity, index);
@@ -88,84 +85,84 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
     let mut one = [0u8; 32];
     one[0] = 1;
 
-    let roles = vec![
-        Role {
-            name: FIRST_ROLE,
-            reqs: RequirementsWithLogic {
-                logic: "0 AND 1".to_string(),
-                requirements: vec![
-                    Requirement::EvmBalance(RequiredBalance {
-                        token_type: Some(TokenType::NonFungible {
-                            address: Address::from_str(ETH_ERC721_ADDRESS)
-                                .unwrap()
-                                .to_fixed_bytes(),
-                            id: U256::from_dec_str(ETH_ERC721_ID).unwrap().into(),
-                        }),
-                        relation: Relation::EqualTo(one),
-                        chain: EvmChain::Ethereum,
-                    }),
-                    Requirement::EvmBalance(RequiredBalance {
-                        token_type: None,
-                        relation: Relation::GreaterThan([0u8; 32]),
-                        chain: EvmChain::Ethereum,
-                    }),
-                ],
-            },
-        },
-        Role {
-            name: SECOND_ROLE,
-            reqs: RequirementsWithLogic {
-                logic: "0 OR (1 AND 2)".to_string(),
-                requirements: vec![
-                    Requirement::EvmBalance(RequiredBalance {
-                        token_type: None,
-                        relation: Relation::GreaterThan([1u8; 32]),
-                        chain: EvmChain::Ethereum,
-                    }),
-                    Requirement::EvmBalance(RequiredBalance {
-                        token_type: Some(TokenType::NonFungible {
-                            address: Address::from_str(GNOSIS_ERC721_ADDRESS_0)
-                                .unwrap()
-                                .to_fixed_bytes(),
-                            id: U256::from_dec_str(GNOSIS_ERC721_ID_0).unwrap().into(),
-                        }),
-                        relation: Relation::EqualTo(one),
-                        chain: EvmChain::Gnosis,
-                    }),
-                    Requirement::EvmBalance(RequiredBalance {
-                        token_type: Some(TokenType::NonFungible {
-                            address: Address::from_str(GNOSIS_ERC721_ADDRESS_1)
-                                .unwrap()
-                                .to_fixed_bytes(),
-                            id: U256::from_dec_str(GNOSIS_ERC721_ID_1).unwrap().into(),
-                        }),
-                        relation: Relation::EqualTo(U256::from(1).into()),
-                        chain: EvmChain::Gnosis,
-                    }),
-                ],
-            },
-        },
-    ];
-
-    let guild = Guild {
-        name: TOKEN_GUILD,
-        metadata: vec![1, 2, 3],
-        roles,
+    let first_reqs = RequirementsWithLogic {
+        logic: "0 AND 1".to_string(),
+        requirements: vec![
+            Requirement::EvmBalance(Balance {
+                token_type: Some(TokenType::NonFungible {
+                    address: Address::from_str(ETH_ERC721_ADDRESS)
+                        .unwrap()
+                        .to_fixed_bytes(),
+                    id: Some(U256::from_dec_str(ETH_ERC721_ID).unwrap().into()),
+                }),
+                relation: Relation::EqualTo(one),
+                chain: EvmChain::Ethereum,
+            }),
+            Requirement::EvmBalance(Balance {
+                token_type: None,
+                relation: Relation::GreaterThan([0u8; 32]),
+                chain: EvmChain::Ethereum,
+            }),
+        ],
+    };
+    let second_reqs = RequirementsWithLogic {
+        logic: "0 OR (1 AND 2)".to_string(),
+        requirements: vec![
+            Requirement::EvmBalance(Balance {
+                token_type: None,
+                relation: Relation::GreaterThan([1u8; 32]),
+                chain: EvmChain::Ethereum,
+            }),
+            Requirement::EvmBalance(Balance {
+                token_type: Some(TokenType::NonFungible {
+                    address: Address::from_str(GNOSIS_ERC721_ADDRESS_0)
+                        .unwrap()
+                        .to_fixed_bytes(),
+                    id: Some(U256::from_dec_str(GNOSIS_ERC721_ID_0).unwrap().into()),
+                }),
+                relation: Relation::EqualTo(one),
+                chain: EvmChain::Gnosis,
+            }),
+            Requirement::EvmBalance(Balance {
+                token_type: Some(TokenType::NonFungible {
+                    address: Address::from_str(GNOSIS_ERC721_ADDRESS_1)
+                        .unwrap()
+                        .to_fixed_bytes(),
+                    id: Some(U256::from_dec_str(GNOSIS_ERC721_ID_1).unwrap().into()),
+                }),
+                relation: Relation::EqualTo(U256::from(1).into()),
+                chain: EvmChain::Gnosis,
+            }),
+        ],
     };
 
-    let tx_payload = tx::create_guild(guild).expect("failed to serialize requirements");
+    let tx_payload = tx::create_guild(TOKEN_GUILD, vec![1, 2, 3]);
     tx::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
         .await
         .expect("failed to create guild");
 
     println!("GUILD CREATED");
 
-    let tx_payload = tx::manage_role(alice.account_id().clone(), TOKEN_GUILD, FIRST_ROLE);
+    let tx_payload = tx::create_unfiltered_role(TOKEN_GUILD, FIRST_ROLE, first_reqs).unwrap();
+    tx::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
+        .await
+        .expect("failed to create guild");
+
+    println!("FIRST ROLE CREATED");
+
+    let tx_payload = tx::create_unfiltered_role(TOKEN_GUILD, SECOND_ROLE, second_reqs).unwrap();
+    tx::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
+        .await
+        .expect("failed to create guild");
+
+    println!("SECOND ROLE CREATED");
+
+    let tx_payload = tx::join(TOKEN_GUILD, FIRST_ROLE, None);
     tx::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
         .await
         .expect("failed to join guild");
 
-    let guild_filter = query::GuildFilter {
+    let guild_filter = GuildFilter {
         name: TOKEN_GUILD,
         role: Some(FIRST_ROLE),
     };
@@ -185,12 +182,12 @@ pub async fn token(api: Api, alice: Arc<Signer>) {
 
     println!("FIRST_ROLE JOINED");
 
-    let tx_payload = tx::manage_role(alice.account_id().clone(), TOKEN_GUILD, SECOND_ROLE);
+    let tx_payload = tx::join(TOKEN_GUILD, SECOND_ROLE, None);
     tx::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&alice))
         .await
         .expect("failed to join guild");
 
-    let guild_filter = query::GuildFilter {
+    let guild_filter = GuildFilter {
         name: TOKEN_GUILD,
         role: Some(SECOND_ROLE),
     };

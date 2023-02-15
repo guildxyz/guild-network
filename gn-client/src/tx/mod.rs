@@ -52,7 +52,8 @@ pub fn create_role_with_allowlist(
 ) -> Result<impl TxPayload, SubxtError> {
     let serialized_requirements = requirements
         .map(RequirementsWithLogic::into_serialized_tuple)
-        .transpose().map_err(|e| SubxtError::Other(e.to_string()))?;
+        .transpose()
+        .map_err(|e| SubxtError::Other(e.to_string()))?;
     Ok(runtime::tx().guild().create_role_with_allowlist(
         guild_name,
         role_name,
@@ -71,7 +72,8 @@ pub fn create_child_role(
 ) -> Result<impl TxPayload, SubxtError> {
     let serialized_requirements = requirements
         .map(RequirementsWithLogic::into_serialized_tuple)
-        .transpose().map_err(|e| SubxtError::Other(e.to_string()))?;
+        .transpose()
+        .map_err(|e| SubxtError::Other(e.to_string()))?;
     Ok(runtime::tx().guild().create_child_role(
         guild_name,
         role_name,
@@ -79,6 +81,19 @@ pub fn create_child_role(
         cast::filter_logic::to_runtime(filter_logic),
         serialized_requirements,
     ))
+}
+
+pub fn create_unfiltered_role(
+    guild_name: GuildName,
+    role_name: RoleName,
+    requirements: RequirementsWithLogic,
+) -> Result<impl TxPayload, SubxtError> {
+    let serialized_requirements = requirements
+        .into_serialized_tuple()
+        .map_err(|e| SubxtError::Other(e.to_string()))?;
+    Ok(runtime::tx()
+        .guild()
+        .create_unfiltered_role(guild_name, role_name, serialized_requirements))
 }
 
 pub fn register(identity_with_auth: IdentityWithAuth, index: u8) -> impl TxPayload {
