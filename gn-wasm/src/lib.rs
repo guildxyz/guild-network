@@ -2,39 +2,41 @@
 #![deny(clippy::dbg_macro)]
 #![deny(unused_crate_dependencies)]
 
-use gn_client::data::Guild;
-use gn_client::query::{self, GuildFilter};
-use gn_client::{AccountId, Api};
-use gn_common::{pad::pad_to_n_bytes, utils, GuildName};
-pub use serde_cbor::to_vec as cbor_serialize;
-use serde_wasm_bindgen::{from_value as deserialize_from_value, to_value as serialize_to_value};
+use gn_client::{query, AccountId, Api};
+use gn_common::filter::Guild as GuildFilter;
+use gn_common::{pad::pad_to_n_bytes, GuildName, RoleName};
+use serde_wasm_bindgen::to_value as serialize_to_value;
 use wasm_bindgen::prelude::*;
 
 use std::str::FromStr;
 
+const PAD_BYTES: usize = 32;
+
+fn sanitize_name(name: String) -> Result<[u8; PAD_BYTES], JsValue> {
+    if name.is_empty() || name.len() > PAD_BYTES {
+        return Err(JsValue::from("invalid name length"));
+    }
+    Ok(pad_to_n_bytes::<PAD_BYTES, _>(&name))
+}
+
 #[wasm_bindgen(js_name = "queryMembers")]
-pub async fn query_members(guild: String, role: String, url: String) -> Result<JsValue, JsValue> {
+pub async fn query_members(
+    guild: String,
+    role: Option<String>,
+    url: String,
+) -> Result<JsValue, JsValue> {
     let api = Api::from_url(&url)
         .await
         .map_err(|e| JsValue::from(e.to_string()))?;
 
-    let mut guild_filter: Option<GuildFilter> = None;
+    let guild_name = sanitize_name(guild)?;
+    let role_name: Option<RoleName> = role.map(sanitize_name).transpose()?;
+    let filter = GuildFilter {
+        name: guild_name,
+        role: role_name,
+    };
 
-    if !guild.is_empty() && guild.len() < 32 {
-        let guild_name = pad_to_n_bytes::<32, _>(&guild);
-        let role_name = if !role.is_empty() && role.len() < 32 {
-            Some(pad_to_n_bytes::<32, _>(&role))
-        } else {
-            None
-        };
-
-        guild_filter = Some(GuildFilter {
-            name: guild_name,
-            role: role_name,
-        });
-    }
-
-    let members = query::members(api, guild_filter.as_ref(), 10)
+    let members = query::members(api, &filter, 10)
         .await
         .map_err(|e| JsValue::from(e.to_string()))?;
 
@@ -42,15 +44,12 @@ pub async fn query_members(guild: String, role: String, url: String) -> Result<J
 }
 
 #[wasm_bindgen(js_name = "queryGuilds")]
-pub async fn query_guilds(guild: String, url: String) -> Result<JsValue, JsValue> {
+pub async fn query_guilds(guild: Option<String>, url: String) -> Result<JsValue, JsValue> {
     let api = Api::from_url(&url)
         .await
         .map_err(|e| JsValue::from(e.to_string()))?;
 
-    let mut guild_name: Option<GuildName> = None;
-    if !guild.is_empty() && guild.len() < 32 {
-        guild_name = Some(pad_to_n_bytes::<32, _>(&guild));
-    }
+    let guild_name: Option<GuildName> = guild.map(sanitize_name).transpose()?;
 
     let guilds = query::guilds(api, guild_name, 10)
         .await
@@ -69,18 +68,13 @@ pub async fn query_requirements(
         .await
         .map_err(|e| JsValue::from(e.to_string()))?;
 
-    if guild.len() > 32 || role.len() > 32 {
-        Err(JsValue::from("too long input name"))
-    } else {
-        let guild_name = pad_to_n_bytes::<32, _>(&guild);
-        let role_name = pad_to_n_bytes::<32, _>(&role);
+    let guild_name = sanitize_name(guild)?;
+    let role_name = sanitize_name(role)?;
 
-        let requirements = query::requirements(api, guild_name, role_name)
-            .await
-            .map_err(|e| JsValue::from(e.to_string()))?;
-
-        serialize_to_value(&requirements).map_err(|e| JsValue::from(e.to_string()))
-    }
+    let requirements = query::filtered_requirements(api, guild_name, role_name)
+        .await
+        .map_err(|e| JsValue::from(e.to_string()))?;
+    serialize_to_value(&requirements).map_err(|e| JsValue::from(e.to_string()))
 }
 
 #[wasm_bindgen(js_name = "queryUserIdentity")]
@@ -97,30 +91,29 @@ pub async fn query_user_identity(address: String, url: String) -> Result<JsValue
     serialize_to_value(&identities).map_err(|e| JsValue::from(e.to_string()))
 }
 
-#[wasm_bindgen(js_name = "verificationMsg")]
-pub async fn verification_msg(address: String) -> String {
-    utils::verification_msg(address)
+#[wasm_bindgen(js_name = "queryAllowlist")]
+pub async fn query_allowlist(guild: String, role: String, url: String) -> Result<JsValue, JsValue> {
+    let api = Api::from_url(&url)
+        .await
+        .map_err(|e| JsValue::from(e.to_string()))?;
+
+    let guild_name = sanitize_name(guild)?;
+    let role_name = sanitize_name(role)?;
+
+    let allowlist = query::allowlist(api, guild_name, role_name)
+        .await
+        .map_err(|e| JsValue::from(e.to_string()))?;
+    serialize_to_value(&allowlist).map_err(|e| JsValue::from(e.to_string()))
 }
 
-#[wasm_bindgen(js_name = "createGuildEncodeParams")]
-pub async fn create_guild_encode_params(guild: JsValue) -> Result<JsValue, JsValue> {
-    let guild: Guild = deserialize_from_value(guild).map_err(|e| JsValue::from(e.to_string()))?;
-
-    let mut roles = Vec::new();
-    for role in guild.roles.into_iter() {
-        let ser_requirements =
-            cbor_serialize(&role.reqs).map_err(|e| JsValue::from(e.to_string()))?;
-        roles.push((role.name, ser_requirements));
-    }
-
-    serialize_to_value(&(guild.name, guild.metadata, roles))
-        .map_err(|e| JsValue::from(e.to_string()))
+#[wasm_bindgen(js_name = "verificationMsg")]
+pub async fn verification_msg(address: String) -> String {
+    gn_common::utils::verification_msg(address)
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use gn_common::utils::matches_variant;
     use gn_test_data::*;
     use wasm_bindgen_test::*;
 
@@ -147,32 +140,41 @@ mod test {
     #[cfg(feature = "queries")]
     mod queries {
         use super::*;
+        use gn_client::{query::FilteredRequirements, AccountId};
+        use gn_common::filter::{Filter, Logic as FilterLogic};
         use gn_common::identity::Identity;
+        use gn_common::Guild;
         use serde_wasm_bindgen::from_value as deserialize_from_value;
 
         #[wasm_bindgen_test]
         async fn test_query_members() {
             let guild = "myguild".to_string();
-            let role = "".to_string();
-
+            let role = None;
             let members_js = query_members(guild, role, URL.to_string()).await.unwrap();
-            let members_vec: Vec<gn_client::AccountId> =
-                deserialize_from_value(members_js).unwrap();
+            let members_vec: Vec<AccountId> = deserialize_from_value(members_js).unwrap();
 
-            assert_eq!(members_vec.len(), 6);
+            assert_eq!(members_vec.len(), N_TEST_ACCOUNTS);
+
+            let guild = "mysecondguild".to_string();
+            let role = Some("myrole".to_string());
+            let members_js = query_members(guild, role, URL.to_string()).await.unwrap();
+            let members_vec: Vec<AccountId> = deserialize_from_value(members_js).unwrap();
+
+            assert_eq!(members_vec.len(), N_TEST_ACCOUNTS / 2);
         }
 
         #[wasm_bindgen_test]
         async fn test_query_guilds() {
-            let guild_name = "".to_string();
-            let guilds = query_guilds(guild_name, URL.to_string()).await.unwrap();
-            let guilds_vec: Vec<gn_client::data::GuildData> =
-                deserialize_from_value(guilds).unwrap();
+            let guilds_js = query_guilds(None, URL.to_string()).await.unwrap();
+            let guilds: Vec<Guild<AccountId>> = deserialize_from_value(guilds_js).unwrap();
 
-            assert!(guilds_vec.len() == 2);
-            for guild in &guilds_vec {
-                assert_eq!(guild.roles[0], "myrole");
-                assert_eq!(guild.roles[1], "mysecondrole");
+            assert!(guilds.len() == 2);
+            for guild in &guilds {
+                assert_eq!(guild.roles[0], pad_to_n_bytes::<PAD_BYTES, _>("myrole"));
+                assert_eq!(
+                    guild.roles[1],
+                    pad_to_n_bytes::<PAD_BYTES, _>("mysecondrole")
+                );
             }
         }
 
@@ -183,17 +185,47 @@ mod test {
             let requirements_js = query_requirements(guild_name, role_name, URL.to_string())
                 .await
                 .unwrap();
-            let requirements: gn_common::requirements::RequirementsWithLogic =
+            let requirements: FilteredRequirements =
                 deserialize_from_value(requirements_js).unwrap();
+            assert!(requirements.filter.is_none());
+            assert!(requirements.requirements.is_none());
 
-            assert_eq!(requirements.logic, "0");
+            let guild_name = "myguild".to_string();
+            let role_name = "mysecondrole".to_string();
+            let requirements_js =
+                query_requirements(guild_name.clone(), role_name.clone(), URL.to_string())
+                    .await
+                    .unwrap();
+            let requirements: FilteredRequirements =
+                deserialize_from_value(requirements_js).unwrap();
+            assert_eq!(
+                requirements.filter,
+                Some(Filter::Allowlist(
+                    gn_client::Hash::from_str(
+                        "0xf6bace20645fc288795dc16cf6780d755772ba7fbe8815d78d911023ff3c8f5b"
+                    )
+                    .unwrap(),
+                    FilterLogic::And,
+                    N_TEST_ACCOUNTS as u32
+                ))
+            );
+            assert!(requirements.requirements.is_none());
+
+            let allowlist_js = query_allowlist(guild_name, role_name, URL.to_string())
+                .await
+                .unwrap();
+            let allowlist = deserialize_from_value::<Option<Vec<Identity>>>(allowlist_js)
+                .unwrap()
+                .unwrap();
+            assert_eq!(allowlist.len(), N_TEST_ACCOUNTS);
         }
 
         #[wasm_bindgen_test]
         async fn test_query_user_identity() {
+            use gn_common::utils::matches_variant;
             let account_id = AccountId::from_str(TEST_ADDRESS).unwrap();
 
-            let members_js = query_members("".to_string(), "".to_string(), URL.to_string())
+            let members_js = query_members("myguild".to_string(), None, URL.to_string())
                 .await
                 .unwrap();
             let members_vec: Vec<AccountId> = deserialize_from_value(members_js).unwrap();

@@ -14,6 +14,7 @@ pub use merkle::Leaf as MerkleLeaf;
 use parity_scale_codec::alloc::vec::Vec as SpVec;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
+use serde::{Deserialize, Serialize};
 
 pub const OFFCHAIN_ALLOWLIST_PREFIX: &[u8] = b"guild-allowlist";
 
@@ -50,7 +51,7 @@ pub enum RequestData<T> {
     },
 }
 
-#[derive(Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq)]
 pub struct Guild<T> {
     pub name: GuildName,
     pub owner: T,

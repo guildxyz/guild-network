@@ -11,8 +11,9 @@ mod check;
 use balance::Balance;
 use chains::EvmChain;
 
+use parity_scale_codec::alloc::vec::Vec as SpVec;
 use serde::{Deserialize, Serialize};
-pub use serde_cbor::{from_slice as cbor_deserialize, to_vec as cbor_serialize};
+use serde_cbor::{from_slice as cbor_deserialize, to_vec as cbor_serialize};
 
 pub type EvmAddress = [u8; 20];
 pub type U256 = [u8; 32];
@@ -24,7 +25,7 @@ pub enum Requirement {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RequirementsWithLogic {
-    pub requirements: parity_scale_codec::alloc::vec::Vec<Requirement>,
+    pub requirements: SpVec<Requirement>,
     pub logic: parity_scale_codec::alloc::string::String,
 }
 
@@ -36,7 +37,7 @@ impl RequirementsWithLogic {
             .requirements
             .into_iter()
             .map(|x| cbor_serialize(&x))
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<Result<SpVec<_>, _>>()?;
         let logic = cbor_serialize(&self.logic)?;
         Ok((reqs, logic))
     }
@@ -48,7 +49,7 @@ impl RequirementsWithLogic {
             .0
             .into_iter()
             .map(|x| cbor_deserialize(&x))
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<Result<SpVec<_>, _>>()?;
         let logic = cbor_deserialize(&tuple.1)?;
         Ok(Self {
             requirements,

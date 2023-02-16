@@ -4,7 +4,9 @@ pub use functions::*;
 use crate::{Hash, SubxtError};
 use gn_common::Role;
 use gn_engine::RequirementsWithLogic;
+use serde::{Deserialize, Serialize};
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FilteredRequirements {
     pub filter: Option<gn_common::filter::Filter<Hash>>,
     pub requirements: Option<gn_engine::RequirementsWithLogic>,
