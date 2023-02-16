@@ -4,8 +4,10 @@
 
 use gn_client::{query, AccountId, Api};
 use gn_common::filter::Guild as GuildFilter;
+use gn_common::identity::Identity;
+use gn_common::merkle::Proof;
 use gn_common::{pad::pad_to_n_bytes, GuildName, RoleName};
-use serde_wasm_bindgen::to_value as serialize_to_value;
+use serde_wasm_bindgen::{from_value as deserialize_from_value, to_value as serialize_to_value};
 use wasm_bindgen::prelude::*;
 
 use std::str::FromStr;
@@ -107,8 +109,15 @@ pub async fn query_allowlist(guild: String, role: String, url: String) -> Result
 }
 
 #[wasm_bindgen(js_name = "generateMerkleProof")]
-pub async fn generate_merkle_proof(list: JsValue, index: usize) -> Result<JsValue, JsValue> {
-    todo!();
+pub fn generate_merkle_proof(
+    list: JsValue,
+    leaf_index: usize,
+    id_index: u8,
+) -> Result<JsValue, JsValue> {
+    let allowlist: Vec<Identity> =
+        deserialize_from_value(list).map_err(|e| JsValue::from(e.to_string()))?;
+    serialize_to_value(&Proof::new(&allowlist, leaf_index, id_index))
+        .map_err(|e| JsValue::from(e.to_string()))
 }
 
 #[wasm_bindgen(js_name = "verificationMsg")]
@@ -149,7 +158,6 @@ mod test {
         use gn_common::filter::{Filter, Logic as FilterLogic};
         use gn_common::identity::Identity;
         use gn_common::Guild;
-        use serde_wasm_bindgen::from_value as deserialize_from_value;
 
         #[wasm_bindgen_test]
         async fn test_query_members() {
@@ -252,6 +260,19 @@ mod test {
                 identities.get(1).unwrap(),
                 &Identity::Other([0u8; 64])
             ));
+        }
+
+        #[wasm_bindgen_test]
+        async fn test_generate_proof() {
+            let guild_name = "myguild".to_string();
+            let role_name = "mysecondrole".to_string();
+            let allowlist_js = query_allowlist(guild_name, role_name, URL.to_string())
+                .await
+                .unwrap();
+            let proof_js = generate_merkle_proof(allowlist_js, 7, 0).unwrap();
+            let proof: Proof = deserialize_from_value(proof_js).unwrap();
+            assert_eq!(proof.path.len(), 4);
+            assert_eq!(proof.id_index, 0);
         }
     }
 }
