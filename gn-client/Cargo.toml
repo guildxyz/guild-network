@@ -27,7 +27,6 @@ parity-scale-codec = { workspace = true } # required for the runtime subxt macro
 paste = { version = "1.0", default-features = false }
 serde = { version = "1.0.144", features = ["derive"] }
 
-# substrate core
 sp-core = { workspace = true, optional = true }
 
 [dev-dependencies]

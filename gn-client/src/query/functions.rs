@@ -1,5 +1,5 @@
 use super::FilteredRequirements;
-use crate::{cast, runtime, AccountId, Api, Hash, Request, SubxtError};
+use crate::{cast, runtime, AccountId, Api, Request, SubxtError, H256};
 use gn_common::filter::Guild as GuildFilter;
 use gn_common::identity::Identity;
 use gn_common::{Guild, GuildName, RequestIdentifier, RoleName};
@@ -66,7 +66,7 @@ pub async fn members(
     Ok(key_map.into_keys().collect())
 }
 
-pub async fn guild_id(api: Api, name: GuildName) -> Result<Hash, SubxtError> {
+pub async fn guild_id(api: Api, name: GuildName) -> Result<H256, SubxtError> {
     let guild_id_address = runtime::storage().guild().guild_id_map(name);
     api.storage()
         .at(None)
@@ -80,7 +80,7 @@ pub async fn role_id(
     api: Api,
     guild_name: GuildName,
     role_name: RoleName,
-) -> Result<Hash, SubxtError> {
+) -> Result<H256, SubxtError> {
     let filter = GuildFilter {
         name: guild_name,
         role: Some(role_name),
@@ -96,7 +96,7 @@ pub async fn role_ids(
     api: Api,
     filter: &GuildFilter,
     page_size: u32,
-) -> Result<Vec<Hash>, SubxtError> {
+) -> Result<Vec<H256>, SubxtError> {
     let guild_id = guild_id(api.clone(), filter.name).await?;
     let mut query_key = runtime::storage()
         .guild()
@@ -105,7 +105,7 @@ pub async fn role_ids(
 
     StorageMapKey::new(guild_id, StorageHasher::Blake2_128).to_bytes(&mut query_key);
     if let Some(rn) = filter.role {
-        query_key.append(&mut guild_id.0.to_vec());
+        query_key.extend_from_slice(guild_id.as_ref());
         StorageMapKey::new(rn, StorageHasher::Blake2_128).to_bytes(&mut query_key);
     }
 

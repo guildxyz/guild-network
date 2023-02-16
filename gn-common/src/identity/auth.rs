@@ -1,4 +1,5 @@
 use super::Identity;
+use crate::hash::keccak256;
 use crate::{Decode, Encode, TypeInfo};
 use ed25519_zebra::{Signature as EdSig, VerificationKey as EdKey};
 use schnorrkel::{PublicKey as SrKey, Signature as SrSig};
@@ -6,7 +7,6 @@ use secp256k1::{
     ecdsa::{RecoverableSignature, RecoveryId},
     Message, Secp256k1,
 };
-use sha3::Digest;
 
 const ETHEREUM_HASH_PREFIX: &str = "\x19Ethereum Signed Message:\n";
 const SR_SIGNING_CTX: &[u8] = b"substrate";
@@ -92,14 +92,6 @@ pub fn recover_prehashed(
     Secp256k1::verification_only()
         .recover_ecdsa(&message, &sig)
         .ok()
-}
-
-pub fn keccak256<T: AsRef<[u8]>>(input: T) -> [u8; 32] {
-    let mut output = [0u8; 32];
-    let mut hasher = sha3::Keccak256::new();
-    hasher.update(input.as_ref());
-    hasher.finalize_into((&mut output).into());
-    output
 }
 
 pub fn eth_hash_message<M: AsRef<[u8]>>(message: M) -> [u8; 32] {

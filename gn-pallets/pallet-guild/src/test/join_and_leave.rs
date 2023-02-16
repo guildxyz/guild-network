@@ -1,5 +1,6 @@
 use super::*;
 use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
+use gn_common::merkle::Proof as MerkleProof;
 
 #[test]
 fn join_and_leave_free_role() {
@@ -131,20 +132,16 @@ fn join_and_leave_role_with_allowlist() {
         Some(allowlist.encode())
     );
     let leaf_index = allowlist.len() - 1;
-    let proof = gn_common::generate_merkle_proof::<Keccak256, _, _>(&allowlist, leaf_index);
-    let onchain_proof = gn_common::MerkleProof {
-        path: proof.proof,
-        id_index,
-    };
+    let proof = MerkleProof::new(&allowlist, leaf_index, id_index);
 
-    let onchain_proof_with_invalid_path = gn_common::MerkleProof {
+    let proof_with_invalid_path = MerkleProof {
         path: vec![],
         id_index,
     };
 
-    let onchain_proof_with_invalid_id_index = gn_common::MerkleProof {
-        path: onchain_proof.path.clone(),
-        id_index: 1,
+    let proof_with_invalid_id_index = MerkleProof {
+        path: proof.path.clone(),
+        id_index: id_index + 1,
     };
 
     ext.execute_with(|| {
@@ -158,7 +155,7 @@ fn join_and_leave_role_with_allowlist() {
                     RuntimeOrigin::signed(user_1),
                     guild_name,
                     role_name,
-                    Some(onchain_proof_with_invalid_path),
+                    Some(proof_with_invalid_path),
                 ),
                 "AccessDenied",
             ),
@@ -167,7 +164,7 @@ fn join_and_leave_role_with_allowlist() {
                     RuntimeOrigin::signed(user_1),
                     guild_name,
                     role_name,
-                    Some(onchain_proof_with_invalid_id_index),
+                    Some(proof_with_invalid_id_index),
                 ),
                 "IdNotRegistered",
             ),
@@ -176,7 +173,7 @@ fn join_and_leave_role_with_allowlist() {
                     RuntimeOrigin::signed(user_2),
                     guild_name,
                     role_name,
-                    Some(onchain_proof.clone()),
+                    Some(proof.clone()),
                 ),
                 "AccessDenied",
             ),
@@ -190,7 +187,7 @@ fn join_and_leave_role_with_allowlist() {
             RuntimeOrigin::signed(user_1),
             guild_name,
             role_name,
-            Some(onchain_proof),
+            Some(proof),
         )
         .unwrap();
         assert_eq!(

@@ -5,7 +5,7 @@ use gn_client::tx::{self, Keypair, PairT, Signer, TxStatus};
 use gn_client::{AccountId, Api};
 use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
 use gn_common::identity::{EcdsaSignature, Identity, IdentityWithAuth};
-use gn_common::MerkleProof;
+use gn_common::merkle::Proof as MerkleProof;
 use gn_test_data::*;
 use rand::{rngs::StdRng, SeedableRng};
 use sp_keyring::AccountKeyring;
@@ -182,18 +182,8 @@ pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
         .unwrap()
         .unwrap();
 
-    let merkle_proof =
-        gn_common::generate_merkle_proof::<sp_core::KeccakHasher, _, _>(&allowlist, 0);
-    let proof_0 = MerkleProof {
-        path: merkle_proof.proof,
-        id_index: 0,
-    };
-    let merkle_proof =
-        gn_common::generate_merkle_proof::<sp_core::KeccakHasher, _, _>(&allowlist, 1);
-    let proof_1 = MerkleProof {
-        path: merkle_proof.proof,
-        id_index: 0,
-    };
+    let proof_0 = MerkleProof::new(&allowlist, 0, 0);
+    let proof_1 = MerkleProof::new(&allowlist, 1, 0);
 
     let payloads = vec![
         tx::join(FIRST_GUILD, SECOND_ROLE, Some(proof_0)),

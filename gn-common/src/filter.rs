@@ -1,3 +1,4 @@
+use crate::hash::{Hash, Keccak256};
 use crate::identity::Identity;
 use crate::{GuildName, RoleName};
 use parity_scale_codec::{Decode, Encode};
@@ -17,17 +18,15 @@ pub enum Logic {
 }
 
 #[derive(Serialize, Deserialize, Encode, Decode, TypeInfo, Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Filter<Root> {
-    Allowlist(Root, Logic, u32),
+pub enum Filter {
+    Allowlist(Hash, Logic, u32),
     Guild(Guild, Logic),
 }
 
-pub fn allowlist_filter<H>(allowlist: &[Identity], logic: Logic) -> Filter<H::Out>
-where
-    H: hash_db::Hasher,
-    H::Out: PartialOrd,
-{
-    let length = allowlist.len();
-    let root = merkle::merkle_root::<H, _>(allowlist);
-    Filter::Allowlist(root, logic, length as u32)
+impl Filter {
+    pub fn allowlist(allowlist: &[Identity], logic: Logic) -> Self {
+        let length = allowlist.len();
+        let root = crate::merkle::root::<Keccak256, _>(allowlist);
+        Filter::Allowlist(root, logic, length as u32)
+    }
 }

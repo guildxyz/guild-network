@@ -8,7 +8,6 @@ use helpers::*;
 use crate::mock::*;
 type AccountId = <TestRuntime as frame_system::Config>::AccountId;
 
-use frame_support::sp_runtime::traits::Keccak256;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use gn_common::{
     identity::{Identity, IdentityWithAuth},

@@ -3,7 +3,7 @@
 
 // re-exports
 pub use subxt::utils::MultiAddress;
-pub use subxt::utils::H256 as Hash;
+pub use subxt::utils::H256;
 pub use subxt::PolkadotConfig as ClientConfig;
 
 mod cast;

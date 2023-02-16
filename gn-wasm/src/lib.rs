@@ -106,6 +106,11 @@ pub async fn query_allowlist(guild: String, role: String, url: String) -> Result
     serialize_to_value(&allowlist).map_err(|e| JsValue::from(e.to_string()))
 }
 
+#[wasm_bindgen(js_name = "generateMerkleProof")]
+pub async fn generate_merkle_proof(list: JsValue, index: usize) -> Result<JsValue, JsValue> {
+    todo!();
+}
+
 #[wasm_bindgen(js_name = "verificationMsg")]
 pub async fn verification_msg(address: String) -> String {
     gn_common::utils::verification_msg(address)
@@ -198,13 +203,14 @@ mod test {
                     .unwrap();
             let requirements: FilteredRequirements =
                 deserialize_from_value(requirements_js).unwrap();
+            let root = gn_client::H256::from_str(
+                "0xf6bace20645fc288795dc16cf6780d755772ba7fbe8815d78d911023ff3c8f5b",
+            )
+            .unwrap();
             assert_eq!(
                 requirements.filter,
                 Some(Filter::Allowlist(
-                    gn_client::Hash::from_str(
-                        "0xf6bace20645fc288795dc16cf6780d755772ba7fbe8815d78d911023ff3c8f5b"
-                    )
-                    .unwrap(),
+                    root.0,
                     FilterLogic::And,
                     N_TEST_ACCOUNTS as u32
                 ))

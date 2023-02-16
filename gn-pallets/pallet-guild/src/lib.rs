@@ -18,25 +18,23 @@ pub mod pallet {
     use super::weights::WeightInfo;
     use frame_support::traits::Randomness;
     use frame_support::{
-        dispatch::DispatchResult,
-        pallet_prelude::*,
-        sp_runtime::traits::{Keccak256, UniqueSaturatedFrom},
-        traits::Currency,
-        StorageDoubleMap as StorageDoubleMapT,
+        dispatch::DispatchResult, pallet_prelude::*, sp_runtime::traits::UniqueSaturatedFrom,
+        traits::Currency, StorageDoubleMap as StorageDoubleMapT,
     };
     use frame_system::pallet_prelude::*;
-    use gn_common::filter::Logic as FilterLogic;
+    use gn_common::filter::{Filter, Logic as FilterLogic};
     use gn_common::identity::{Identity, IdentityWithAuth};
-    use gn_common::*;
+    use gn_common::merkle::{Leaf as MerkleLeaf, Proof as MerkleProof};
+    use gn_common::{
+        Guild, GuildName, Request, RequestData, RequestIdentifier, Role, RoleName, SerializedData,
+        SerializedRequirements,
+    };
     use pallet_oracle::{CallbackWithParameter, Config as OracleConfig, OracleAnswer};
     use sp_std::vec::Vec as SpVec;
 
     type BalanceOf<T> = <<T as OracleConfig>::Currency as Currency<
         <T as frame_system::Config>::AccountId,
     >>::Balance;
-    type Filter = gn_common::filter::Filter<RootHash>;
-    type Role = gn_common::Role<RootHash>;
-    type RootHash = <Keccak256 as sp_core::Hasher>::Out;
 
     #[pallet::storage]
     #[pallet::getter(fn nonce)]
@@ -208,7 +206,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             guild_name: GuildName,
             role_name: RoleName,
-            proof: Option<MerkleProof<RootHash>>,
+            proof: Option<MerkleProof>,
         ) -> DispatchResult {
             let signer = ensure_signed(origin.clone())?;
             let role_id = Self::checked_role_id(&signer, &guild_name, &role_name)?;
@@ -228,21 +226,7 @@ pub mod pallet {
                     let id = Self::user_data(&signer, proof.id_index)
                         .ok_or(Error::<T>::IdNotRegistered)?;
                     let leaf = MerkleLeaf::Value(id.as_ref());
-                    // NOTE leaf index does not play a role in verification
-                    // only a bound check is performed to ensure the index is
-                    // less than the number of leaves in the tree. Setting the
-                    // index to 0 ensures that it will never be greater. If the
-                    // number of leaves is 0, though, access will still be
-                    // denied as the proof evaluates to false. However, empty
-                    // allowlists are not allowed in the respective
-                    // 'create_role' call
-                    let access = verify_merkle_proof::<'_, Keccak256, _, _>(
-                        &root,
-                        proof.path,
-                        n_leaves as usize,
-                        0,
-                        leaf,
-                    );
+                    let access = proof.verify(&root, n_leaves as usize, leaf);
                     (access, logic)
                 }
                 None => (true, FilterLogic::And),
@@ -427,7 +411,7 @@ pub mod pallet {
                 !allowlist.is_empty() && allowlist.len() <= T::MaxAllowlistLen::get() as usize,
                 Error::<T>::InvalidAllowlistLen
             );
-            let filter = gn_common::filter::allowlist_filter::<Keccak256>(&allowlist, filter_logic);
+            let filter = Filter::allowlist(&allowlist, filter_logic);
             let role_id =
                 Self::create_role(origin, guild_name, role_name, Some(filter), requirements)?;
 

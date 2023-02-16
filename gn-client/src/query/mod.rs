@@ -1,20 +1,20 @@
 mod functions;
 pub use functions::*;
 
-use crate::{Hash, SubxtError};
+use crate::SubxtError;
 use gn_common::Role;
 use gn_engine::RequirementsWithLogic;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FilteredRequirements {
-    pub filter: Option<gn_common::filter::Filter<Hash>>,
+    pub filter: Option<gn_common::filter::Filter>,
     pub requirements: Option<gn_engine::RequirementsWithLogic>,
 }
 
-impl TryFrom<Role<Hash>> for FilteredRequirements {
+impl TryFrom<Role> for FilteredRequirements {
     type Error = SubxtError;
-    fn try_from(role: Role<Hash>) -> Result<Self, Self::Error> {
+    fn try_from(role: Role) -> Result<Self, Self::Error> {
         let requirements = if let Some(serialized_requirements) = role.requirements {
             let reqs_with_logic =
                 RequirementsWithLogic::from_serialized_tuple(serialized_requirements)

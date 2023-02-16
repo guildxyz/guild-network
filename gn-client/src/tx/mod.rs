@@ -7,13 +7,14 @@ pub use subxt::tx::Signer as SignerT;
 pub type Signer = subxt::tx::PairSigner<ClientConfig, Keypair>;
 
 use crate::{
-    cast, runtime, AccountId, Api, ClientConfig, Hash, MultiAddress, SubxtError,
-    TransactionProgress,
+    cast, runtime, AccountId, Api, ClientConfig, MultiAddress, SubxtError, TransactionProgress,
+    H256,
 };
 use futures::StreamExt;
 use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
 use gn_common::identity::{Identity, IdentityWithAuth};
-use gn_common::{GuildName, MerkleProof, RoleName};
+use gn_common::merkle::Proof as MerkleProof;
+use gn_common::{GuildName, RoleName};
 use gn_engine::RequirementsWithLogic;
 use subxt::tx::TxPayload;
 
@@ -105,7 +106,7 @@ pub fn register(identity_with_auth: IdentityWithAuth, index: u8) -> impl TxPaylo
 pub fn join(
     guild_name: GuildName,
     role_name: RoleName,
-    proof: Option<MerkleProof<Hash>>,
+    proof: Option<MerkleProof>,
 ) -> impl TxPayload {
     runtime::tx()
         .guild()
@@ -121,7 +122,7 @@ pub async fn send_owned_tx<T: TxPayload>(
     tx: T,
     signer: Arc<Signer>,
     status: TxStatus,
-) -> Result<Option<Hash>, SubxtError> {
+) -> Result<Option<H256>, SubxtError> {
     send_tx(api, &tx, signer, status).await
 }
 
@@ -130,7 +131,7 @@ pub async fn send_tx<T: TxPayload>(
     tx: &T,
     signer: Arc<Signer>,
     status: TxStatus,
-) -> Result<Option<Hash>, SubxtError> {
+) -> Result<Option<H256>, SubxtError> {
     let mut progress = api
         .tx()
         .sign_and_submit_then_watch_default(tx, signer.as_ref())
@@ -142,7 +143,7 @@ pub async fn send_tx<T: TxPayload>(
 pub async fn track_progress(
     progress: &mut TransactionProgress,
     status: TxStatus,
-) -> Result<Option<Hash>, SubxtError> {
+) -> Result<Option<H256>, SubxtError> {
     while let Some(try_event) = progress.next().await {
         let tx_progress_status = try_event?;
         let (reached, tx_hash) = status.reached(&tx_progress_status);
@@ -180,7 +181,7 @@ pub async fn send_tx_in_block<T: TxPayload>(
     api: Api,
     tx: &T,
     signer: Arc<Signer>,
-) -> Result<Hash, SubxtError> {
+) -> Result<H256, SubxtError> {
     let hash = send_tx(api, tx, signer, TxStatus::InBlock).await?;
     hash.ok_or_else(|| SubxtError::Other("transaction hash is None".into()))
 }
@@ -189,7 +190,7 @@ pub async fn send_tx_finalized<T: TxPayload>(
     api: Api,
     tx: &T,
     signer: Arc<Signer>,
-) -> Result<Hash, SubxtError> {
+) -> Result<H256, SubxtError> {
     let hash = send_tx(api, tx, signer, TxStatus::Finalized).await?;
     hash.ok_or_else(|| SubxtError::Other("transaction hash is None".into()))
 }

@@ -1,5 +1,5 @@
 use super::*;
-use gn_common::filter::{allowlist_filter, Filter, Guild as GuildFilter, Logic as FilterLogic};
+use gn_common::filter::{Filter, Guild as GuildFilter, Logic as FilterLogic};
 
 #[test]
 fn guild_creation() {
@@ -233,7 +233,7 @@ fn role_with_allowlist_filter() {
             GuildEvent::AllowlistWritten(gn_common::offchain_allowlist_key(role_id_0.as_ref()))
         );
 
-        let filter_0 = allowlist_filter::<Keccak256>(&allowlist_0, filter_logic_0);
+        let filter_0 = Filter::allowlist(&allowlist_0, filter_logic_0);
 
         <Guild>::create_role_with_allowlist(
             RuntimeOrigin::signed(signer),
@@ -246,7 +246,7 @@ fn role_with_allowlist_filter() {
         .unwrap();
         role_id_1 = <Guild>::role_id(guild_id, role_name_1).unwrap();
 
-        let filter_1 = allowlist_filter::<Keccak256>(&allowlist_1, filter_logic_1);
+        let filter_1 = Filter::allowlist(&allowlist_1, filter_logic_1);
 
         let guild = <Guild>::guild(guild_id).unwrap();
         assert_eq!(guild.name, guild_name);
