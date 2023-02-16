@@ -4,47 +4,42 @@ RUN apt update -y \
     && apt upgrade -y \
     && apt install git librocksdb-dev clang-7 gcc-7 gcc-7-multilib llvm-7 libssl-dev pkg-config protobuf-compiler python3 -y
 
-RUN apt remove gcc-8-multilib gcc-8 gcc-8-base g++-8 libgcc-8-dev -y
-RUN apt autoremove -y
+RUN rustup target add wasm32-unknown-unknown --toolchain nightly
 
-RUN apt list --installed
+WORKDIR /opt/app
+COPY . .
 
-#RUN rustup target add wasm32-unknown-unknown --toolchain nightly
-#
-#WORKDIR /opt/app
-#COPY . .
-#
-#ENV RUSTFLAGS=-Dwarnings
-#
-#RUN cargo fmt -- --check 
-#
-## without features
-#RUN cargo check --color=always --tests --examples
-#
-## with runtime benchmarks
-#RUN cargo check --color=always --tests --examples --features runtime-benchmarks
-#
-## with try-runtime
-#RUN cargo check --color=always --tests --examples --features try-runtime
-#
-## clippy with all features
-#RUN cargo clippy --color=always --tests --examples --features runtime-benchmarks,try-runtime
-#
-#RUN cargo test --release --features runtime-benchmarks,try-runtime --workspace --exclude gn-node --exclude gn-wasm
-#
-#RUN cargo build --release
-#
-#ARG ETHEREUM_RPC
-#ARG POLYGON_RPC
-#ARG BSC_RPC
-#ARG GNOSIS_RPC
-#ARG ARBITRUM_RPC
-#ARG GOERLI_RPC
-#
-#RUN ETHEREUM_RPC=$ETHEREUM_RPC \
-#    POLYGON_RPC=$POLYGON_RPC \
-#    BSC_RPC=$BSC_RPC \
-#    GNOSIS_RPC=$GNOSIS_RPC \
-#    ARBITRUM_RPC=$ARBITRUM_RPC \
-#    GOERLI_RPC=$GOERLI_RPC\ 
-#    python3 integr_test.py
+ENV RUSTFLAGS=-Dwarnings
+
+RUN cargo fmt -- --check 
+
+# without features
+RUN cargo check --color=always --tests --examples
+
+# with runtime benchmarks
+RUN cargo check --color=always --tests --examples --features runtime-benchmarks
+
+# with try-runtime
+RUN cargo check --color=always --tests --examples --features try-runtime
+
+# clippy with all features
+RUN cargo clippy --color=always --tests --examples --features runtime-benchmarks,try-runtime
+
+RUN cargo test --release --features runtime-benchmarks,try-runtime --workspace --exclude gn-node --exclude gn-wasm
+
+RUN cargo build --release
+
+ARG ETHEREUM_RPC
+ARG POLYGON_RPC
+ARG BSC_RPC
+ARG GNOSIS_RPC
+ARG ARBITRUM_RPC
+ARG GOERLI_RPC
+
+RUN ETHEREUM_RPC=$ETHEREUM_RPC \
+    POLYGON_RPC=$POLYGON_RPC \
+    BSC_RPC=$BSC_RPC \
+    GNOSIS_RPC=$GNOSIS_RPC \
+    ARBITRUM_RPC=$ARBITRUM_RPC \
+    GOERLI_RPC=$GOERLI_RPC\ 
+    python3 integr_test.py

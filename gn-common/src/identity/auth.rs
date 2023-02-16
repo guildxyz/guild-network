@@ -110,6 +110,7 @@ mod test {
     use ethers::core::k256::elliptic_curve::sec1::ToEncodedPoint;
     use ethers::core::k256::elliptic_curve::PublicKey;
     use ethers::signers::{LocalWallet, Signer as EthSigner};
+    use sha3::Digest;
     use sp_core::Pair as PairT;
 
     const TEST_ACCOUNT: &str = "test-account-0xabcde";
