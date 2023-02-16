@@ -2,7 +2,7 @@ FROM rustlang/rust:nightly-slim AS build
 
 RUN apt update -y \
     && apt upgrade -y \
-    && apt install build-essential git librocksdb-dev clang cmake gcc-multilib llvm llvm-dev libssl-dev pkg-config protobuf-compiler python3 -y
+    && apt install build-essential git librocksdb-dev clang cmake gcc-multilib llvm llvm-ac llvm-dev libssl-dev pkg-config protobuf-compiler python3 -y
 
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly
 
