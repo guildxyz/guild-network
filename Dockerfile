@@ -1,4 +1,4 @@
-FROM rustlang/rust:nightly-slim AS chef
+FROM rustlang/rust:nightly-bullseye-slim AS chef
 
 RUN cargo install cargo-chef
 WORKDIR /app
@@ -14,7 +14,7 @@ COPY --from=planner app/recipe.json recipe.json
 # Build dependencies - this is the caching Docker layer!
 RUN apt update -y \
     && apt upgrade -y \
-    && apt install build-essential librocksdb-dev libclang-dev clang cmake libssl-dev pkg-config protobuf-compiler -y
+    && apt install build-essential librocksdb-dev libclang-dev clang cmake g++-multilib libssl-dev pkg-config protobuf-compiler -y
 
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly
 
