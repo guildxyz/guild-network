@@ -1,19 +1,13 @@
-use crate::data::GuildData;
-use crate::{cbor_deserialize, runtime};
-use crate::{AccountId, Api, Hash, Request, RuntimeIdentity, SubxtError};
-use gn_common::identities::Identity;
-use gn_common::requirements::RequirementsWithLogic;
-use gn_common::{GuildName, RequestIdentifier, RoleName};
+use super::FilteredRequirements;
+use crate::{cast, runtime, AccountId, Api, Request, SubxtError, H256};
+use gn_common::filter::Guild as GuildFilter;
+use gn_common::identity::Identity;
+use gn_common::{Guild, GuildName, RequestIdentifier, RoleName};
+use gn_engine::RequirementsWithLogic;
 use subxt::ext::codec::Decode;
 use subxt::storage::address::{StorageHasher, StorageMapKey};
 
 use std::collections::BTreeMap;
-
-#[derive(Clone, Debug)]
-pub struct GuildFilter {
-    pub name: GuildName,
-    pub role: Option<RoleName>,
-}
 
 pub async fn registered_operators(api: Api) -> Result<Vec<AccountId>, SubxtError> {
     let operators = runtime::storage().oracle().operators();
@@ -26,65 +20,32 @@ pub async fn registered_operators(api: Api) -> Result<Vec<AccountId>, SubxtError
         .unwrap_or_default())
 }
 
-pub async fn user_identities(
-    api: Api,
-    page_size: u32,
-) -> Result<BTreeMap<AccountId, Vec<Identity>>, SubxtError> {
-    let root = runtime::storage().guild().user_data_root();
-    let mut map = BTreeMap::new();
-    let mut iter = api.storage().at(None).await?.iter(root, page_size).await?;
-    while let Some((key, identities)) = iter.next().await? {
-        let identities = identities
-            .into_iter()
-            // NOTE safety: these are the same types defined at two different
-            // places by the subxt macro
-            .map(|x| unsafe { std::mem::transmute::<RuntimeIdentity, Identity>(x) })
-            .collect();
-        // NOTE unwrap is fine because we convert a 32 byte long slice
-        let id: [u8; 32] = key.0[48..80].try_into().unwrap();
-        let account_id = AccountId::from(id);
-        map.insert(account_id, identities);
-    }
-    Ok(map)
-}
-
 pub async fn user_identity(api: Api, user_id: &AccountId) -> Result<Vec<Identity>, SubxtError> {
-    let key = runtime::storage().guild().user_data(user_id);
-    let ids = api
+    let mut i = 0u8;
+    let mut identities = Vec::new();
+    while let Some(identity) = api
         .storage()
         .at(None)
         .await?
-        .fetch(&key)
+        .fetch(&runtime::storage().guild().user_data(user_id, i))
         .await?
-        .unwrap_or_default();
-    Ok(ids
-        .into_iter()
-        .map(|x| unsafe { std::mem::transmute::<RuntimeIdentity, Identity>(x) })
-        .collect())
+    {
+        identities.push(cast::id::from_runtime(identity));
+        i += 1;
+    }
+    Ok(identities)
 }
 
 pub async fn members(
     api: Api,
-    filter: Option<&GuildFilter>,
+    filter: &GuildFilter,
     page_size: u32,
 ) -> Result<Vec<AccountId>, SubxtError> {
     let mut keys = Vec::new();
-    if let Some(guild_filter) = filter {
-        let role_ids = role_id(api.clone(), guild_filter, page_size).await?;
-        for role_id in role_ids.into_iter() {
-            let mut query_key = runtime::storage().guild().members_root().to_root_bytes();
-            StorageMapKey::new(role_id, StorageHasher::Blake2_128).to_bytes(&mut query_key);
-            let mut storage_keys = api
-                .storage()
-                .at(None)
-                .await?
-                .fetch_keys(&query_key, page_size, None)
-                .await?;
-            keys.append(&mut storage_keys);
-        }
-    } else {
-        // read everything from root
-        let query_key = runtime::storage().guild().members_root().to_root_bytes();
+    let role_ids = role_ids(api.clone(), filter, page_size).await?;
+    for role_id in role_ids.into_iter() {
+        let mut query_key = runtime::storage().guild().members_root().to_root_bytes();
+        StorageMapKey::new(role_id, StorageHasher::Blake2_128).to_bytes(&mut query_key);
         let mut storage_keys = api
             .storage()
             .at(None)
@@ -93,18 +54,19 @@ pub async fn members(
             .await?;
         keys.append(&mut storage_keys);
     }
-
     // NOTE unwrap is fine because we are creating an account id from 32 bytes
-    Ok(keys
+    let key_map: BTreeMap<AccountId, usize> = keys
         .iter()
-        .map(|key| {
+        .enumerate()
+        .map(|(i, key)| {
             let id: [u8; 32] = key.0[96..128].try_into().unwrap();
-            AccountId::from(id)
+            (AccountId::from(id), i)
         })
-        .collect())
+        .collect();
+    Ok(key_map.into_keys().collect())
 }
 
-pub async fn guild_id(api: Api, name: GuildName) -> Result<Hash, SubxtError> {
+pub async fn guild_id(api: Api, name: GuildName) -> Result<H256, SubxtError> {
     let guild_id_address = runtime::storage().guild().guild_id_map(name);
     api.storage()
         .at(None)
@@ -116,9 +78,25 @@ pub async fn guild_id(api: Api, name: GuildName) -> Result<Hash, SubxtError> {
 
 pub async fn role_id(
     api: Api,
+    guild_name: GuildName,
+    role_name: RoleName,
+) -> Result<H256, SubxtError> {
+    let filter = GuildFilter {
+        name: guild_name,
+        role: Some(role_name),
+    };
+    let role_ids = role_ids(api.clone(), &filter, 1).await?;
+    role_ids
+        .get(0)
+        .copied()
+        .ok_or_else(|| SubxtError::Other(format!("no role with name: {role_name:#?}")))
+}
+
+pub async fn role_ids(
+    api: Api,
     filter: &GuildFilter,
     page_size: u32,
-) -> Result<Vec<Hash>, SubxtError> {
+) -> Result<Vec<H256>, SubxtError> {
     let guild_id = guild_id(api.clone(), filter.name).await?;
     let mut query_key = runtime::storage()
         .guild()
@@ -127,7 +105,7 @@ pub async fn role_id(
 
     StorageMapKey::new(guild_id, StorageHasher::Blake2_128).to_bytes(&mut query_key);
     if let Some(rn) = filter.role {
-        query_key.append(&mut guild_id.0.to_vec());
+        query_key.extend_from_slice(guild_id.as_ref());
         StorageMapKey::new(rn, StorageHasher::Blake2_128).to_bytes(&mut query_key);
     }
 
@@ -190,7 +168,7 @@ pub async fn guilds(
     api: Api,
     filter: Option<GuildName>,
     page_size: u32,
-) -> Result<Vec<GuildData>, SubxtError> {
+) -> Result<Vec<Guild<AccountId>>, SubxtError> {
     let mut guilds = Vec::new();
     if let Some(name) = filter {
         let guild_id = guild_id(api.clone(), name).await?;
@@ -202,55 +180,57 @@ pub async fn guilds(
             .fetch(&guild_addr)
             .await?
             .ok_or_else(|| SubxtError::Other(format!("no Guild with name: {name:#?}")))?;
-        guilds.push(GuildData::from(guild));
+        guilds.push(cast::guild::from_runtime(guild));
     } else {
         let root = runtime::storage().guild().guilds_root();
         let mut iter = api.storage().at(None).await?.iter(root, page_size).await?;
         while let Some((_guild_uuid, guild)) = iter.next().await? {
             // we don't care about guild_uuid in this case
-            guilds.push(GuildData::from(guild));
+            guilds.push(cast::guild::from_runtime(guild));
         }
     }
     Ok(guilds)
+}
+
+pub async fn filtered_requirements(
+    api: Api,
+    guild_name: GuildName,
+    role_name: RoleName,
+) -> Result<FilteredRequirements, SubxtError> {
+    let role_id = role_id(api.clone(), guild_name, role_name).await?;
+    let role_key = runtime::storage().guild().roles(role_id);
+    let role = api
+        .storage()
+        .at(None)
+        .await?
+        .fetch(&role_key)
+        .await?
+        .ok_or_else(|| SubxtError::Other(format!("no role with name: {role_name:#?}")))?;
+
+    FilteredRequirements::try_from(cast::role::from_runtime(role))
 }
 
 pub async fn requirements(
     api: Api,
     guild_name: GuildName,
     role_name: RoleName,
-) -> Result<RequirementsWithLogic, SubxtError> {
-    let filter = GuildFilter {
-        name: guild_name,
-        role: Some(role_name),
-    };
-    let role_ids = role_id(api.clone(), &filter, 1).await?;
-    let role_id = role_ids
-        .get(0)
-        .ok_or_else(|| SubxtError::Other(format!("no role with name: {role_name:#?}")))?;
-    let requirements_addr = runtime::storage().guild().roles(role_id);
-    let requirements_logic_ser = api
-        .storage()
-        .at(None)
-        .await?
-        .fetch(&requirements_addr)
-        .await?
-        .ok_or_else(|| SubxtError::Other(format!("no role with name: {role_name:#?}")))?;
+) -> Result<Option<RequirementsWithLogic>, SubxtError> {
+    filtered_requirements(api, guild_name, role_name)
+        .await
+        .map(|x| x.requirements)
+}
 
-    let mut reqs_with_logic = RequirementsWithLogic {
-        logic: "".to_string(),
-        requirements: vec![],
-    };
+pub async fn allowlist(
+    api: Api,
+    guild_name: GuildName,
+    role_name: RoleName,
+) -> Result<Option<Vec<Identity>>, SubxtError> {
+    let role_id = role_id(api.clone(), guild_name, role_name).await?;
+    let offchain_key = gn_common::offchain_allowlist_key(role_id.as_ref());
 
-    match cbor_deserialize(&requirements_logic_ser.logic) {
-        Ok(req) => reqs_with_logic.logic = req,
-        Err(err) => return Err(SubxtError::Other(err.to_string())),
-    };
-
-    for req in requirements_logic_ser.requirements {
-        match cbor_deserialize(&req) {
-            Ok(req) => reqs_with_logic.requirements.push(req),
-            Err(err) => return Err(SubxtError::Other(err.to_string())),
-        };
-    }
-    Ok(reqs_with_logic)
+    let maybe_encoded_allowlist = api.rpc().offchain(&offchain_key).await?;
+    maybe_encoded_allowlist
+        .map(|x| Vec::<Identity>::decode(&mut &x.0[..]))
+        .transpose()
+        .map_err(SubxtError::Codec)
 }

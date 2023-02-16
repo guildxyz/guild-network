@@ -4,24 +4,29 @@ version = "0.0.0-alpha"
 edition = "2021"
 
 [features]
-default = ["subxt/default", "tx"]
+default = [
+    "gn-common/default",
+    "gn-engine/default",
+    "subxt/default",
+    "tx",
+]
 external-oracle = []
-tx = ["sp-core"]
+tx = ["sp-core", "gn-engine/check"]
 wasm = ["subxt/jsonrpsee-web"]
 
 [dependencies]
 # local
-gn-common = { version = "0.0.0-alpha", path = "../gn-common" }
+gn-common = { version = "0.0.0-alpha", path = "../gn-common", default-features = false }
+gn-engine = { version = "0.0.0-alpha", path = "../gn-engine", default-features = false }
 subxt = { git = "https://github.com/agoraxyz/subxt", branch = "bumped-wasm", default-features = false }
 
 # general
 futures = "0.3.25"
 log = { version = "0.4.17", default-features = false }
 parity-scale-codec = { workspace = true } # required for the runtime subxt macro
+paste = { version = "1.0", default-features = false }
 serde = { version = "1.0.144", features = ["derive"] }
-serde_cbor = "0.11.2"
 
-# substrate core
 sp-core = { workspace = true, optional = true }
 
 [dev-dependencies]
@@ -34,7 +39,7 @@ hex = "0.4.3"
 rand = { version = "0.8.5", default-features = false, features = ["std_rng"] }
 serde_json = "1"
 structopt = { version = "0.3", default-features = false }
-tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread", "time"] }
 
 # substrate primitives
 sp-keyring = { workspace = true }

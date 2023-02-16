@@ -7,12 +7,12 @@ import time
 
 
 def start_node():
-    node = Popen(['./target/release/gn-node', '--dev'],
+    node = Popen(['./target/release/gn-node', '--dev', '--enable-offchain-indexing', 'true'],
                  stderr=PIPE, stdout=DEVNULL)
 
     start = time.time()
     line = b""
-    while b"Running JSON-RPC" not in line:
+    while b"Running JSON-RPC WS" not in line:
         line = node.stderr.readline()
         if int(time.time() - start) == 10:
             print("Node startup timeout, exiting...")

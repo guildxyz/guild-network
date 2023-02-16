@@ -254,9 +254,11 @@ impl pallet_sudo::Config for Runtime {
 }
 
 impl pallet_guild::Config for Runtime {
-    type MaxRolesPerGuild = ConstU32<64>;
-    type MaxReqsPerRole = ConstU32<64>;
-    type MaxSerializedReqLen = ConstU32<1024>;
+    type MaxAllowlistLen = ConstU32<128>;
+    type MaxIdentities = ConstU8<10>;
+    type MaxRolesPerGuild = ConstU32<10>;
+    type MaxReqsPerRole = ConstU32<10>;
+    type MaxSerializedLen = ConstU32<256>;
     type MyRandomness = RandomnessCollectiveFlip;
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_guild::weights::SubstrateWeight<Runtime>;
@@ -322,21 +324,22 @@ pub type Executive = frame_executive::Executive<
     AllPalletsWithSystem,
 >;
 
-#[cfg(feature = "runtime-benchmarks")]
-#[macro_use]
-extern crate frame_benchmarking;
-
-#[cfg(feature = "runtime-benchmarks")]
-mod benches {
-    define_benchmarks!(
-        [frame_benchmarking, BaselineBench::<Runtime>]
-        [frame_system, SystemBench::<Runtime>]
-        [pallet_balances, Balances]
-        [pallet_timestamp, Timestamp]
-        [pallet_guild, Guild]
-        [pallet_oracle, Oracle]
-    );
-}
+// TODO benchmarking issue
+//#[cfg(feature = "runtime-benchmarks")]
+//#[macro_use]
+//extern crate frame_benchmarking;
+//
+//#[cfg(feature = "runtime-benchmarks")]
+//mod benches {
+//    define_benchmarks!(
+//        [frame_benchmarking, BaselineBench::<Runtime>]
+//        [frame_system, SystemBench::<Runtime>]
+//        [pallet_balances, Balances]
+//        [pallet_timestamp, Timestamp]
+//        [pallet_guild, Guild]
+//        [pallet_oracle, Oracle]
+//    );
+//}
 
 impl_runtime_apis! {
     impl sp_api::Core<Block> for Runtime {
@@ -475,6 +478,7 @@ impl_runtime_apis! {
         }
     }
 
+    /* TODO benchmarking
     #[cfg(feature = "runtime-benchmarks")]
     impl frame_benchmarking::Benchmark<Block> for Runtime {
         fn benchmark_metadata(extra: bool) -> (
@@ -522,6 +526,7 @@ impl_runtime_apis! {
             Ok(batches)
         }
     }
+    */
 
     #[cfg(all(feature = "try-runtime", feature = "std"))]
     impl frame_try_runtime::TryRuntime<Block> for Runtime {

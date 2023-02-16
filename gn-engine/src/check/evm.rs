@@ -1,9 +1,8 @@
-use crate::requirements::balance::TokenType;
-use crate::requirements::chains::EvmChain;
+use crate::balance::TokenType;
+use crate::chains::EvmChain;
 use crate::{EvmAddress, U256};
 use providers::{evm::general::PROVIDERS, BalanceQuerier, EvmChain as RustyEvmChain};
 
-// only compute this once
 const MULTIPLIER: f64 = 1_000_000_000_000_000_000.0; // 10^18
 
 pub async fn get_balance(
@@ -42,7 +41,7 @@ async fn get_balance_with_provider<T>(
 where
     T: BalanceQuerier,
     for<'a> <T as BalanceQuerier>::Address: From<&'a EvmAddress>,
-    for<'a> <T as BalanceQuerier>::Id: From<&'a U256>,
+    <T as BalanceQuerier>::Id: From<U256>,
     <T as BalanceQuerier>::Balance: std::ops::Mul<f64, Output = f64> + Copy,
 {
     let balance = match token_type {
@@ -74,7 +73,7 @@ where
             let balances = provider
                 .get_non_fungible_balance(
                     token_address.into(),
-                    Some(token_id.into()),
+                    token_id.map(Into::into),
                     &[user_address.into()],
                 )
                 .await;
@@ -85,7 +84,6 @@ where
                 0
             }
         }
-        Some(TokenType::Special { .. }) => anyhow::bail!("Token type not supported"), // TODO
     };
     Ok(balance)
 }
@@ -161,7 +159,7 @@ mod test {
     pub async fn test_get_nft_balance() {
         let token_type = Some(TokenType::NonFungible {
             address: [2; 20],
-            id: [10; 32],
+            id: Some([10; 32]),
         });
 
         let balance = get_balance_with_provider(&TestProvider, &token_type, &[14; 20])

@@ -1,4 +1,4 @@
-use crate::{Hash, TransactionStatus};
+use crate::{TransactionStatus, H256};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TxStatus {
@@ -9,7 +9,7 @@ pub enum TxStatus {
 }
 
 impl TxStatus {
-    pub fn reached(self, status: &TransactionStatus) -> (bool, Option<Hash>) {
+    pub fn reached(self, status: &TransactionStatus) -> (bool, Option<H256>) {
         let mut reached = false;
         let mut tx_hash = None;
         match status {
@@ -68,13 +68,13 @@ fn tx_status_reached() {
 
     let flag = TxStatus::InBlock;
 
-    let status = TransactionStatus::Usurped(Hash::default());
+    let status = TransactionStatus::Usurped(H256::default());
     let (reached, _) = flag.reached(&status);
     assert!(reached);
-    let status = TransactionStatus::Retracted(Hash::default());
+    let status = TransactionStatus::Retracted(H256::default());
     let (reached, _) = flag.reached(&status);
     assert!(reached);
-    let status = TransactionStatus::FinalityTimeout(Hash::default());
+    let status = TransactionStatus::FinalityTimeout(H256::default());
     let (reached, _) = flag.reached(&status);
     assert!(reached);
 }

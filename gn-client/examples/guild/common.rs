@@ -1,12 +1,11 @@
 use ethers::signers::{LocalWallet, Signer as EthSigner};
 use futures::future::try_join_all;
-use gn_client::data::*;
-#[cfg(not(feature = "external-oracle"))]
 use gn_client::query;
 use gn_client::tx::{self, Keypair, PairT, Signer, TxStatus};
-use gn_client::{AccountId, Api, Hash, RuntimeIdentityWithAuth};
-use gn_common::requirements::{Requirement, RequirementsWithLogic};
-use gn_common::{EvmAddress, EvmSignature, GuildName, RoleName};
+use gn_client::{AccountId, Api};
+use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
+use gn_common::identity::{EcdsaSignature, Identity, IdentityWithAuth};
+use gn_common::merkle::Proof as MerkleProof;
 use gn_test_data::*;
 use rand::{rngs::StdRng, SeedableRng};
 use sp_keyring::AccountKeyring;
@@ -47,7 +46,7 @@ pub async fn prefunded_accounts(
         .inspect(|(id, _)| println!("new account: {id}"))
         .collect::<BTreeMap<AccountId, Accounts>>();
 
-    let amount = 1_000_000_000_000_000u128;
+    let amount = 1_000_000_000u128;
     let mut keys = accounts.keys();
     // skip first
     let skipped_account = keys.next().unwrap();
@@ -93,72 +92,145 @@ pub async fn create_dummy_guilds(
     signer: Arc<Signer>,
     accounts: impl Iterator<Item = &Accounts>,
 ) {
-    let allowlist: Vec<EvmAddress> = accounts
-        .map(|acc| acc.eth.address().to_fixed_bytes())
-        .collect();
-    // create two guilds, each with 2 roles
-    let roles = vec![
-        Role {
-            name: FIRST_ROLE,
-            reqs: RequirementsWithLogic {
-                logic: "0".to_string(),
-                requirements: vec![Requirement::Free],
-            },
-        },
-        Role {
-            name: SECOND_ROLE,
-            reqs: RequirementsWithLogic {
-                logic: "0".to_string(),
-                requirements: vec![Requirement::EvmAllowlist(allowlist.into())],
-            },
-        },
-    ];
-
-    let first_guild = Guild {
-        name: FIRST_GUILD,
-        metadata: vec![1, 2, 3],
-        roles: roles.clone(),
-    };
-    let second_guild = Guild {
-        name: SECOND_GUILD,
-        metadata: vec![4, 5, 6],
-        roles,
-    };
-
+    // create two guilds
     tx::send_tx_ready(
         api.clone(),
-        &tx::create_guild(first_guild).expect("Failed to serialize requirements"),
+        &tx::create_guild(FIRST_GUILD, vec![1, 2, 3]),
         Arc::clone(&signer),
     )
     .await
     .expect("failed to create guild");
+
+    println!("first guild created");
+
     tx::send_tx_in_block(
         api.clone(),
-        &tx::create_guild(second_guild).expect("Failed to serialize requirements"),
-        signer,
+        &tx::create_guild(SECOND_GUILD, vec![4, 5, 6]),
+        Arc::clone(&signer),
     )
     .await
     .expect("failed to create guild");
+
+    println!("second guild created");
+
+    let allowlist: Vec<Identity> = accounts
+        .map(|acc| Identity::Address20(acc.eth.address().to_fixed_bytes()))
+        .collect();
+
+    let filter = GuildFilter {
+        name: FIRST_GUILD,
+        role: Some(FIRST_ROLE),
+    };
+    // add one free and one filtered role to each guild
+    // NOTE cannot try-join them because of different `impl TxPayload` opaque types
+    tx::send_tx_ready(
+        api.clone(),
+        &tx::create_free_role(FIRST_GUILD, FIRST_ROLE),
+        Arc::clone(&signer),
+    )
+    .await
+    .unwrap();
+    tx::send_tx_ready(
+        api.clone(),
+        &tx::create_free_role(SECOND_GUILD, FIRST_ROLE),
+        Arc::clone(&signer),
+    )
+    .await
+    .unwrap();
+    tx::send_tx_ready(
+        api.clone(),
+        &tx::create_role_with_allowlist(
+            FIRST_GUILD,
+            SECOND_ROLE,
+            allowlist,
+            FilterLogic::And,
+            None,
+        )
+        .unwrap(),
+        Arc::clone(&signer),
+    )
+    .await
+    .unwrap();
+    tx::send_tx_in_block(
+        api.clone(),
+        &tx::create_child_role(SECOND_GUILD, SECOND_ROLE, filter, FilterLogic::Or, None).unwrap(),
+        signer,
+    )
+    .await
+    .unwrap();
+
+    println!("all roles created");
 }
 
 pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
+    // everybody joins the first guild's free role
+    let payload = tx::join(FIRST_GUILD, FIRST_ROLE, None);
     let join_request_futures = users
         .iter()
-        .enumerate()
-        .map(|(i, (_, accounts))| match i % 4 {
-            0 => join_request_tx(api.clone(), &FIRST_GUILD, &FIRST_ROLE, accounts),
-            1 => join_request_tx(api.clone(), &FIRST_GUILD, &SECOND_ROLE, accounts),
-            2 => join_request_tx(api.clone(), &SECOND_GUILD, &FIRST_ROLE, accounts),
-            3 => join_request_tx(api.clone(), &SECOND_GUILD, &SECOND_ROLE, accounts),
-            _ => unreachable!(),
+        .map(|(_, accounts)| {
+            tx::send_tx_in_block(api.clone(), &payload, Arc::clone(&accounts.substrate))
         })
         .collect::<Vec<_>>();
 
-    try_join_all(join_request_futures)
-        .await
-        .expect("failed to submit oracle answers");
+    try_join_all(join_request_futures).await.unwrap();
 
-    println!("join requests successfully submitted");
+    println!("first guild first role joined");
+
+    // only 2 joins the allowlist
+    let allowlist = query::allowlist(api.clone(), FIRST_GUILD, SECOND_ROLE)
+        .await
+        .unwrap()
+        .unwrap();
+
+    let proof_0 = MerkleProof::new(&allowlist, 0, 0);
+    let proof_1 = MerkleProof::new(&allowlist, 1, 0);
+
+    let payloads = vec![
+        tx::join(FIRST_GUILD, SECOND_ROLE, Some(proof_0)),
+        tx::join(FIRST_GUILD, SECOND_ROLE, Some(proof_1)),
+    ];
+
+    let join_request_futures = users
+        .iter()
+        .take(2)
+        .enumerate()
+        .map(|(i, (_, accounts))| {
+            tx::send_tx_in_block(api.clone(), &payloads[i], Arc::clone(&accounts.substrate))
+        })
+        .collect::<Vec<_>>();
+
+    try_join_all(join_request_futures).await.unwrap();
+
+    println!("first guild second role joined");
+
+    // only 5 joins the child role (they are all registered in first guild's
+    // first role
+    let payload = tx::join(SECOND_GUILD, SECOND_ROLE, None);
+    let join_request_futures = users
+        .iter()
+        .take(5)
+        .map(|(_, accounts)| {
+            tx::send_tx_in_block(api.clone(), &payload, Arc::clone(&accounts.substrate))
+        })
+        .collect::<Vec<_>>();
+
+    try_join_all(join_request_futures).await.unwrap();
+
+    println!("second guild second role joined");
+
+    // other 5 joins the free role of the second guild
+    let payload = tx::join(SECOND_GUILD, FIRST_ROLE, None);
+    let join_request_futures = users
+        .iter()
+        .skip(5)
+        .map(|(_, accounts)| {
+            tx::send_tx_in_block(api.clone(), &payload, Arc::clone(&accounts.substrate))
+        })
+        .collect::<Vec<_>>();
+
+    try_join_all(join_request_futures).await.unwrap();
+
+    println!("second guild first role joined");
 }
 
 pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {
@@ -175,19 +247,38 @@ pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {
         .await
         .expect("failed to sign messages");
 
-    let register_futures = signatures
+    let register_address_payloads = signatures
         .into_iter()
         .zip(users.iter())
+        .map(|(sig, (_, accounts))| {
+            let mut sig: [u8; 65] = sig.to_vec().try_into().unwrap();
+            sig[64] -= 27; // due to eip-155 stuff in ethers
+            let id_with_auth = IdentityWithAuth::Ecdsa(
+                Identity::Address20(accounts.eth.address().to_fixed_bytes()),
+                EcdsaSignature(sig),
+            );
+            tx::register(id_with_auth, 0)
+        })
+        .collect::<Vec<_>>();
+
+    let register_discord_payloads = users
+        .iter()
         .enumerate()
-        .map(|(i, (sig, (_, accounts)))| {
-            let tx_payload = tx::register(vec![
-                RuntimeIdentityWithAuth::EvmChain(
-                    accounts.eth.address().to_fixed_bytes(),
-                    // NOTE unwrap is fine because byte lengths always match
-                    EvmSignature::try_from(sig.to_vec()).unwrap(),
+        .map(|(i, _)| {
+            tx::register(
+                IdentityWithAuth::Other(
+                    Identity::Other(gn_common::pad::padded_id(b"discord:", i as u64)),
+                    [0u8; 64],
                 ),
-                RuntimeIdentityWithAuth::Discord(i as u64, ()),
-            ]);
+                1,
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let register_futures = register_address_payloads
+        .into_iter()
+        .zip(users.iter())
+        .map(|(tx_payload, (_, accounts))| {
             tx::send_owned_tx(
                 api.clone(),
                 tx_payload,
@@ -201,21 +292,26 @@ pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {
         .await
         .expect("failed to register accounts");
 
-    println!("registrations successfully submitted");
-}
+    println!("address registrations successfully submitted");
 
-async fn join_request_tx(
-    api: Api,
-    guild_name: &GuildName,
-    role_name: &RoleName,
-    accounts: &Accounts,
-) -> Result<Hash, subxt::Error> {
-    let tx_payload = tx::manage_role(
-        accounts.substrate.account_id().clone(),
-        *guild_name,
-        *role_name,
-    );
-    tx::send_tx_in_block(api, &tx_payload, Arc::clone(&accounts.substrate)).await
+    let register_futures = register_discord_payloads
+        .into_iter()
+        .zip(users.iter())
+        .map(|(tx_payload, (_, accounts))| {
+            tx::send_owned_tx(
+                api.clone(),
+                tx_payload,
+                Arc::clone(&accounts.substrate),
+                TxStatus::InBlock,
+            )
+        })
+        .collect::<Vec<_>>();
+
+    try_join_all(register_futures)
+        .await
+        .expect("failed to register discord");
+
+    println!("discord registrations successfully submitted");
 }
 
 #[cfg(not(feature = "external-oracle"))]
