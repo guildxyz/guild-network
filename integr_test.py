@@ -7,7 +7,7 @@ import time
 
 
 def start_node():
-    node = Popen(['./target/release/gn-node', '--dev'],
+    node = Popen(['./target/release/gn-node', '--dev', '--enable-offchain-indexing', 'true'],
                  stderr=PIPE, stdout=DEVNULL)
 
     start = time.time()
