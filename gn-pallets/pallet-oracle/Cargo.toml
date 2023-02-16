@@ -8,7 +8,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [features]
 default = ["std"]
-runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
+runtime-benchmarks = []
 std = [
   "gn-common/std",
   "parity-scale-codec/std",
@@ -28,7 +28,7 @@ parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
 
 # substrate frame
-frame-benchmarking = { workspace = true, optional = true }
+#frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 

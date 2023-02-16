@@ -324,21 +324,22 @@ pub type Executive = frame_executive::Executive<
     AllPalletsWithSystem,
 >;
 
-#[cfg(feature = "runtime-benchmarks")]
-#[macro_use]
-extern crate frame_benchmarking;
-
-#[cfg(feature = "runtime-benchmarks")]
-mod benches {
-    define_benchmarks!(
-        [frame_benchmarking, BaselineBench::<Runtime>]
-        [frame_system, SystemBench::<Runtime>]
-        [pallet_balances, Balances]
-        [pallet_timestamp, Timestamp]
-        [pallet_guild, Guild]
-        [pallet_oracle, Oracle]
-    );
-}
+// TODO benchmarking issue
+//#[cfg(feature = "runtime-benchmarks")]
+//#[macro_use]
+//extern crate frame_benchmarking;
+//
+//#[cfg(feature = "runtime-benchmarks")]
+//mod benches {
+//    define_benchmarks!(
+//        [frame_benchmarking, BaselineBench::<Runtime>]
+//        [frame_system, SystemBench::<Runtime>]
+//        [pallet_balances, Balances]
+//        [pallet_timestamp, Timestamp]
+//        [pallet_guild, Guild]
+//        [pallet_oracle, Oracle]
+//    );
+//}
 
 impl_runtime_apis! {
     impl sp_api::Core<Block> for Runtime {
@@ -477,6 +478,7 @@ impl_runtime_apis! {
         }
     }
 
+    /* TODO benchmarking
     #[cfg(feature = "runtime-benchmarks")]
     impl frame_benchmarking::Benchmark<Block> for Runtime {
         fn benchmark_metadata(extra: bool) -> (
@@ -524,6 +526,7 @@ impl_runtime_apis! {
             Ok(batches)
         }
     }
+    */
 
     #[cfg(all(feature = "try-runtime", feature = "std"))]
     impl frame_try_runtime::TryRuntime<Block> for Runtime {

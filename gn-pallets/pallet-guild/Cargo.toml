@@ -5,7 +5,7 @@ version = "0.0.0-alpha"
 
 [features]
 default = ["std"]
-runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
+runtime-benchmarks = []
 std = [
   "gn-common/std",
   "pallet-oracle/std",
@@ -28,7 +28,6 @@ parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
 
 # substrate frame
-frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 
