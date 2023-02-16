@@ -1,0 +1,34 @@
+[package]
+name = "pallet-validator-manager"
+version = "0.0.0-alpha"
+edition = "2021"
+
+[features]
+default = ["std"]
+runtime-benchmarks = []
+std = [
+  "pallet-session/std",
+  "parity-scale-codec/std",
+  "scale-info/std",
+  "frame-support/std",
+  "frame-system/std",
+  "sp-staking/std",
+  "sp-std/std",
+]
+try-runtime = ["frame-support/try-runtime"]
+
+[dependencies]
+# general
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive"] }
+
+# substrate pallets
+pallet-session = { workspace = true }
+
+# substrate frame
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+
+# substrate primitives
+sp-staking = { workspace = true }
+sp-std = { workspace = true }

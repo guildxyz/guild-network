@@ -8,6 +8,7 @@ members = [
     "gn-oracle",
     "gn-pallets/pallet-oracle",
     "gn-pallets/pallet-guild",
+    "gn-pallets/pallet-validator-manager",
     "gn-runtime",
     "gn-test-data",
     "gn-wasm",
@@ -21,6 +22,7 @@ default-members = [
     "gn-oracle",
     "gn-pallets/pallet-oracle",
     "gn-pallets/pallet-guild",
+    "gn-pallets/pallet-validator-manager",
     "gn-runtime",
     "gn-test-data",
 ]
@@ -49,6 +51,7 @@ pallet-aura = { version = "14.0.0", default-features = false }
 pallet-balances = { version = "15.0.0", default-features = false }
 pallet-grandpa = { version = "15.0.0", default-features = false }
 pallet-randomness-collective-flip = { version = "15.0.0", default-features = false }
+pallet-session = { version = "15.0.0", default-features = false }
 pallet-sudo = { version = "15.0.0", default-features = false }
 pallet-timestamp = { version = "14.0.0", default-features = false }
 pallet-transaction-payment = { version = "15.0.0", default-features = false }
@@ -84,6 +87,7 @@ sp-keyring = { version = "17.0.0", default-features = false }
 sp-offchain = { version = "13.0.0", default-features = false }
 sp-runtime = { version = "17.0.0", default-features = false }
 sp-session = { version = "14.0.0", default-features = false }
+sp-staking = { version = "14.0.0", default-features = false }
 sp-std = { version = "6.0.0", default-features = false }
 sp-timestamp = { version = "13.0.0", default-features = false }
 sp-transaction-pool = { version = "13.0.0", default-features = false }
