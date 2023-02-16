@@ -1,8 +1,8 @@
-FROM rustlang/rust:nightly-slim AS build
+FROM rustlang/rust:nightly-bullseye-slim AS build
 
 RUN apt update -y \
     && apt upgrade -y \
-    && apt install git librocksdb-dev clang-7 gcc-7 gcc-7-multilib llvm-7 libssl-dev pkg-config protobuf-compiler python3 -y
+    && apt install build-essential git librocksdb-dev clang cmake g++-multilib llvm llvm-dev libssl-dev pkg-config protobuf-compiler python3 -y
 
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly
 
