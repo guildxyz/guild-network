@@ -67,7 +67,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
             testnet_genesis(
                 wasm_binary,
                 // Initial PoA authorities
-                vec![AuthorityKeys::new("Alice")],
+                vec![AuthorityKeys::new("Alice"), AuthorityKeys::new("Bob")],
                 // Sudo account
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 // Pre-funded accounts

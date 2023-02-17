@@ -18,6 +18,7 @@ std = [
 
 [dependencies]
 # general
+log = { version = "0.4.17", default-features = false }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
 

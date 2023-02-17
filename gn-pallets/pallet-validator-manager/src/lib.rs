@@ -31,6 +31,8 @@ use sp_runtime::traits::{Convert, Zero};
 use sp_staking::offence::{Offence, OffenceError, ReportOffence};
 use sp_std::{collections::btree_set::BTreeSet, prelude::*};
 
+pub const LOG_TARGET: &'static str = "runtime::validator-set";
+
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
@@ -199,6 +201,7 @@ impl<T: Config> Pallet<T> {
         <Validators<T>>::mutate(|v| v.push(validator_id.clone()));
 
         Self::deposit_event(Event::ValidatorAdditionInitiated(validator_id));
+        log::debug!(target: LOG_TARGET, "Validator addition initiated.");
 
         Ok(())
     }
@@ -218,6 +221,7 @@ impl<T: Config> Pallet<T> {
         <Validators<T>>::put(validators);
 
         Self::deposit_event(Event::ValidatorRemovalInitiated(validator_id.clone()));
+        log::debug!(target: LOG_TARGET, "Validator removal initiated.");
 
         Ok(())
     }
@@ -253,6 +257,12 @@ impl<T: Config> Pallet<T> {
         // Delete from active validator set.
         <Validators<T>>::mutate(|vs| vs.retain(|v| !validators_to_remove.contains(v)));
 
+        log::debug!(
+            target: LOG_TARGET,
+            "Initiated removal of {:?} offline validators.",
+            validators_to_remove.len()
+        );
+
         // Clear the offline validator list to avoid repeated deletion.
         <OfflineValidators<T>>::put(Vec::<T::AccountId>::new());
     }
@@ -266,6 +276,11 @@ impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
         // Remove any offline validators. This will only work when the runtime
         // also has the im-online pallet.
         Self::remove_offline_validators();
+
+        log::debug!(
+            target: LOG_TARGET,
+            "New session called; updated validator set provided."
+        );
 
         Some(Self::validators())
     }

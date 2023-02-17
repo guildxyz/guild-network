@@ -142,7 +142,7 @@ parameter_types! {
     pub const ValidityPeriod: u32 = 50;
     pub const MinimumFee: u32 = 0;
     pub const ExistentialDeposit: Balance = 500;
-    pub const MinAuthorities: u32 = 1;
+    pub const MinAuthorities: u32 = 2;
     pub const Period: u32 = 2 * MINUTES;
     pub const Offset: u32 = 0;
 }
