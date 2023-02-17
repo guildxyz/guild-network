@@ -163,12 +163,6 @@ fn testnet_genesis(
                 .map(|k| (k, 1 << 60))
                 .collect(),
         },
-        aura: AuraConfig {
-            authorities: vec![],
-        },
-        grandpa: GrandpaConfig {
-            authorities: vec![],
-        },
         validator_manager: ValidatorManagerConfig {
             initial_validators: initial_authorities
                 .iter()
@@ -186,6 +180,12 @@ fn testnet_genesis(
                     )
                 })
                 .collect(),
+        },
+        aura: AuraConfig {
+            authorities: vec![],
+        },
+        grandpa: GrandpaConfig {
+            authorities: vec![],
         },
         sudo: SudoConfig {
             // Assign network admin rights.
