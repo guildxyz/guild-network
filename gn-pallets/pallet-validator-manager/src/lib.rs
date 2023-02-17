@@ -31,7 +31,7 @@ use sp_runtime::traits::{Convert, Zero};
 use sp_staking::offence::{Offence, OffenceError, ReportOffence};
 use sp_std::{collections::btree_set::BTreeSet, prelude::*};
 
-pub const LOG_TARGET: &'static str = "runtime::validator-set";
+pub const LOG_TARGET: &str = "runtime::validator-set";
 
 #[frame_support::pallet]
 pub mod pallet {

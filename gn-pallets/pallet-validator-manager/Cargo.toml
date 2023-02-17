@@ -5,6 +5,7 @@ edition = "2021"
 
 [features]
 default = ["std"]
+runtime-benchmarks = []
 std = [
   "pallet-session/std",
   "parity-scale-codec/std",
@@ -14,6 +15,10 @@ std = [
   "sp-runtime/std",
   "sp-staking/std",
   "sp-std/std",
+]
+try-runtime = [
+  "frame-support/try-runtime",
+  "pallet-session/try-runtime",
 ]
 
 [dependencies]
