@@ -19,6 +19,7 @@ runtime-benchmarks = [
   "pallet-guild/runtime-benchmarks",
   "pallet-oracle/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
+  "pallet-validator-manager/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
@@ -35,10 +36,12 @@ std = [
   "pallet-guild/std",
   "pallet-oracle/std",
   "pallet-randomness-collective-flip/std",
+  "pallet-session/std",
   "pallet-sudo/std",
   "pallet-timestamp/std",
   "pallet-transaction-payment/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
+  "pallet-validator-manager/std",
   "sp-api/std",
   "sp-block-builder/std",
   "sp-consensus-aura/std",
@@ -64,12 +67,14 @@ try-runtime = [
   "pallet-sudo/try-runtime",
   "pallet-timestamp/try-runtime",
   "pallet-transaction-payment/try-runtime",
+  "pallet-validator-manager/try-runtime",
 ]
 
 [dependencies]
 # local
 pallet-guild = { version = "0.0.0-alpha", path = "../gn-pallets/pallet-guild", default-features = false }
 pallet-oracle = { version = "0.0.0-alpha", path = "../gn-pallets/pallet-oracle", default-features = false }
+pallet-validator-manager = { version = "0.0.0-alpha", path = "../gn-pallets/pallet-validator-manager", default-features = false }
 
 # general
 hex-literal = { version = "0.3.4", optional = true }
@@ -90,6 +95,7 @@ pallet-aura = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-grandpa = { workspace = true }
 pallet-randomness-collective-flip = { workspace = true }
+pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }

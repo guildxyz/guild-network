@@ -9,6 +9,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 pub use frame_system::Call as SystemCall;
+use frame_system::EnsureRoot;
 pub use pallet_balances::Call as BalancesCall;
 use pallet_grandpa::{
     fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
@@ -18,7 +19,10 @@ use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
-    traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, Verify},
+    traits::{
+        AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, OpaqueKeys,
+        Verify,
+    },
     transaction_validity::{TransactionSource, TransactionValidity},
     ApplyExtrinsicResult, MultiSignature,
 };
@@ -138,6 +142,9 @@ parameter_types! {
     pub const ValidityPeriod: u32 = 50;
     pub const MinimumFee: u32 = 0;
     pub const ExistentialDeposit: Balance = 500;
+    pub const MinAuthorities: u32 = 2;
+    pub const Period: u32 = 2 * MINUTES;
+    pub const Offset: u32 = 0;
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -273,6 +280,24 @@ impl pallet_oracle::Config for Runtime {
     type WeightInfo = ();
 }
 
+impl pallet_session::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type ValidatorId = <Self as frame_system::Config>::AccountId;
+    type ValidatorIdOf = pallet_validator_manager::ValidatorOf<Self>;
+    type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
+    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+    type SessionManager = ValidatorManager;
+    type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+    type Keys = opaque::SessionKeys;
+    type WeightInfo = ();
+}
+
+impl pallet_validator_manager::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type AddRemoveOrigin = EnsureRoot<AccountId>;
+    type MinAuthorities = MinAuthorities;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -280,16 +305,22 @@ construct_runtime!(
         NodeBlock = opaque::Block,
         UncheckedExtrinsic = UncheckedExtrinsic
     {
-        Aura: pallet_aura,
+        System: frame_system = 0,
+
         Balances: pallet_balances,
-        Grandpa: pallet_grandpa,
-        Guild: pallet_guild,
-        Oracle: pallet_oracle,
-        RandomnessCollectiveFlip: pallet_randomness_collective_flip,
-        Timestamp: pallet_timestamp,
         TransactionPayment: pallet_transaction_payment,
-        Sudo: pallet_sudo,
-        System: frame_system,
+        RandomnessCollectiveFlip: pallet_randomness_collective_flip,
+
+        Timestamp: pallet_timestamp,
+        ValidatorManager: pallet_validator_manager,
+        Session: pallet_session,
+        Aura: pallet_aura,
+        Grandpa: pallet_grandpa,
+
+        Guild: pallet_guild = 70,
+        Oracle: pallet_oracle = 71,
+
+        Sudo: pallet_sudo = 255,
     }
 );
 
