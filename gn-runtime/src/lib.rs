@@ -141,8 +141,8 @@ parameter_types! {
     pub const SS58Prefix: u8 = 42;
     pub const ValidityPeriod: u32 = 50;
     pub const MinimumFee: u32 = 0;
-    pub const MinAuthorities: u32 = 2;
     pub const ExistentialDeposit: Balance = 500;
+    pub const MinAuthorities: u32 = 1;
     pub const Period: u32 = 2 * MINUTES;
     pub const Offset: u32 = 0;
 }
