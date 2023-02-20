@@ -356,7 +356,7 @@ fn join_and_leave_unfiltered_role() {
         let role_id = <Guild>::role_id(guild_id, role_name).unwrap();
 
         // register oracle operator
-        <Oracle>::register_operator(RuntimeOrigin::signed(operator)).unwrap();
+        <Oracle>::register_operator(RuntimeOrigin::root(), operator).unwrap();
         // register identity that requires oracle check
         <Guild>::register(
             RuntimeOrigin::signed(user),
@@ -468,7 +468,7 @@ fn role_with_filtered_requirements() {
         let role_id_2 = <Guild>::role_id(guild_id, role_name_2).unwrap();
 
         // register oracle operator
-        <Oracle>::register_operator(RuntimeOrigin::signed(operator)).unwrap();
+        <Oracle>::register_operator(RuntimeOrigin::root(), operator).unwrap();
 
         // register identity that requires oracle check
         <Guild>::register(

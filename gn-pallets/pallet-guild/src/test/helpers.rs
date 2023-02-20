@@ -7,13 +7,6 @@ const STARTING_BLOCK_NUM: u64 = 2;
 pub const METADATA: &[u8] =
     &[12u8; <TestRuntime as pallet_guild::Config>::MaxSerializedLen::get() as usize];
 
-pub fn new_test_ext() -> sp_io::TestExternalities {
-    frame_system::GenesisConfig::default()
-        .build_storage::<TestRuntime>()
-        .unwrap()
-        .into()
-}
-
 pub fn init_chain() {
     for i in 0..STARTING_BLOCK_NUM {
         System::set_block_number(i);

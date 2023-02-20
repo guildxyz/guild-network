@@ -87,6 +87,7 @@ impl pallet_guild::Config for TestRuntime {
 impl pallet_oracle::Config for TestRuntime {
     type Currency = pallet_balances::Pallet<TestRuntime>;
     type Callback = pallet_guild::Call<TestRuntime>;
+    type MaxOperators = ConstU32<10>;
     type MinimumFee = MinimumFee;
     type RuntimeEvent = RuntimeEvent;
     type ValidityPeriod = ValidityPeriod;
@@ -94,3 +95,10 @@ impl pallet_oracle::Config for TestRuntime {
 }
 
 impl pallet_randomness_collective_flip::Config for TestRuntime {}
+
+pub fn new_test_ext() -> sp_io::TestExternalities {
+    frame_system::GenesisConfig::default()
+        .build_storage::<TestRuntime>()
+        .unwrap()
+        .into()
+}

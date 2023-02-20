@@ -1,7 +1,7 @@
 // This is to suppress weird unused warnings when run with the
 // `runtime-benchmarks` feature flag enabled. It probably emanates from the
 // `impl_benchmark_test_suite` macro.
-//#![cfg_attr(feature = "runtime-benchmarks", allow(unused))]
+#![cfg_attr(feature = "runtime-benchmarks", allow(unused))]
 pub use crate as pallet_oracle;
 
 use frame_support::dispatch::{
