@@ -6,18 +6,23 @@ version = "0.0.0-alpha"
 [features]
 default = ["std"]
 runtime-benchmarks = [
-  "frame-benchmarking/default",
-  "pallet-balances/default",
-  "sp-core/default",
-  "sp-io/default",
-  "sp-runtime/default",
+  "frame-benchmarking/runtime-benchmarks",
+  "pallet-balances",
+  "sp-core",
+  "sp-io",
+  "sp-runtime",
 ]
 std = [
   "gn-common/std",
+  "pallet-balances?/std",
   "parity-scale-codec/std",
   "scale-info/std",
+  "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
+  "sp-core?/std",
+  "sp-io?/std",
+  "sp-runtime?/std",
   "sp-std/std",
 ]
 try-runtime = ["frame-support/try-runtime"]

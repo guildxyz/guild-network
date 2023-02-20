@@ -314,7 +314,7 @@ pub mod pallet {
             // could unknowingly add the user without checking on-chain filters
             // in the callback
             ensure!(
-                dbg!(Self::member(role_id, &account).is_some()),
+                Self::member(role_id, &account).is_some(),
                 Error::<T>::InvalidOracleRequest
             );
             let role_data = Self::role(role_id).ok_or(Error::<T>::RoleDoesNotExist)?;

@@ -6,20 +6,25 @@ version = "0.0.0-alpha"
 [features]
 default = ["std"]
 runtime-benchmarks = [
-  "frame-benchmarking/default",
-  "pallet-balances/default",
-  "pallet-randomness-collective-flip/default",
-  "sp-core/default",
-  "sp-runtime/default",
+  "frame-benchmarking/runtime-benchmarks",
+  "pallet-balances",
+  "pallet-randomness-collective-flip",
+  "sp-core",
+  "sp-runtime",
 ]
 std = [
   "gn-common/std",
+  "pallet-balances?/std",
   "pallet-oracle/std",
+  "pallet-randomness-collective-flip?/std",
   "parity-scale-codec/std",
   "scale-info/std",
+  "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
+  "sp-core?/std",
   "sp-io/std",
+  "sp-runtime?/std",
   "sp-std/std",
 ]
 try-runtime = ["frame-support/try-runtime"]

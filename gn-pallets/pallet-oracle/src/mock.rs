@@ -89,7 +89,7 @@ impl pallet_oracle::Config for TestRuntime {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TypeInfo, Encode, Decode)]
-pub struct MockCallback<T>(pub std::marker::PhantomData<T>);
+pub struct MockCallback<T>(pub core::marker::PhantomData<T>);
 
 impl<T> EncodeLike<()> for MockCallback<T> {}
 
@@ -98,7 +98,7 @@ impl<T> pallet_oracle::CallbackWithParameter for MockCallback<T> {
         if result == [0, 0] {
             None
         } else {
-            Some(Self(std::marker::PhantomData))
+            Some(Self(core::marker::PhantomData))
         }
     }
 }
@@ -121,7 +121,7 @@ impl<T: pallet_oracle::Config> MockCallback<T> {
 
 impl MockCallback<TestRuntime> {
     pub fn test() -> Self {
-        Self(std::marker::PhantomData)
+        Self(core::marker::PhantomData)
     }
 }
 

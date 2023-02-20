@@ -268,6 +268,7 @@ impl pallet_oracle::Config for Runtime {
     type Currency = Balances;
     type Callback = pallet_guild::Call<Runtime>;
     type RuntimeEvent = RuntimeEvent;
+    type MaxOperators = ConstU32<10>;
     type MinimumFee = MinimumFee;
     type ValidityPeriod = ValidityPeriod;
     type WeightInfo = ();
