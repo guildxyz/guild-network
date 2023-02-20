@@ -2,11 +2,12 @@ use super::*;
 use crate::Pallet as Guild;
 
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
+use frame_support::traits::Get;
 use frame_system::RawOrigin;
 use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
 use gn_common::identity::*;
 use gn_common::merkle::Proof as MerkleProof;
-use sp_core::{Get, Pair as PairT};
+use sp_std::vec;
 
 const ACCOUNT: &str = "account";
 const SEED: u32 = 999;
@@ -14,10 +15,10 @@ const SEED: u32 = 999;
 benchmarks! {
     register {
         let caller: T::AccountId = whitelisted_caller();
-        let (identity, signature) = id_with_auth::<T>(&caller);
-        let id_with_auth = IdentityWithAuth::Ecdsa(identity, signature);
+        let (identity, signature) = id_with_auth::<T>();
+        let identity_with_auth = IdentityWithAuth::Ecdsa(identity, signature);
         let index = 1;
-    }: _(RawOrigin::Signed(caller.clone()), id_with_auth, index)
+    }: _(RawOrigin::Signed(caller.clone()), identity_with_auth, index)
     verify {
         assert_eq!(Guild::<T>::user_data(caller, index), Some(identity));
     }
@@ -112,7 +113,7 @@ benchmarks! {
 
         // identity
         let caller: T::AccountId = whitelisted_caller();
-        let (identity, signature) = id_with_auth::<T>(&caller);
+        let (identity, signature) = id_with_auth::<T>();
         let identity_with_auth = IdentityWithAuth::Ecdsa(identity, signature);
         Guild::<T>::register(
             RawOrigin::Signed(caller.clone()).into(),
@@ -148,7 +149,7 @@ benchmarks! {
 
     leave {
         let caller: T::AccountId = whitelisted_caller();
-        let (identity, signature) = id_with_auth::<T>(&caller);
+        let (identity, signature) = id_with_auth::<T>();
         let identity_with_auth = IdentityWithAuth::Ecdsa(identity, signature);
 
         Guild::<T>::register(
@@ -184,9 +185,9 @@ benchmarks! {
         let s = <T as Config>::MaxSerializedLen::get() as usize;
 
         let caller: T::AccountId = whitelisted_caller();
-        let user: T::AccountId = account(ACCOUNT, 123, SEED);
+        let keeper: T::AccountId = account(ACCOUNT, 123, SEED);
         let operator: T::AccountId = account(ACCOUNT, 222, SEED);
-        let (identity, signature) = id_with_auth::<T>(&user);
+        let (identity, signature) = id_with_auth::<T>();
         let identity_with_auth = IdentityWithAuth::Ecdsa(identity, signature);
 
         pallet_oracle::Pallet::<T>::register_operator(
@@ -194,28 +195,28 @@ benchmarks! {
             operator.clone()
         ).unwrap();
         Guild::<T>::register(
-            RawOrigin::Signed(user.clone()).into(),
+            RawOrigin::Signed(caller.clone()).into(),
             identity_with_auth,
             0,
         ).unwrap();
 
         let guild_name = [0u8; 32];
         let role_name = [0u8; 32];
-        init_guild::<T>(&user, guild_name);
+        init_guild::<T>(&caller, guild_name);
 
-        let logic = vec![100u8; s as usize];
-        let req = vec![200u8; s as usize];
-        let serialized_requirements = (vec![req; r as usize], logic);
+        let logic = vec![100u8; s];
+        let req = vec![200u8; s];
+        let serialized_requirements = (vec![req; r], logic);
 
         Guild::<T>::create_unfiltered_role(
-            RawOrigin::Signed(user.clone()).into(),
+            RawOrigin::Signed(caller.clone()).into(),
             guild_name,
             role_name,
             serialized_requirements,
         ).unwrap();
 
         Guild::<T>::join(
-            RawOrigin::Signed(user.clone()).into(),
+            RawOrigin::Signed(caller.clone()).into(),
             guild_name,
             role_name,
             None,
@@ -227,18 +228,20 @@ benchmarks! {
             vec![1]
         ).unwrap();
 
-    }: _(RawOrigin::Signed(caller.clone()), user.clone(), guild_name, role_name)
+    }: _(RawOrigin::Signed(keeper.clone()), caller.clone(), guild_name, role_name)
     verify {
         let guild_id = Guild::<T>::guild_id(guild_name).unwrap();
         let role_id = Guild::<T>::role_id(guild_id, role_name).unwrap();
-        assert!(Guild::<T>::member(role_id, user).is_some());
+        assert!(Guild::<T>::member(role_id, caller).is_some());
     }
 
     impl_benchmark_test_suite!(Guild, crate::mock::new_test_ext(), crate::mock::TestRuntime, extra = false);
 }
 
 fn init_guild<T: Config>(caller: &T::AccountId, guild_name: [u8; 32]) {
-    crate::mock::init_chain();
+    frame_system::Pallet::<T>::set_block_number(<T as frame_system::Config>::BlockNumber::from(
+        1u32,
+    ));
     let metadata = vec![0u8; <T as Config>::MaxSerializedLen::get() as usize];
     Guild::<T>::create_guild(
         RawOrigin::Signed(caller.clone()).into(),
@@ -248,15 +251,17 @@ fn init_guild<T: Config>(caller: &T::AccountId, guild_name: [u8; 32]) {
     .unwrap();
 }
 
-fn id_with_auth<T: Config>(caller: &T::AccountId) -> (Identity, EcdsaSignature) {
-    let seed = [12u8; 32];
-    let msg = gn_common::utils::verification_msg(&caller);
-    let keypair = sp_core::ecdsa::Pair::from_seed_slice(&seed).unwrap();
-    let signature = EcdsaSignature(keypair.sign(msg.as_ref()).0);
-    let pubkey = recover_prehashed(eth_hash_message(&msg), &signature).unwrap();
-    let address: [u8; 20] = sp_core::keccak_256(&pubkey.serialize_uncompressed()[1..])[12..]
-        .try_into()
-        .unwrap();
-    let identity = Identity::Address20(address);
-    (identity, signature)
+const ADDRESS: [u8; 20] = [
+    181, 107, 240, 94, 75, 219, 191, 204, 187, 168, 13, 127, 220, 79, 13, 235, 246, 21, 213, 11,
+];
+
+const SIGNATURE: [u8; 65] = [
+    252, 125, 173, 220, 20, 148, 251, 98, 222, 103, 168, 18, 25, 200, 32, 44, 130, 113, 16, 110,
+    44, 102, 249, 87, 225, 146, 239, 99, 61, 41, 59, 116, 75, 60, 155, 227, 103, 131, 188, 167,
+    198, 47, 72, 62, 166, 146, 182, 134, 9, 159, 28, 76, 188, 7, 20, 189, 106, 78, 47, 114, 17, 86,
+    201, 32, 1,
+];
+
+fn id_with_auth<T: Config>() -> (Identity, EcdsaSignature) {
+    (Identity::Address20(ADDRESS), EcdsaSignature(SIGNATURE))
 }

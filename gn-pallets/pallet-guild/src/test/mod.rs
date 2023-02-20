@@ -19,8 +19,6 @@ use sp_runtime::DispatchError;
 #[test]
 fn callback_can_only_be_called_by_root() {
     new_test_ext().execute_with(|| {
-        init_chain();
-
         let register_no_access = dummy_answer(
             vec![u8::from(false)],
             0,

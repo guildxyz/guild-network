@@ -5,7 +5,6 @@ use sp_core::Pair as PairT;
 #[test]
 fn unsuccessful_registrations() {
     new_test_ext().execute_with(|| {
-        init_chain();
         let user = 0;
         let max_identities = <TestRuntime as pallet_guild::Config>::MaxIdentities::get();
 
@@ -97,7 +96,6 @@ fn unsuccessful_registrations() {
 #[test]
 fn successful_on_chain_registrations() {
     new_test_ext().execute_with(|| {
-        init_chain();
         let user = 1;
         let mut index = 0;
 
@@ -156,7 +154,6 @@ fn successful_on_chain_registrations() {
 #[test]
 fn successful_off_chain_registrations() {
     new_test_ext().execute_with(|| {
-        init_chain();
         let operator = 0;
         let user = 1;
         let id_zero = Identity::Other([0u8; 64]);
@@ -209,7 +206,6 @@ fn successful_off_chain_registrations() {
 #[test]
 fn successful_idenity_overrides() {
     new_test_ext().execute_with(|| {
-        init_chain();
         let operator = 0;
         let user = 2;
         let seed = [12u8; 32];

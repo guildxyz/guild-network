@@ -2,9 +2,15 @@ use super::*;
 use crate::Pallet as Oracle;
 
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
-use frame_support::traits::Currency;
+use frame_support::dispatch::{
+    DispatchResultWithPostInfo, PostDispatchInfo, UnfilteredDispatchable,
+};
+use frame_support::pallet_prelude::Pays;
+use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
-use sp_core::Get;
+use parity_scale_codec::{Decode, Encode, EncodeLike};
+use scale_info::TypeInfo;
+use sp_std::{vec, vec::Vec};
 
 const ACCOUNT: &str = "operator";
 const SEED: u32 = 999;
@@ -40,7 +46,7 @@ benchmarks! {
 
         let data = vec![128; n as usize];
         let fee = T::Currency::minimum_balance();
-        let callback = crate::mock::MockCallback::<T>::new();
+        let callback = MockCallback::<T>::test();
     }: _(RawOrigin::Signed(caller), callback, data, fee)
     verify {
         assert_eq!(Oracle::<T>::request_identifier(), 1);
@@ -51,10 +57,7 @@ benchmarks! {
 }
 
 fn register_operators<T: Config>(n: u32) -> T::AccountId {
-    let operators: Vec<T::AccountId> = (0..n)
-        .into_iter()
-        .map(|i| account(ACCOUNT, i, SEED))
-        .collect();
+    let operators: Vec<T::AccountId> = (0..n).map(|i| account(ACCOUNT, i, SEED)).collect();
 
     let operator_0 = operators[0].clone();
 
@@ -63,4 +66,35 @@ fn register_operators<T: Config>(n: u32) -> T::AccountId {
     }
 
     operator_0
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, TypeInfo, Encode, Decode)]
+pub struct MockCallback<T>(pub core::marker::PhantomData<T>);
+
+impl<T> EncodeLike<()> for MockCallback<T> {}
+
+impl<T> CallbackWithParameter for MockCallback<T> {
+    fn with_result(&self, result: Vec<u8>) -> Option<Self> {
+        if result == [0, 0] {
+            None
+        } else {
+            Some(Self(core::marker::PhantomData))
+        }
+    }
+}
+
+impl<T: frame_system::Config> UnfilteredDispatchable for MockCallback<T> {
+    type RuntimeOrigin = <T as frame_system::Config>::RuntimeOrigin;
+    fn dispatch_bypass_filter(self, _origin: Self::RuntimeOrigin) -> DispatchResultWithPostInfo {
+        Ok(PostDispatchInfo {
+            actual_weight: None,
+            pays_fee: Pays::No,
+        })
+    }
+}
+
+impl<T: Config> MockCallback<T> {
+    pub fn test() -> <T as Config>::Callback {
+        Decode::decode(&mut &[][..]).unwrap()
+    }
 }

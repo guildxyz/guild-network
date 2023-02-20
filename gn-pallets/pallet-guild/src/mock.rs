@@ -1,7 +1,3 @@
-// This is to suppress weird unused warnings when run with the
-// `runtime-benchmarks` feature flag enabled. It probably emanates from the
-// `impl_benchmark_test_suite` macro.
-#![cfg_attr(feature = "runtime-benchmarks", allow(unused))]
 pub use crate as pallet_guild;
 
 use frame_support::parameter_types;
@@ -102,13 +98,17 @@ impl pallet_oracle::Config for TestRuntime {
 impl pallet_randomness_collective_flip::Config for TestRuntime {}
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    frame_system::GenesisConfig::default()
+    let mut ext: sp_io::TestExternalities = frame_system::GenesisConfig::default()
         .build_storage::<TestRuntime>()
         .unwrap()
-        .into()
+        .into();
+    ext.execute_with(|| {
+        init_chain();
+    });
+    ext
 }
 
-pub fn init_chain() {
+fn init_chain() {
     for i in 0..2 {
         System::set_block_number(i);
         <RandomnessCollectiveFlip as OnInitialize<u64>>::on_initialize(i);
