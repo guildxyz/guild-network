@@ -3,12 +3,14 @@ edition = "2021"
 name = "pallet-oracle"
 version = "0.0.0-alpha"
 
-[package.metadata.docs.rs]
-targets = ["x86_64-unknown-linux-gnu"]
-
 [features]
 default = ["std"]
-runtime-benchmarks = []
+runtime-benchmarks = [
+  "frame-benchmarking/default",
+  "pallet-balances/default",
+  "sp-core/default",
+  "sp-runtime/default",
+]
 std = [
   "gn-common/std",
   "parity-scale-codec/std",
@@ -27,12 +29,17 @@ gn-common = { version = "0.0.0-alpha", path = "../../gn-common", default-feature
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
 
+# substrate pallets
+pallet-balances = { workspace = true, optional = true }
+
 # substrate frame
-#frame-benchmarking = { workspace = true, optional = true }
+frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 
 # substrate primitives
+sp-core = { workspace = true, optional = true }
+sp-runtime = { workspace = true, optional = true }
 sp-std = { workspace = true }
 
 [dev-dependencies]

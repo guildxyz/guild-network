@@ -32,6 +32,7 @@ parameter_types! {
     pub const ExistentialDeposit: Balance = 1;
     pub const MinimumFee: Balance = 1;
     pub const ValidityPeriod: u64 = 10;
+    pub const MaxOperators: u32 = 4;
 }
 
 impl frame_system::Config for TestRuntime {
@@ -77,32 +78,39 @@ impl pallet_oracle::Config for TestRuntime {
     type WeightInfo = ();
     type RuntimeEvent = RuntimeEvent;
     type Currency = pallet_balances::Pallet<TestRuntime>;
-    type Callback = MockCallback;
+    type Callback = MockCallback<Self>;
     type ValidityPeriod = ValidityPeriod;
+    type MaxOperators = MaxOperators;
     type MinimumFee = MinimumFee;
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TypeInfo, Encode, Decode)]
-pub struct MockCallback(pub bool);
+pub struct MockCallback<T>(pub std::marker::PhantomData<T>);
 
-impl EncodeLike<bool> for MockCallback {}
+impl<T> EncodeLike<()> for MockCallback<T> {}
 
-impl pallet_oracle::CallbackWithParameter for MockCallback {
+impl<T> pallet_oracle::CallbackWithParameter for MockCallback<T> {
     fn with_result(&self, result: SpVec<u8>) -> Option<Self> {
         if result == [0, 0] {
             None
         } else {
-            Some(Self(true))
+            Some(Self(std::marker::PhantomData))
         }
     }
 }
 
-impl UnfilteredDispatchable for MockCallback {
+impl UnfilteredDispatchable for MockCallback<TestRuntime> {
     type RuntimeOrigin = <TestRuntime as frame_system::Config>::RuntimeOrigin;
     fn dispatch_bypass_filter(self, _origin: Self::RuntimeOrigin) -> DispatchResultWithPostInfo {
         Ok(PostDispatchInfo {
             actual_weight: None,
             pays_fee: Pays::No,
         })
+    }
+}
+
+impl MockCallback<TestRuntime> {
+    pub fn new() -> Self {
+        Self(std::marker::PhantomData)
     }
 }

@@ -39,6 +39,7 @@ pub fn minimum_fee() -> <TestRuntime as pallet_balances::Config>::Balance {
 pub fn error_msg<'a>(error: DispatchError) -> &'a str {
     match error {
         DispatchError::Module(module_error) => module_error.message.unwrap(),
+        DispatchError::BadOrigin => "BadOrigin",
         _ => panic!("unexpected error"),
     }
 }
