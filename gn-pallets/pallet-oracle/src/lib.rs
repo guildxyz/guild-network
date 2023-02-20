@@ -28,7 +28,7 @@ mod test;
 mod weights;
 
 pub use pallet::*;
-
+        
 #[frame_support::pallet]
 pub mod pallet {
     use super::weights::WeightInfo;
@@ -189,6 +189,7 @@ pub mod pallet {
                     Err(Error::<T>::OperatorAlreadyRegistered.into())
                 } else {
                     operators.push(operator.clone());
+                    operators.sort(); // needed for binary search
                     Self::deposit_event(Event::OperatorRegistered(operator));
                     Ok(())
                 }
@@ -200,7 +201,6 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::deregister_operator())]
         pub fn deregister_operator(origin: OriginFor<T>, operator: T::AccountId) -> DispatchResult {
             ensure_root(origin)?;
-
             Operators::<T>::try_mutate(|operators| {
                 if let Ok(index) = operators.binary_search(&operator) {
                     Self::deposit_event(Event::OperatorDeregistered(operators.remove(index)));

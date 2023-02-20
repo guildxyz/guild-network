@@ -9,6 +9,7 @@ runtime-benchmarks = [
   "frame-benchmarking/default",
   "pallet-balances/default",
   "sp-core/default",
+  "sp-io/default",
   "sp-runtime/default",
 ]
 std = [
@@ -40,6 +41,7 @@ frame-system = { workspace = true }
 # substrate primitives
 sp-core = { workspace = true, optional = true }
 sp-runtime = { workspace = true, optional = true }
+sp-io = { workspace = true, optional = true }
 sp-std = { workspace = true }
 
 [dev-dependencies]

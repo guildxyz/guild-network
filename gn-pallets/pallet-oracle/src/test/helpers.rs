@@ -1,23 +1,6 @@
 use super::{pallet_oracle, RuntimeEvent, System, TestRuntime};
 use frame_support::dispatch::DispatchError;
 
-pub const GENESIS_BALANCE: <TestRuntime as pallet_balances::Config>::Balance = 10;
-pub const ACCOUNT_0: <TestRuntime as frame_system::Config>::AccountId = 0;
-pub const ACCOUNT_1: <TestRuntime as frame_system::Config>::AccountId = 1;
-
-pub fn new_test_ext() -> sp_io::TestExternalities {
-    let mut storage = frame_system::GenesisConfig::default()
-        .build_storage::<TestRuntime>()
-        .unwrap();
-    pallet_balances::GenesisConfig::<TestRuntime> {
-        balances: vec![(ACCOUNT_0, GENESIS_BALANCE), (ACCOUNT_1, GENESIS_BALANCE)],
-    }
-    .assimilate_storage(&mut storage)
-    .unwrap();
-
-    sp_io::TestExternalities::new(storage)
-}
-
 pub fn last_event() -> pallet_oracle::Event<TestRuntime> {
     System::events()
         .into_iter()

@@ -1,57 +1,66 @@
 use super::*;
 use crate::Pallet as Oracle;
-use crate::mock::MockCallback;
 
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
-use frame_system::RawOrigin;
-use frame_support::dispatch::{
-    DispatchResultWithPostInfo, PostDispatchInfo, UnfilteredDispatchable,
-};
-use frame_support::pallet_prelude::Pays;
 use frame_support::traits::Currency;
-use parity_scale_codec::{Encode, Decode, EncodeLike};
-use scale_info::TypeInfo;
+use frame_system::RawOrigin;
+use sp_core::Get;
 
-const MAX_OPERATORS: u32 = 100;
+const ACCOUNT: &str = "operator";
+const SEED: u32 = 999;
 
 benchmarks! {
     register_operator {
-        let n in 0 .. MAX_OPERATORS - 1 => register_operators::<T>(n);
-        let operator: T::AccountId = account("operator", MAX_OPERATORS - 1, 999);
+        let max_operators = <T as Config>::MaxOperators::get();
+        let n in 1 .. <T as Config>::MaxOperators::get() - 1 => register_operators::<T>(n);
+        let operator: T::AccountId = account(ACCOUNT, max_operators - 1, SEED);
     }: _(RawOrigin::Root, operator)
     verify {
-        assert_eq!(Oracle::<T>::operators().len(), MAX_OPERATORS as usize)
+        assert_eq!(Oracle::<T>::operators().len(), (n + 1) as usize);
     }
     deregister_operator {
-        let n in 0 .. MAX_OPERATORS => register_operators::<T>(n);
-        let operator: T::AccountId = account("operator", MAX_OPERATORS - 1, 999);
+        let max_operators = <T as Config>::MaxOperators::get();
+        let n in 1 .. <T as Config>::MaxOperators::get();
+        let operator = register_operators::<T>(n);
     }: _(RawOrigin::Root, operator)
     verify {
-        assert_eq!(Oracle::<T>::operators().len(), MAX_OPERATORS as usize)
+        assert_eq!(Oracle::<T>::operators().len(), (n - 1) as usize)
     }
     initiate_request {
         let n in 50 .. 1000;
         let caller: T::AccountId = whitelisted_caller();
-        let operator: T::AccountId = account("operator", 1, 123);
+        let operator: T::AccountId = account(ACCOUNT, 1, SEED);
+
+        T::Currency::make_free_balance_be(
+            &caller,
+            <T::Currency as Currency<T::AccountId>>::Balance::from(100u32)
+        );
 
         Oracle::<T>::register_operator(RawOrigin::Root.into(), operator)?;
 
         let data = vec![128; n as usize];
         let fee = T::Currency::minimum_balance();
-        let callback = MockCallback(std::marker::PhantomData);
+        let callback = crate::mock::MockCallback::<T>::new();
     }: _(RawOrigin::Signed(caller), callback, data, fee)
     verify {
         assert_eq!(Oracle::<T>::request_identifier(), 1);
         assert_eq!(Oracle::<T>::next_operator(), 1);
     }
+
+    impl_benchmark_test_suite!(Oracle, crate::mock::new_test_ext(), crate::mock::TestRuntime, extra = false);
 }
 
-fn register_operators<T: Config>(n: u32) {
-    for i in 0..n {
-        let operator: T::AccountId = account("operator", i, 999);
+fn register_operators<T: Config>(n: u32) -> T::AccountId {
+    let operators: Vec<T::AccountId> = (0..n)
+        .into_iter()
+        .map(|i| account(ACCOUNT, i, SEED))
+        .collect();
+
+    let operator_0 = operators[0].clone();
+
+    for operator in operators {
         Oracle::<T>::register_operator(RawOrigin::Root.into(), operator).unwrap();
     }
-}
 
-pub struct Pallet<T: Config>(crate::Pallet<T>);
-pub trait Config: crate::Config {}
+    operator_0
+}

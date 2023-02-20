@@ -1,3 +1,7 @@
+// This is to suppress weird unused warnings when run with the
+// `runtime-benchmarks` feature flag enabled. It probably emanates from the
+// `impl_benchmark_test_suite` macro.
+//#![cfg_attr(feature = "runtime-benchmarks", allow(unused))]
 pub use crate as pallet_oracle;
 
 use frame_support::dispatch::{
@@ -109,8 +113,31 @@ impl UnfilteredDispatchable for MockCallback<TestRuntime> {
     }
 }
 
+impl<T: pallet_oracle::Config> MockCallback<T> {
+    pub fn new() -> <T as pallet_oracle::Config>::Callback {
+        Decode::decode(&mut &[][..]).unwrap()
+    }
+}
+
 impl MockCallback<TestRuntime> {
-    pub fn new() -> Self {
+    pub fn test() -> Self {
         Self(std::marker::PhantomData)
     }
+}
+
+pub const GENESIS_BALANCE: <TestRuntime as pallet_balances::Config>::Balance = 10;
+pub const ACCOUNT_0: <TestRuntime as frame_system::Config>::AccountId = 0;
+pub const ACCOUNT_1: <TestRuntime as frame_system::Config>::AccountId = 1;
+
+pub fn new_test_ext() -> sp_io::TestExternalities {
+    let mut storage = frame_system::GenesisConfig::default()
+        .build_storage::<TestRuntime>()
+        .unwrap();
+    pallet_balances::GenesisConfig::<TestRuntime> {
+        balances: vec![(ACCOUNT_0, GENESIS_BALANCE), (ACCOUNT_1, GENESIS_BALANCE)],
+    }
+    .assimilate_storage(&mut storage)
+    .unwrap();
+
+    sp_io::TestExternalities::new(storage)
 }

@@ -58,6 +58,9 @@ fn operator_registration_invalid_operator_already_registered() {
         let error = <Oracle>::register_operator(RuntimeOrigin::root(), 1).unwrap_err();
         assert_eq!(error_msg(error), "OperatorAlreadyRegistered");
         assert_eq!(<Oracle>::operators(), vec![1]);
+
+        assert!(<Oracle>::register_operator(RuntimeOrigin::root(), 0).is_ok());
+        assert_eq!(<Oracle>::operators(), vec![0, 1]);
     });
 }
 
@@ -72,6 +75,14 @@ fn operator_deregistration_valid() {
         assert!(<Oracle>::operators().is_empty());
 
         assert_eq!(last_event(), OracleEvent::OperatorDeregistered(1));
+
+        assert!(<Oracle>::register_operator(RuntimeOrigin::root(), 2).is_ok());
+        assert!(<Oracle>::register_operator(RuntimeOrigin::root(), 0).is_ok());
+        assert!(<Oracle>::register_operator(RuntimeOrigin::root(), 1).is_ok());
+        assert!(<Oracle>::deregister_operator(RuntimeOrigin::root(), 0).is_ok());
+        assert_eq!(<Oracle>::operators(), vec![1, 2]);
+
+        assert_eq!(last_event(), OracleEvent::OperatorDeregistered(0));
     });
 }
 
@@ -89,7 +100,7 @@ fn operator_unregistration_invalid_unknown_operator() {
 fn initiate_requests_valid() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        let callback = MockCallback::new();
+        let callback = MockCallback::test();
         let fee = minimum_fee();
         let parameters = ("a", "b");
         let data = parameters.encode();
@@ -146,7 +157,7 @@ fn linear_request_delegation() {
         let operator_2 = 12;
         let operator_3 = 13;
         let data = vec![];
-        let callback = MockCallback::new();
+        let callback = MockCallback::test();
         let fee = minimum_fee();
         let mut request_id = 0;
 
@@ -261,7 +272,7 @@ fn initiate_requests_invalid_unknown_operator() {
     new_test_ext().execute_with(|| {
         let error = <Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_0),
-            MockCallback::new(),
+            MockCallback::test(),
             vec![],
             minimum_fee(),
         )
@@ -276,7 +287,7 @@ fn initiate_requests_invalid_insufficient_fee() {
         assert!(<Oracle>::register_operator(RuntimeOrigin::root(), ACCOUNT_0).is_ok());
         let error = <Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_1),
-            MockCallback::new(),
+            MockCallback::test(),
             vec![],
             minimum_fee() - 1,
         )
@@ -292,7 +303,7 @@ fn initiate_requests_invalid_insufficient_balance_for_fee() {
         assert!(<Oracle>::register_operator(RuntimeOrigin::root(), ACCOUNT_0).is_ok());
         let error = <Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_1),
-            MockCallback::new(),
+            MockCallback::test(),
             vec![],
             GENESIS_BALANCE + 1,
         )
@@ -307,7 +318,7 @@ fn initiate_requests_invalid_wrong_operator() {
         assert!(<Oracle>::register_operator(RuntimeOrigin::root(), ACCOUNT_0).is_ok());
         assert!(<Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_1),
-            MockCallback::new(),
+            MockCallback::test(),
             vec![],
             minimum_fee(),
         )
@@ -332,7 +343,7 @@ fn unknown_callback() {
         assert!(<Oracle>::register_operator(RuntimeOrigin::root(), ACCOUNT_0).is_ok());
         assert!(<Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_1),
-            MockCallback::new(),
+            MockCallback::test(),
             vec![],
             minimum_fee(),
         )
@@ -355,7 +366,7 @@ fn kill_request() {
         assert!(<Oracle>::register_operator(RuntimeOrigin::root(), ACCOUNT_0).is_ok());
         assert!(<Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_1),
-            MockCallback::new(),
+            MockCallback::test(),
             vec![],
             minimum_fee(),
         )
