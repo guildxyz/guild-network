@@ -1,6 +1,11 @@
+// This is to suppress weird unused warnings when run with the
+// `runtime-benchmarks` feature flag enabled. It probably emanates from the
+// `impl_benchmark_test_suite` macro.
+#![cfg_attr(feature = "runtime-benchmarks", allow(unused))]
 pub use crate as pallet_guild;
 
 use frame_support::parameter_types;
+use frame_support::traits::{OnFinalize, OnInitialize};
 use sp_core::H256;
 use sp_runtime::testing::Header;
 use sp_runtime::traits::{BlakeTwo256, ConstU32, ConstU64, IdentityLookup};
@@ -101,4 +106,12 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         .build_storage::<TestRuntime>()
         .unwrap()
         .into()
+}
+
+pub fn init_chain() {
+    for i in 0..2 {
+        System::set_block_number(i);
+        <RandomnessCollectiveFlip as OnInitialize<u64>>::on_initialize(i);
+        <RandomnessCollectiveFlip as OnFinalize<u64>>::on_finalize(i);
+    }
 }

@@ -28,7 +28,7 @@ mod test;
 mod weights;
 
 pub use pallet::*;
-        
+
 #[frame_support::pallet]
 pub mod pallet {
     use super::weights::WeightInfo;
@@ -185,7 +185,7 @@ pub mod pallet {
             Operators::<T>::try_mutate(|operators| {
                 if operators.len() == T::MaxOperators::get() as usize {
                     Err(Error::<T>::MaxOperatorsRegistered.into())
-                } else if  operators.binary_search(&operator).is_ok() {
+                } else if operators.binary_search(&operator).is_ok() {
                     Err(Error::<T>::OperatorAlreadyRegistered.into())
                 } else {
                     operators.push(operator.clone());

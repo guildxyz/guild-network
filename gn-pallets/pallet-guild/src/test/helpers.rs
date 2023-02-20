@@ -2,18 +2,8 @@ use super::*;
 use gn_common::identity::{eth_hash_message, recover_prehashed, EcdsaSignature};
 use sp_core::Pair as PairT;
 
-const STARTING_BLOCK_NUM: u64 = 2;
-
 pub const METADATA: &[u8] =
     &[12u8; <TestRuntime as pallet_guild::Config>::MaxSerializedLen::get() as usize];
-
-pub fn init_chain() {
-    for i in 0..STARTING_BLOCK_NUM {
-        System::set_block_number(i);
-        <RandomnessCollectiveFlip as OnInitialize<u64>>::on_initialize(i);
-        <RandomnessCollectiveFlip as OnFinalize<u64>>::on_finalize(i);
-    }
-}
 
 pub fn last_event() -> pallet_guild::Event<TestRuntime> {
     System::events()

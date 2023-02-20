@@ -166,9 +166,7 @@ fn linear_request_delegation() {
         assert!(<Oracle>::register_operator(RuntimeOrigin::root(), operator_1).is_ok());
         assert!(<Oracle>::register_operator(RuntimeOrigin::root(), operator_2).is_ok());
         assert_eq!(
-            error_msg(
-                <Oracle>::register_operator(RuntimeOrigin::root(), operator_3).unwrap_err()
-            ),
+            error_msg(<Oracle>::register_operator(RuntimeOrigin::root(), operator_3).unwrap_err()),
             "MaxOperatorsRegistered"
         );
         assert!(<Oracle>::deregister_operator(RuntimeOrigin::root(), operator).is_ok());

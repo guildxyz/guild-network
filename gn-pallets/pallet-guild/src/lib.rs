@@ -7,7 +7,7 @@ pub use pallet::*;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmark;
-#[cfg(test)]
+#[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;
 #[cfg(test)]
 mod test;
@@ -314,7 +314,7 @@ pub mod pallet {
             // could unknowingly add the user without checking on-chain filters
             // in the callback
             ensure!(
-                Self::member(role_id, &account).is_some(),
+                dbg!(Self::member(role_id, &account).is_some()),
                 Error::<T>::InvalidOracleRequest
             );
             let role_data = Self::role(role_id).ok_or(Error::<T>::RoleDoesNotExist)?;
@@ -456,7 +456,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(9)]
-        #[pallet::weight(0)]
+        #[pallet::weight((0, DispatchClass::Operational, Pays::No))]
         pub fn callback(origin: OriginFor<T>, result: SerializedData) -> DispatchResult {
             // NOTE this ensures that only the root can call this function via
             // a callback, see `frame_system::RawOrigin`
