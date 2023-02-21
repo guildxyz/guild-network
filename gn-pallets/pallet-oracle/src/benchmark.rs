@@ -22,15 +22,26 @@ benchmarks! {
         let operator: T::AccountId = account(ACCOUNT, max_operators - 1, SEED);
     }: _(RawOrigin::Root, operator)
     verify {
-        assert_eq!(Oracle::<T>::operators().len(), (n + 1) as usize);
+        assert!(Oracle::<T>::operator(operator).is_some());
     }
     deregister_operator {
         let max_operators = <T as Config>::MaxOperators::get();
-        let n in 1 .. <T as Config>::MaxOperators::get();
-        let operator = register_operators::<T>(n);
-    }: _(RawOrigin::Root, operator)
+        let n in 1 .. <T as Config>::MaxOperators::get() - 1;
+        let operators = register_operators::<T>(n);
+    }: _(RawOrigin::Root, operators[0].clone())
     verify {
-        assert_eq!(Oracle::<T>::operators().len(), (n - 1) as usize)
+        assert!(Oracle::<T>::operator(operators[0]).is_none());
+    }
+    activate_operator {
+        let n in 1 .. <T as Config>::MaxOperators::get();
+        let operators = register_operators::<T>(n);
+        for operator in operators.iter().skip(1) {
+            Oracle::<T>::activate_operator(RawOrigin::Signed(operator.clone()).into()).unwrap();
+        }
+
+    }: _(RawOrigin::Signed(operators[0].clone()))
+    verify {
+        assert_eq!(Oracle::<T>::active_operators(), operators);
     }
     initiate_request {
         let n in 50 .. 1000;
@@ -43,6 +54,7 @@ benchmarks! {
         );
 
         Oracle::<T>::register_operator(RawOrigin::Root.into(), operator)?;
+        Oracle::<T>::activate_operator(RawOrigin::Signed(operator).into())?;
 
         let data = vec![128; n as usize];
         let fee = T::Currency::minimum_balance();
@@ -56,16 +68,14 @@ benchmarks! {
     impl_benchmark_test_suite!(Oracle, crate::mock::new_test_ext(), crate::mock::TestRuntime, extra = false);
 }
 
-fn register_operators<T: Config>(n: u32) -> T::AccountId {
+fn register_operators<T: Config>(n: u32) -> Vec<T::AccountId> {
     let operators: Vec<T::AccountId> = (0..n).map(|i| account(ACCOUNT, i, SEED)).collect();
 
-    let operator_0 = operators[0].clone();
-
-    for operator in operators {
-        Oracle::<T>::register_operator(RawOrigin::Root.into(), operator).unwrap();
+    for operator in &operators {
+        Oracle::<T>::register_operator(RawOrigin::Root.into(), operator.clone()).unwrap();
     }
 
-    operator_0
+    operators
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TypeInfo, Encode, Decode)]
