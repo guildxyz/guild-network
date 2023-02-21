@@ -115,6 +115,8 @@ impl<T: frame_system::Config> UnfilteredDispatchable for MockCallback<T> {
 
 impl<T: Config> MockCallback<T> {
     pub fn test() -> <T as Config>::Callback {
-        Decode::decode(&mut &[][..]).unwrap()
+        let mut enc = vec![9];
+        enc.extend(vec![1u8, 2, 3].encode());
+        Decode::decode(&mut &enc[..]).unwrap()
     }
 }

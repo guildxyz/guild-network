@@ -137,7 +137,7 @@ parameter_types! {
     pub const SS58Prefix: u8 = 42;
     pub const ValidityPeriod: u32 = 50;
     pub const MinimumFee: u32 = 0;
-    pub const ExistentialDeposit: Balance = 500;
+    pub const ExistentialDeposit: Balance = 0;
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -271,7 +271,7 @@ impl pallet_oracle::Config for Runtime {
     type MaxOperators = ConstU32<10>;
     type MinimumFee = MinimumFee;
     type ValidityPeriod = ValidityPeriod;
-    type WeightInfo = ();
+    type WeightInfo = pallet_oracle::weights::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

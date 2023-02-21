@@ -28,6 +28,7 @@ mod test;
 mod weights;
 
 pub use pallet::*;
+pub use weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -193,7 +194,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         /// Register a new Operator.
         #[pallet::call_index(0)]
-        #[pallet::weight(T::WeightInfo::register_operator())]
+        #[pallet::weight(T::WeightInfo::register_operator(T::MaxOperators::get()))]
         pub fn register_operator(origin: OriginFor<T>, operator: T::AccountId) -> DispatchResult {
             ensure_root(origin)?;
 
@@ -215,7 +216,7 @@ pub mod pallet {
 
         /// Deregisters an already registered Operator
         #[pallet::call_index(1)]
-        #[pallet::weight(T::WeightInfo::deregister_operator())]
+        #[pallet::weight(T::WeightInfo::deregister_operator(T::MaxOperators::get()))]
         pub fn deregister_operator(origin: OriginFor<T>, operator: T::AccountId) -> DispatchResult {
             ensure_root(origin)?;
 
@@ -236,7 +237,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::activate_operator())]
+        #[pallet::weight((T::WeightInfo::activate_operator(T::MaxOperators::get()), Pays::No))]
         pub fn activate_operator(origin: OriginFor<T>) -> DispatchResult {
             let operator = ensure_signed(origin)?;
 
@@ -258,7 +259,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(3)]
-        #[pallet::weight(T::WeightInfo::deactivate_operator())]
+        #[pallet::weight((T::WeightInfo::deactivate_operator(T::MaxOperators::get()), Pays::No))]
         pub fn deactivate_operator(origin: OriginFor<T>) -> DispatchResult {
             let operator = ensure_signed(origin)?;
             ensure!(
@@ -289,7 +290,7 @@ pub mod pallet {
         /// required information to perform the request and provide back
         /// the result.
         #[pallet::call_index(4)]
-        #[pallet::weight(T::WeightInfo::initiate_request())]
+        #[pallet::weight((T::WeightInfo::initiate_request(500), Pays::No))]
         pub fn initiate_request(
             origin: OriginFor<T>,
             callback: <T as Config>::Callback,
