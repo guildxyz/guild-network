@@ -7,24 +7,24 @@ use gn_common::pad::padded_id;
 use gn_test_data::*;
 use std::sync::Arc;
 
-const RETRIES: u8 = 10;
-const SLEEP_DURATION_MS: u64 = 500;
-
 pub async fn join(api: Api, root: Arc<Signer>) {
     let operators = prefunded_accounts(api.clone(), Arc::clone(&root), N_TEST_ACCOUNTS).await;
     #[cfg(not(feature = "external-oracle"))]
     {
-        let registering_operators = operators.values();
-        register_operators(api.clone(), Arc::clone(&root), registering_operators).await;
-        let registered_operators = query::registered_operators(api.clone())
+        register_operators(api.clone(), Arc::clone(&root), operators.values()).await;
+        activate_operators(api.clone(), operators.values()).await;
+        let active_operators = query::active_operators(api.clone())
             .await
-            .expect("failed to fetch registered operators");
+            .expect("failed to fetch active operators");
 
-        for registered in &registered_operators {
-            if registered != root.account_id() {
-                assert!(operators.get(registered).is_some());
-            }
+        for active in &active_operators {
+            assert!(operators.get(active).is_some());
         }
+    }
+
+    #[cfg(not(feature = "external-oracle"))]
+    {
+        wait_for_active_operator(api.clone()).await;
     }
 
     register_users(api.clone(), &operators).await;
@@ -33,21 +33,7 @@ pub async fn join(api: Api, root: Arc<Signer>) {
     send_dummy_oracle_answers(api.clone(), &operators).await;
 
     // wait for all transactions to be finalized
-    let mut i = 0;
-    loop {
-        let oracle_requests = query::oracle_requests(api.clone(), PAGE_SIZE)
-            .await
-            .expect("failed to fetch oracle requests");
-        if !oracle_requests.is_empty() {
-            i += 1;
-            if i == RETRIES {
-                panic!("ran out of retries while checking oracle requests")
-            }
-            tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
-        } else {
-            break;
-        }
-    }
+    wait_for_oracle_answers(api.clone()).await;
 
     for (i, (id, accounts)) in operators.iter().enumerate() {
         let user_identity = query::user_identity(api.clone(), id)

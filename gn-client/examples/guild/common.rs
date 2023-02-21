@@ -13,6 +13,9 @@ use sp_keyring::AccountKeyring;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+const RETRIES: u8 = 10;
+const SLEEP_DURATION_MS: u64 = 500;
+
 pub struct Accounts {
     pub substrate: Arc<Signer>,
     pub eth: LocalWallet,
@@ -74,19 +77,70 @@ pub async fn register_operators(
 ) {
     println!("registring operators");
     for (i, account) in accounts.enumerate() {
-        let payload = tx::register_operator(&account.substrate.account_id());
-        tx::send_owned_tx(
-            api.clone(),
-            tx::sudo(payload),
-            Arc::clone(&root),
-            TxStatus::InBlock,
-        )
-        .await
-        .unwrap();
-        println!("operator {i} registered");
+        let payload = tx::register_operator(account.substrate.account_id());
+        tx::send_tx_in_block(api.clone(), &tx::sudo(payload), Arc::clone(&root))
+            .await
+            .unwrap();
+        println!("\toperator {i} registered");
     }
 
     println!("operator registrations in block");
+}
+
+pub async fn activate_operators(api: Api, accounts: impl Iterator<Item = &Accounts>) {
+    println!("activating operators");
+    let tx_futures = accounts
+        .map(|acc| {
+            tx::send_owned_tx(
+                api.clone(),
+                tx::activate_operator(),
+                Arc::clone(&acc.substrate),
+                TxStatus::InBlock,
+            )
+        })
+        .collect::<Vec<_>>();
+
+    try_join_all(tx_futures).await.unwrap();
+
+    println!("operators activated");
+}
+
+pub async fn wait_for_active_operator(api: Api) {
+    let mut i = 0;
+    loop {
+        let active_operators = query::active_operators(api.clone())
+            .await
+            .expect("failed to fetch active operators");
+        if active_operators.is_empty() {
+            i += 1;
+            println!("waiting for active operators");
+            if i == RETRIES {
+                panic!("no active operators found");
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
+        } else {
+            println!("found an active operator");
+            break;
+        }
+    }
+}
+
+pub async fn wait_for_oracle_answers(api: Api) {
+    let mut i = 0;
+    loop {
+        let oracle_requests = query::oracle_requests(api.clone(), PAGE_SIZE)
+            .await
+            .expect("failed to fetch oracle requests");
+        if !oracle_requests.is_empty() {
+            i += 1;
+            if i == RETRIES {
+                panic!("ran out of retries while checking oracle requests")
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
+        } else {
+            break;
+        }
+    }
 }
 
 pub async fn create_dummy_guilds(

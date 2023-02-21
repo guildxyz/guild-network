@@ -39,9 +39,9 @@ struct Opt {
     /// Set operator account
     #[structopt(long = "id", default_value = "alice")]
     id: String,
-    /// Register as an oracle operator before starting to listen to events
+    /// Activate operator before starting to listen to events
     #[structopt(long)]
-    register: bool,
+    activate: bool,
 }
 
 #[tokio::main]
@@ -54,7 +54,7 @@ async fn main() {
 
     // TODO: this will be read from the oracle's wallet for testing purposes we
     // are choosing from pre-funded accounts
-    let signer = Arc::new(Signer::new(
+    let operator = Arc::new(Signer::new(
         match opt.id.to_lowercase().as_str() {
             "bob" => AccountKeyring::Bob,
             "charlie" => AccountKeyring::Charlie,
@@ -70,12 +70,29 @@ async fn main() {
         .await
         .expect("failed to start api client");
 
-    if opt.register {
-        tx::send_tx_in_block(api.clone(), &tx::register_operator(), Arc::clone(&signer))
-            .await
-            .expect("failed to register operator");
+    if !query::is_operator_registered(api.clone(), operator.account_id())
+        .await
+        .expect("failed to fetch operator info")
+    {
+        panic!("{} is not registered as an operator", operator.account_id());
+    }
 
-        log::info!("operator registration request submitted");
+    if opt.activate {
+        tx::send_tx_in_block(api.clone(), &tx::activate_operator(), Arc::clone(&operator))
+            .await
+            .expect("failed to activate operator");
+
+        log::info!("operator activation request submitted");
+    }
+
+    let active = query::active_operators(api.clone())
+        .await
+        .expect("failed to fetch active operators");
+    if !active.contains(operator.account_id()) {
+        panic!(
+            "{} not activated. Run oracle with the '--activate' flag",
+            operator.account_id()
+        );
     }
 
     let mut subscription = api
@@ -95,7 +112,7 @@ async fn main() {
                             event_details.as_event::<OracleRequest>().ok().flatten()
                         })
                         .for_each(|oracle_request| {
-                            submit_answer(api.clone(), Arc::clone(&signer), oracle_request)
+                            submit_answer(api.clone(), Arc::clone(&operator), oracle_request)
                         });
                 }
                 Err(err) => log::error!("invalid block events: {err}"),

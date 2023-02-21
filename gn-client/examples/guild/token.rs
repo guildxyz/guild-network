@@ -1,4 +1,3 @@
-#[cfg(not(feature = "external-oracle"))]
 use crate::common::*;
 use ethers::types::{Address, U256};
 use gn_client::{
@@ -41,19 +40,21 @@ pub async fn token(api: Api, root: Arc<Signer>) {
 
     #[cfg(not(feature = "external-oracle"))]
     {
-        let registering_operators = operators.values();
-        register_operators(api.clone(), Arc::clone(&root), registering_operators).await;
-        let registered_operators = query::registered_operators(api.clone())
+        register_operators(api.clone(), Arc::clone(&root), operators.values()).await;
+        activate_operators(api.clone(), operators.values()).await;
+        let active_operators = query::active_operators(api.clone())
             .await
-            .expect("failed to fetch registered operators");
+            .expect("failed to fetch active operators");
 
-        for registered in &registered_operators {
-            if registered != root.account_id() {
-                assert!(operators.get(registered).is_some());
-            }
+        for active in &active_operators {
+            assert!(operators.get(active).is_some());
         }
     }
 
+    #[cfg(feature = "external-oracle")]
+    {
+        wait_for_active_operator(api.clone()).await;
+    }
     // register root with test evm address + signature
     let evm_identity =
         IdentityWithAuth::Ecdsa(Identity::Address20(address), EcdsaSignature(signature));

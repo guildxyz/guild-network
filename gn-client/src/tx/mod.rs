@@ -21,7 +21,7 @@ use subxt::tx::{DynamicTxPayload, TxPayload};
 
 use std::sync::Arc;
 
-pub fn sudo<'a, 'b>(call: DynamicTxPayload<'a>) -> DynamicTxPayload<'b> {
+pub fn sudo<'a>(call: DynamicTxPayload<'_>) -> DynamicTxPayload<'a> {
     subxt::dynamic::tx("Sudo", "sudo", vec![("call", call.into_value())])
 }
 
@@ -37,6 +37,14 @@ pub fn register_operator<'a>(operator: &AccountId) -> DynamicTxPayload<'a> {
         "register_operator",
         vec![("operator", Value::from_bytes(operator))],
     )
+}
+
+pub fn activate_operator() -> impl TxPayload {
+    runtime::tx().oracle().activate_operator()
+}
+
+pub fn deactivate_operator() -> impl TxPayload {
+    runtime::tx().oracle().deactivate_operator()
 }
 
 pub fn oracle_callback(request_id: u64, data: Vec<u8>) -> impl TxPayload {
