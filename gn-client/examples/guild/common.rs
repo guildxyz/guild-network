@@ -67,27 +67,24 @@ pub async fn prefunded_accounts(
     accounts
 }
 
-#[cfg(not(feature = "external-oracle"))]
 pub async fn register_operators(
     api: Api,
     root: Arc<Signer>,
     accounts: impl Iterator<Item = &Accounts>,
 ) {
-    let register_operator_futures = accounts
-        .map(|account| {
-            let payload = tx::register_operator(&account.substrate.account_id());
-            tx::send_owned_tx(
-                api.clone(),
-                tx::sudo(payload),
-                Arc::clone(&root),
-                TxStatus::InBlock,
-            )
-        })
-        .collect::<Vec<_>>();
-
-    try_join_all(register_operator_futures)
+    println!("registring operators");
+    for (i, account) in accounts.enumerate() {
+        let payload = tx::register_operator(&account.substrate.account_id());
+        tx::send_owned_tx(
+            api.clone(),
+            tx::sudo(payload),
+            Arc::clone(&root),
+            TxStatus::InBlock,
+        )
         .await
-        .expect("failed to register operators");
+        .unwrap();
+        println!("operator {i} registered");
+    }
 
     println!("operator registrations in block");
 }

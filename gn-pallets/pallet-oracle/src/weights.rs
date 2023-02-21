@@ -54,6 +54,8 @@ use sp_std::marker::PhantomData;
 pub trait WeightInfo {
 	fn register_operator() -> Weight;
 	fn deregister_operator() -> Weight;
+	fn activate_operator() -> Weight;
+	fn deactivate_operator() -> Weight;
 	fn initiate_request() -> Weight;
 }
 
@@ -71,6 +73,12 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		Weight::from_parts(16_862_000, 16_862_000)
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
+	}
+	fn activate_operator() -> Weight {
+		Weight::from_parts(16_862_000, 16_862_000)
+	}
+	fn deactivate_operator() -> Weight {
+		Weight::from_parts(16_862_000, 16_862_000)
 	}
 	fn initiate_request() -> Weight {
 		Weight::from_parts(16_862_000, 16_862_000)
@@ -90,6 +98,12 @@ impl WeightInfo for () {
 		Weight::from_parts(16_862_000, 16_862_000)
 			.saturating_add(RocksDbWeight::get().reads(1))
 			.saturating_add(RocksDbWeight::get().writes(1))
+	}
+	fn activate_operator() -> Weight {
+		Weight::from_parts(16_862_000, 16_862_000)
+	}
+	fn deactivate_operator() -> Weight {
+		Weight::from_parts(16_862_000, 16_862_000)
 	}
 	fn initiate_request() -> Weight {
 		Weight::from_parts(16_862_000, 16_862_000)
