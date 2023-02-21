@@ -20,7 +20,7 @@ benchmarks! {
         let max_operators = <T as Config>::MaxOperators::get();
         let n in 1 .. <T as Config>::MaxOperators::get() - 1 => register_operators::<T>(n);
         let operator: T::AccountId = account(ACCOUNT, max_operators - 1, SEED);
-    }: _(RawOrigin::Root, operator)
+    }: _(RawOrigin::Root, operator.clone())
     verify {
         assert!(Oracle::<T>::operator(operator).is_some());
     }
@@ -30,18 +30,28 @@ benchmarks! {
         let operators = register_operators::<T>(n);
     }: _(RawOrigin::Root, operators[0].clone())
     verify {
-        assert!(Oracle::<T>::operator(operators[0]).is_none());
+        assert!(Oracle::<T>::operator(operators[0].clone()).is_none());
     }
     activate_operator {
         let n in 1 .. <T as Config>::MaxOperators::get();
-        let operators = register_operators::<T>(n);
+        let mut operators = register_operators::<T>(n);
         for operator in operators.iter().skip(1) {
             Oracle::<T>::activate_operator(RawOrigin::Signed(operator.clone()).into()).unwrap();
         }
-
     }: _(RawOrigin::Signed(operators[0].clone()))
     verify {
+        operators.sort();
         assert_eq!(Oracle::<T>::active_operators(), operators);
+    }
+    deactivate_operator {
+        let n in 1 .. <T as Config>::MaxOperators::get();
+        let operators = register_operators::<T>(n);
+        for operator in &operators {
+            Oracle::<T>::activate_operator(RawOrigin::Signed(operator.clone()).into()).unwrap();
+        }
+    }: _(RawOrigin::Signed(operators[0].clone()))
+    verify {
+        assert!(!Oracle::<T>::active_operators().contains(&operators[0]));
     }
     initiate_request {
         let n in 50 .. 1000;
@@ -53,8 +63,8 @@ benchmarks! {
             <T::Currency as Currency<T::AccountId>>::Balance::from(100u32)
         );
 
-        Oracle::<T>::register_operator(RawOrigin::Root.into(), operator)?;
-        Oracle::<T>::activate_operator(RawOrigin::Signed(operator).into())?;
+        Oracle::<T>::register_operator(RawOrigin::Root.into(), operator.clone())?;
+        Oracle::<T>::activate_operator(RawOrigin::Signed(operator.clone()).into())?;
 
         let data = vec![128; n as usize];
         let fee = T::Currency::minimum_balance();
