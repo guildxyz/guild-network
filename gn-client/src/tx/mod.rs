@@ -16,9 +16,14 @@ use gn_common::identity::{Identity, IdentityWithAuth};
 use gn_common::merkle::Proof as MerkleProof;
 use gn_common::{GuildName, RoleName};
 use gn_engine::RequirementsWithLogic;
-use subxt::tx::TxPayload;
+use subxt::dynamic::Value;
+use subxt::tx::{DynamicTxPayload, TxPayload};
 
 use std::sync::Arc;
+
+pub fn sudo<'a, 'b>(call: DynamicTxPayload<'a>) -> DynamicTxPayload<'b> {
+    subxt::dynamic::tx("Sudo", "sudo", vec![("call", call.into_value())])
+}
 
 pub fn fund_account(account: &AccountId, amount: u128) -> impl TxPayload {
     runtime::tx()
@@ -26,8 +31,12 @@ pub fn fund_account(account: &AccountId, amount: u128) -> impl TxPayload {
         .transfer(MultiAddress::Id(account.clone()), amount)
 }
 
-pub fn register_operator() -> impl TxPayload {
-    runtime::tx().oracle().register_operator()
+pub fn register_operator<'a>(operator: &AccountId) -> DynamicTxPayload<'a> {
+    subxt::dynamic::tx(
+        "Oracle",
+        "register_operator",
+        vec![("operator", Value::from_bytes(operator))],
+    )
 }
 
 pub fn oracle_callback(request_id: u64, data: Vec<u8>) -> impl TxPayload {

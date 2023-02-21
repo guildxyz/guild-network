@@ -10,18 +10,18 @@ use std::sync::Arc;
 const RETRIES: u8 = 10;
 const SLEEP_DURATION_MS: u64 = 500;
 
-pub async fn join(api: Api, alice: Arc<Signer>) {
-    let operators = prefunded_accounts(api.clone(), Arc::clone(&alice), N_TEST_ACCOUNTS).await;
+pub async fn join(api: Api, root: Arc<Signer>) {
+    let operators = prefunded_accounts(api.clone(), Arc::clone(&root), N_TEST_ACCOUNTS).await;
     #[cfg(not(feature = "external-oracle"))]
     {
         let registering_operators = operators.values();
-        register_operators(api.clone(), registering_operators).await;
+        register_operators(api.clone(), Arc::clone(&root), registering_operators).await;
         let registered_operators = query::registered_operators(api.clone())
             .await
             .expect("failed to fetch registered operators");
 
         for registered in &registered_operators {
-            if registered != alice.account_id() {
+            if registered != root.account_id() {
                 assert!(operators.get(registered).is_some());
             }
         }
@@ -63,7 +63,7 @@ pub async fn join(api: Api, alice: Arc<Signer>) {
         assert_eq!(user_identity, expected);
     }
 
-    create_dummy_guilds(api.clone(), alice, operators.values()).await;
+    create_dummy_guilds(api.clone(), root, operators.values()).await;
 
     join_guilds(api.clone(), &operators).await;
 

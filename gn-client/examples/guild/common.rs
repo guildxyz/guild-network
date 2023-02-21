@@ -68,13 +68,18 @@ pub async fn prefunded_accounts(
 }
 
 #[cfg(not(feature = "external-oracle"))]
-pub async fn register_operators(api: Api, accounts: impl Iterator<Item = &Accounts>) {
+pub async fn register_operators(
+    api: Api,
+    root: Arc<Signer>,
+    accounts: impl Iterator<Item = &Accounts>,
+) {
     let register_operator_futures = accounts
         .map(|account| {
+            let payload = tx::register_operator(&account.substrate.account_id());
             tx::send_owned_tx(
                 api.clone(),
-                tx::register_operator(),
-                Arc::clone(&account.substrate),
+                tx::sudo(payload),
+                Arc::clone(&root),
                 TxStatus::InBlock,
             )
         })
