@@ -194,6 +194,9 @@ benchmarks! {
             RawOrigin::Root.into(),
             operator.clone()
         ).unwrap();
+        pallet_oracle::Pallet::<T>::activate_operator(
+            RawOrigin::Signed(operator.clone()).into(),
+        ).unwrap();
         Guild::<T>::register(
             RawOrigin::Signed(caller.clone()).into(),
             identity_with_auth,

@@ -39,7 +39,7 @@ fn unsuccessful_registrations() {
                     IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]),
                     max_identities - 1,
                 ),
-                "NoRegisteredOperators",
+                "NoActiveOperators",
             ),
             (
                 <Guild>::register(
@@ -165,6 +165,7 @@ fn successful_off_chain_registrations() {
 
         // register an operator first
         <Oracle>::register_operator(RuntimeOrigin::root(), operator).unwrap();
+        <Oracle>::activate_operator(RuntimeOrigin::signed(operator)).unwrap();
         // user registers id that requires off-chain verification
         <Guild>::register(RuntimeOrigin::signed(user), id_auth_zero, index).unwrap();
         // pallet receives a dummy oracle answer
@@ -220,7 +221,7 @@ fn successful_idenity_overrides() {
 
         // register an operator first
         <Oracle>::register_operator(RuntimeOrigin::root(), operator).unwrap();
-
+        <Oracle>::activate_operator(RuntimeOrigin::signed(operator)).unwrap();
         // user registers an off-chain-verified identity
         let identity_with_auth = IdentityWithAuth::Other(id_zero, auth);
         let request_data: RequestData<AccountId> = RequestData::Register {
