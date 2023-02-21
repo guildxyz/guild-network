@@ -150,7 +150,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
-        #[pallet::weight(1000)]
+        #[pallet::weight((1000, Pays::No))]
         pub fn register(
             origin: OriginFor<T>,
             identity_with_auth: IdentityWithAuth,
@@ -201,7 +201,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(1)]
-        #[pallet::weight(10000000)]
+        #[pallet::weight((1000, Pays::No))]
         pub fn join(
             origin: OriginFor<T>,
             guild_name: GuildName,
@@ -284,7 +284,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(2)]
-        #[pallet::weight(10000000)]
+        #[pallet::weight((1000, Pays::No))]
         pub fn leave(
             origin: OriginFor<T>,
             guild_name: GuildName,
@@ -298,7 +298,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(3)]
-        #[pallet::weight(10000000)]
+        #[pallet::weight(1000)]
         pub fn request_oracle_check(
             origin: OriginFor<T>,
             account: T::AccountId,
@@ -353,7 +353,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(4)]
-        #[pallet::weight(10000000)]
+        #[pallet::weight((1000, Pays::No))]
         pub fn create_guild(
             origin: OriginFor<T>,
             guild_name: GuildName,
@@ -387,7 +387,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(5)]
-        #[pallet::weight(10000000)]
+        #[pallet::weight((1000, Pays::No))]
         pub fn create_free_role(
             origin: OriginFor<T>,
             guild_name: GuildName,
@@ -398,7 +398,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(6)]
-        #[pallet::weight(10000000)]
+        #[pallet::weight((1000, Pays::No))]
         pub fn create_role_with_allowlist(
             origin: OriginFor<T>,
             guild_name: GuildName,
@@ -422,7 +422,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(7)]
-        #[pallet::weight(10000000)]
+        #[pallet::weight((1000, Pays::No))]
         pub fn create_child_role(
             origin: OriginFor<T>,
             guild_name: GuildName,
@@ -444,7 +444,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(8)]
-        #[pallet::weight(10000000)]
+        #[pallet::weight((1000, Pays::No))]
         pub fn create_unfiltered_role(
             origin: OriginFor<T>,
             guild_name: GuildName,
