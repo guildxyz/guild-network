@@ -208,7 +208,7 @@ pub mod pallet {
             );
 
             RegisteredOperators::<T>::insert(&operator, ());
-            NumRegisteredOperators::<T>::mutate(|val| *val = *val + 1);
+            NumRegisteredOperators::<T>::mutate(|val| *val += 1);
             Self::deposit_event(Event::OperatorRegistered(operator));
             Ok(())
         }
@@ -230,7 +230,7 @@ pub mod pallet {
                 }
             });
 
-            NumRegisteredOperators::<T>::mutate(|val| *val = *val - 1);
+            NumRegisteredOperators::<T>::mutate(|val| *val -= 1);
             Self::deposit_event(Event::OperatorDeregistered(operator));
             Ok(())
         }

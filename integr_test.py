@@ -74,6 +74,8 @@ def run_tests(*commands, timeout=300):
 def main():
     try:
         node = start_node()
+        command = "cargo run --release --example guild -- --example register"
+        run_tests(command, timeout=20)
         oracle = start_oracle()
         oracle_monitor = Thread(target=monitor_oracle, args=(oracle, node,))
 

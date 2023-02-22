@@ -64,7 +64,7 @@ benchmarks! {
         );
 
         Oracle::<T>::register_operator(RawOrigin::Root.into(), operator.clone())?;
-        Oracle::<T>::activate_operator(RawOrigin::Signed(operator.clone()).into())?;
+        Oracle::<T>::activate_operator(RawOrigin::Signed(operator).into())?;
 
         let data = vec![128; n as usize];
         let fee = T::Currency::minimum_balance();

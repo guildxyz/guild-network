@@ -113,12 +113,6 @@ impl UnfilteredDispatchable for MockCallback<TestRuntime> {
     }
 }
 
-impl<T: pallet_oracle::Config> MockCallback<T> {
-    pub fn new() -> <T as pallet_oracle::Config>::Callback {
-        Decode::decode(&mut &[][..]).unwrap()
-    }
-}
-
 impl MockCallback<TestRuntime> {
     pub fn test() -> Self {
         Self(core::marker::PhantomData)
