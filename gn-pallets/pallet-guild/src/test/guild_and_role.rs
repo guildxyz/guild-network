@@ -4,7 +4,6 @@ use gn_common::filter::{Filter, Guild as GuildFilter, Logic as FilterLogic};
 #[test]
 fn guild_creation() {
     new_test_ext().execute_with(|| {
-        init_chain();
         let signer = 4;
         let guild_name = [99u8; 32];
         let max_serialized_len =
@@ -44,7 +43,6 @@ fn guild_creation() {
 #[test]
 fn guild_with_free_roles() {
     new_test_ext().execute_with(|| {
-        init_chain();
         let signer = 1;
         let guild_name = [11u8; 32];
         let mut role_name = [22u8; 32];
@@ -141,7 +139,6 @@ fn role_with_allowlist_filter() {
     let mut role_id_1 = Default::default();
 
     ext.execute_with(|| {
-        init_chain();
         let signer = 1;
         let guild_name = [11u8; 32];
         let role_name_0 = [0u8; 32];
@@ -279,7 +276,6 @@ fn role_with_allowlist_filter() {
 #[test]
 fn role_with_guild_filter() {
     new_test_ext().execute_with(|| {
-        init_chain();
         let signer = 1;
         let guild_name_0 = [0u8; 32];
         let guild_name_1 = [1u8; 32];
@@ -402,7 +398,6 @@ fn role_with_guild_filter() {
 #[test]
 fn unfiltered_role() {
     new_test_ext().execute_with(|| {
-        init_chain();
         let signer = 1;
         let guild_name = [0u8; 32];
         let role_name = [2u8; 32];

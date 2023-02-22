@@ -9,8 +9,8 @@ use subxt::storage::address::{StorageHasher, StorageMapKey};
 
 use std::collections::BTreeMap;
 
-pub async fn registered_operators(api: Api) -> Result<Vec<AccountId>, SubxtError> {
-    let operators = runtime::storage().oracle().operators();
+pub async fn active_operators(api: Api) -> Result<Vec<AccountId>, SubxtError> {
+    let operators = runtime::storage().oracle().active_operators();
     Ok(api
         .storage()
         .at(None)
@@ -18,6 +18,17 @@ pub async fn registered_operators(api: Api) -> Result<Vec<AccountId>, SubxtError
         .fetch(&operators)
         .await?
         .unwrap_or_default())
+}
+
+pub async fn is_operator_registered(api: Api, id: &AccountId) -> Result<bool, SubxtError> {
+    let operator = runtime::storage().oracle().registered_operators(id);
+    Ok(api
+        .storage()
+        .at(None)
+        .await?
+        .fetch(&operator)
+        .await?
+        .is_some())
 }
 
 pub async fn user_identity(api: Api, user_id: &AccountId) -> Result<Vec<Identity>, SubxtError> {

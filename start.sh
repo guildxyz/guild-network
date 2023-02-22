@@ -51,7 +51,6 @@ elif [ $1 = "benchmark" ]; then
 		--wasm-execution=compiled \
 		--steps 50 \
 		--repeat 20 \
-		--template frame-weight-template.hbs \
 		--output ./gn-pallets/pallet-$pallet/src/weights.rs
 else
   echo "Invalid command"

@@ -5,7 +5,6 @@ use sp_core::Pair as PairT;
 #[test]
 fn unsuccessful_registrations() {
     new_test_ext().execute_with(|| {
-        init_chain();
         let user = 0;
         let max_identities = <TestRuntime as pallet_guild::Config>::MaxIdentities::get();
 
@@ -40,7 +39,7 @@ fn unsuccessful_registrations() {
                     IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]),
                     max_identities - 1,
                 ),
-                "NoRegisteredOperators",
+                "NoActiveOperators",
             ),
             (
                 <Guild>::register(
@@ -97,7 +96,6 @@ fn unsuccessful_registrations() {
 #[test]
 fn successful_on_chain_registrations() {
     new_test_ext().execute_with(|| {
-        init_chain();
         let user = 1;
         let mut index = 0;
 
@@ -156,7 +154,6 @@ fn successful_on_chain_registrations() {
 #[test]
 fn successful_off_chain_registrations() {
     new_test_ext().execute_with(|| {
-        init_chain();
         let operator = 0;
         let user = 1;
         let id_zero = Identity::Other([0u8; 64]);
@@ -167,7 +164,8 @@ fn successful_off_chain_registrations() {
         let id_auth_one = IdentityWithAuth::Other(id_one, auth);
 
         // register an operator first
-        <Oracle>::register_operator(RuntimeOrigin::signed(operator)).unwrap();
+        <Oracle>::register_operator(RuntimeOrigin::root(), operator).unwrap();
+        <Oracle>::activate_operator(RuntimeOrigin::signed(operator)).unwrap();
         // user registers id that requires off-chain verification
         <Guild>::register(RuntimeOrigin::signed(user), id_auth_zero, index).unwrap();
         // pallet receives a dummy oracle answer
@@ -209,7 +207,6 @@ fn successful_off_chain_registrations() {
 #[test]
 fn successful_idenity_overrides() {
     new_test_ext().execute_with(|| {
-        init_chain();
         let operator = 0;
         let user = 2;
         let seed = [12u8; 32];
@@ -223,8 +220,8 @@ fn successful_idenity_overrides() {
         let index = 1;
 
         // register an operator first
-        <Oracle>::register_operator(RuntimeOrigin::signed(operator)).unwrap();
-
+        <Oracle>::register_operator(RuntimeOrigin::root(), operator).unwrap();
+        <Oracle>::activate_operator(RuntimeOrigin::signed(operator)).unwrap();
         // user registers an off-chain-verified identity
         let identity_with_auth = IdentityWithAuth::Other(id_zero, auth);
         let request_data: RequestData<AccountId> = RequestData::Register {

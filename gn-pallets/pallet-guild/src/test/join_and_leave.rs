@@ -5,7 +5,6 @@ use gn_common::merkle::Proof as MerkleProof;
 #[test]
 fn join_and_leave_free_role() {
     new_test_ext().execute_with(|| {
-        init_chain();
         let owner = 0;
         let user = 1;
         let guild_name = [0u8; 32];
@@ -87,7 +86,6 @@ fn join_and_leave_role_with_allowlist() {
     let mut ext = new_test_ext();
 
     ext.execute_with(|| {
-        init_chain();
         // user 1 registers
         let (address, signature) = dummy_ecdsa_id_with_auth(user_1, [1u8; 32]);
         allowlist.push(address);
@@ -230,7 +228,6 @@ fn join_and_leave_role_with_filter() {
     };
 
     new_test_ext().execute_with(|| {
-        init_chain();
         dummy_guild(owner, g0);
         dummy_guild(owner, g1);
         <Guild>::create_free_role(RuntimeOrigin::signed(owner), g0, g0r0).unwrap();
@@ -339,7 +336,6 @@ fn join_and_leave_unfiltered_role() {
     let role_name = [1u8; 32];
 
     new_test_ext().execute_with(|| {
-        init_chain();
         let mut request_id = 0;
 
         // new guild with unfiltered role
@@ -356,7 +352,8 @@ fn join_and_leave_unfiltered_role() {
         let role_id = <Guild>::role_id(guild_id, role_name).unwrap();
 
         // register oracle operator
-        <Oracle>::register_operator(RuntimeOrigin::signed(operator)).unwrap();
+        <Oracle>::register_operator(RuntimeOrigin::root(), operator).unwrap();
+        <Oracle>::activate_operator(RuntimeOrigin::signed(operator)).unwrap();
         // register identity that requires oracle check
         <Guild>::register(
             RuntimeOrigin::signed(user),
@@ -437,7 +434,6 @@ fn role_with_filtered_requirements() {
     let filter_logic_2 = FilterLogic::Or;
 
     new_test_ext().execute_with(|| {
-        init_chain();
         let mut request_id = 0;
 
         // create guild with three roles
@@ -468,8 +464,8 @@ fn role_with_filtered_requirements() {
         let role_id_2 = <Guild>::role_id(guild_id, role_name_2).unwrap();
 
         // register oracle operator
-        <Oracle>::register_operator(RuntimeOrigin::signed(operator)).unwrap();
-
+        <Oracle>::register_operator(RuntimeOrigin::root(), operator).unwrap();
+        <Oracle>::activate_operator(RuntimeOrigin::signed(operator)).unwrap();
         // register identity that requires oracle check
         <Guild>::register(
             RuntimeOrigin::signed(user),
