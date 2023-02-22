@@ -150,7 +150,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
-        #[pallet::weight((1000, Pays::No))]
+        #[pallet::weight((T::WeightInfo::register(), Pays::No))]
         pub fn register(
             origin: OriginFor<T>,
             identity_with_auth: IdentityWithAuth,
@@ -201,7 +201,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(1)]
-        #[pallet::weight((1000, Pays::No))]
+        #[pallet::weight((T::WeightInfo::join(), Pays::No))]
         pub fn join(
             origin: OriginFor<T>,
             guild_name: GuildName,
@@ -284,7 +284,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(2)]
-        #[pallet::weight((1000, Pays::No))]
+        #[pallet::weight((T::WeightInfo::leave(), Pays::No))]
         pub fn leave(
             origin: OriginFor<T>,
             guild_name: GuildName,
@@ -298,7 +298,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(3)]
-        #[pallet::weight(1000)]
+        #[pallet::weight(T::WeightInfo::request_oracle_check())]
         pub fn request_oracle_check(
             origin: OriginFor<T>,
             account: T::AccountId,

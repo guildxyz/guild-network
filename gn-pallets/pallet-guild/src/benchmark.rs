@@ -15,7 +15,7 @@ const SEED: u32 = 999;
 benchmarks! {
     register {
         let caller: T::AccountId = whitelisted_caller();
-        let (identity, signature) = id_with_auth::<T>();
+        let (identity, signature) = id_with_auth::<T>(&caller);
         let identity_with_auth = IdentityWithAuth::Ecdsa(identity, signature);
         let index = 1;
     }: _(RawOrigin::Signed(caller.clone()), identity_with_auth, index)
@@ -113,7 +113,7 @@ benchmarks! {
 
         // identity
         let caller: T::AccountId = whitelisted_caller();
-        let (identity, signature) = id_with_auth::<T>();
+        let (identity, signature) = id_with_auth::<T>(&caller);
         let identity_with_auth = IdentityWithAuth::Ecdsa(identity, signature);
         Guild::<T>::register(
             RawOrigin::Signed(caller.clone()).into(),
@@ -149,7 +149,7 @@ benchmarks! {
 
     leave {
         let caller: T::AccountId = whitelisted_caller();
-        let (identity, signature) = id_with_auth::<T>();
+        let (identity, signature) = id_with_auth::<T>(&caller);
         let identity_with_auth = IdentityWithAuth::Ecdsa(identity, signature);
 
         Guild::<T>::register(
@@ -187,7 +187,7 @@ benchmarks! {
         let caller: T::AccountId = whitelisted_caller();
         let keeper: T::AccountId = account(ACCOUNT, 123, SEED);
         let operator: T::AccountId = account(ACCOUNT, 222, SEED);
-        let (identity, signature) = id_with_auth::<T>();
+        let (identity, signature) = id_with_auth::<T>(&caller);
         let identity_with_auth = IdentityWithAuth::Ecdsa(identity, signature);
 
         pallet_oracle::Pallet::<T>::register_operator(
@@ -254,17 +254,7 @@ fn init_guild<T: Config>(caller: &T::AccountId, guild_name: [u8; 32]) {
     .unwrap();
 }
 
-const ADDRESS: [u8; 20] = [
-    181, 107, 240, 94, 75, 219, 191, 204, 187, 168, 13, 127, 220, 79, 13, 235, 246, 21, 213, 11,
-];
-
-const SIGNATURE: [u8; 65] = [
-    252, 125, 173, 220, 20, 148, 251, 98, 222, 103, 168, 18, 25, 200, 32, 44, 130, 113, 16, 110,
-    44, 102, 249, 87, 225, 146, 239, 99, 61, 41, 59, 116, 75, 60, 155, 227, 103, 131, 188, 167,
-    198, 47, 72, 62, 166, 146, 182, 134, 9, 159, 28, 76, 188, 7, 20, 189, 106, 78, 47, 114, 17, 86,
-    201, 32, 1,
-];
-
-fn id_with_auth<T: Config>() -> (Identity, EcdsaSignature) {
-    (Identity::Address20(ADDRESS), EcdsaSignature(SIGNATURE))
+fn id_with_auth<T: Config>(caller: &T::AccountId) -> (Identity, EcdsaSignature) {
+    let seed = [2u8; 32];
+    gn_common::identity::test_ecdsa_id_with_auth(seed, gn_common::utils::verification_msg(caller))
 }

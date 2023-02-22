@@ -25,7 +25,7 @@ mod benchmark;
 mod mock;
 #[cfg(test)]
 mod test;
-mod weights;
+pub mod weights;
 
 pub use pallet::*;
 pub use weights::WeightInfo;
@@ -290,7 +290,7 @@ pub mod pallet {
         /// required information to perform the request and provide back
         /// the result.
         #[pallet::call_index(4)]
-        #[pallet::weight((T::WeightInfo::initiate_request(500), Pays::No))]
+        #[pallet::weight((T::WeightInfo::initiate_request(data.len() as u32), Pays::No))]
         pub fn initiate_request(
             origin: OriginFor<T>,
             callback: <T as Config>::Callback,

@@ -102,6 +102,34 @@ pub fn eth_hash_message<M: AsRef<[u8]>>(message: M) -> [u8; 32] {
     keccak256(&eth_message)
 }
 
+#[cfg(any(test, feature = "test-sig"))]
+pub fn sign_prehashed(seed: [u8; 32], message: [u8; 32]) -> EcdsaSignature {
+    let secret = secp256k1::SecretKey::from_slice(&seed).expect("seed is 32 bytes; qed");
+    let message = Message::from_slice(&message).expect("Message is 32 bytes; qed");
+
+    let (rec_id, sig) = Secp256k1::signing_only()
+        .sign_ecdsa_recoverable(&message, &secret)
+        .serialize_compact();
+    let mut sig_bytes = [0u8; 65];
+    sig_bytes[64] = rec_id.to_i32() as u8;
+    sig_bytes[0..64].copy_from_slice(&sig);
+    EcdsaSignature(sig_bytes)
+}
+
+#[cfg(any(test, feature = "test-sig"))]
+pub fn test_ecdsa_id_with_auth<M: AsRef<[u8]>>(
+    seed: [u8; 32],
+    msg: M,
+) -> (Identity, EcdsaSignature) {
+    let prehashed = eth_hash_message(msg);
+    let signature = sign_prehashed(seed, prehashed);
+    let pubkey = recover_prehashed(prehashed, &signature).unwrap();
+    let address: [u8; 20] = keccak256(&pubkey.serialize_uncompressed()[1..])[12..]
+        .try_into()
+        .unwrap();
+    (Identity::Address20(address), signature)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -151,7 +179,10 @@ mod test {
         let id_with_auth = IdentityWithAuth::Ecdsa(sp_address, sp_signature);
 
         assert!(id_with_auth.verify(&msg));
-        assert!(!id_with_auth.verify(b"wrong msg"))
+        assert!(!id_with_auth.verify(b"wrong msg"));
+
+        let (address, signature) = test_ecdsa_id_with_auth(seed, &msg);
+        assert!(IdentityWithAuth::Ecdsa(address, signature).verify(&msg));
     }
 
     #[tokio::test]
