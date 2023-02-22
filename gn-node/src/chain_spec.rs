@@ -1,6 +1,6 @@
 use gn_runtime::{
-    AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
-    SystemConfig, WASM_BINARY,
+    AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, SessionConfig, Signature,
+    SudoConfig, SystemConfig, ValidatorManagerConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -31,9 +31,27 @@ where
     AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
-/// Generate an Aura authority key.
-pub fn authority_keys_from_seed(s: &str) -> (AuraId, GrandpaId) {
-    (get_from_seed::<AuraId>(s), get_from_seed::<GrandpaId>(s))
+struct AuthorityKeys {
+    account_id: AccountId,
+    aura_id: AuraId,
+    grandpa_id: GrandpaId,
+}
+
+impl AuthorityKeys {
+    pub fn new(seed: &str) -> Self {
+        Self {
+            account_id: get_account_id_from_seed::<sr25519::Public>(seed),
+            aura_id: get_from_seed::<AuraId>(seed),
+            grandpa_id: get_from_seed::<GrandpaId>(seed),
+        }
+    }
+
+    pub fn to_session_keys(&self) -> gn_runtime::opaque::SessionKeys {
+        gn_runtime::opaque::SessionKeys {
+            aura: self.aura_id.clone(),
+            grandpa: self.grandpa_id.clone(),
+        }
+    }
 }
 
 pub fn development_config() -> Result<ChainSpec, String> {
@@ -49,7 +67,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
             testnet_genesis(
                 wasm_binary,
                 // Initial PoA authorities
-                vec![authority_keys_from_seed("Alice")],
+                vec![AuthorityKeys::new("Alice"), AuthorityKeys::new("Bob")],
                 // Sudo account
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 // Pre-funded accounts
@@ -89,10 +107,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
             testnet_genesis(
                 wasm_binary,
                 // Initial PoA authorities
-                vec![
-                    authority_keys_from_seed("Alice"),
-                    authority_keys_from_seed("Bob"),
-                ],
+                vec![AuthorityKeys::new("Alice"), AuthorityKeys::new("Bob")],
                 // Sudo account
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 // Pre-funded accounts
@@ -130,7 +145,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
     wasm_binary: &[u8],
-    initial_authorities: Vec<(AuraId, GrandpaId)>,
+    initial_authorities: Vec<AuthorityKeys>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     _enable_println: bool,
@@ -148,14 +163,29 @@ fn testnet_genesis(
                 .map(|k| (k, 1 << 60))
                 .collect(),
         },
+        validator_manager: ValidatorManagerConfig {
+            initial_validators: initial_authorities
+                .iter()
+                .map(|x| x.account_id.clone())
+                .collect(),
+        },
+        session: SessionConfig {
+            keys: initial_authorities
+                .iter()
+                .map(|x| {
+                    (
+                        x.account_id.clone(),
+                        x.account_id.clone(),
+                        x.to_session_keys(),
+                    )
+                })
+                .collect(),
+        },
         aura: AuraConfig {
-            authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
+            authorities: vec![],
         },
         grandpa: GrandpaConfig {
-            authorities: initial_authorities
-                .iter()
-                .map(|x| (x.1.clone(), 1))
-                .collect(),
+            authorities: vec![],
         },
         sudo: SudoConfig {
             // Assign network admin rights.
