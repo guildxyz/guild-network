@@ -14,7 +14,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 const RETRIES: u8 = 10;
-const SLEEP_DURATION_MS: u64 = 500;
+const SLEEP_DURATION_MS: u64 = 1000;
 
 pub struct Accounts {
     pub substrate: Arc<Signer>,
