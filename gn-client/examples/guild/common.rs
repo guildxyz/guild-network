@@ -70,6 +70,7 @@ pub async fn prefunded_accounts(
     accounts
 }
 
+#[cfg(not(feature = "external-oracle"))]
 pub async fn register_operators(
     api: Api,
     root: Arc<Signer>,
@@ -87,6 +88,7 @@ pub async fn register_operators(
     println!("operator registrations in block");
 }
 
+#[cfg(not(feature = "external-oracle"))]
 pub async fn activate_operators(api: Api, accounts: impl Iterator<Item = &Accounts>) {
     println!("activating operators");
     let tx_futures = accounts
