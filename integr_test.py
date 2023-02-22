@@ -23,7 +23,7 @@ def start_node():
 
 
 def start_oracle():
-    oracle = Popen(['./target/release/gn-oracle', '--log', 'info', '--register'],
+    oracle = Popen(['./target/release/gn-oracle', '--log', 'info', '--activate'],
                    stderr=PIPE, stdout=DEVNULL)
 
     start = time.time()
