@@ -150,7 +150,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
-        #[pallet::weight((T::WeightInfo::register(), Pays::No))]
+        #[pallet::weight((<T as Config>::WeightInfo::register(), Pays::No))]
         pub fn register(
             origin: OriginFor<T>,
             identity_with_auth: IdentityWithAuth,
@@ -201,7 +201,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(1)]
-        #[pallet::weight((T::WeightInfo::join(), Pays::No))]
+        #[pallet::weight((<T as Config>::WeightInfo::join(), Pays::No))]
         pub fn join(
             origin: OriginFor<T>,
             guild_name: GuildName,
@@ -284,7 +284,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(2)]
-        #[pallet::weight((T::WeightInfo::leave(), Pays::No))]
+        #[pallet::weight((<T as Config>::WeightInfo::leave(), Pays::No))]
         pub fn leave(
             origin: OriginFor<T>,
             guild_name: GuildName,
@@ -298,7 +298,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(3)]
-        #[pallet::weight(T::WeightInfo::request_oracle_check())]
+        #[pallet::weight(<T as Config>::WeightInfo::request_oracle_check())]
         pub fn request_oracle_check(
             origin: OriginFor<T>,
             account: T::AccountId,
@@ -353,7 +353,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(4)]
-        #[pallet::weight((1000, Pays::No))]
+        #[pallet::weight((<T as Config>::WeightInfo::create_guild(metadata.len() as u32), Pays::No))]
         pub fn create_guild(
             origin: OriginFor<T>,
             guild_name: GuildName,
@@ -387,7 +387,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(5)]
-        #[pallet::weight((1000, Pays::No))]
+        #[pallet::weight((<T as Config>::WeightInfo::create_free_role(), Pays::No))]
         pub fn create_free_role(
             origin: OriginFor<T>,
             guild_name: GuildName,
@@ -398,7 +398,14 @@ pub mod pallet {
         }
 
         #[pallet::call_index(6)]
-        #[pallet::weight((1000, Pays::No))]
+        #[pallet::weight((
+            <T as Config>::WeightInfo::create_role_with_allowlist(
+                allowlist.len() as u32,
+                T::MaxReqsPerRole::get(),
+                T::MaxSerializedLen::get()
+            ),
+            Pays::No
+        ))]
         pub fn create_role_with_allowlist(
             origin: OriginFor<T>,
             guild_name: GuildName,
@@ -422,7 +429,13 @@ pub mod pallet {
         }
 
         #[pallet::call_index(7)]
-        #[pallet::weight((1000, Pays::No))]
+        #[pallet::weight((
+            <T as Config>::WeightInfo::create_child_role(
+                T::MaxReqsPerRole::get(),
+                T::MaxSerializedLen::get()
+            ),
+            Pays::No
+        ))]
         pub fn create_child_role(
             origin: OriginFor<T>,
             guild_name: GuildName,
@@ -444,7 +457,13 @@ pub mod pallet {
         }
 
         #[pallet::call_index(8)]
-        #[pallet::weight((1000, Pays::No))]
+        #[pallet::weight((
+            <T as Config>::WeightInfo::create_unfiltered_role(
+                requirements.0.len() as u32,
+                T::MaxSerializedLen::get()
+            ),
+            Pays::No
+        ))]
         pub fn create_unfiltered_role(
             origin: OriginFor<T>,
             guild_name: GuildName,
