@@ -1,15 +1,92 @@
-### Build the source code
+# Guild Network
+
+Guild Network is (currently) an **experimental** Layer 1 blockchain that aims
+to decentralize a subset of [Guild.xyz](https://guild.xyz)'s functionality. In
+a nutshell, if you are unfamiliar with Guild.xyz, it provides a tool to build
+and manage token-gated communities. Anybody can create their own guild and fill
+it up with custom roles that users may obtain within the community. These roles
+are usually tied to certain requirements that users need to meet in order to
+get them.
+
+Checking requirements is a fundamental building block that may need
+verification data external to Guild Network. Like most blockchains out there,
+Guild Network in itself is a closed system that cannot interact with the outer
+world by itself. Therefore, Guild Network relies on a (currently) permissioned
+oracle network that listen to on-chain events and fetch external data for
+checking requirements. For now, the oracle network can only retrieve data
+(token balances) from EVM blockchains.
+
+The [repository](https://github.com/agoraxyz/guild-network), originally forked
+from [Parity's `substrate-node-template`](https://github.com/substrate-developer-hub/substrate-node-template),
+consists of crates that implement the described functionality above. Here's a
+list with a brief overview for each crate:
+- a node needs the following to join the network
+	- `gn-node` - a full-fledged, Substrate-based blockchain node that can enter the network and participate in the decentralization of its functionality
+	- `gn-runtime` - a modular, updatable, WASM-compatible [runtime](https://docs.substrate.io/fundamentals/runtime-development/) that describes the blockchain state and how it is modified via submitted transactions
+	- `gn-pallets` - [pallets](https://docs.substrate.io/tutorials/work-with-pallets/) are essentially pluggable extensions for the runtime that customize how the runtime behaves
+		- `pallet-guild` - this is the pallet through which users can submit their Guild-related transactions
+		- `pallet-oracle` - this is the pallet through which oracle operators can interact with the network
+- `gn-oracle` - a binary crate that oracle nodes need to run in order to subscribe to blockchain events, retrieve data from EVM blockchains and check requirements
+- `gn-client` - essentially a wrapper around [a subxt client](https://docs.rs/subxt/latest/subxt/) that connects to network nodes for queries an submitting transactions
+- `gn-wasm` - WASM wrappers around logic in `gn-client` used by the front-end application
+- `gn-engine` - logic for creating requirements and verifying them
+- `rusty-gate` - the alpha version external data retrieval used by the oracle nodes
+- `gn-common` - common types, functions and wrappers that are used in most crates above
+- `gn-test-data` - dummy test data for integration tests
+
+The chain is currently in a free-to-use demo stage that **doesn't require** any
+funds to interact with. However, you should always keep your private keys
+secret and maintain healthy caution when trying the demo.
+
+**NOTE** Guild Network is in alpha state and we are continuously working on
+perfecting it. Expect bugs and even outages to the service while we strive
+toward a decentralized solution that nobody can just switch off.
+
+## Running a validator node
+
+If you are up for a challenge and want to participate in the network by running
+your own Guild Network node you need the following
+
+- a unix-based machine with the Rust toolchain and `cargo` (Rust's package manager) installed (we haven't tried Windows builds yet)
+```sh
+# install rustup
+curl https://sh.rustup.rs -sSf | sh
+```
+- some packages that might not be pre-installed on a fresh build (package names may differ depending on the installed OS)
+	- `librocksdb-dev`
+	- `libclang-dev`
+	- `clang`, `cmake
+	- `g++-multilib`
+	- `libssl-dev`
+	- `pkg-config`
+	- `protobuf-compiler`
+- for our nodes we use servers with the following setup
+	- hardware - we use a setup [recommended for Polkadot validators](https://wiki.polkadot.network/docs/maintain-guides-how-to-validate-polkadot#reference-hardware)
+	- costs - depends on the service you are using, but for our nodes currently
+		- €70 /month/node
+		- €50/node one-time setup fee
+
+### Build and run a test node locally
+
+Running a validator requires you to generate a couple of cryptographic keys for
+which you need to build the source code first.
+
+#### Build the source code
+
+To build the source code you need to clone it first:
 
 ```bash
-git clone git@github.com:agoraxyz/substrate-node-template.git
-cd substrate-node-template
+git clone git@github.com:agoraxyz/guild-network.git
+cd guild-network
 cargo build --release
 ```
 
-**NOTE**: the build process will take somewhere between 20-30 minutes (depending
-on the hardware) to build in `--release` mode.
+**NOTE**: the build process will take somewhere between 20-30 minutes
+(depending on the hardware) to build in `--release` mode. For optimal
+performance, however, it is highly advised to build the code in `--release`
+mode.
 
-### Run a single test-node
+#### Run a single test-node
 
 In case you want to quickly check your node, just run
 
@@ -22,8 +99,9 @@ last paragraph).
 
 ### Generate cryptographic keys
 
-Every validator node will need to generate 2 cryptographic keys for `aura`
-(block creation) and `grandpa` (block finalization).
+Every validator node will need to generate two cryptographic keys for `aura`
+(block creation) and `grandpa` (block finalization)
+[consensus](https://docs.substrate.io/fundamentals/consensus/).
 
 #### Sr25519 for `aura`
 
@@ -48,15 +126,14 @@ steps.
 #### Ed25519 for `grandpa`
 
 Using the  secret phase from the Sr25519 key generation output run the
-following:
+following with the **same** password as before
 
 ```bash
 ./target/release/node-template key inspect --password-interactive --scheme Ed25519 \
 "pig giraffe ceiling enter weird liar orange decline behind total despair fly"
 ```
 
-which, after providing the **same** password as above, will output something
-like
+which will output something like
 
 ```text
 Secret phrase `pig giraffe ceiling enter weird liar orange decline behind total despair fly` is account:
@@ -71,8 +148,14 @@ where the `SS58` address will be needed for later steps.
 
 ### Generate custom chain specification
 
-Someone needs to generate a `chain-spec.json` file that contains specifications
-for the blockchain by running
+If you want to join an existing chain, you can skip this step as this only
+needs to be performed once when bootstrapping the network. The only thing you
+need from this part is the `chain-spec-raw.json` file that contains all
+necessary information for your fresh node to join the existing network and
+start syncing. You can download this file from [here](https://todo.com).
+
+The initial bootnode needs to generate a `chain-spec.json` file that contains
+genesis configuration for the blockchain by running
 
 ```sh
 ./target/release/node-template build-spec --disable-default-bootnode > chain-spec.json
@@ -94,18 +177,17 @@ for the blockchain by running
 ```
 
 Here, the `chainType` can be set to `Local`, `Development`, or `Live`. The
-difference between these is that when the type is `Local` or `Development` ,
-the chain starts with pre-funded accounts that can interact with the
-network. The `Live` type doesn't provide pre-funded accounts. You
-may set the `name` and `id` fields if you want but note that the
-`id` field determines where the chain data will be located on on your
-computer. For example if `id = hello`, then the node database,
-keystore, and other network-related stuff will be located in
-`/tmp/mynode/hello`. Therefore, make sure that the `aura` and
-`grandpa` keys are saved under `/tmp/mynode/hello/keystore`,
-otherwise you won't be able to validate and produce blocks.
-Generally there's only two fields that definitely require
-modification.
+difference between these is that when the type is `Local` or `Development`,
+the chain starts with pre-funded accounts that can interact with the network.
+The `Live` type doesn't provide pre-funded accounts by default, you need to set
+it manually. You may set the `name` and `id` fields if you want but note that
+the `id` field determines where the chain data will be located on on your
+computer. For example if `id = hello`, then the node database, keystore, and
+other network-related stuff will be located in `/tmp/mynode/hello`, unless
+specified otherwise when starting a live node. Therefore, make sure that the
+`aura` and `grandpa` keys are saved under `/tmp/mynode/hello/keystore`,
+otherwise you won't be able to validate and produce blocks. Generally there's
+only two fields that definitely require modification.
 
 The `aura` field needs to contain all `SS58` addresses of the Sr25519 keys
 generated in the previous steps:
@@ -137,8 +219,8 @@ generated in the previous steps:
 },
 ```
 
-The second element after the address is the voting weight of the nodes, here set
-to 1 for both members.
+The second element after the address is the voting weight of the nodes, here
+set to 1 for both members.
 
 After the specs are finalized, the `chain-spec.json` file needs to be converted
 to raw format by running
@@ -152,10 +234,10 @@ Finally, make sure that every node operator receives the same
 
 ### Insert keys into the keystore
 
-Everybody who wishes to participate in the network by running a node will need
-to perform the following steps:
+Every validator node needs to insert their `aura` and `grandpa` keys into their
+keystore which requires the following steps.
 
-Add the Sr25519 key to the node's keystore:
+#### Adding the Sr25519 (`aura`) key to the node's keystore
 
 ```bash
 ./target/release/node-template key insert --base-path /tmp/mynode \
@@ -169,7 +251,7 @@ Add the Sr25519 key to the node's keystore:
 **NOTE**: use the same secret seeds and password as during the key generation
 step.
 
-Add the Ed25519 key to the node's keystore:
+#### Adding the Ed25519 (`grandpa`) key to the node's keystore
 
 ```bash
 ./target/release/node-template key insert \
@@ -196,36 +278,6 @@ resembles this:
 617572611441ddcb22724420b87ee295c6d47c5adff0ce598c87d3c749b776ba9a647f04
 6772616e1441ddcb22724420b87ee295c6d47c5adff0ce598c87d3c749b776ba9a647f04
 ```
-
-### Setup Tailscale
-
-Since the nodes won't find each other if you just provide the IP address of the
-bootnode, you need to set up `tailscale`. First, make sure to log in to the
-`substrate.pista@gmail.com` Google account (ask Mark for the password). Then go
-to the [tailscale](https://tailscale.com/) website and press Log In. You will be
-prompted by an authentication window: you should log in with Google. Install the
-`tailscale` cli app (the website will provide the link for it) and then you
-should run
-
-```bash
-sudo tailscale up
-```
-
-Then, by running
-
-```bash
-tailscale status
-```
-
-you should see the network participants with their virtual IP addresses:
-
-```text
-100.x.x.x   turbineblade        substrate.pista@ linux   -
-100.x.x.x  gyozosz-ms-7b98      substrate.pista@ linux   - 
-```
-
-You can test the connection by pinging one of the IP addresses in the network.
-If you receive a response, you're all set for the final step.
 
 ### Start the network nodes
 
@@ -258,12 +310,10 @@ because you'll need the local node identity for the other nodes. Note the
 to all websocket interfaces, not just the local ones. This is required for the
 node to accept websocket subscriptions on deployed, non-local networks. The
 latter flag specifies browser Origins allowed to access the HTTP and WS RPC
-servers.
-By default they only accept `localhost` and `polkadot.js` origins so it should
+servers. By default they only accept `localhost` and `polkadot.js` origins so it should
 be set to accept all origins.
 
-Next, each computer that's part of the `tailscale` network should run something
-like:
+Next, each validator needs to run
 
 ```bash
 ./target/release/node-template \
@@ -274,7 +324,7 @@ like:
   --rpc-port 9933 \
   --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
   --validator \
-  --rpc-methods Unsafe \
+  --rpc-methods unsafe \
   --name MyNode \
   --ws-external \
   --rpc-cors=all \
@@ -289,11 +339,7 @@ where the most important line is this:
 ```
 
 This line tells the node to look for the bootnode at address `100.x.x.x` which
-should be copied from the output of
-
-```bash
-tailscale status
-```
+should be copied from the output of TODO
 
 Furthermore, the local node identity should be added after `p2p/...`.
 
@@ -316,8 +362,7 @@ should definitely check how this really works.
 
 ---
 
-If the nodes are successfully started, you should start seeing blocks being
-finalized:
+If the nodes are successfully started, you should start seeing blocks being imported and finalized:
 
 ```text
 2022-07-14 12:04:12 🙌 Starting consensus session on top of parent 0xd4df501cbe450d3465cc7074ce2e3116b8e481e1d8bff347a0491785a31c118e    
@@ -333,10 +378,51 @@ finalized:
 2022-07-14 12:04:24 ✨ Imported #51 (0x295f…5f85)
 ```
 
-### Interacting with the network
+
+## Interacting with the network
+
+In order to interact with the chain you need to have the [Metamask
+wallet](https://metamask.io/) along with the
+[polkadot.js](https://polkadot.js.org/extension/) extension installed. You can
+find the front-end application to Guild Network [here](https://todo.com).
+
+In the heart of Guild Network are guilds that can be created by anyone. Guilds
+are initially empty but they can be filled up with various roles. Roles are
+what make guilds  fill up with life and they usually come with a unique set of
+requirements specified by the guild owner. Users who wish to attain a role in a
+guild need to meet the respective requirements. Checking these requirements is
+mostly the task of oracle operators who query external data sources to verify
+whether a user has enough tokens on Etherum to join a guild and get a role
+assigned.
+
+Users first need to register identities (for example an Ethereum address) on
+Guild Network that will be tied to their Substrate-address, i.e. the native
+identity on Guild Network. Currently, users can register any address/public key
+from a `secp256k1`, `ed25519` and/or `sr25519` elliptic curve signature scheme.
+This is done via submitting a signature on-chain that is verified against the
+registered address/public key. Users may also register Discord and Telegram
+identities, but those are not verified yet (as they cannot really be verified
+on-chain, we'll need oracles for that). 
+
+**NOTE** all data on Guild Network is public, so only register identities that
+you are comfortable with being aggregated and tied to your Substrate-address.
+
+The registered (web3) identities will be used to check requirements and get
+roles assigned to users. Other identities (e.g. Discord, Telegram) can be used
+by third-party services (e.g. Discord and Telegram bots) that build on the
+publicly available data aggregated on Guild Network so you can access gated
+content for example.
+
+### Substrate Front-end Template
+
+The quickest and easiest way to interact with a network is via Parity's generic
+[front-end
+template](https://github.com/substrate-developer-hub/substrate-front-end-template)
+for Substrate-based chains. You can submit extrinsics (transactions) and
+monitor events via this tool from the browser.
 
 Make sure you have `yarn` installed. Then you should clone and install the
-frontend template by running
+front-end template by running
 
 ```bash
 git clone https://github.com/substrate-developer-hub/substrate-front-end-template
@@ -362,11 +448,24 @@ By running
 yarn start
 ```
 
-the app will open in your browser and you will see some pre-funded accounts from
+the app will open in your browser and you might see some pre-funded accounts from
 which you can choose and interact with the blockchain via a the
 `Pallet Interactor`.
 
-### Pruning the chain
+### Polkadot.js
+
+The [polkadot.js](https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Frpc-para.clover.finance#/explorer)
+app lets you monitor a node which is incredibly useful if you are running a
+validator. It will instantly try to connect to a node whose endpoint you need
+to specify in the drop-down menu opening from the upper-left corner.
+
+This is the main interface for submitting `sudo` transactions like registering
+[new validators](https://github.com/gautamdhameja/substrate-validator-set/blob/master/docs/local-network-setup.md)
+and oracle operators and updating the runtime of the network. Once Guild
+Network leaves the testnet phase, the `sudo` account will be replaced by
+decentralized governance.
+
+## Pruning the chain
 
 Whenever you want to delete your local copy of the chain, you can run
 
