@@ -1,4 +1,8 @@
-### Generate custom chain specification
+## Generate custom chain specification
+
+The `chain-spec` file is essentially a genesis snapshot of your chain's state. It
+defines the initial set of validators, the initial WASM binary of the runtime,
+miscellaneous chain metadata, etc.
 
 If you want to join an existing chain, you can skip this step as this only
 needs to be performed once when bootstrapping the network. The only thing you

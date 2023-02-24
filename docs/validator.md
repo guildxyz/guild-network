@@ -26,7 +26,7 @@ To make life easier, here's a checklist you need to go through to become a valid
 
 - [ ] clone the repository
 - [ ] build the source code
-- [ ] download the genesis chain specification
+- [ ] download the genesis chain specification [`chain-spec-raw.json`](https://todo.com)
 - [ ] generate cryptographic validator keys
   - [ ] Sr25519 for `aura`
   - [ ] Ed25519 for `grandpa`
@@ -49,7 +49,7 @@ which you need to build the source code first.
 To build the source code you need to clone it first:
 
 ```bash
-git clone git@github.com:agoraxyz/guild-network.git
+git clone https://github.com/agoraxyz/guild-network.git
 cd guild-network
 cargo build --release
 ```
@@ -92,7 +92,7 @@ Every validator node will need to generate two cryptographic keys for `aura`
 ### Sr25519 for `aura`
 
 ```bash
-./target/release/node-template key generate --scheme Sr25519 --password-interactive
+./target/release/gn-node key generate --scheme Sr25519 --password-interactive
 ```
 
 This will prompt the user to provide a password and will output something like
@@ -115,7 +115,7 @@ Using the secret phase from the Sr25519 key generation output run the
 following with the **same** password as before
 
 ```bash
-./target/release/node-template key inspect --password-interactive --scheme Ed25519 \
+./target/release/gn-node key inspect --password-interactive --scheme Ed25519 \
 "pig giraffe ceiling enter weird liar orange decline behind total despair fly"
 ```
 
@@ -140,10 +140,11 @@ keystore which requires the following steps.
 ### Adding the Sr25519 (`aura`) key to the node's keystore
 
 ```bash
-./target/release/node-template key insert --base-path /tmp/mynode \
+./target/release/gn-node key insert \
+  --base-path [data-dir] \
   --chain chain-spec-raw.json \
   --scheme Sr25519 \
-  --suri <your-secret-seed> \
+  --suri [your-secret-seed] \
   --password-interactive \
   --key-type aura
 ```
@@ -154,11 +155,11 @@ step.
 ### Adding the Ed25519 (`grandpa`) key to the node's keystore
 
 ```bash
-./target/release/node-template key insert \
-  --base-path /tmp/mynode \
+./target/release/gn-node key insert \
+  --base-path [data-dir] \
   --chain chain-spec-raw.json \
   --scheme Ed25519 \
-  --suri <your-secret-seed> \
+  --suri [your-secret-seed] \
   --password-interactive \
   --key-type gran
 ```
@@ -169,7 +170,7 @@ step.
 Finally, verify that the output of
 
 ```bash
-ls /tmp/mynode/chains/testnet/keystore
+ls [data-dir]/chains/[chain name]/keystore # e.g. /tmp/mynode/chains/testnet/keystore
 ```
 
 resembles this:
@@ -179,74 +180,74 @@ resembles this:
 6772616e1441ddcb22724420b87ee295c6d47c5adff0ce598c87d3c749b776ba9a647f04
 ```
 
-## Start the network node
+## Running a validator node
 
-First, start the bootnode by running
+You have multiple options if you want to run a validator:
 
-```bash
-./target/release/node-template \
-  --base-path /tmp/mynode \
-  --chain ./chain-spec-raw.json \
-  --port 30333 \
-  --ws-port 9944 \
-  --rpc-port 9933 \
-  --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
-  --validator \
-  --rpc-methods Unsafe \
-  --ws-external \
-  --rpc-cors=all \
-  --name MyNode \
-  --password-interactive
-```
-
-This should output a ton of lines but you should find this particular line:
-
-```text
-2021-11-03 15:32:15 🏷 Local node identity is: 12D3KooWLmrYDLoNTyTYtRdDyZLWDe1paxzxTw5RgjmHLfzW96SX
-```
-
-because you'll need the local node identity for the other nodes. Note the
-`--ws-external` and the `--rpc-cors=all` flags. The former lets your node listen
-to all websocket interfaces, not just the local ones. This is required for the
-node to accept websocket subscriptions on deployed, non-local networks. The
-latter flag specifies browser Origins allowed to access the HTTP and WS RPC
-servers. By default they only accept `localhost` and `polkadot.js` origins so it should
-be set to accept all origins.
-
-Next, each validator needs to run
+- full validator node (prunes old blocks from the database while only keeping
+  the most recent 256)
 
 ```bash
-./target/release/node-template \
-  --base-path /tmp/mynode \
-  --chain ./chain-spec-raw.json \
-  --port 30333 \
-  --ws-port 9944 \
-  --rpc-port 9933 \
-  --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
-  --validator \
-  --rpc-methods unsafe \
-  --name MyNode \
-  --ws-external \
-  --rpc-cors=all \
-  --bootnodes /ip4/100.x.x.x/tcp/30333/p2p/12D3KooWLmrYDLoNTyTYtRdDyZLWDe1paxzxTw5RgjmHLfzW96SX \
-  --password-interactive
+./target/release/gn-node \
+        --base-path [data dir] \
+        --chain [raw-chain-spec] \
+        --validator \
+        --name [name] \
+        --bootnodes [bootnode multiaddr] \
+        --enable-offchain-indexing true \
+        --pruning=256
 ```
 
-where the most important line is this:
+- archive node (recommended, because it keeps the whole chain state in the database - for reference,
+  a polkadot archive node has a 660GB state)
 
 ```bash
-  --bootnodes /ip4/100.x.x.x/tcp/30333/p2p/12D3KooWLmrYDLoNTyTYtRdDyZLWDe1paxzxTw5RgjmHLfzW96SX \
+./target/release/gn-node \
+        --base-path [data dir] \
+        --chain [raw-chain-spec] \
+        --validator \
+        --name [name] \
+        --bootnodes [bootnode multiaddr] \
+        --enable-offchain-indexing true \
+        --pruning=archive
 ```
 
-This line tells the node to look for the bootnode at address `100.x.x.x` which
-should be copied from the output of TODO
+- rpc node (keeps rpc ports open for safe rpc methods)
 
-Furthermore, the local node identity should be added after `p2p/...`.
+```bash
+./target/release/gn-node \
+        --base-path [data dir] \
+        --chain [raw-chain-spec] \
+        --validator \
+        --name [name] \
+        --bootnodes [bootnode multiaddr] \
+        --enable-offchain-indexing true \
+        --unsafe-ws-external \
+        --rpc-methods Safe \
+        --rpc-cors '*' \
+        --ws-max-connections 5000 \
+        --pruning=archive
+```
+
+where the `[bootnode multiaddress]` looks something like this TODO
+
+```bash
+  --bootnodes /ip4/x.x.x.x/tcp/30333/p2p/12D3KooWLmrYDLoNTyTYtRdDyZLWDe1paxzxTw5RgjmHLfzW96SX \
+```
 
 ## Set session keys
 
-`aura` and `grandpa` consensus happens in sessions with each session holding a set of validators to particpate in the consensus. Therefore, after the node is up and running, you need to get your public `aura` and `grandpa` keys from the node. You need to perform [steps 4, 5 and 6](https://github.com/gautamdhameja/substrate-validator-set/blob/master/docs/local-network-setup.md#step-4).
+`aura` and `grandpa` consensus happens in sessions with each session holding a
+set of validators to particpate in the consensus. Therefore, after the node is
+up and running, you need to get your public `aura` and `grandpa` keys from the
+node. You need to perform [steps 4, 5 and
+6](https://github.com/gautamdhameja/substrate-validator-set/blob/master/docs/local-network-setup.md#step-4).
 
-In case you get an error in step 5, that is probably because the keys received in step 4 are actually 64 bytes instead of 32. In that case, split the key received in step 4 in half and input the first half in the `aura` and the second half in the `grandpa` field (each with a `0x` prefix).
+In case you get an error in step 5, that is probably because the keys received
+in step 4 are actually 64 bytes instead of 32. In that case, split the key
+received in step 4 in half and input the first half in the `aura` and the
+second half in the `grandpa` field (each with a `0x` prefix).
 
-After you've successfully submitted the transaction (you should get a green tick icon in the upper right corner) let us know so we can register your validator via the `sudo` pallet.
+After you've successfully submitted the transaction (you should get a green
+tick icon in the upper right corner) let us know so we can register your
+validator via the `sudo` pallet.
