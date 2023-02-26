@@ -5,12 +5,16 @@ version = "0.0.0-alpha"
 
 [features]
 default = ["std"]
-runtime-benchmarks = []
+runtime-benchmarks = [
+  "frame-benchmarking/runtime-benchmarks",
+  "gn-common/test-sig",
+]
 std = [
   "gn-common/std",
   "pallet-oracle/std",
   "parity-scale-codec/std",
   "scale-info/std",
+  "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
   "sp-io/std",
@@ -27,7 +31,11 @@ pallet-oracle = { version = "0.0.0-alpha", path = "../pallet-oracle", default-fe
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
 
+# substrate pallets
+pallet-balances = { workspace = true, optional = true }
+
 # substrate frame
+frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 
@@ -38,6 +46,5 @@ sp-std = { workspace = true }
 [dev-dependencies]
 pallet-balances = { workspace = true, features = ["default"] }
 pallet-randomness-collective-flip = { workspace = true, features = ["default"] }
-sp-core = { workspace = true, features = ["default"] }
-sp-io = { workspace = true, features = ["default"] }
+sp-core = { workspace = true }
 sp-runtime = { workspace = true, features = ["default"] }

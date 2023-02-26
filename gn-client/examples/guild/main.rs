@@ -1,6 +1,7 @@
 mod common;
 mod join;
 mod keys;
+mod register;
 mod token;
 
 use common::api_with_alice;
@@ -14,6 +15,7 @@ enum Example {
     Join,
     Keys,
     Token,
+    Register,
 }
 
 impl FromStr for Example {
@@ -22,6 +24,7 @@ impl FromStr for Example {
         match s {
             "join" => Ok(Self::Join),
             "keys" => Ok(Self::Keys),
+            "register" => Ok(Self::Register),
             "token" => Ok(Self::Token),
             _ => Err(format!("no example with name {s}")),
         }
@@ -56,6 +59,7 @@ async fn main() {
     match opt.example {
         Example::Join => join::join(api, alice).await,
         Example::Keys => keys::keys(api, alice).await,
+        Example::Register => register::register(api, alice).await,
         Example::Token => token::token(api, alice).await,
     }
 }

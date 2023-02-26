@@ -20,12 +20,12 @@
 #![deny(unused_crate_dependencies)]
 
 #[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
+mod benchmark;
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
 mod test;
-mod weights;
+pub mod weights;
 
 pub use pallet::*;
 
@@ -58,6 +58,8 @@ pub mod pallet {
         // Period during which a request is valid
         #[pallet::constant]
         type ValidityPeriod: Get<Self::BlockNumber>;
+        #[pallet::constant]
+        type MaxOperators: Get<u32>;
         type WeightInfo: WeightInfo;
     }
 
@@ -73,10 +75,12 @@ pub mod pallet {
 
     #[pallet::error]
     pub enum Error<T> {
-        /// No oracle operator has registered yet
-        NoRegisteredOperators,
+        /// No oracle operator has been activated yet
+        NoActiveOperators,
         /// An operator is already registered.
         OperatorAlreadyRegistered,
+        /// An operator is already activated.
+        OperatorAlreadyActivated,
         /// Callback cannot be deserialized
         UnknownCallback,
         /// Manipulating an unknown operator
@@ -89,6 +93,8 @@ pub mod pallet {
         InsufficientFee,
         /// Reserved balance is less than the specified fee for the request
         InsufficientReservedBalance,
+        /// Max allowed number of operators already registered
+        MaxOperatorsRegistered,
     }
 
     #[pallet::event]
@@ -108,10 +114,14 @@ pub mod pallet {
             fee: BalanceOf<T>,
             result: SpVec<u8>,
         },
-        /// A new operator has been registered
+        /// A new operator has been registered by the root
         OperatorRegistered(T::AccountId),
-        /// An existing operator has been unregistered
+        /// An existing operator has been deregistered by the root
         OperatorDeregistered(T::AccountId),
+        /// A registered operator has been activated
+        OperatorActivated(T::AccountId),
+        /// A registered operator has been deactivated
+        OperatorDeactivated(T::AccountId),
         /// A request didn't receive any result in time
         KillRequest(RequestIdentifier),
         KillRequestFailed(RequestIdentifier),
@@ -126,8 +136,17 @@ pub mod pallet {
     /// an operator registers/deregisters. However, these events are
     /// anticipated to be much less frequent than user request events.
     #[pallet::storage]
-    #[pallet::getter(fn operators)]
-    pub type Operators<T: Config> = StorageValue<_, SpVec<T::AccountId>, ValueQuery>;
+    #[pallet::getter(fn operator)]
+    pub type RegisteredOperators<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::AccountId, (), OptionQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn num_registered_operators)]
+    pub type NumRegisteredOperators<T: Config> = StorageValue<_, u32, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn active_operators)]
+    pub type ActiveOperators<T: Config> = StorageValue<_, SpVec<T::AccountId>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn request_identifier)]
@@ -173,34 +192,83 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         /// Register a new Operator.
-        ///
-        /// Fails with `OperatorAlreadyRegistered` if this Operator (identified
-        /// by `origin`) has already been registered.
         #[pallet::call_index(0)]
-        #[pallet::weight(T::WeightInfo::register_operator())]
-        pub fn register_operator(origin: OriginFor<T>) -> DispatchResult {
-            let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
+        #[pallet::weight(T::WeightInfo::register_operator(T::MaxOperators::get()))]
+        pub fn register_operator(origin: OriginFor<T>, operator: T::AccountId) -> DispatchResult {
+            ensure_root(origin)?;
 
-            Operators::<T>::try_mutate(|operators| {
-                if operators.binary_search(&who).is_ok() {
-                    Err(Error::<T>::OperatorAlreadyRegistered.into())
+            ensure!(
+                Self::num_registered_operators() < T::MaxOperators::get(),
+                Error::<T>::MaxOperatorsRegistered
+            );
+
+            ensure!(
+                !RegisteredOperators::<T>::contains_key(&operator),
+                Error::<T>::OperatorAlreadyRegistered
+            );
+
+            RegisteredOperators::<T>::insert(&operator, ());
+            NumRegisteredOperators::<T>::mutate(|val| *val += 1);
+            Self::deposit_event(Event::OperatorRegistered(operator));
+            Ok(())
+        }
+
+        /// Deregisters an already registered Operator
+        #[pallet::call_index(1)]
+        #[pallet::weight(T::WeightInfo::deregister_operator(T::MaxOperators::get()))]
+        pub fn deregister_operator(origin: OriginFor<T>, operator: T::AccountId) -> DispatchResult {
+            ensure_root(origin)?;
+
+            ensure!(
+                RegisteredOperators::<T>::take(&operator).is_some(),
+                Error::<T>::UnknownOperator
+            );
+
+            ActiveOperators::<T>::mutate(|operators| {
+                if let Ok(index) = operators.binary_search(&operator) {
+                    operators.remove(index);
+                }
+            });
+
+            NumRegisteredOperators::<T>::mutate(|val| *val -= 1);
+            Self::deposit_event(Event::OperatorDeregistered(operator));
+            Ok(())
+        }
+
+        #[pallet::call_index(2)]
+        #[pallet::weight((T::WeightInfo::activate_operator(T::MaxOperators::get()), Pays::No))]
+        pub fn activate_operator(origin: OriginFor<T>) -> DispatchResult {
+            let operator = ensure_signed(origin)?;
+
+            ensure!(
+                RegisteredOperators::<T>::contains_key(&operator),
+                Error::<T>::UnknownOperator
+            );
+
+            ActiveOperators::<T>::try_mutate(|operators| {
+                if operators.binary_search(&operator).is_ok() {
+                    Err(Error::<T>::OperatorAlreadyActivated.into())
                 } else {
-                    operators.push(who.clone());
-                    Self::deposit_event(Event::OperatorRegistered(who));
+                    operators.push(operator.clone());
+                    operators.sort(); // needed for binary search
+                    Self::deposit_event(Event::OperatorActivated(operator));
                     Ok(())
                 }
             })
         }
 
-        /// Deregisters an already registered Operator
-        #[pallet::call_index(1)]
-        #[pallet::weight(T::WeightInfo::deregister_operator())]
-        pub fn deregister_operator(origin: OriginFor<T>) -> DispatchResult {
-            let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
-
-            Operators::<T>::try_mutate(|operators| {
-                if let Ok(index) = operators.binary_search(&who) {
-                    Self::deposit_event(Event::OperatorDeregistered(operators.remove(index)));
+        #[pallet::call_index(3)]
+        #[pallet::weight((T::WeightInfo::deactivate_operator(T::MaxOperators::get()), Pays::No))]
+        pub fn deactivate_operator(origin: OriginFor<T>) -> DispatchResult {
+            let operator = ensure_signed(origin)?;
+            ensure!(
+                RegisteredOperators::<T>::contains_key(&operator),
+                Error::<T>::UnknownOperator
+            );
+            ActiveOperators::<T>::try_mutate(|operators| {
+                if let Ok(index) = operators.binary_search(&operator) {
+                    operators.remove(index);
+                    Self::deposit_event(Event::OperatorDeactivated(operator));
                     Ok(())
                 } else {
                     Err(Error::<T>::UnknownOperator.into())
@@ -220,20 +288,19 @@ pub mod pallet {
         /// to listen to `OracleRequest` events. This event contains all the
         /// required information to perform the request and provide back
         /// the result.
-        // TODO check weight
-        #[pallet::call_index(2)]
-        #[pallet::weight(50_000)]
+        #[pallet::call_index(4)]
+        #[pallet::weight((T::WeightInfo::initiate_request(data.len() as u32), Pays::No))]
         pub fn initiate_request(
             origin: OriginFor<T>,
             callback: <T as Config>::Callback,
             data: Vec<u8>,
             fee: BalanceOf<T>,
         ) -> DispatchResult {
-            let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
+            let requester = ensure_signed(origin)?;
 
-            let operators = Operators::<T>::get();
+            let operators = ActiveOperators::<T>::get();
             if operators.is_empty() {
-                return Err(Error::<T>::NoRegisteredOperators.into());
+                return Err(Error::<T>::NoActiveOperators.into());
             }
             let next_operator = NextOperator::<T>::get();
             let operator = operators[next_operator as usize % operators.len()].clone();
@@ -246,7 +313,7 @@ pub mod pallet {
             // amount of fee is a good idea to disincentivize spam requests
             ensure!(fee >= T::MinimumFee::get(), Error::<T>::InsufficientFee);
 
-            T::Currency::reserve(&who, fee)?;
+            T::Currency::reserve(&requester, fee)?;
 
             let request_id = NextRequestIdentifier::<T>::get();
             // Using `wrapping_add` to start at 0 when it reaches `u64::max_value()`.
@@ -260,7 +327,7 @@ pub mod pallet {
             let now = frame_system::Pallet::<T>::block_number();
 
             let request = OracleRequest::<T> {
-                requester: who,
+                requester,
                 operator: operator.clone(),
                 callback: callback.clone(),
                 data,
@@ -285,23 +352,17 @@ pub mod pallet {
         /// back the result. Result is then dispatched back to the originator's
         /// callback. The fee reserved during `initiate_request` is transferred
         /// as soon as this callback is called.
-        //TODO check weight
-        #[pallet::call_index(3)]
-        #[pallet::weight(50_000)]
+        #[pallet::call_index(5)]
+        #[pallet::weight((0, DispatchClass::Operational, Pays::No))]
         pub fn callback(
             origin: OriginFor<T>,
             request_id: RequestIdentifier,
             result: Vec<u8>,
         ) -> DispatchResult {
-            let who: <T as frame_system::Config>::AccountId = ensure_signed(origin)?;
+            let signer = ensure_signed(origin)?;
 
-            ensure!(
-                Requests::<T>::contains_key(request_id),
-                Error::<T>::UnknownRequest
-            );
-            // Unwrap is fine here because we check its existence in the previous line
-            let request = Requests::<T>::get(request_id).unwrap();
-            ensure!(request.operator == who, Error::<T>::WrongOperator);
+            let request = Requests::<T>::get(request_id).ok_or(Error::<T>::UnknownRequest)?;
+            ensure!(request.operator == signer, Error::<T>::WrongOperator);
 
             // NOTE: This should not be possible technically but it is here to be safe
             ensure!(
