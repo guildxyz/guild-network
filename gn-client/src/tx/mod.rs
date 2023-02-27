@@ -21,6 +21,20 @@ use subxt::tx::{DynamicTxPayload, TxPayload};
 
 use std::sync::Arc;
 
+pub async fn api_with_signer(
+    url: String,
+    seed: &str,
+    password: Option<&str>,
+) -> Result<(Api, Arc<Signer>), SubxtError> {
+    let api = Api::from_url(url).await?;
+
+    let keypair = Arc::new(Signer::new(
+        Keypair::from_string(seed, password).map_err(|e| SubxtError::Other(e.to_string()))?,
+    ));
+
+    Ok((api, keypair))
+}
+
 pub fn sudo<'a>(call: DynamicTxPayload<'_>) -> DynamicTxPayload<'a> {
     subxt::dynamic::tx("Sudo", "sudo", vec![("call", call.into_value())])
 }

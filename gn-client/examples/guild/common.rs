@@ -8,28 +8,16 @@ use gn_common::identity::{EcdsaSignature, Identity, IdentityWithAuth};
 use gn_common::merkle::Proof as MerkleProof;
 use gn_test_data::*;
 use rand::{rngs::StdRng, SeedableRng};
-use sp_keyring::AccountKeyring;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-#[cfg(feature = "prefund")]
-const MIN_BALANCE: u128 = 1_000_000_000;
 const RETRIES: u8 = 10;
 const SLEEP_DURATION_MS: u64 = 1000;
 
 pub struct Accounts {
     pub substrate: Arc<Signer>,
     pub eth: LocalWallet,
-}
-
-pub async fn api_with_alice(url: String) -> (Api, Arc<Signer>) {
-    let api = Api::from_url(url)
-        .await
-        .expect("failed to initialize client");
-    let alice = Arc::new(Signer::new(AccountKeyring::Alice.pair()));
-
-    (api, alice)
 }
 
 pub async fn dummy_accounts() -> BTreeMap<AccountId, Accounts> {
@@ -47,29 +35,6 @@ pub async fn dummy_accounts() -> BTreeMap<AccountId, Accounts> {
         })
         .inspect(|(id, _)| println!("new account: {id}"))
         .collect::<BTreeMap<AccountId, Accounts>>()
-}
-
-#[cfg(feature = "prefund")]
-pub async fn prefund_accounts(
-    api: Api,
-    faucet: Arc<Signer>,
-    mut accounts: impl Iterator<Item = &AccountId>,
-) {
-    // skip first
-    let skipped_account = accounts.next().unwrap();
-    for account in accounts {
-        let tx = tx::fund_account(account, MIN_BALANCE);
-        tx::send_tx(api.clone(), &tx, Arc::clone(&faucet), TxStatus::Ready)
-            .await
-            .expect("failed to fund account");
-    }
-    // wait for the skipped one to be included in a block
-    let tx = tx::fund_account(skipped_account, MIN_BALANCE);
-    tx::send_tx(api.clone(), &tx, faucet, TxStatus::InBlock)
-        .await
-        .expect("failed to fund account");
-
-    println!("balance transfers in block");
 }
 
 #[cfg(not(feature = "external-oracle"))]

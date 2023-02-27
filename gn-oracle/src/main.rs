@@ -6,13 +6,12 @@ use futures::StreamExt;
 use gn_client::runtime::oracle::events::OracleRequest;
 use gn_client::{
     query,
-    tx::{self, Signer, PairT, Keypair},
+    tx::{self, Signer},
 };
 use gn_client::{Api, GuildCall, SubxtError};
 use gn_common::identity::Identity;
 use gn_common::utils::{matches_variant, verification_msg};
 use gn_common::{RequestData, RequestIdentifier};
-use sp_keyring::AccountKeyring;
 use structopt::StructOpt;
 
 use std::collections::HashMap;
@@ -37,7 +36,7 @@ struct Opt {
     #[structopt(short = "p", long = "node-port", default_value = "9944")]
     node_port: String,
     /// Set operator account seed
-    #[structopt(long = "seed", default_value = "alice")]
+    #[structopt(long = "seed", default_value = "//Alice")]
     seed: String,
     /// Set operator account password
     #[structopt(long = "password")]
@@ -55,23 +54,11 @@ async fn main() {
 
     let url = format!("ws://{}:{}", opt.node_ip, opt.node_port);
 
-    let operator = Arc::new(Signer::new(match opt.seed.as_str() {
-        "alice" => AccountKeyring::Alice.pair(),
-        "bob" => AccountKeyring::Bob.pair(),
-        "charlie" => AccountKeyring::Charlie.pair(),
-        "dave" => AccountKeyring::Dave.pair(),
-        "eve" => AccountKeyring::Eve.pair(),
-        "ferdie" => AccountKeyring::Ferdie.pair(),
-        seed => {
-            Keypair::from_string(seed, opt.password.as_deref()).expect("failed to generate keypair from seed")
-        }
-    }));
+    let (api, operator) = tx::api_with_signer(url, &opt.seed, opt.password.as_deref())
+        .await
+        .expect("failed to initialize api and signer");
 
     log::info!("Public key: {}", operator.account_id());
-
-    let api = Api::from_url(&url)
-        .await
-        .expect("failed to start api client");
 
     if !query::is_operator_registered(api.clone(), operator.account_id())
         .await

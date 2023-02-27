@@ -1,15 +1,22 @@
 mod common;
+mod fund;
 mod join;
 mod key;
 mod register;
 mod token;
 
-use common::api_with_alice;
+use gn_client::tx;
 
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 enum Example {
+    Fund {
+        #[structopt(long, short)]
+        account: String,
+        #[structopt(long, short)]
+        balance: u128,
+    },
     Join,
     Key(Key),
     Token,
@@ -42,6 +49,12 @@ struct Opt {
     /// Set node port number
     #[structopt(short = "p", long = "node-port", default_value = "9944")]
     node_port: String,
+    /// Set operator account seed
+    #[structopt(long = "seed", default_value = "//Alice")]
+    seed: String,
+    /// Set operator account password
+    #[structopt(long = "password")]
+    password: Option<String>,
     /// Choose which sub-example to run
     #[structopt(subcommand)]
     example: Example,
@@ -53,15 +66,20 @@ async fn main() {
 
     let url = format!("ws://{}:{}", opt.node_ip, opt.node_port);
 
-    let (api, alice) = api_with_alice(url).await;
+    let (api, signer) = tx::api_with_signer(url, &opt.seed, opt.password.as_deref())
+        .await
+        .expect("failed to initialize client and signer");
+
+    println!("signer pubkey: {}", signer.account_id());
 
     match opt.example {
-        Example::Join => join::join(api, alice).await,
+        Example::Fund { account, balance } => fund::fund(api, signer, &account, balance).await,
+        Example::Join => join::join(api, signer).await,
         Example::Key(Key::Generate { curve, password }) => {
             key::generate(&curve, password.as_deref())
         }
         Example::Key(Key::Rotate) => key::rotate(api).await,
-        Example::Register { operator } => register::register(api, alice, &operator).await,
-        Example::Token => token::token(api, alice).await,
+        Example::Register { operator } => register::register(api, signer, &operator).await,
+        Example::Token => token::token(api, signer).await,
     }
 }
