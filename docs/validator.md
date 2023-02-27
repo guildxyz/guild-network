@@ -11,7 +11,7 @@ curl https://sh.rustup.rs -sSf | sh
 - some packages that might not be pre-installed on a fresh build (package names may differ depending on the installed OS)
 	- `librocksdb-dev`
 	- `libclang-dev`
-	- `clang`, `cmake
+	- `clang`, `cmake`
 	- `g++-multilib`
 	- `libssl-dev`
 	- `pkg-config`
