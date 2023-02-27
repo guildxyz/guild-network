@@ -6,15 +6,20 @@ successfully run in the `gn-client` package.
 ### Running tests
 - compile the test node by running `cargo build --release` in the workspace root
 - start the node by running `./start.sh dev`
+- register an external node operator by running
+```
+cd gn-client
+cargo run --release --example guild -- register
+```
 - in a separate terminal, start an oracle instance by running
 ```
 cd gn-oracle
-cargo run --release -- --log trace --register
+cargo run --release -- --log trace --activate
 ```
-- in a separate terminal run the example in `gn-client`
+- run the example in `gn-client`
 ```
 cd gn-client
-cargo run --release --example guild --features external-oracle -- --example join
+cargo run --release --example guild --features external-oracle -- join
 ```
 - after the example in `gn-client` has successfully completed run the wasm tests
 ```

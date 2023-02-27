@@ -22,7 +22,7 @@ enum Example {
     Token,
     Register {
         #[structopt(long, short)]
-        operator: String,
+        operator: Option<String>,
     },
 }
 
@@ -79,7 +79,9 @@ async fn main() {
             key::generate(&curve, password.as_deref())
         }
         Example::Key(Key::Rotate) => key::rotate(api).await,
-        Example::Register { operator } => register::register(api, signer, &operator).await,
+        Example::Register { operator } => {
+            register::register(api, signer, operator.as_deref()).await
+        }
         Example::Token => token::token(api, signer).await,
     }
 }

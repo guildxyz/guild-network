@@ -74,14 +74,14 @@ def run_tests(*commands, timeout=300):
 def main():
     try:
         node = start_node()
-        command = "cargo run --release --example guild -- --example register"
+        command = "cargo run --release --example guild -- register"
         run_tests(command, timeout=90)
         oracle = start_oracle()
         oracle_monitor = Thread(target=monitor_oracle, args=(oracle, node,))
 
         oracle_monitor.start()
 
-        command = "cargo run --release --example guild --features external-oracle -- --example "
+        command = "cargo run --release --example guild --features external-oracle -- "
 
         status = run_tests(command + "join",
                            command + "token", timeout=90)
