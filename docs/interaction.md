@@ -3,7 +3,7 @@
 In order to interact with the chain you need to have the [Metamask
 wallet](https://metamask.io/) along with the
 [polkadot.js](https://polkadot.js.org/extension/) extension installed. You can
-find the front-end application to Guild Network [here](https://todo.com).
+find the front-end application to Guild Network [here](https://gn-rho.vercel.app/).
 
 In the heart of Guild Network are guilds that can be created by anyone. Guilds
 are initially empty but they can be filled up with various roles. Roles are

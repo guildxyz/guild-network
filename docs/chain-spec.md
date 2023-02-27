@@ -8,7 +8,8 @@ If you want to join an existing chain, you can skip this step as this only
 needs to be performed once when bootstrapping the network. The only thing you
 need from this part is the `chain-spec-raw.json` file that contains all
 necessary information for your fresh node to join the existing network and
-start syncing. You can download this file from [here](https://todo.com).
+start syncing. You can download this file from
+[here](https://github.com/agoraxyz/guild-network/releases/download/v0.0.0-alpha/chain-spec-raw.json)
 
 The initial bootnode needs to generate a `chain-spec.json` file that contains
 genesis configuration for the blockchain by running

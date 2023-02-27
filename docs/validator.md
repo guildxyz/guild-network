@@ -19,14 +19,14 @@ curl https://sh.rustup.rs -sSf | sh
 - for our nodes we use servers with the following setup
 	- hardware - we use a setup [recommended for Polkadot validators](https://wiki.polkadot.network/docs/maintain-guides-how-to-validate-polkadot#reference-hardware)
 	- costs - depends on the service you are using, but for our nodes currently
-		- €70 /month/node
+		- €70/month/node
 		- €50/node one-time setup fee
 
 To make life easier, here's a checklist you need to go through to become a validator:
 
 - [ ] clone the repository
 - [ ] build the source code
-- [ ] download the genesis chain specification [`chain-spec-raw.json`](https://todo.com)
+- [ ] download the genesis chain specification [`chain-spec-raw.json`](https://github.com/agoraxyz/guild-network/releases/download/v0.0.0-alpha/chain-spec-raw.json)
 - [ ] generate cryptographic validator keys
   - [ ] Sr25519 for `aura`
   - [ ] Ed25519 for `grandpa`
@@ -35,9 +35,8 @@ To make life easier, here's a checklist you need to go through to become a valid
   - [ ] add the `grandpa` key
 - [ ] start your validator node
 - [ ] set your public session keys
-  - [ ] make an RPC calls to rotate your keys
-  - [ ] set the rotated keys as your session keys
-- [ ] notify us so we can register you as a validator via the `sudo` account (this step will be replaced by governance on the mainnet)
+  - [ ] make an RPC call to rotate your keys
+  - [ ] notify us so we can register you as a validator via the `sudo` account (this step will be replaced by governance on the mainnet)
 
 ## Build and run a test node locally
 
@@ -229,10 +228,10 @@ You have multiple options if you want to run a validator:
         --pruning=archive
 ```
 
-where the `[bootnode multiaddress]` looks something like this TODO
+where the `[bootnode multiaddress]` should look like this
 
 ```bash
-  --bootnodes /ip4/x.x.x.x/tcp/30333/p2p/12D3KooWLmrYDLoNTyTYtRdDyZLWDe1paxzxTw5RgjmHLfzW96SX \
+  --bootnodes /ip4/65.108.102.250/tcp/30333/p2p/12D3KooWErJ9ChGGenCAmRQiiqmVxkZvsqkSB5GYVBGpN2rdfccE
 ```
 
 ## Set session keys
@@ -240,8 +239,8 @@ where the `[bootnode multiaddress]` looks something like this TODO
 `aura` and `grandpa` consensus happens in sessions with each session holding a
 set of validators to particpate in the consensus. Therefore, after the node is
 up and running, you need to get your public `aura` and `grandpa` keys from the
-node. You need to perform [steps 4, 5 and
-6](https://github.com/gautamdhameja/substrate-validator-set/blob/master/docs/local-network-setup.md#step-4).
+node. You need to perform
+[steps 4 and 5](https://github.com/gautamdhameja/substrate-validator-set/blob/master/docs/local-network-setup.md#step-4).
 
 In case you get an error in step 5, that is probably because the keys received
 in step 4 are actually 64 bytes instead of 32. In that case, split the key
