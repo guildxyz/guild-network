@@ -6,7 +6,7 @@ use futures::StreamExt;
 use gn_client::runtime::oracle::events::OracleRequest;
 use gn_client::{
     query,
-    tx::{self, Signer},
+    tx::{self, Signer, PairT, Keypair},
 };
 use gn_client::{Api, GuildCall, SubxtError};
 use gn_common::identity::Identity;
@@ -36,9 +36,12 @@ struct Opt {
     /// Set node port number
     #[structopt(short = "p", long = "node-port", default_value = "9944")]
     node_port: String,
-    /// Set operator account
-    #[structopt(long = "id", default_value = "alice")]
-    id: String,
+    /// Set operator account seed
+    #[structopt(long = "seed", default_value = "alice")]
+    seed: String,
+    /// Set operator account password
+    #[structopt(long = "password")]
+    password: Option<String>,
     /// Activate operator before starting to listen to events
     #[structopt(long)]
     activate: bool,
@@ -52,19 +55,19 @@ async fn main() {
 
     let url = format!("ws://{}:{}", opt.node_ip, opt.node_port);
 
-    // TODO: this will be read from the oracle's wallet for testing purposes we
-    // are choosing from pre-funded accounts
-    let operator = Arc::new(Signer::new(
-        match opt.id.to_lowercase().as_str() {
-            "bob" => AccountKeyring::Bob,
-            "charlie" => AccountKeyring::Charlie,
-            "dave" => AccountKeyring::Dave,
-            "eve" => AccountKeyring::Eve,
-            "ferdie" => AccountKeyring::Ferdie,
-            _ => AccountKeyring::Alice,
+    let operator = Arc::new(Signer::new(match opt.seed.as_str() {
+        "alice" => AccountKeyring::Alice.pair(),
+        "bob" => AccountKeyring::Bob.pair(),
+        "charlie" => AccountKeyring::Charlie.pair(),
+        "dave" => AccountKeyring::Dave.pair(),
+        "eve" => AccountKeyring::Eve.pair(),
+        "ferdie" => AccountKeyring::Ferdie.pair(),
+        seed => {
+            Keypair::from_string(seed, opt.password.as_deref()).expect("failed to generate keypair from seed")
         }
-        .pair(),
-    ));
+    }));
+
+    log::info!("Public key: {}", operator.account_id());
 
     let api = Api::from_url(&url)
         .await

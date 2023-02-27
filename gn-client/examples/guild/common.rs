@@ -13,6 +13,8 @@ use sp_keyring::AccountKeyring;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+#[cfg(feature = "prefund")]
+const MIN_BALANCE: u128 = 1_000_000_000;
 const RETRIES: u8 = 10;
 const SLEEP_DURATION_MS: u64 = 1000;
 
@@ -29,14 +31,11 @@ pub async fn api_with_alice(url: String) -> (Api, Arc<Signer>) {
 
     (api, alice)
 }
-pub async fn prefunded_accounts(
-    api: Api,
-    faucet: Arc<Signer>,
-    num_accounts: usize,
-) -> BTreeMap<AccountId, Accounts> {
+
+pub async fn dummy_accounts() -> BTreeMap<AccountId, Accounts> {
     let mut rng = StdRng::seed_from_u64(0);
     let mut seed = ACCOUNT_SEED;
-    let accounts = (0..num_accounts)
+    (0..N_TEST_ACCOUNTS)
         .map(|_| {
             let keypair = Arc::new(Signer::new(Keypair::from_seed(&seed)));
             seed[0] += 1;
@@ -47,43 +46,52 @@ pub async fn prefunded_accounts(
             (accounts.substrate.as_ref().account_id().clone(), accounts)
         })
         .inspect(|(id, _)| println!("new account: {id}"))
-        .collect::<BTreeMap<AccountId, Accounts>>();
+        .collect::<BTreeMap<AccountId, Accounts>>()
+}
 
-    let amount = 1_000_000_000u128;
-    let mut keys = accounts.keys();
+#[cfg(feature = "prefund")]
+pub async fn prefund_accounts(
+    api: Api,
+    faucet: Arc<Signer>,
+    mut accounts: impl Iterator<Item = &AccountId>,
+) {
     // skip first
-    let skipped_account = keys.next().unwrap();
-    for account in keys {
-        let tx = tx::fund_account(account, amount);
+    let skipped_account = accounts.next().unwrap();
+    for account in accounts {
+        let tx = tx::fund_account(account, MIN_BALANCE);
         tx::send_tx(api.clone(), &tx, Arc::clone(&faucet), TxStatus::Ready)
             .await
             .expect("failed to fund account");
     }
     // wait for the skipped one to be included in a block
-    let tx = tx::fund_account(skipped_account, amount);
+    let tx = tx::fund_account(skipped_account, MIN_BALANCE);
     tx::send_tx(api.clone(), &tx, faucet, TxStatus::InBlock)
         .await
         .expect("failed to fund account");
 
     println!("balance transfers in block");
-
-    accounts
 }
 
 #[cfg(not(feature = "external-oracle"))]
 pub async fn register_operators(
     api: Api,
     root: Arc<Signer>,
-    accounts: impl Iterator<Item = &Accounts>,
+    mut accounts: impl Iterator<Item = &AccountId>,
 ) {
-    println!("registring operators");
-    for (i, account) in accounts.enumerate() {
-        let payload = tx::register_operator(account.substrate.account_id());
-        tx::send_tx_in_block(api.clone(), &tx::sudo(payload), Arc::clone(&root))
+    // skip first
+    let skipped_account = accounts.next().unwrap();
+    for account in accounts {
+        let payload = tx::register_operator(account);
+        tx::send_tx_ready(api.clone(), &tx::sudo(payload), Arc::clone(&root))
             .await
             .unwrap();
-        println!("\toperator {i} registered");
     }
+
+    // wait for the skipped one to be included in a block
+    let payload = tx::register_operator(skipped_account);
+    tx::send_tx_in_block(api.clone(), &payload, root)
+        .await
+        .expect("failed to register operator");
 
     println!("operator registrations in block");
 }
@@ -378,23 +386,13 @@ pub async fn send_dummy_oracle_answers(api: Api, operators: &BTreeMap<AccountId,
         .await
         .expect("failed to fetch oracle requests");
 
-    let oracle_answer_futures = oracle_requests
-        .into_iter()
-        .map(|(request_id, operator)| {
-            let tx = tx::oracle_callback(request_id, vec![u8::from(true)]);
-            let accounts = operators.get(&operator).unwrap();
-            tx::send_owned_tx(
-                api.clone(),
-                tx,
-                Arc::clone(&accounts.substrate),
-                TxStatus::InBlock,
-            )
-        })
-        .collect::<Vec<_>>();
-
-    try_join_all(oracle_answer_futures)
-        .await
-        .expect("failed to submit oracle answers");
+    for (request_id, operator) in oracle_requests {
+        let tx = tx::oracle_callback(request_id, vec![u8::from(true)]);
+        let accounts = operators.get(&operator).unwrap();
+        tx::send_tx_ready(api.clone(), &tx, Arc::clone(&accounts.substrate))
+            .await
+            .expect("failed to submit oracle answer");
+    }
 
     println!("oracle requests successfully answered");
 }

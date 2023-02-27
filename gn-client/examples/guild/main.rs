@@ -8,27 +8,15 @@ use common::api_with_alice;
 
 use structopt::StructOpt;
 
-use std::str::FromStr;
-
 #[derive(Debug, StructOpt)]
 enum Example {
     Join,
     Keys,
     Token,
-    Register,
-}
-
-impl FromStr for Example {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "join" => Ok(Self::Join),
-            "keys" => Ok(Self::Keys),
-            "register" => Ok(Self::Register),
-            "token" => Ok(Self::Token),
-            _ => Err(format!("no example with name {s}")),
-        }
-    }
+    Register {
+        #[structopt(long, short)]
+        operator: String
+    },
 }
 
 #[derive(Debug, StructOpt)]
@@ -44,7 +32,7 @@ struct Opt {
     #[structopt(short = "p", long = "node-port", default_value = "9944")]
     node_port: String,
     /// Choose which sub-example to run
-    #[structopt(short, long, default_value = "join")]
+    #[structopt(subcommand)]
     example: Example,
 }
 
@@ -59,7 +47,7 @@ async fn main() {
     match opt.example {
         Example::Join => join::join(api, alice).await,
         Example::Keys => keys::keys(api, alice).await,
-        Example::Register => register::register(api, alice).await,
+        Example::Register { operator } => register::register(api, alice, &operator).await,
         Example::Token => token::token(api, alice).await,
     }
 }
