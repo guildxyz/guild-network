@@ -44,6 +44,6 @@ toward a decentralized solution that nobody can just switch off.
 
 ## Documentation
 
-- [running a validator](https://github.com/agoraxyz/guild-network/blob/I89-readme-docs/docs/validator.md)
-- [interacting with the chain](https://github.com/agoraxyz/guild-network/blob/I89-readme-docs/docs/interaction.md)
-- [genesis chain spec](https://github.com/agoraxyz/guild-network/blob/I89-readme-docs/docs/chain-spec.md)
+- [running a validator](docs/validator.md)
+- [interacting with the chain](docs/interaction.md)
+- [genesis chain spec](docs/chain-spec.md)
