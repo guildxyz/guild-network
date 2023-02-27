@@ -223,7 +223,7 @@ You have multiple options if you want to run a validator:
         --enable-offchain-indexing true \
         --unsafe-ws-external \
         --rpc-methods Safe \
-        --rpc-cors '*' \
+        --rpc-cors=all \
         --ws-max-connections 5000 \
         --pruning=archive
 ```
