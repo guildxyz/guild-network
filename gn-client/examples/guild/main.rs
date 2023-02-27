@@ -1,6 +1,6 @@
 mod common;
 mod join;
-mod keys;
+mod key;
 mod register;
 mod token;
 
@@ -11,12 +11,23 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 enum Example {
     Join,
-    Keys,
+    Key(Key),
     Token,
     Register {
         #[structopt(long, short)]
-        operator: String
+        operator: String,
     },
+}
+
+#[derive(Debug, StructOpt)]
+enum Key {
+    Generate {
+        #[structopt(long, short, default_value = "sr25519")]
+        curve: String,
+        #[structopt(long, short)]
+        password: Option<String>,
+    },
+    Rotate,
 }
 
 #[derive(Debug, StructOpt)]
@@ -46,7 +57,10 @@ async fn main() {
 
     match opt.example {
         Example::Join => join::join(api, alice).await,
-        Example::Keys => keys::keys(api, alice).await,
+        Example::Key(Key::Generate { curve, password }) => {
+            key::generate(&curve, password.as_deref())
+        }
+        Example::Key(Key::Rotate) => key::rotate(api).await,
         Example::Register { operator } => register::register(api, alice, &operator).await,
         Example::Token => token::token(api, alice).await,
     }
