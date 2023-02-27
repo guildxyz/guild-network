@@ -8,10 +8,10 @@ use gn_test_data::*;
 use std::sync::Arc;
 
 pub async fn join(api: Api, root: Arc<Signer>) {
-    let operators = prefunded_accounts(api.clone(), Arc::clone(&root), N_TEST_ACCOUNTS).await;
+    let operators = dummy_accounts().await;
     #[cfg(not(feature = "external-oracle"))]
     {
-        register_operators(api.clone(), Arc::clone(&root), operators.values()).await;
+        register_operators(api.clone(), Arc::clone(&root), operators.keys()).await;
         activate_operators(api.clone(), operators.values()).await;
         let active_operators = query::active_operators(api.clone())
             .await
