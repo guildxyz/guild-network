@@ -12,7 +12,7 @@ Checking requirements is a fundamental building block that may need
 verification data external to Guild Network. Like most blockchains out there,
 Guild Network in itself is a closed system that cannot interact with the outer
 world by itself. Therefore, Guild Network relies on a (currently) permissioned
-oracle network that listen to on-chain events and fetch external data for
+oracle network that listens to on-chain events and fetch external data for
 checking requirements. For now, the oracle network can only retrieve data
 (token balances) from EVM blockchains.
 
