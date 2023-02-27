@@ -14,6 +14,7 @@ pub use pallet_balances::Call as BalancesCall;
 use pallet_grandpa::{
     fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
+use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
@@ -32,8 +33,10 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
 use frame_support::{
-    construct_runtime, parameter_types,
-    traits::{ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem},
+    construct_runtime,
+    pallet_prelude::TransactionPriority,
+    parameter_types,
+    traits::{ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem, ValidatorSet},
     weights::{
         constants::{RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
         IdentityFee, Weight,
@@ -145,6 +148,11 @@ parameter_types! {
     pub const MinAuthorities: u32 = 2;
     pub const Period: u32 = 2 * MINUTES;
     pub const Offset: u32 = 0;
+
+    pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
+    pub const MaxKeys: u32 = 10_000;
+    pub const MaxPeerInHeartbeats: u32 = 10_000;
+    pub const MaxPeerDataEncodingSize: u32 = 1_000;
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -202,6 +210,19 @@ impl frame_system::Config for Runtime {
 }
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
+
+impl pallet_im_online::Config for Runtime {
+    type AuthorityId = ImOnlineId;
+    type RuntimeEvent = RuntimeEvent;
+    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+    type ValidatorSet = ValidatorManager;
+    type ReportUnresponsiveness = ValidatorManager;
+    type UnsignedPriority = ImOnlineUnsignedPriority;
+    type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
+    type MaxKeys = MaxKeys;
+    type MaxPeerInHeartbeats = MaxPeerInHeartbeats;
+    type MaxPeerDataEncodingSize = MaxPeerDataEncodingSize;
+}
 
 impl pallet_aura::Config for Runtime {
     type AuthorityId = AuraId;
@@ -315,6 +336,7 @@ construct_runtime!(
         Timestamp: pallet_timestamp,
         ValidatorManager: pallet_validator_manager,
         Session: pallet_session,
+        ImOnline: pallet_im_online,
         Aura: pallet_aura,
         Grandpa: pallet_grandpa,
 

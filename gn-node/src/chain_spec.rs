@@ -2,6 +2,7 @@ use gn_runtime::{
     AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, SessionConfig, Signature,
     SudoConfig, SystemConfig, ValidatorManagerConfig, WASM_BINARY,
 };
+use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{sr25519, Pair, Public};
@@ -163,6 +164,7 @@ fn testnet_genesis(
                 .map(|k| (k, 1 << 60))
                 .collect(),
         },
+
         validator_manager: ValidatorManagerConfig {
             initial_validators: initial_authorities
                 .iter()
