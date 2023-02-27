@@ -12,7 +12,6 @@ use gn_client::{Api, GuildCall, SubxtError};
 use gn_common::identity::Identity;
 use gn_common::utils::{matches_variant, verification_msg};
 use gn_common::{RequestData, RequestIdentifier};
-use sp_keyring::AccountKeyring;
 use structopt::StructOpt;
 
 use std::collections::HashMap;
@@ -36,9 +35,12 @@ struct Opt {
     /// Set node port number
     #[structopt(short = "p", long = "node-port", default_value = "9944")]
     node_port: String,
-    /// Set operator account
-    #[structopt(long = "id", default_value = "alice")]
-    id: String,
+    /// Set operator account seed
+    #[structopt(long = "seed", default_value = "//Alice")]
+    seed: String,
+    /// Set operator account password
+    #[structopt(long = "password")]
+    password: Option<String>,
     /// Activate operator before starting to listen to events
     #[structopt(long)]
     activate: bool,
@@ -52,23 +54,11 @@ async fn main() {
 
     let url = format!("ws://{}:{}", opt.node_ip, opt.node_port);
 
-    // TODO: this will be read from the oracle's wallet for testing purposes we
-    // are choosing from pre-funded accounts
-    let operator = Arc::new(Signer::new(
-        match opt.id.to_lowercase().as_str() {
-            "bob" => AccountKeyring::Bob,
-            "charlie" => AccountKeyring::Charlie,
-            "dave" => AccountKeyring::Dave,
-            "eve" => AccountKeyring::Eve,
-            "ferdie" => AccountKeyring::Ferdie,
-            _ => AccountKeyring::Alice,
-        }
-        .pair(),
-    ));
-
-    let api = Api::from_url(&url)
+    let (api, operator) = tx::api_with_signer(url, &opt.seed, opt.password.as_deref())
         .await
-        .expect("failed to start api client");
+        .expect("failed to initialize api and signer");
+
+    log::info!("Public key: {}", operator.account_id());
 
     if !query::is_operator_registered(api.clone(), operator.account_id())
         .await
