@@ -224,6 +224,11 @@ impl pallet_im_online::Config for Runtime {
     type MaxPeerDataEncodingSize = MaxPeerDataEncodingSize;
 }
 
+impl frame_system::offchain::SendTransactionTypes<pallet_im_online::Call<Self>> for Runtime {
+    type Extrinsic = UncheckedExtrinsic;
+    type OverarchingCall = RuntimeCall;
+}
+
 impl pallet_aura::Config for Runtime {
     type AuthorityId = AuraId;
     type DisabledValidators = ();
