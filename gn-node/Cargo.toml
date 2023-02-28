@@ -30,7 +30,7 @@ try-runtime = [
 gn-runtime = { path = "../gn-runtime" }
 
 # general
-clap = {version = "4.0.9", features = ["derive"]}
+clap = {version = "4.1.7", features = ["derive"]}
 futures = { version = "0.3.21", features = ["thread-pool"] }
 jsonrpsee = { version = "0.16.2", features = ["server"] }
 
@@ -41,6 +41,7 @@ frame-system = { workspace = true, optional = true }
 substrate-frame-rpc-system = { workspace = true }
 
 # substrate pallets
+pallet-im-online = { workspace = true }
 pallet-transaction-payment = { workspace = true, optional = true }
 pallet-transaction-payment-rpc = { workspace = true }
 

@@ -1,7 +1,8 @@
 use gn_runtime::{
-    AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, SessionConfig, Signature,
-    SudoConfig, SystemConfig, ValidatorManagerConfig, WASM_BINARY,
+    AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig,
+    SessionConfig, Signature, SudoConfig, SystemConfig, ValidatorManagerConfig, WASM_BINARY,
 };
+use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{sr25519, Pair, Public};
@@ -35,6 +36,7 @@ struct AuthorityKeys {
     account_id: AccountId,
     aura_id: AuraId,
     grandpa_id: GrandpaId,
+    im_online_id: ImOnlineId,
 }
 
 impl AuthorityKeys {
@@ -43,6 +45,7 @@ impl AuthorityKeys {
             account_id: get_account_id_from_seed::<sr25519::Public>(seed),
             aura_id: get_from_seed::<AuraId>(seed),
             grandpa_id: get_from_seed::<GrandpaId>(seed),
+            im_online_id: get_from_seed::<ImOnlineId>(seed),
         }
     }
 
@@ -50,6 +53,7 @@ impl AuthorityKeys {
         gn_runtime::opaque::SessionKeys {
             aura: self.aura_id.clone(),
             grandpa: self.grandpa_id.clone(),
+            im_online: self.im_online_id.clone(),
         }
     }
 }
@@ -163,6 +167,7 @@ fn testnet_genesis(
                 .map(|k| (k, 1 << 60))
                 .collect(),
         },
+
         validator_manager: ValidatorManagerConfig {
             initial_validators: initial_authorities
                 .iter()
@@ -187,6 +192,7 @@ fn testnet_genesis(
         grandpa: GrandpaConfig {
             authorities: vec![],
         },
+        im_online: ImOnlineConfig { keys: vec![] },
         sudo: SudoConfig {
             // Assign network admin rights.
             key: Some(root_key),
