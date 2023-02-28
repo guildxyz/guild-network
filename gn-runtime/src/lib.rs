@@ -252,11 +252,7 @@ impl frame_system::offchain::CreateSignedTransaction<pallet_im_online::Call<Self
         let (call, extra, _) = raw_payload.deconstruct();
         Some((
             call,
-            (
-                sp_runtime::MultiAddress::Id(address),
-                signature,
-                extra,
-            ),
+            (sp_runtime::MultiAddress::Id(address), signature, extra),
         ))
     }
 }
