@@ -8,12 +8,17 @@ your own Guild Network node you need the following
 # install rustup
 curl https://sh.rustup.rs -sSf | sh
 ```
+- you need to add the `wasm32-unknown-unknown` target on the `nightly` channel:
+```sh
+rustup target add wasm32-unknown-unknown --toolchain nightly
+```
 - some packages that might not be pre-installed on a fresh build (package names may differ depending on the installed OS)
 	- `librocksdb-dev`
 	- `libclang-dev`
 	- `clang`, `cmake`
 	- `g++-multilib`
 	- `libssl-dev`
+        - `llvm`, `llvm-dev`
 	- `pkg-config`
 	- `protobuf-compiler`
 - for our nodes we use servers with the following setup
@@ -57,6 +62,8 @@ cargo build --release
 (depending on the hardware) to build in `--release` mode. For optimal
 performance, however, it is highly advised to build the code in `--release`
 mode.
+
+**TROUBLESHOOTING**: if you get `secp256k1`-related warnings/errors like `No available targets are compatible with this triple` and the code fails to build you might need to run `export CC=gcc` before `cargo build --release`.
 
 ### Run a single test-node
 
