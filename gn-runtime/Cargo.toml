@@ -30,7 +30,7 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "frame-system-rpc-runtime-api/std",
-  "frame-try-runtime/std",
+  "frame-try-runtime?/std",
   "pallet-aura/std",
   "pallet-balances/std",
   "pallet-grandpa/std",
@@ -57,6 +57,7 @@ std = [
 ]
 try-runtime = [
   "frame-executive/try-runtime",
+  "frame-support/try-runtime",
   "frame-system/try-runtime",
   "frame-try-runtime",
   "pallet-aura/try-runtime",
@@ -89,7 +90,7 @@ frame-support = { workspace = true, optional = true }
 frame-system = { workspace = true, optional = true }
 frame-system-benchmarking = { workspace = true, optional = true }
 frame-system-rpc-runtime-api = { workspace = true, optional = true }
-frame-try-runtime = { workspace = true, optional = true }
+frame-try-runtime = { workspace = true, features = ["try-runtime"], optional = true }
 
 # substrate pallets
 pallet-aura = { workspace = true }
