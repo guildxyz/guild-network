@@ -18,7 +18,7 @@ std = [
 [dependencies]
 # local
 gn-common = { path = "../gn-common", default-features = false }
-providers = { path = "../rusty-gate/providers", optional = true }
+providers = { git = "https://github.com/agoraxyz/rusty-gate", branch = "main", optional = true }
 
 # general
 anyhow = { version = "1", default-features = false, optional = true }

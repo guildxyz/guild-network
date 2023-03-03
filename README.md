@@ -30,7 +30,6 @@ list with a brief overview for each crate:
 - `gn-client` - essentially a wrapper around [a subxt client](https://docs.rs/subxt/latest/subxt/) that connects to network nodes for queries an submitting transactions
 - `gn-wasm` - WASM wrappers around logic in `gn-client` used by the front-end application
 - `gn-engine` - logic for creating requirements and verifying them
-- `rusty-gate` - the alpha version external data retrieval used by the oracle nodes
 - `gn-common` - common types, functions and wrappers that are used in most crates above
 - `gn-test-data` - dummy test data for integration tests
 
