@@ -3,13 +3,18 @@
 If you are up for a challenge and want to participate in the network by running
 your own Guild Network node you need the following
 
-- a unix-based machine with the Rust toolchain and `cargo` (Rust's package manager) installed (we haven't tried Windows builds yet)
+- a linux-based machine running either
+	- Debian (`bullseye` or `bookworm` version)
+	- Ubuntu (at least `20.04-focal` version, our nodes run on `22.04-jammy`)
+	- Arch Linux (we only checked with the `6.1.12` kernel version)
+- you need to install the Rust toolchain and `cargo` (Rust's package manager)
 ```sh
 # install rustup
 curl https://sh.rustup.rs -sSf | sh
 ```
 - you need to add the `wasm32-unknown-unknown` target on the `nightly` channel:
 ```sh
+rustup update nightly
 rustup target add wasm32-unknown-unknown --toolchain nightly
 ```
 - some packages that might not be pre-installed on a fresh build (package names may differ depending on the installed OS)
@@ -67,10 +72,10 @@ mode.
 
 ### Run a single test-node
 
-In case you want to quickly check your node, just run
+In case you want to quickly check your node, run the following from the workspace root
 
 ```bash
-./start.sh dev
+./scripts/dev.sh
 ```
 
 This will spin up a clean node that you can [interact with from the browser](https://github.com/agoraxyz/guild-network/docs/interaction.md). You should see it importing and finalizing blocks in the logs, something along the lines of:
