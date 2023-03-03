@@ -1,4 +1,0 @@
-[submodule "rusty-gate"]
-	path = rusty-gate
-	url = git@github.com:agoraxyz/rusty-gate
-	branch = main
