@@ -23,7 +23,7 @@ rustup target add wasm32-unknown-unknown --toolchain nightly
 	- `clang`, `cmake`
 	- `g++-multilib`
 	- `libssl-dev`
-        - `llvm`, `llvm-dev`
+	- `llvm`, `llvm-dev`
 	- `pkg-config`
 	- `protobuf-compiler`
 - for our nodes we use servers with the following setup
@@ -34,7 +34,7 @@ rustup target add wasm32-unknown-unknown --toolchain nightly
 
 To make life easier, here's a checklist you need to go through to become a validator:
 
-- [ ] clone the repository
+- [ ] clone the repository (you might need to [set up an SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) first)
 - [ ] build the source code
 - [ ] download the genesis chain specification [`chain-spec-raw.json`](https://github.com/agoraxyz/guild-network/releases/download/v0.0.0-alpha/chain-spec-raw.json)
 - [ ] generate cryptographic validator keys
@@ -81,18 +81,39 @@ In case you want to quickly check your node, run the following from the workspac
 This will spin up a clean node that you can [interact with from the browser](https://github.com/agoraxyz/guild-network/docs/interaction.md). You should see it importing and finalizing blocks in the logs, something along the lines of:
 
 ```text
-2022-07-14 12:04:12 🙌 Starting consensus session on top of parent 0xd4df501cbe450d3465cc7074ce2e3116b8e481e1d8bff347a0491785a31c118e    
-2022-07-14 12:04:12 🎁 Prepared block for proposing at 49 (0 ms) [hash: 0x7198e07fe4e1eb07f49282712be07bc386dd1cc11813ee24ae4e532ca2ee83ef; parent_hash: 0xd4df…118e; extrinsics (1): [0x4dfa…d63c]]    
-2022-07-14 12:04:12 🔖 Pre-sealed block for proposal at 49. Hash now 0xcc03e0613019a4ca703901aa1632640b39c16a3b3dec46c0aed4673bff2c186e, previously 0x7198e07fe4e1eb07f49282712be07bc386dd1cc11813ee24ae4e532ca2ee83ef.    
-2022-07-14 12:04:12 ✨ Imported #49 (0xcc03…186e)    
-2022-07-14 12:04:15 💤 Idle (1 peers), best: #49 (0xcc03…186e), finalized #47 (0xc4c9…b00f), ⬇ 0.6kiB/s ⬆ 0.7kiB/s    
-2022-07-14 12:04:18 ✨ Imported #50 (0xb816…1eb4)    
-2022-07-14 12:04:20 💤 Idle (1 peers), best: #50 (0xb816…1eb4), finalized #48 (0xd4df…118e), ⬇ 0.7kiB/s ⬆ 0.7kiB/s    
-2022-07-14 12:04:24 🙌 Starting consensus session on top of parent 0xb816b1453573f4cac7d521a40fea3bdf3905a14c50a030898f90745fb7ce1eb4    
-2022-07-14 12:04:24 🎁 Prepared block for proposing at 51 (0 ms) [hash: 0x69dd14bcee632604ef6657f02b942f8dbd9cc8f938f2dd0bad7c1629fe7b3095; parent_hash: 0xb816…1eb4; extrinsics (1): [0xd77e…5fc1]]    
-2022-07-14 12:04:24 🔖 Pre-sealed block for proposal at 51. Hash now 0x295f81e99454b89abcfe397a6b9eaedf03d00b022bcbfadb2ef7fb8e42075f85, previously 0x69dd14bcee632604ef6657f02b942f8dbd9cc8f938f2dd0bad7c1629fe7b3095.    
-2022-07-14 12:04:24 ✨ Imported #51 (0x295f…5f85)
+2023-03-06 10:13:11 Substrate Node    
+2023-03-06 10:13:11 ✌️  version 0.0.0-alpha-2d65307203d    
+2023-03-06 10:13:11 ❤️  by , 2017-2023    
+2023-03-06 10:13:11 📋 Chain specification: Development    
+2023-03-06 10:13:11 🏷  Node name: common-flag-2215    
+2023-03-06 10:13:11 👤 Role: AUTHORITY    
+2023-03-06 10:13:11 💾 Database: RocksDb at /tmp/substrateJDibik/chains/dev/db/full    
+2023-03-06 10:13:11 ⛓  Native runtime: guild-network-101 (guild-network-1.tx1.au1)    
+2023-03-06 10:13:11 🔨 Initializing Genesis block/state (state: 0xee74…0185, header-hash: 0x9fc1…2e54)    
+2023-03-06 10:13:11 👴 Loading GRANDPA authority set from genesis on what appears to be first startup.    
+2023-03-06 10:13:11 Using default protocol ID "sup" because none is configured in the chain specs    
+2023-03-06 10:13:11 🏷  Local node identity is: 12D3KooWJVrSt1ukXdmM94Tu2RSCkRnzumYtmFJuWRZcwVXCuHti    
+2023-03-06 10:13:11 💻 Operating system: linux    
+2023-03-06 10:13:11 💻 CPU architecture: x86_64    
+2023-03-06 10:13:11 💻 Target environment: gnu    
+2023-03-06 10:13:11 💻 CPU: AMD Ryzen 5 3600 6-Core Processor    
+2023-03-06 10:13:11 💻 CPU cores: 6    
+2023-03-06 10:13:11 💻 Memory: 7872MB    
+2023-03-06 10:13:11 💻 Kernel: 6.1.12-arch1-1    
+2023-03-06 10:13:11 💻 Linux distribution: Arch Linux    
+2023-03-06 10:13:11 💻 Virtual machine: no    
+2023-03-06 10:13:11 📦 Highest known block at #0    
+2023-03-06 10:13:11 〽️ Prometheus exporter started at 127.0.0.1:9615    
+2023-03-06 10:13:11 Running JSON-RPC HTTP server: addr=127.0.0.1:9933, allowed origins=["*"]    
+2023-03-06 10:13:11 Running JSON-RPC WS server: addr=127.0.0.1:9944, allowed origins=["*"]    
+2023-03-06 10:13:12 🙌 Starting consensus session on top of parent 0x9fc14b5ce5543f8ce21e87a91b094df4ea2e03f1960fcf39e1cf49ffbfa72e54    
+2023-03-06 10:13:12 🎁 Prepared block for proposing at 1 (0 ms) [hash: 0x178ec36ac2a9e9f7613816cd1ba8f978a6052471f8ee703a6e75a419e287e446; parent_hash: 0x9fc1…2e54; extrinsics (1): [0x286a…46d6]]    
+2023-03-06 10:13:12 🔖 Pre-sealed block for proposal at 1. Hash now 0xbb88abc6ffaa246af0d67a90688cbd26b02eca8e0407d61e76e05e5621af9c0c, previously 0x178ec36ac2a9e9f7613816cd1ba8f978a6052471f8ee703a6e75a419e287e446.    
+2023-03-06 10:13:12 ✨ Imported #1 (0xbb88…9c0c)    
+2023-03-06 10:13:16 💤 Idle (0 peers), best: #1 (0xbb88…9c0c), finalized #0 (0x9fc1…2e54), ⬇ 0 ⬆ 0
 ```
+
+**NOTE** This command does not deploy your node, it only starts a local development node to ensure the source was built properly and the node behaves as it should.
 
 ## Generate cryptographic keys
 
@@ -240,7 +261,7 @@ You have multiple options if you want to run a validator:
         --pruning=archive
 ```
 
-where the `[bootnode multiaddress]` should look like this
+where `--bootnodes [bootnode multiaddress]` should look like this
 
 ```bash
   --bootnodes /ip4/65.108.102.250/tcp/30333/p2p/12D3KooWErJ9ChGGenCAmRQiiqmVxkZvsqkSB5GYVBGpN2rdfccE
