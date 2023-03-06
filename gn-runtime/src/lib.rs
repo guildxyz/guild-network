@@ -75,6 +75,15 @@ pub mod opaque {
     /// Opaque block identifier type.
     pub type BlockId = generic::BlockId<Block>;
 
+    // TODO Remove after im_online runtime upgrade is done.
+    impl_opaque_keys! {
+        pub struct OldSessionKeys {
+            pub aura: Aura,
+            pub grandpa: Grandpa,
+
+        }
+    }
+
     impl_opaque_keys! {
         pub struct SessionKeys {
             pub aura: Aura,
@@ -203,6 +212,74 @@ impl frame_system::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
+impl frame_system::offchain::CreateSignedTransaction<pallet_im_online::Call<Self>> for Runtime {
+    fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+        call: RuntimeCall,
+        public: <Signature as Verify>::Signer,
+        account: AccountId,
+        nonce: Index,
+    ) -> Option<(
+        RuntimeCall,
+        <UncheckedExtrinsic as sp_runtime::traits::Extrinsic>::SignaturePayload,
+    )> {
+        let tip = 0;
+        let period = BlockHashCount::get()
+            .checked_next_power_of_two()
+            .map(|c| c / 2)
+            .unwrap_or(2) as u64;
+        let current_block = System::block_number()
+            .saturated_into::<u64>()
+            .saturating_sub(1);
+        let era = generic::Era::mortal(period, current_block);
+        let extra = (
+            frame_system::CheckNonZeroSender::<Runtime>::new(),
+            frame_system::CheckSpecVersion::<Runtime>::new(),
+            frame_system::CheckTxVersion::<Runtime>::new(),
+            frame_system::CheckGenesis::<Runtime>::new(),
+            frame_system::CheckEra::<Runtime>::from(era),
+            frame_system::CheckNonce::<Runtime>::from(nonce),
+            frame_system::CheckWeight::<Runtime>::new(),
+            pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
+        );
+        let raw_payload = SignedPayload::new(call, extra)
+            .map_err(|e| {
+                log::warn!("Unable to create signed payload: {:?}", e);
+            })
+            .ok()?;
+        let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
+        let address = account;
+        let (call, extra, _) = raw_payload.deconstruct();
+        Some((
+            call,
+            (sp_runtime::MultiAddress::Id(address), signature, extra),
+        ))
+    }
+}
+
+impl frame_system::offchain::SigningTypes for Runtime {
+    type Public = <Signature as Verify>::Signer;
+    type Signature = Signature;
+}
+
+impl pallet_im_online::Config for Runtime {
+    type AuthorityId = ImOnlineId;
+    type RuntimeEvent = RuntimeEvent;
+    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+    type ValidatorSet = ValidatorManager;
+    // type ReportUnresponsiveness = ();
+    type ReportUnresponsiveness = ValidatorManager;
+    type UnsignedPriority = ImOnlineUnsignedPriority;
+    type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
+    type MaxKeys = MaxKeys;
+    type MaxPeerInHeartbeats = MaxPeerInHeartbeats;
+    type MaxPeerDataEncodingSize = MaxPeerDataEncodingSize;
+}
+
+impl frame_system::offchain::SendTransactionTypes<pallet_im_online::Call<Self>> for Runtime {
+    type Extrinsic = UncheckedExtrinsic;
+    type OverarchingCall = RuntimeCall;
+}
+
 impl pallet_aura::Config for Runtime {
     type AuthorityId = AuraId;
     type DisabledValidators = ();
@@ -299,6 +376,27 @@ impl pallet_validator_manager::Config for Runtime {
     type MinAuthorities = MinAuthorities;
 }
 
+// should be removed along with UpgradeSessionKeys
+fn transform_session_keys(_v: AccountId, old: opaque::OldSessionKeys) -> opaque::SessionKeys {
+    let id = pallet_im_online::sr25519::AuthorityId::try_from(old.aura.as_ref()).unwrap();
+
+    opaque::SessionKeys {
+        grandpa: old.grandpa,
+        aura: old.aura,
+        im_online: id,
+    }
+}
+
+// When this is removed, should also remove `OldSessionKeys`.
+pub struct UpgradeSessionKeys;
+impl frame_support::traits::OnRuntimeUpgrade for UpgradeSessionKeys {
+    fn on_runtime_upgrade() -> frame_support::weights::Weight {
+        Session::upgrade_keys::<opaque::OldSessionKeys, _>(transform_session_keys);
+        Session::rotate_session();
+        BlockWeights::get().max_block
+    }
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -354,8 +452,7 @@ pub type Executive = frame_executive::Executive<
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPalletsWithSystem,
-    // TODO remove this after migration
-    vm_upgrade::Upgrade,
+    UpgradeSessionKeys,
 >;
 
 // TODO remove this after migration (validator manager pallet)
