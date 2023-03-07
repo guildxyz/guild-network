@@ -58,7 +58,10 @@ which you need to build the source code first.
 To build the source code you need to clone it first:
 
 ```bash
-git clone https://github.com/agoraxyz/guild-network.git
+# https
+# git clone https://github.com/agoraxyz/guild-network.git
+# ssh
+git clone git@github.com:agoraxyz/guild-network.git
 cd guild-network
 cargo build --release
 ```
@@ -214,14 +217,12 @@ resembles this:
 
 ## Running an (unsafe) validator node
 
-In order to register yourself as a validator you will need to call the `author_rotateKey` 
-
-## Running a (safe) validator node
-
-You have multiple options if you want to run a validator:
-
-- full validator node (prunes old blocks from the database while only keeping
-  the most recent 256)
+In order to register as a validator you will need to call the
+`author_rotateKey` RPC method at one point which is an unsafe RPC call. Thus,
+when you first start your node you need to enable unsafe RPC calls until
+you've successfully joined the validator set. [A Substrate
+  seminar](https://github.com/substrate-developer-hub/substrate-seminar/blob/main/scheduled/2022/03-15-testnet-validators.md)
+also suggests starting a node like this.
 
 ```bash
 ./target/release/gn-node \
@@ -231,8 +232,59 @@ You have multiple options if you want to run a validator:
         --name [name] \
         --bootnodes [bootnode multiaddr] \
         --enable-offchain-indexing true \
-        --pruning=256
+        --unsafe-ws-external \
+        --unsafe-rpc-external \
+        --rpc-methods=Unsafe \
+        --rpc-cors=all \
+        --ws-max-connections 5000 \
+        --pruning=archive
 ```
+
+You should download the raw chain specification from
+[here](https://github.com/agoraxyz/guild-network/releases/download/v0.0.0-alpha/chain-spec-raw.json)
+and plug that into `[raw-chain-spec]`. `[data-dir]` and `[name]` are free to
+choose. However, line `--bootnodes [bootnode multiaddress]` should look like
+this
+
+```bash
+  --bootnodes /ip4/65.108.102.250/tcp/30333/p2p/12D3KooWErJ9ChGGenCAmRQiiqmVxkZvsqkSB5GYVBGpN2rdfccE
+```
+
+## Set session keys
+
+For this step you'll need to connect to our bootnode which provides a secure
+websocket connection that allows the polkadot.js app to connect. Check out the
+[link](https://polkadot.js.org/apps/?rpc=wss%3A%2F%2F1.oracle.network.guild.xyz#/explorer).
+
+Make sure you have installed the [polkadot.js wallet
+extension](https://polkadot.js.org/extension/). If you already have a Polkadot
+address in your wallet, you don't need to generate a fresh keypair, otherwise
+make sure you generate a new one and save its mnemonic seed. Reach out to us
+for some testnet tokens before the next steps.
+
+`aura` and `grandpa` consensus happens in sessions with each session holding a
+set of validators to particpate in the consensus. Therefore, after the node is
+up and running, you need to get your public `aura` and `grandpa` keys from the
+node. You need to perform
+[steps 4 to 6](https://github.com/gautamdhameja/substrate-validator-set/blob/master/docs/local-network-setup.md#step-4).
+
+**NOTE**: You need to call `rotate_keys
+
+In case you get an error in step 5, that is probably because the keys received
+in step 4 are actually 64 bytes instead of 32. In that case, split the key
+received in step 4 in half and input the first half in the `aura` and the
+second half in the `grandpa` field (each with a `0x` prefix).
+
+After you've successfully submitted the transaction (you should get a green
+tick icon in the upper right corner) let us know so we can register your
+validator via the `sudo` pallet.
+
+## Running a (safe) validator node
+
+After you've successfully joined as a validator, you may choose to restart your
+node via one of the following options. Note, that if you haven't started your
+node with `--pruning=archive` before, then you won't be able to start an
+archive node unless you prune the node database and start syncing again.
 
 - archive node (recommended, because it keeps the whole chain state in the database - for reference,
   a Polkadot archive node has a [~560GB state as of nov. 2022](https://paranodes.io/DBSize))
@@ -265,25 +317,28 @@ You have multiple options if you want to run a validator:
         --pruning=archive
 ```
 
-where `--bootnodes [bootnode multiaddress]` should look like this
+- pruning validator node (prunes old blocks from the database while only keeping
+  the most recent 256)
 
 ```bash
-  --bootnodes /ip4/65.108.102.250/tcp/30333/p2p/12D3KooWErJ9ChGGenCAmRQiiqmVxkZvsqkSB5GYVBGpN2rdfccE
+./target/release/gn-node \
+        --base-path [data dir] \
+        --chain [raw-chain-spec] \
+        --validator \
+        --name [name] \
+        --bootnodes [bootnode multiaddr] \
+        --enable-offchain-indexing true \
+        --pruning=256
 ```
 
-## Set session keys
+**NOTE**: None of the above nodes will expose unsafe RPC methods.
 
-`aura` and `grandpa` consensus happens in sessions with each session holding a
-set of validators to particpate in the consensus. Therefore, after the node is
-up and running, you need to get your public `aura` and `grandpa` keys from the
-node. You need to perform
-[steps 4 to 6](https://github.com/gautamdhameja/substrate-validator-set/blob/master/docs/local-network-setup.md#step-4).
+## Set up secure websocket service on your server
 
-In case you get an error in step 5, that is probably because the keys received
-in step 4 are actually 64 bytes instead of 32. In that case, split the key
-received in step 4 in half and input the first half in the `aura` and the
-second half in the `grandpa` field (each with a `0x` prefix).
+If you want the chain explorer and the frontend to be able to connect to your
+node via a secure websocket connection (`wss`) you need to set up your server
+accordingly. We use [caddy](https://caddyserver.com/) on our bootnode's server
+to enable secure connections.
 
-After you've successfully submitted the transaction (you should get a green
-tick icon in the upper right corner) let us know so we can register your
-validator via the `sudo` pallet.
+If you have experience with such setups than go ahead and do it, otherwise,
+details coming soon...
