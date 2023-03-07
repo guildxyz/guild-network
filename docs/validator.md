@@ -71,7 +71,9 @@ cargo build --release
 performance, however, it is highly advised to build the code in `--release`
 mode.
 
-**TROUBLESHOOTING**: if you get `secp256k1`-related warnings/errors like `No available targets are compatible with this triple` and the code fails to build you might need to run `export CC=gcc` before `cargo build --release`.
+**TROUBLESHOOTING**: if you get `secp256k1`-related warnings/errors like `No
+available targets are compatible with this triple` and the code fails to build
+you might need to run `export CC=gcc` before `cargo build --release`.
 
 ### Run a single test-node
 
@@ -81,7 +83,10 @@ In case you want to quickly check your node, run the following from the workspac
 ./scripts/dev.sh
 ```
 
-This will spin up a clean node that you can [interact with from the browser](https://github.com/agoraxyz/guild-network/docs/interaction.md). You should see it importing and finalizing blocks in the logs, something along the lines of:
+This will spin up a clean node that you can [interact with from the
+browser](https://github.com/agoraxyz/guild-network/docs/interaction.md). You
+should see it importing and finalizing blocks in the logs, something along the
+lines of:
 
 ```text
 2023-03-06 10:13:11 Substrate Node    
@@ -265,10 +270,27 @@ for some testnet tokens before the next steps.
 `aura` and `grandpa` consensus happens in sessions with each session holding a
 set of validators to particpate in the consensus. Therefore, after the node is
 up and running, you need to get your public `aura` and `grandpa` keys from the
-node. You need to perform
-[steps 4 to 6](https://github.com/gautamdhameja/substrate-validator-set/blob/master/docs/local-network-setup.md#step-4).
+node.
 
-**NOTE**: You need to call `rotate_keys
+You need to perform [steps 4 to
+6](https://github.com/gautamdhameja/substrate-validator-set/blob/master/docs/local-network-setup.md#step-4).
+You need to call `author_rotateKeys` on your local node, so if you cannot
+connect to your node via the polkadot app, just run the following command
+locally on your validator's machine:
+
+```
+# on your validator's local machine
+curl -H 'Content-Type: application/json' --data '{ "jsonrpc":"2.0", "method":"author_rotateKeys", "id":1 }' http://127.0.0.1:9933
+```
+
+The above command should return something like
+```
+{"jsonrpc":"2.0","result":"0xc94ac23bb8f077a7ba274d1c3253c26890844452f14820241d40536e310aef43fc4bbb402fba885dd4a94f65858c3fc5d5117848dbf5536b60cba624476ee12f","id":1}
+```
+
+where you need to split the result into two 32 byte long keys, one for `aura`
+and one for `grandpa`. Then you should perform step 6 in the tutorial linked
+above, from the node explorer.
 
 In case you get an error in step 5, that is probably because the keys received
 in step 4 are actually 64 bytes instead of 32. In that case, split the key
