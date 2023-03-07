@@ -12,8 +12,8 @@ fn simple_setup_should_work() {
             authorities(),
             vec![UintAuthorityId(1), UintAuthorityId(2), UintAuthorityId(3)]
         );
-        assert_eq!(ValidatorSet::validators(), vec![1u64, 2u64, 3u64]);
-        assert_eq!(Session::validators(), vec![1, 2, 3]);
+        assert_eq!(ValidatorSet::validators(), &[1, 2, 3]);
+        assert_eq!(Session::validators(), &[1, 2, 3]);
     });
 }
 
@@ -21,7 +21,8 @@ fn simple_setup_should_work() {
 fn add_validator_updates_validators_list() {
     new_test_ext().execute_with(|| {
         assert_ok!(ValidatorSet::add_validator(RuntimeOrigin::root(), 4));
-        assert_eq!(ValidatorSet::validators(), vec![1u64, 2u64, 3u64, 4u64])
+        assert_eq!(ValidatorSet::validators(), &[1, 2, 3, 4]);
+        assert_eq!(ValidatorSet::approved_validators(), &[1, 2, 3, 4]);
     });
 }
 
@@ -29,7 +30,12 @@ fn add_validator_updates_validators_list() {
 fn remove_validator_updates_validators_list() {
     new_test_ext().execute_with(|| {
         assert_ok!(ValidatorSet::remove_validator(RuntimeOrigin::root(), 2));
-        assert_eq!(ValidatorSet::validators(), vec![1u64, 3u64]);
+        assert_eq!(ValidatorSet::validators(), &[1, 3]);
+        assert_eq!(ValidatorSet::approved_validators(), &[1, 3]);
+        // add again
+        assert_ok!(ValidatorSet::add_validator(RuntimeOrigin::root(), 2));
+        assert_eq!(ValidatorSet::validators(), &[1, 3, 2]);
+        assert_eq!(ValidatorSet::approved_validators(), &[1, 3, 2]);
     });
 }
 
@@ -57,7 +63,7 @@ fn remove_validator_fails_with_invalid_origin() {
 fn duplicate_check() {
     new_test_ext().execute_with(|| {
         assert_ok!(ValidatorSet::add_validator(RuntimeOrigin::root(), 4));
-        assert_eq!(ValidatorSet::validators(), vec![1u64, 2u64, 3u64, 4u64]);
+        assert_eq!(ValidatorSet::validators(), &[1, 2, 3, 4]);
         assert_noop!(
             ValidatorSet::add_validator(RuntimeOrigin::root(), 4),
             Error::<Test>::Duplicate
