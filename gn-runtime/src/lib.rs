@@ -24,7 +24,7 @@ use sp_runtime::{
         Verify,
     },
     transaction_validity::{TransactionSource, TransactionValidity},
-    ApplyExtrinsicResult, MultiSignature,
+    ApplyExtrinsicResult, MultiSignature, RuntimeAppPublic, SaturatedConversion,
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -32,8 +32,10 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
 use frame_support::{
-    construct_runtime, parameter_types,
-    traits::{ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem},
+    construct_runtime,
+    pallet_prelude::TransactionPriority,
+    parameter_types, sp_io,
+    traits::{ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem, ValidatorSet},
     weights::{
         constants::{RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
         IdentityFee, Weight,
@@ -392,7 +394,28 @@ pub struct UpgradeSessionKeys;
 impl frame_support::traits::OnRuntimeUpgrade for UpgradeSessionKeys {
     fn on_runtime_upgrade() -> frame_support::weights::Weight {
         Session::upgrade_keys::<opaque::OldSessionKeys, _>(transform_session_keys);
-        Session::rotate_session();
+
+        let validators = Session::queued_keys()
+            .iter()
+            .map(|x| x.1.im_online.clone())
+            .collect::<Vec<_>>();
+
+        ImOnline::initialize_keys(validators.as_slice());
+
+        for (index, key) in ImOnline::keys().into_iter().enumerate() {
+            let heartbeat = pallet_im_online::Heartbeat {
+                block_number: System::block_number(),
+                network_state: sp_io::offchain::network_state().unwrap().clone(),
+                session_index: ValidatorManager::session_index(),
+                authority_index: index as u32,
+                validators_len: ImOnline::keys().len() as u32,
+            };
+
+            let signature = key.sign(&heartbeat.encode()).unwrap();
+            ImOnline::heartbeat(RuntimeOrigin::root(), heartbeat, signature).unwrap();
+        }
+
+        // Session::rotate_session();
         BlockWeights::get().max_block
     }
 }
