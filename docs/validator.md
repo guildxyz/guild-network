@@ -113,7 +113,7 @@ This will spin up a clean node that you can [interact with from the browser](htt
 2023-03-06 10:13:16 💤 Idle (0 peers), best: #1 (0xbb88…9c0c), finalized #0 (0x9fc1…2e54), ⬇ 0 ⬆ 0
 ```
 
-**NOTE** This command does not deploy your node, it only starts a local development node to ensure the source was built properly and the node behaves as it should.
+**NOTE**: This command does not deploy your node, it only starts a local development node to ensure the source was built properly and the node behaves as it should.
 
 ## Generate cryptographic keys
 
@@ -212,7 +212,11 @@ resembles this:
 6772616e1441ddcb22724420b87ee295c6d47c5adff0ce598c87d3c749b776ba9a647f04
 ```
 
-## Running a validator node
+## Running an (unsafe) validator node
+
+In order to register yourself as a validator you will need to call the `author_rotateKey` 
+
+## Running a (safe) validator node
 
 You have multiple options if you want to run a validator:
 
@@ -231,7 +235,7 @@ You have multiple options if you want to run a validator:
 ```
 
 - archive node (recommended, because it keeps the whole chain state in the database - for reference,
-  a polkadot archive node has a 660GB state)
+  a Polkadot archive node has a [~560GB state as of nov. 2022](https://paranodes.io/DBSize))
 
 ```bash
 ./target/release/gn-node \
@@ -273,7 +277,7 @@ where `--bootnodes [bootnode multiaddress]` should look like this
 set of validators to particpate in the consensus. Therefore, after the node is
 up and running, you need to get your public `aura` and `grandpa` keys from the
 node. You need to perform
-[steps 4 and 5](https://github.com/gautamdhameja/substrate-validator-set/blob/master/docs/local-network-setup.md#step-4).
+[steps 4 to 6](https://github.com/gautamdhameja/substrate-validator-set/blob/master/docs/local-network-setup.md#step-4).
 
 In case you get an error in step 5, that is probably because the keys received
 in step 4 are actually 64 bytes instead of 32. In that case, split the key
