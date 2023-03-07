@@ -3,7 +3,6 @@
 #![recursion_limit = "256"]
 #![deny(clippy::all)]
 #![deny(clippy::dbg_macro)]
-#![deny(unused_crate_dependencies)]
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]
