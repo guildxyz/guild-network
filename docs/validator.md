@@ -223,11 +223,11 @@ resembles this:
 
 ## Running an (unsafe) validator node
 
-**NOTE: Leaving unsafe RPC methods open towards the internet is dangerous as
+**NOTE: Leaving unsafe RPC endpoints exposed towards the internet is dangerous as
 they can be used to interfere with the function of your node if called
-by malicious actors. When running an unsafe rpc node, it's *critical* to filter
-out unsafe RPC calls detailed in [this](https://docs.substrate.io/build/remote-procedure-calls/)
-article.**
+by malicious actors. When running a validator node with unsafe rpc methods
+enabled, it's *critical* to filter out unsafe RPC calls detailed in
+[this](https://docs.substrate.io/build/remote-procedure-calls/) article.**
 
 In order to register as a validator you will need to call the
 `author_rotateKey` RPC method at one point which is an unsafe RPC call. Thus,
