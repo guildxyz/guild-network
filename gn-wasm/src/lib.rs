@@ -121,8 +121,9 @@ pub fn generate_merkle_proof(
 }
 
 #[wasm_bindgen(js_name = "verificationMsg")]
-pub async fn verification_msg(address: String) -> String {
-    gn_common::utils::verification_msg(address)
+pub fn verification_msg(address: String) -> Result<String, JsValue> {
+    let account_id = AccountId::from_str(&address).map_err(|e| JsValue::from(e.to_string()))?;
+    Ok(gn_common::utils::verification_msg(account_id))
 }
 
 #[cfg(test)]
@@ -147,6 +148,17 @@ mod test {
         let chain = api.rpc().system_chain().await.unwrap();
 
         assert_eq!(chain, "Development");
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_verification_msg_wrapper() {
+        let account_id_str = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
+        let account_id = AccountId::from_str(account_id_str).unwrap();
+        assert_eq!(account_id.to_string(), account_id_str);
+
+        let expected_msg = "Guild Network registration id: d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
+        let msg = verification_msg(account_id_str.to_string()).unwrap();
+        assert_eq!(msg, expected_msg);
     }
 
     // NOTE these only work after the guild/join example
