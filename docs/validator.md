@@ -58,7 +58,11 @@ which you need to build the source code first.
 To build the source code you need to clone it first:
 
 ```bash
+# ssh (recommended)
+git clone git@github.com:agoraxyz/guild-network.git
+# https
 git clone https://github.com/agoraxyz/guild-network.git
+
 cd guild-network
 cargo build --release
 ```
@@ -68,7 +72,9 @@ cargo build --release
 performance, however, it is highly advised to build the code in `--release`
 mode.
 
-**TROUBLESHOOTING**: if you get `secp256k1`-related warnings/errors like `No available targets are compatible with this triple` and the code fails to build you might need to run `export CC=gcc` before `cargo build --release`.
+**TROUBLESHOOTING**: if you get `secp256k1`-related warnings/errors like `No
+available targets are compatible with this triple` and the code fails to build
+you might need to run `export CC=gcc` before `cargo build --release`.
 
 ### Run a single test-node
 
@@ -78,7 +84,10 @@ In case you want to quickly check your node, run the following from the workspac
 ./scripts/dev.sh
 ```
 
-This will spin up a clean node that you can [interact with from the browser](https://github.com/agoraxyz/guild-network/docs/interaction.md). You should see it importing and finalizing blocks in the logs, something along the lines of:
+This will spin up a clean node that you can [interact with from the
+browser](https://github.com/agoraxyz/guild-network/docs/interaction.md). You
+should see it importing and finalizing blocks in the logs, something along the
+lines of:
 
 ```text
 2023-03-06 10:13:11 Substrate Node    
@@ -113,7 +122,7 @@ This will spin up a clean node that you can [interact with from the browser](htt
 2023-03-06 10:13:16 💤 Idle (0 peers), best: #1 (0xbb88…9c0c), finalized #0 (0x9fc1…2e54), ⬇ 0 ⬆ 0
 ```
 
-**NOTE** This command does not deploy your node, it only starts a local development node to ensure the source was built properly and the node behaves as it should.
+**NOTE**: This command does not deploy your node, it only starts a local development node to ensure the source was built properly and the node behaves as it should.
 
 ## Generate cryptographic keys
 
@@ -212,12 +221,20 @@ resembles this:
 6772616e1441ddcb22724420b87ee295c6d47c5adff0ce598c87d3c749b776ba9a647f04
 ```
 
-## Running a validator node
+## Running an (unsafe) validator node
 
-You have multiple options if you want to run a validator:
+**NOTE: Leaving unsafe RPC endpoints exposed towards the internet is dangerous as
+they can be used to interfere with the function of your node if called
+by malicious actors. When running a validator node with unsafe rpc methods
+enabled, it's *critical* to filter out unsafe RPC calls detailed in
+[this](https://docs.substrate.io/build/remote-procedure-calls/) article.**
 
-- full validator node (prunes old blocks from the database while only keeping
-  the most recent 256)
+In order to register as a validator you will need to call the
+`author_rotateKey` RPC method at one point which is an unsafe RPC call. Thus,
+when you first start your node you need to enable unsafe RPC calls until
+you've successfully joined the validator set. [A Substrate
+  seminar](https://github.com/substrate-developer-hub/substrate-seminar/blob/main/scheduled/2022/03-15-testnet-validators.md)
+also suggests starting a node like this.
 
 ```bash
 ./target/release/gn-node \
@@ -227,11 +244,79 @@ You have multiple options if you want to run a validator:
         --name [name] \
         --bootnodes [bootnode multiaddr] \
         --enable-offchain-indexing true \
-        --pruning=256
+        --unsafe-ws-external \
+        --unsafe-rpc-external \
+        --rpc-methods=Unsafe \
+        --rpc-cors=all \
+        --ws-max-connections 5000 \
+        --pruning=archive
 ```
 
+You should download the raw chain specification from
+[here](https://github.com/agoraxyz/guild-network/releases/download/v0.0.0-alpha/chain-spec-raw.json)
+and plug that into `[raw-chain-spec]`. `[data-dir]` and `[name]` are free to
+choose. However, line `--bootnodes [bootnode multiaddress]` should look like
+this
+
+```bash
+  --bootnodes /ip4/65.108.102.250/tcp/30333/p2p/12D3KooWErJ9ChGGenCAmRQiiqmVxkZvsqkSB5GYVBGpN2rdfccE
+```
+
+## Set session keys
+
+For this step you'll need to connect to a node via a secure websocket
+connection using the polkadot.js app. In case you cannot connect to your node,
+[here](https://polkadot.js.org/apps/?rpc=wss%3A%2F%2F1.oracle.network.guild.xyz#/explorer)
+is the link to the node explorer connected to our bootnode.
+
+
+Make sure you have installed the [polkadot.js wallet
+extension](https://polkadot.js.org/extension/). If you already have a Polkadot
+address in your wallet, you don't need to generate a fresh keypair, otherwise
+make sure you generate a new one and save its mnemonic seed. Reach out to us
+for some testnet tokens before the next steps.
+
+`aura` and `grandpa` consensus happens in sessions with each session holding a
+set of validators to particpate in the consensus. Therefore, after the node is
+up and running, you need to get your public `aura` and `grandpa` keys from the
+node.
+
+You need to perform [steps 4 to
+6](https://github.com/gautamdhameja/substrate-validator-set/blob/master/docs/local-network-setup.md#step-4).
+First, you should call `author_rotateKeys` on your local node, so if you cannot
+connect to your node via the polkadot app, just run the following command
+locally on your validator's machine:
+
+```
+# on your validator's local machine
+curl -H 'Content-Type: application/json' --data '{ "jsonrpc":"2.0", "method":"author_rotateKeys", "id":1 }' http://127.0.0.1:9933
+```
+
+The above command should return something like
+```
+{"jsonrpc":"2.0","result":"0xc94ac23bb8f077a7ba274d1c3253c26890844452f14820241d40536e310aef43fc4bbb402fba885dd4a94f65858c3fc5d5117848dbf5536b60cba624476ee12f","id":1}
+```
+
+where you need to split the result into two 32-byte keys, one for `aura` and
+one for `grandpa`. Then you should perform step 6 in the tutorial linked above,
+from the [node explorer](https://polkadot.js.org/apps/?rpc=wss%3A%2F%2F1.oracle.network.guild.xyz#/explorer).
+Make sure to add the `0x` prefix to both keys and for the proof just simply
+write `0x`. This will tell the `session` pallet what your validator keys should
+be.
+
+After you've successfully submitted the transaction (you should get a green
+tick icon in the upper right corner) let us know so we can register your
+validator via the `sudo` pallet.
+
+## Running a (safe) validator node
+
+After you've successfully joined as a validator, you may choose to restart your
+node via one of the following options. Note, that if you haven't started your
+node with `--pruning=archive` before, then you won't be able to start an
+archive node unless you prune the node database and start syncing again.
+
 - archive node (recommended, because it keeps the whole chain state in the database - for reference,
-  a polkadot archive node has a 660GB state)
+  a Polkadot archive node has a [~560GB state as of nov. 2022](https://paranodes.io/DBSize))
 
 ```bash
 ./target/release/gn-node \
@@ -261,25 +346,28 @@ You have multiple options if you want to run a validator:
         --pruning=archive
 ```
 
-where `--bootnodes [bootnode multiaddress]` should look like this
+- pruning validator node (prunes old blocks from the database while only keeping
+  the most recent 256)
 
 ```bash
-  --bootnodes /ip4/65.108.102.250/tcp/30333/p2p/12D3KooWErJ9ChGGenCAmRQiiqmVxkZvsqkSB5GYVBGpN2rdfccE
+./target/release/gn-node \
+        --base-path [data dir] \
+        --chain [raw-chain-spec] \
+        --validator \
+        --name [name] \
+        --bootnodes [bootnode multiaddr] \
+        --enable-offchain-indexing true \
+        --pruning=256
 ```
 
-## Set session keys
+**NOTE**: None of the above nodes will expose unsafe RPC methods.
 
-`aura` and `grandpa` consensus happens in sessions with each session holding a
-set of validators to particpate in the consensus. Therefore, after the node is
-up and running, you need to get your public `aura` and `grandpa` keys from the
-node. You need to perform
-[steps 4 and 5](https://github.com/gautamdhameja/substrate-validator-set/blob/master/docs/local-network-setup.md#step-4).
+## Set up secure websocket service on your server
 
-In case you get an error in step 5, that is probably because the keys received
-in step 4 are actually 64 bytes instead of 32. In that case, split the key
-received in step 4 in half and input the first half in the `aura` and the
-second half in the `grandpa` field (each with a `0x` prefix).
+If you want the chain explorer and the frontend to be able to connect to your
+node via a secure websocket connection (`wss`) you need to set up your server
+accordingly. We use [caddy](https://caddyserver.com/) on our bootnode's server
+to enable secure connections.
 
-After you've successfully submitted the transaction (you should get a green
-tick icon in the upper right corner) let us know so we can register your
-validator via the `sudo` pallet.
+If you have experience with such setups than go ahead and do it, otherwise,
+details coming soon...
