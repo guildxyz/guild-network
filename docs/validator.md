@@ -58,10 +58,11 @@ which you need to build the source code first.
 To build the source code you need to clone it first:
 
 ```bash
-# https
-# git clone https://github.com/agoraxyz/guild-network.git
-# ssh
+# ssh (recommended)
 git clone git@github.com:agoraxyz/guild-network.git
+# https
+git clone https://github.com/agoraxyz/guild-network.git
+
 cd guild-network
 cargo build --release
 ```
@@ -257,9 +258,11 @@ this
 
 ## Set session keys
 
-For this step you'll need to connect to our bootnode which provides a secure
-websocket connection that allows the polkadot.js app to connect. Check out the
-[link](https://polkadot.js.org/apps/?rpc=wss%3A%2F%2F1.oracle.network.guild.xyz#/explorer).
+For this step you'll need to connect to a node via a secure websocket
+connection using the polkadot.js app. In case you cannot connect to your node,
+[here](https://polkadot.js.org/apps/?rpc=wss%3A%2F%2F1.oracle.network.guild.xyz#/explorer)
+is the link to the node explorer connected to our bootnode.
+
 
 Make sure you have installed the [polkadot.js wallet
 extension](https://polkadot.js.org/extension/). If you already have a Polkadot
@@ -274,7 +277,7 @@ node.
 
 You need to perform [steps 4 to
 6](https://github.com/gautamdhameja/substrate-validator-set/blob/master/docs/local-network-setup.md#step-4).
-You need to call `author_rotateKeys` on your local node, so if you cannot
+First, you should call `author_rotateKeys` on your local node, so if you cannot
 connect to your node via the polkadot app, just run the following command
 locally on your validator's machine:
 
@@ -288,14 +291,12 @@ The above command should return something like
 {"jsonrpc":"2.0","result":"0xc94ac23bb8f077a7ba274d1c3253c26890844452f14820241d40536e310aef43fc4bbb402fba885dd4a94f65858c3fc5d5117848dbf5536b60cba624476ee12f","id":1}
 ```
 
-where you need to split the result into two 32 byte long keys, one for `aura`
-and one for `grandpa`. Then you should perform step 6 in the tutorial linked
-above, from the node explorer.
-
-In case you get an error in step 5, that is probably because the keys received
-in step 4 are actually 64 bytes instead of 32. In that case, split the key
-received in step 4 in half and input the first half in the `aura` and the
-second half in the `grandpa` field (each with a `0x` prefix).
+where you need to split the result into two 32-byte keys, one for `aura` and
+one for `grandpa`. Then you should perform step 6 in the tutorial linked above,
+from the [node explorer](https://polkadot.js.org/apps/?rpc=wss%3A%2F%2F1.oracle.network.guild.xyz#/explorer).
+Make sure to add the `0x` prefix to both keys and for the proof just simply
+write `0x`. This will tell the `session` pallet what your validator keys should
+be.
 
 After you've successfully submitted the transaction (you should get a green
 tick icon in the upper right corner) let us know so we can register your
