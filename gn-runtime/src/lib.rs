@@ -214,7 +214,10 @@ impl frame_system::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
-impl frame_system::offchain::CreateSignedTransaction<pallet_im_online::Call<Self>> for Runtime {
+impl<Call> frame_system::offchain::CreateSignedTransaction<Call> for Runtime
+where
+    RuntimeCall: From<Call>,
+{
     fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
         call: RuntimeCall,
         public: <Signature as Verify>::Signer,
@@ -258,6 +261,14 @@ impl frame_system::offchain::CreateSignedTransaction<pallet_im_online::Call<Self
     }
 }
 
+impl<Call> frame_system::offchain::SendTransactionTypes<Call> for Runtime
+where
+    RuntimeCall: From<Call>,
+{
+    type Extrinsic = UncheckedExtrinsic;
+    type OverarchingCall = RuntimeCall;
+}
+
 impl frame_system::offchain::SigningTypes for Runtime {
     type Public = <Signature as Verify>::Signer;
     type Signature = Signature;
@@ -275,11 +286,6 @@ impl pallet_im_online::Config for Runtime {
     type MaxKeys = MaxKeys;
     type MaxPeerInHeartbeats = MaxPeerInHeartbeats;
     type MaxPeerDataEncodingSize = MaxPeerDataEncodingSize;
-}
-
-impl frame_system::offchain::SendTransactionTypes<pallet_im_online::Call<Self>> for Runtime {
-    type Extrinsic = UncheckedExtrinsic;
-    type OverarchingCall = RuntimeCall;
 }
 
 impl pallet_aura::Config for Runtime {
