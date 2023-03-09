@@ -6,7 +6,9 @@ use gn_client::{query, AccountId, Api};
 use gn_common::filter::Guild as GuildFilter;
 use gn_common::identity::Identity;
 use gn_common::merkle::Proof;
+use gn_common::SerializedRequirements;
 use gn_common::{pad::pad_to_n_bytes, GuildName, RoleName};
+use gn_engine::RequirementsWithLogic;
 use serde_wasm_bindgen::{from_value as deserialize_from_value, to_value as serialize_to_value};
 use wasm_bindgen::prelude::*;
 
@@ -124,6 +126,29 @@ pub fn generate_merkle_proof(
 pub fn verification_msg(address: String) -> Result<String, JsValue> {
     let account_id = AccountId::from_str(&address).map_err(|e| JsValue::from(e.to_string()))?;
     Ok(gn_common::utils::verification_msg(account_id))
+}
+
+#[wasm_bindgen(js_name = "serializeRequirements")]
+pub fn serialize_requirements(requirements: JsValue) -> Result<JsValue, String> {
+    let req = deserialize_from_value::<RequirementsWithLogic>(requirements)
+        .map_err(|error| error.to_string())?;
+
+    let req = req
+        .into_serialized_tuple()
+        .map_err(|error| error.to_string())?;
+
+    serialize_to_value(&req).map_err(|error| error.to_string())
+}
+
+#[wasm_bindgen(js_name = "deserializeRequirements")]
+pub fn deserialize_requirements(requirements: JsValue) -> Result<JsValue, String> {
+    let req = deserialize_from_value::<SerializedRequirements>(requirements)
+        .map_err(|error| error.to_string())?;
+
+    let req =
+        RequirementsWithLogic::from_serialized_tuple(req).map_err(|error| error.to_string())?;
+
+    serialize_to_value(&req).map_err(|error| error.to_string())
 }
 
 #[cfg(test)]
