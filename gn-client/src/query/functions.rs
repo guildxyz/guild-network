@@ -1,5 +1,5 @@
 use super::FilteredRequirements;
-use crate::{cast, runtime, AccountId, Api, Request, SubxtError, H256};
+use crate::{cast, runtime, AccountId, Api, Request, SessionKeys, SubxtError, H256};
 use gn_common::filter::Guild as GuildFilter;
 use gn_common::identity::Identity;
 use gn_common::{Guild, GuildName, RequestIdentifier, RoleName};
@@ -244,4 +244,17 @@ pub async fn allowlist(
         .map(|x| Vec::<Identity>::decode(&mut &x.0[..]))
         .transpose()
         .map_err(SubxtError::Codec)
+}
+
+pub async fn next_session_keys(api: Api, validator: &AccountId) -> Result<SessionKeys, SubxtError> {
+    let storage_key = runtime::storage().session().next_keys(validator);
+    let keys = api
+        .storage()
+        .at(None)
+        .await?
+        .fetch(&storage_key)
+        .await?
+        .ok_or_else(|| SubxtError::Other(format!("no session key set for: {validator}")))?;
+
+    Ok(keys)
 }

@@ -1,4 +1,5 @@
 use gn_client::{
+    query,
     tx::{self, Signer},
     AccountId, Api,
 };
@@ -14,8 +15,12 @@ pub async fn register(api: Api, root: Arc<Signer>, maybe_operator: Option<&str>)
     };
 
     let payload = tx::register_operator(&account_id);
-    tx::send_tx_in_block(api, &tx::sudo(payload), root)
+    tx::send_tx_in_block(api.clone(), &tx::sudo(payload), root)
         .await
         .unwrap();
+
+    assert!(query::is_operator_registered(api, &account_id)
+        .await
+        .expect("failed to register operator"));
     println!("{account_id} registered as operator");
 }

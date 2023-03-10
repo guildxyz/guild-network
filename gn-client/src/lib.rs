@@ -20,6 +20,7 @@ pub type GuildCall = runtime::runtime_types::pallet_guild::pallet::Call;
 pub type Index = u32;
 pub type OracleRequest = runtime::oracle::events::OracleRequest;
 pub type Request = gn_common::Request<AccountId>;
+pub type SessionKeys = runtime::runtime_types::gn_runtime::opaque::SessionKeys;
 pub type SubxtError = subxt::Error;
 pub type TransactionProgress = subxt::tx::TxProgress<ClientConfig, Api>;
 pub type TransactionStatus = subxt::tx::TxStatus<ClientConfig, Api>;

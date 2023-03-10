@@ -35,6 +35,7 @@ enum Key {
         password: Option<String>,
     },
     Rotate,
+    Rotset,
 }
 
 #[derive(Debug, StructOpt)]
@@ -78,7 +79,13 @@ async fn main() {
         Example::Key(Key::Generate { curve, password }) => {
             key::generate(&curve, password.as_deref())
         }
-        Example::Key(Key::Rotate) => key::rotate(api).await,
+        Example::Key(Key::Rotate) => {
+            key::rotate(api).await;
+        }
+        Example::Key(Key::Rotset) => {
+            let keys = key::rotate(api.clone()).await;
+            key::set(api, signer, keys).await
+        }
         Example::Register { operator } => {
             register::register(api, signer, operator.as_deref()).await
         }

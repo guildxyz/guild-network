@@ -7,8 +7,8 @@ pub use subxt::tx::Signer as SignerT;
 pub type Signer = subxt::tx::PairSigner<ClientConfig, Keypair>;
 
 use crate::{
-    cast, runtime, AccountId, Api, ClientConfig, MultiAddress, SubxtError, TransactionProgress,
-    H256,
+    cast, runtime, AccountId, Api, ClientConfig, MultiAddress, SessionKeys, SubxtError,
+    TransactionProgress, H256,
 };
 use futures::StreamExt;
 use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
@@ -146,6 +146,10 @@ pub fn join(
 
 pub fn leave(guild_name: GuildName, role_name: RoleName) -> impl TxPayload {
     runtime::tx().guild().leave(guild_name, role_name)
+}
+
+pub fn set_session_keys(keys: SessionKeys, proof: Vec<u8>) -> impl TxPayload {
+    runtime::tx().session().set_keys(keys, proof)
 }
 
 pub async fn send_owned_tx<T: TxPayload>(
