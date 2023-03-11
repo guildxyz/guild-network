@@ -35,7 +35,6 @@ std = [
   "pallet-balances/std",
   "pallet-grandpa/std",
   "pallet-guild/std",
-  "pallet-im-online/std",
   "pallet-oracle/std",
   "pallet-randomness-collective-flip/std",
   "pallet-session/std",
@@ -64,7 +63,6 @@ try-runtime = [
   "pallet-balances/try-runtime",
   "pallet-grandpa/try-runtime",
   "pallet-guild/try-runtime",
-  "pallet-im-online/try-runtime",
   "pallet-oracle/try-runtime",
   "pallet-randomness-collective-flip/try-runtime",
   "pallet-sudo/try-runtime",
@@ -98,7 +96,6 @@ frame-try-runtime = { workspace = true, optional = true }
 pallet-aura = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-grandpa = { workspace = true }
-pallet-im-online = { workspace = true }
 pallet-randomness-collective-flip = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
