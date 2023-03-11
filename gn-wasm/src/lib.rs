@@ -6,7 +6,9 @@ use gn_client::{query, AccountId, Api};
 use gn_common::filter::Guild as GuildFilter;
 use gn_common::identity::Identity;
 use gn_common::merkle::Proof;
+use gn_common::SerializedRequirements;
 use gn_common::{pad::pad_to_n_bytes, GuildName, RoleName};
+use gn_engine::RequirementsWithLogic;
 use serde_wasm_bindgen::{from_value as deserialize_from_value, to_value as serialize_to_value};
 use wasm_bindgen::prelude::*;
 
@@ -126,10 +128,36 @@ pub fn verification_msg(address: String) -> Result<String, JsValue> {
     Ok(gn_common::utils::verification_msg(account_id))
 }
 
+#[wasm_bindgen(js_name = "serializeRequirements")]
+pub fn serialize_requirements(requirements: JsValue) -> Result<JsValue, String> {
+    let req = deserialize_from_value::<RequirementsWithLogic>(requirements)
+        .map_err(|error| error.to_string())?;
+
+    let req = req
+        .into_serialized_tuple()
+        .map_err(|error| error.to_string())?;
+
+    serialize_to_value(&req).map_err(|error| error.to_string())
+}
+
+#[wasm_bindgen(js_name = "deserializeRequirements")]
+pub fn deserialize_requirements(requirements: JsValue) -> Result<JsValue, String> {
+    let req = deserialize_from_value::<SerializedRequirements>(requirements)
+        .map_err(|error| error.to_string())?;
+
+    let req =
+        RequirementsWithLogic::from_serialized_tuple(req).map_err(|error| error.to_string())?;
+
+    serialize_to_value(&req).map_err(|error| error.to_string())
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
-    use gn_test_data::*;
+    use gn_engine::balance::{Balance, Relation, TokenType};
+    use gn_engine::chains::EvmChain;
+    use gn_engine::{EvmAddress, Requirement, U256};
+    use gn_test_data as _;
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
@@ -140,18 +168,9 @@ mod test {
     }
 
     #[wasm_bindgen_test]
-    async fn test_query_chain() {
+    async fn test_verification_msg_wrapper() {
         init_tracing();
 
-        let api = Api::from_url(URL).await.unwrap();
-
-        let chain = api.rpc().system_chain().await.unwrap();
-
-        assert_eq!(chain, "Development");
-    }
-
-    #[wasm_bindgen_test]
-    async fn test_verification_msg_wrapper() {
         let account_id_str = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
         let account_id = AccountId::from_str(account_id_str).unwrap();
         assert_eq!(account_id.to_string(), account_id_str);
@@ -159,6 +178,68 @@ mod test {
         let expected_msg = "Guild Network registration id: d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d";
         let msg = verification_msg(account_id_str.to_string()).unwrap();
         assert_eq!(msg, expected_msg);
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_serialization_roundtrip() {
+        let tokens: Vec<Option<TokenType<EvmAddress, U256>>> = vec![
+            None,
+            Some(TokenType::Fungible {
+                address: [99u8; 20],
+            }),
+            Some(TokenType::NonFungible {
+                address: [0u8; 20],
+                id: None,
+            }),
+            Some(TokenType::NonFungible {
+                address: [1u8; 20],
+                id: Some([223u8; 32]),
+            }),
+        ];
+
+        let relations = vec![
+            Relation::EqualTo([11u8; 32]),
+            Relation::GreaterThan([12u8; 32]),
+            Relation::LessOrEqualTo([13u8; 32]),
+            Relation::Between([50u8; 32]..[100u8; 32]),
+        ];
+
+        let logic = "(0 AND 2) OR (1 AND 3)".to_string();
+
+        let requirements = tokens
+            .into_iter()
+            .zip(relations.into_iter())
+            .map(|(token_type, relation)| {
+                Requirement::EvmBalance(Balance {
+                    token_type,
+                    relation,
+                    chain: EvmChain::Ethereum,
+                })
+            })
+            .collect();
+
+        let requirements_with_logic = RequirementsWithLogic {
+            requirements,
+            logic,
+        };
+
+        let js_requirements_expected = serialize_to_value(&requirements_with_logic)
+            .map_err(|error| error.to_string())
+            .unwrap();
+
+        let js_requirements_serialized =
+            serialize_requirements(js_requirements_expected.clone()).unwrap();
+        let js_requirements = deserialize_requirements(js_requirements_serialized).unwrap();
+
+        assert_eq!(
+            js_requirements.as_string(),
+            js_requirements_expected.as_string()
+        );
+
+        let requirements_from_js: RequirementsWithLogic =
+            deserialize_from_value(js_requirements).unwrap();
+
+        assert_eq!(requirements_with_logic.logic, requirements_from_js.logic);
     }
 
     // NOTE these only work after the guild/join example
@@ -170,6 +251,16 @@ mod test {
         use gn_common::filter::{Filter, Logic as FilterLogic};
         use gn_common::identity::Identity;
         use gn_common::Guild;
+        use gn_test_data::*;
+
+        #[wasm_bindgen_test]
+        async fn test_query_chain() {
+            let api = Api::from_url(URL).await.unwrap();
+
+            let chain = api.rpc().system_chain().await.unwrap();
+
+            assert_eq!(chain, "Development");
+        }
 
         #[wasm_bindgen_test]
         async fn test_query_members() {
