@@ -39,18 +39,42 @@ pub fn sudo<'a>(call: DynamicTxPayload<'_>) -> DynamicTxPayload<'a> {
     subxt::dynamic::tx("Sudo", "sudo", vec![("call", call.into_value())])
 }
 
-pub fn fund_account(account: &AccountId, amount: u128) -> impl TxPayload {
-    runtime::tx()
-        .balances()
-        .transfer(MultiAddress::Id(account.clone()), amount)
-}
-
 pub fn register_operator<'a>(operator: &AccountId) -> DynamicTxPayload<'a> {
     subxt::dynamic::tx(
         "Oracle",
         "register_operator",
         vec![("operator", Value::from_bytes(operator))],
     )
+}
+
+pub fn deregister_operator<'a>(operator: &AccountId) -> DynamicTxPayload<'a> {
+    subxt::dynamic::tx(
+        "Oracle",
+        "deregister_operator",
+        vec![("operator", Value::from_bytes(operator))],
+    )
+}
+
+pub fn add_validator<'a>(validator: &AccountId) -> DynamicTxPayload<'a> {
+    subxt::dynamic::tx(
+        "ValidatorManager",
+        "add_validator",
+        vec![("validator_id", Value::from_bytes(validator))],
+    )
+}
+
+pub fn remove_validator<'a>(validator: &AccountId) -> DynamicTxPayload<'a> {
+    subxt::dynamic::tx(
+        "ValidatorManager",
+        "remove_validator",
+        vec![("validator_id", Value::from_bytes(validator))],
+    )
+}
+
+pub fn fund_account(account: &AccountId, amount: u128) -> impl TxPayload {
+    runtime::tx()
+        .balances()
+        .transfer(MultiAddress::Id(account.clone()), amount)
 }
 
 pub fn activate_operator() -> impl TxPayload {

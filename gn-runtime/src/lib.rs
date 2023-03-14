@@ -354,6 +354,7 @@ pub type Executive = frame_executive::Executive<
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPalletsWithSystem,
+    // TODO remove this after migration
     vm_upgrade::Upgrade,
 >;
 
@@ -366,7 +367,6 @@ mod vm_upgrade {
     impl OnRuntimeUpgrade for Upgrade {
         fn on_runtime_upgrade() -> Weight {
             pallet_validator_manager::migration::on_runtime_upgrade::<Runtime>();
-
             BlockWeights::get().max_block
         }
 
@@ -595,7 +595,7 @@ impl_runtime_apis! {
 
 
 
-    #[cfg(all(feature = "try-runtime", feature = "std"))]
+    #[cfg(feature = "try-runtime")]
     impl frame_try_runtime::TryRuntime<Block> for Runtime {
         fn on_runtime_upgrade(checks: frame_try_runtime::UpgradeCheckSelect) -> (Weight, Weight) {
             // NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
