@@ -20,6 +20,7 @@
 mod mock;
 #[cfg(test)]
 mod test;
+pub mod migration;
 
 use frame_support::{
     ensure,
