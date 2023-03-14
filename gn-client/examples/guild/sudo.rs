@@ -6,7 +6,13 @@ use gn_client::{
 use std::str::FromStr;
 use std::sync::Arc;
 
-pub async fn sudo(api: Api, root: Arc<Signer>, pallet: &str, method: &str, maybe_operator: Option<&str>) {
+pub async fn sudo(
+    api: Api,
+    root: Arc<Signer>,
+    pallet: &str,
+    method: &str,
+    maybe_operator: Option<&str>,
+) {
     let account_id = if let Some(operator) = maybe_operator {
         AccountId::from_str(operator).expect("invalid operator id string")
     } else {

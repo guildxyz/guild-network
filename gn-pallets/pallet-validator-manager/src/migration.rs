@@ -5,5 +5,8 @@ pub fn on_runtime_upgrade<T: Config>() {
     log::info!("validators: {:?}", validators);
     log::info!("approved validators: {:?}", ApprovedValidators::<T>::get());
     ApprovedValidators::<T>::set(validators);
-    log::info!("newly approved validators: {:?}", ApprovedValidators::<T>::get());
+    log::info!(
+        "newly approved validators: {:?}",
+        ApprovedValidators::<T>::get()
+    );
 }
