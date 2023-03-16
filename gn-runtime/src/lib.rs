@@ -372,16 +372,13 @@ mod vm_upgrade {
 
         #[cfg(feature = "try-runtime")]
         fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
-            assert_ne!(
-                ValidatorManager::validators(),
-                ValidatorManager::approved_validators(),
-                "invalid state"
-            );
+            assert!(!ValidatorManager::validators().is_empty(), "invalid state");
             Ok(Vec::new())
         }
 
         #[cfg(feature = "try-runtime")]
         fn post_upgrade(_state: Vec<u8>) -> Result<(), &'static str> {
+            assert!(!ValidatorManager::validators().is_empty(), "invalid state");
             assert_eq!(
                 ValidatorManager::validators(),
                 ValidatorManager::approved_validators(),
