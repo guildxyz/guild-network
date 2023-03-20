@@ -24,7 +24,7 @@ use sp_runtime::{
         Verify,
     },
     transaction_validity::{TransactionSource, TransactionValidity},
-    ApplyExtrinsicResult, MultiSignature, RuntimeAppPublic, SaturatedConversion,
+    ApplyExtrinsicResult, MultiSignature, SaturatedConversion,
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -34,8 +34,8 @@ use sp_version::RuntimeVersion;
 use frame_support::{
     construct_runtime,
     pallet_prelude::TransactionPriority,
-    parameter_types, sp_io,
-    traits::{ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem, ValidatorSet},
+    parameter_types,
+    traits::{ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem},
     weights::{
         constants::{RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
         IdentityFee, Weight,
@@ -279,8 +279,8 @@ impl pallet_im_online::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
     type ValidatorSet = ValidatorManager;
-    // type ReportUnresponsiveness = ();
-    type ReportUnresponsiveness = ValidatorManager;
+    type ReportUnresponsiveness = ();
+    // type ReportUnresponsiveness = ValidlatorManager;
     type UnsignedPriority = ImOnlineUnsignedPriority;
     type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
     type MaxKeys = MaxKeys;
@@ -401,27 +401,30 @@ impl frame_support::traits::OnRuntimeUpgrade for UpgradeSessionKeys {
     fn on_runtime_upgrade() -> frame_support::weights::Weight {
         Session::upgrade_keys::<opaque::OldSessionKeys, _>(transform_session_keys);
 
-        let validators = Session::queued_keys()
-            .iter()
-            .map(|x| x.1.im_online.clone())
-            .collect::<Vec<_>>();
+        // // pallet_im_online::pallet::deposit_event();
+        // let network_state = OpaqueNetworkState {
+        //     peer_id: OpaquePeerId(Vec::<u8>::new()),
+        //     external_addresses: Vec::<OpaqueMultiaddr>::new(),
+        // };
+        // for (index, key) in ImOnline::keys().into_iter().enumerate() {
+        //     let heartbeat = pallet_im_online::Heartbeat {
+        //         block_number: System::block_number(),
+        //         network_state: network_state.clone(),
+        //         session_index: ValidatorManager::session_index(),
+        //         authority_index: index as u32,
+        //         validators_len: ImOnline::keys().len() as u32,
+        //     };
 
-        ImOnline::initialize_keys(validators.as_slice());
+        //     // let signature = key.sign(&heartbeat.encode()).unwrap();
+        //     ImOnline::heartbeat(
+        //         RuntimeOrigin::root(),
+        //         heartbeat,
+        //         key.sign(&"".to_owned()).unwrap(),
+        //     )
+        //     .unwrap();
+        // }
 
-        for (index, key) in ImOnline::keys().into_iter().enumerate() {
-            let heartbeat = pallet_im_online::Heartbeat {
-                block_number: System::block_number(),
-                network_state: sp_io::offchain::network_state().unwrap().clone(),
-                session_index: ValidatorManager::session_index(),
-                authority_index: index as u32,
-                validators_len: ImOnline::keys().len() as u32,
-            };
-
-            let signature = key.sign(&heartbeat.encode()).unwrap();
-            ImOnline::heartbeat(RuntimeOrigin::root(), heartbeat, signature).unwrap();
-        }
-
-        // Session::rotate_session();
+        Session::rotate_session();
         BlockWeights::get().max_block
     }
 }

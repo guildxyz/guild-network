@@ -41,6 +41,7 @@ frame-system = { workspace = true, optional = true }
 substrate-frame-rpc-system = { workspace = true }
 
 # substrate pallets
+pallet-im-online =  { version = "14.0.0", path = "../gn-pallets/pallet-im-online", default-features = false }
 pallet-transaction-payment = { workspace = true, optional = true }
 pallet-transaction-payment-rpc = { workspace = true }
 
