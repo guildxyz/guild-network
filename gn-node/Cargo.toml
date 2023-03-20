@@ -41,7 +41,6 @@ frame-system = { workspace = true, optional = true }
 substrate-frame-rpc-system = { workspace = true }
 
 # substrate pallets
-pallet-im-online = { workspace = true }
 pallet-transaction-payment = { workspace = true, optional = true }
 pallet-transaction-payment-rpc = { workspace = true }
 
