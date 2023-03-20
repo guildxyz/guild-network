@@ -96,7 +96,7 @@ frame-try-runtime = { workspace = true, features = ["try-runtime"], optional = t
 pallet-aura = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-grandpa = { workspace = true }
-pallet-im-online =  { version = "14.0.0", path = "../gn-pallets/pallet-im-online", default-features = false }
+pallet-im-online = { workspace = true }
 pallet-randomness-collective-flip = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
