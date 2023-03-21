@@ -79,15 +79,6 @@ pub mod opaque {
     /// Opaque block identifier type.
     pub type BlockId = generic::BlockId<Block>;
 
-    // TODO Remove after im_online runtime upgrade is done.
-    impl_opaque_keys! {
-        pub struct OldSessionKeys {
-            pub aura: Aura,
-            pub grandpa: Grandpa,
-
-        }
-    }
-
     impl_opaque_keys! {
         pub struct SessionKeys {
             pub aura: Aura,
@@ -390,26 +381,6 @@ impl pallet_validator_manager::Config for Runtime {
     type MinAuthorities = MinAuthorities;
 }
 
-// should be removed along with UpgradeSessionKeys
-fn transform_session_keys(_v: AccountId, old: opaque::OldSessionKeys) -> opaque::SessionKeys {
-    let dummy_id = pallet_im_online::sr25519::AuthorityId::try_from(old.aura.as_ref()).unwrap();
-
-    opaque::SessionKeys {
-        grandpa: old.grandpa,
-        aura: old.aura,
-        im_online: dummy_id,
-    }
-}
-
-// When this is removed, should also remove `OldSessionKeys`.
-pub struct UpgradeSessionKeys;
-impl frame_support::traits::OnRuntimeUpgrade for UpgradeSessionKeys {
-    fn on_runtime_upgrade() -> frame_support::weights::Weight {
-        Session::upgrade_keys::<opaque::OldSessionKeys, _>(transform_session_keys);
-        BlockWeights::get().max_block
-    }
-}
-
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -466,7 +437,6 @@ pub type Executive = frame_executive::Executive<
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPalletsWithSystem,
-    UpgradeSessionKeys,
 >;
 
 #[cfg(feature = "runtime-benchmarks")]
