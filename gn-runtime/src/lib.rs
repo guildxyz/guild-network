@@ -469,37 +469,6 @@ pub type Executive = frame_executive::Executive<
     UpgradeSessionKeys,
 >;
 
-// TODO remove this after migration (validator manager pallet)
-mod vm_upgrade {
-    use super::*;
-    use frame_support::traits::OnRuntimeUpgrade;
-
-    pub struct Upgrade;
-    impl OnRuntimeUpgrade for Upgrade {
-        fn on_runtime_upgrade() -> Weight {
-            pallet_validator_manager::migration::on_runtime_upgrade::<Runtime>();
-            BlockWeights::get().max_block
-        }
-
-        #[cfg(feature = "try-runtime")]
-        fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
-            assert!(!ValidatorManager::validators().is_empty(), "invalid state");
-            Ok(Vec::new())
-        }
-
-        #[cfg(feature = "try-runtime")]
-        fn post_upgrade(_state: Vec<u8>) -> Result<(), &'static str> {
-            assert!(!ValidatorManager::validators().is_empty(), "invalid state");
-            assert_eq!(
-                ValidatorManager::validators(),
-                ValidatorManager::approved_validators(),
-                "migration failed"
-            );
-            Ok(())
-        }
-    }
-}
-
 #[cfg(feature = "runtime-benchmarks")]
 #[macro_use]
 extern crate frame_benchmarking;
