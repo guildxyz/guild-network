@@ -37,7 +37,7 @@ use frame_support::{
     construct_runtime,
     pallet_prelude::TransactionPriority,
     parameter_types,
-    traits::{ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem, ValidatorSet},
+    traits::{ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem},
     weights::{
         constants::{RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
         IdentityFee, Weight,
@@ -92,7 +92,7 @@ pub mod opaque {
         pub struct SessionKeys {
             pub aura: Aura,
             pub grandpa: Grandpa,
-            pub im_online: ImOnlineId,
+            pub im_online: ImOnline,
         }
     }
 }
@@ -287,7 +287,6 @@ impl pallet_im_online::Config for Runtime {
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
     type ValidatorSet = ValidatorManager;
     type ReportUnresponsiveness = ();
-    // type ReportUnresponsiveness = ValidatorManager;
     type UnsignedPriority = ImOnlineUnsignedPriority;
     type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
     type MaxKeys = MaxKeys;

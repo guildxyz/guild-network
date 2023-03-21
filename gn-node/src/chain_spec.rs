@@ -1,7 +1,6 @@
 use gn_runtime::{
     AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig,
-    SessionConfig, SessionConfig, Signature, Signature, SudoConfig, SystemConfig,
-    ValidatorManagerConfig, WASM_BINARY,
+    SessionConfig, Signature, SudoConfig, SystemConfig, ValidatorManagerConfig, WASM_BINARY,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_service::ChainType;
