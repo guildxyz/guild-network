@@ -2,7 +2,7 @@ mod common;
 mod fund;
 mod join;
 mod key;
-mod register;
+mod sudo;
 mod token;
 
 use gn_client::tx;
@@ -20,9 +20,13 @@ enum Example {
     Join,
     Key(Key),
     Token,
-    Register {
+    Sudo {
         #[structopt(long, short)]
-        operator: Option<String>,
+        pallet: String,
+        #[structopt(long, short)]
+        method: String,
+        #[structopt(long, short)]
+        account: Option<String>,
     },
 }
 
@@ -86,8 +90,19 @@ async fn main() {
             let keys = key::rotate(api.clone()).await;
             key::set(api, signer, keys).await
         }
-        Example::Register { operator } => {
-            register::register(api, signer, operator.as_deref()).await
+        Example::Sudo {
+            pallet,
+            method,
+            account,
+        } => {
+            sudo::sudo(
+                api,
+                signer,
+                &pallet.to_lowercase(),
+                &method.to_lowercase(),
+                account.as_deref(),
+            )
+            .await
         }
         Example::Token => token::token(api, signer).await,
     }

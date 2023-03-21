@@ -32,9 +32,7 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
 use frame_support::{
-    construct_runtime,
-    pallet_prelude::TransactionPriority,
-    parameter_types,
+    construct_runtime, parameter_types,
     traits::{ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem},
     weights::{
         constants::{RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
@@ -147,11 +145,6 @@ parameter_types! {
     pub const MinAuthorities: u32 = 2;
     pub const Period: u32 = 2 * MINUTES;
     pub const Offset: u32 = 0;
-
-    pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
-    pub const MaxKeys: u32 = 10_000;
-    pub const MaxPeerInHeartbeats: u32 = 10_000;
-    pub const MaxPeerDataEncodingSize: u32 = 1_000;
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -361,7 +354,40 @@ pub type Executive = frame_executive::Executive<
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPalletsWithSystem,
+    // TODO remove this after migration
+    vm_upgrade::Upgrade,
 >;
+
+// TODO remove this after migration (validator manager pallet)
+mod vm_upgrade {
+    use super::*;
+    use frame_support::traits::OnRuntimeUpgrade;
+
+    pub struct Upgrade;
+    impl OnRuntimeUpgrade for Upgrade {
+        fn on_runtime_upgrade() -> Weight {
+            pallet_validator_manager::migration::on_runtime_upgrade::<Runtime>();
+            BlockWeights::get().max_block
+        }
+
+        #[cfg(feature = "try-runtime")]
+        fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
+            assert!(!ValidatorManager::validators().is_empty(), "invalid state");
+            Ok(Vec::new())
+        }
+
+        #[cfg(feature = "try-runtime")]
+        fn post_upgrade(_state: Vec<u8>) -> Result<(), &'static str> {
+            assert!(!ValidatorManager::validators().is_empty(), "invalid state");
+            assert_eq!(
+                ValidatorManager::validators(),
+                ValidatorManager::approved_validators(),
+                "migration failed"
+            );
+            Ok(())
+        }
+    }
+}
 
 #[cfg(feature = "runtime-benchmarks")]
 #[macro_use]
@@ -564,7 +590,9 @@ impl_runtime_apis! {
         }
     }
 
-    #[cfg(all(feature = "try-runtime", feature = "std"))]
+
+
+    #[cfg(feature = "try-runtime")]
     impl frame_try_runtime::TryRuntime<Block> for Runtime {
         fn on_runtime_upgrade(checks: frame_try_runtime::UpgradeCheckSelect) -> (Weight, Weight) {
             // NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to

@@ -16,6 +16,7 @@
 #![deny(clippy::dbg_macro)]
 #![deny(unused_crate_dependencies)]
 
+pub mod migration;
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
@@ -238,6 +239,7 @@ impl<T: Config> Pallet<T> {
     fn unapprove_validator(validator_id: T::AccountId) -> DispatchResult {
         let mut approved_set = <ApprovedValidators<T>>::get();
         approved_set.retain(|v| *v != validator_id);
+        <ApprovedValidators<T>>::set(approved_set);
         Ok(())
     }
 

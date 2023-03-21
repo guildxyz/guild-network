@@ -79,7 +79,6 @@ pallet-validator-manager = { version = "0.0.0-alpha", path = "../gn-pallets/pall
 
 # general
 hex-literal = { version = "0.3.4", optional = true }
-log = { version = "0.4.17", default-features = false }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
 
