@@ -14,6 +14,8 @@ pub use pallet_balances::Call as BalancesCall;
 use pallet_grandpa::{
     fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
+use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
+use parity_scale_codec::Encode;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
@@ -90,6 +92,7 @@ pub mod opaque {
         pub struct SessionKeys {
             pub aura: Aura,
             pub grandpa: Grandpa,
+            pub im_online: ImOnlineId,
         }
     }
 }
@@ -156,6 +159,10 @@ parameter_types! {
     pub const MinAuthorities: u32 = 2;
     pub const Period: u32 = 2 * MINUTES;
     pub const Offset: u32 = 0;
+    pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
+    pub const MaxKeys: u32 = 10_000;
+    pub const MaxPeerInHeartbeats: u32 = 10_000;
+    pub const MaxPeerDataEncodingSize: u32 = 1_000;
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -279,8 +286,8 @@ impl pallet_im_online::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
     type ValidatorSet = ValidatorManager;
-    // type ReportUnresponsiveness = ();
-    type ReportUnresponsiveness = ValidatorManager;
+    type ReportUnresponsiveness = ();
+    // type ReportUnresponsiveness = ValidatorManager;
     type UnsignedPriority = ImOnlineUnsignedPriority;
     type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
     type MaxKeys = MaxKeys;
@@ -420,6 +427,7 @@ construct_runtime!(
         Timestamp: pallet_timestamp,
         ValidatorManager: pallet_validator_manager,
         Session: pallet_session,
+        ImOnline: pallet_im_online,
         Aura: pallet_aura,
         Grandpa: pallet_grandpa,
 
