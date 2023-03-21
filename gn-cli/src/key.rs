@@ -21,14 +21,14 @@ pub fn generate(curve: &str, password: Option<&str>) {
 
 pub async fn rotate(api: Api) -> Vec<u8> {
     let keys = api.rpc().rotate_keys().await.unwrap();
-    println!("LEN: {}", keys.len());
-    println!("{}", hex::encode(&keys.0));
+    println!("aura: 0x{}", hex::encode(&keys.0[0..32]));
+    println!("gran: 0x{}", hex::encode(&keys.0[32..64]));
     keys.0
 }
 
 pub async fn set(api: Api, signer: Arc<Signer>, encoded_keys: Vec<u8>) {
     let keys = SessionKeys::decode(&mut &encoded_keys[..]).expect("invalid keys");
-    let proof = Vec::new(); // TODO should be checked why an empty proof is used in the tutorials
+    let proof = Vec::new();
     let payload = tx::set_session_keys(keys, proof);
 
     tx::send_tx_in_block(api.clone(), &payload, signer.clone())

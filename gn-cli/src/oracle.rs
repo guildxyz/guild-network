@@ -1,7 +1,3 @@
-#![deny(clippy::all)]
-#![deny(clippy::dbg_macro)]
-#![deny(unused_crate_dependencies)]
-
 use futures::StreamExt;
 use gn_client::runtime::oracle::events::OracleRequest;
 use gn_client::{
@@ -12,7 +8,6 @@ use gn_client::{Api, GuildCall, SubxtError};
 use gn_common::identity::Identity;
 use gn_common::utils::{matches_variant, verification_msg};
 use gn_common::{RequestData, RequestIdentifier};
-use structopt::StructOpt;
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -20,46 +15,7 @@ use std::sync::Arc;
 
 const TX_RETRIES: u64 = 10;
 
-#[derive(Debug, StructOpt)]
-#[structopt(
-    name = "Client params",
-    about = "Advanced parameters for the Substrate client."
-)]
-struct Opt {
-    /// Set logging level
-    #[structopt(short, long, default_value = "warn")]
-    log: String,
-    /// Set node IP address
-    #[structopt(short = "i", long = "node-ip", default_value = "127.0.0.1")]
-    node_ip: String,
-    /// Set node port number
-    #[structopt(short = "p", long = "node-port", default_value = "9944")]
-    node_port: String,
-    /// Set operator account seed
-    #[structopt(long = "seed", default_value = "//Alice")]
-    seed: String,
-    /// Set operator account password
-    #[structopt(long = "password")]
-    password: Option<String>,
-    /// Activate operator before starting to listen to events
-    #[structopt(long)]
-    activate: bool,
-}
-
-#[tokio::main]
-async fn main() {
-    let opt = Opt::from_args();
-
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(opt.log)).init();
-
-    let url = format!("ws://{}:{}", opt.node_ip, opt.node_port);
-
-    let (api, operator) = tx::api_with_signer(url, &opt.seed, opt.password.as_deref())
-        .await
-        .expect("failed to initialize api and signer");
-
-    log::info!("Public key: {}", operator.account_id());
-
+pub async fn oracle(api: Api, operator: Arc<Signer>, activate: bool) {
     if !query::is_operator_registered(api.clone(), operator.account_id())
         .await
         .expect("failed to fetch operator info")
@@ -67,7 +23,7 @@ async fn main() {
         panic!("{} is not registered as an operator", operator.account_id());
     }
 
-    if opt.activate {
+    if activate {
         tx::send_tx_in_block(api.clone(), &tx::activate_operator(), Arc::clone(&operator))
             .await
             .expect("failed to activate operator");
@@ -83,6 +39,8 @@ async fn main() {
             "{} not activated. Run oracle with the '--activate' flag",
             operator.account_id()
         );
+    } else {
+        log::info!("node activated, listening to events...");
     }
 
     let mut subscription = api

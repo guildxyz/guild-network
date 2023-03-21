@@ -23,7 +23,7 @@ def start_node():
 
 
 def start_oracle():
-    oracle = Popen(['./target/release/gn-oracle', '--log', 'info', '--activate'],
+    oracle = Popen(['./target/release/gn-cli', 'oracle', '--activate'],
                    stderr=PIPE, stdout=DEVNULL)
 
     start = time.time()
@@ -74,7 +74,7 @@ def run_tests(*commands, timeout=300):
 def main():
     try:
         node = start_node()
-        command = "cargo run --release --example guild -- sudo --pallet oracle --method register"
+        command = "./target/release/gn-cli sudo oracle register"
         run_tests(command, timeout=90)
         oracle = start_oracle()
         oracle_monitor = Thread(target=monitor_oracle, args=(oracle, node,))
