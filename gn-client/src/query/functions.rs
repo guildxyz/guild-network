@@ -31,6 +31,19 @@ pub async fn is_operator_registered(api: Api, id: &AccountId) -> Result<bool, Su
         .is_some())
 }
 
+pub async fn is_validator_added(api: Api, id: &AccountId) -> Result<bool, SubxtError> {
+    let validators_key = runtime::storage().validator_manager().validators();
+    let validators = api
+        .storage()
+        .at(None)
+        .await?
+        .fetch(&validators_key)
+        .await?
+        .ok_or(SubxtError::Other("empty validator set".to_string()))?;
+
+    Ok(validators.contains(id))
+}
+
 pub async fn user_identity(api: Api, user_id: &AccountId) -> Result<Vec<Identity>, SubxtError> {
     let mut i = 0u8;
     let mut identities = Vec::new();

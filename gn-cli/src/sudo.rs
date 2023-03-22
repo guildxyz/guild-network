@@ -1,3 +1,5 @@
+#[cfg(feature = "verify")]
+use gn_client::query;
 use gn_client::{
     tx::{self, Signer},
     AccountId, Api,
@@ -6,6 +8,7 @@ use gn_client::{
 use std::str::FromStr;
 use std::sync::Arc;
 
+#[derive(Clone, Copy)]
 pub enum Method {
     OracleRegister,
     OracleDeregister,
@@ -27,7 +30,38 @@ pub async fn sudo(api: Api, signer: Arc<Signer>, maybe_operator: Option<&str>, m
         Method::ValidatorRemove => tx::remove_validator(&account_id),
     };
 
-    tx::send_tx_in_block(api, &tx::sudo(payload), signer)
+    #[cfg(not(feature = "verify"))]
+    tx::send::ready(api, &tx::sudo(payload), signer)
         .await
         .expect("failed to send tx");
+
+    #[cfg(feature = "verify")]
+    {
+        tx::send::in_block(api.clone(), &tx::sudo(payload), signer)
+            .await
+            .expect("failed to send tx");
+
+        match method {
+            Method::OracleRegister => {
+                assert!(query::is_operator_registered(api, &account_id)
+                    .await
+                    .expect("query failed"));
+            }
+            Method::OracleDeregister => {
+                assert!(!query::is_operator_registered(api, &account_id)
+                    .await
+                    .expect("query failed"));
+            }
+            Method::ValidatorAdd => {
+                assert!(query::is_validator_added(api, &account_id)
+                    .await
+                    .expect("query failed"));
+            }
+            Method::ValidatorRemove => {
+                assert!(!query::is_validator_added(api, &account_id)
+                    .await
+                    .expect("query failed"));
+            }
+        }
+    }
 }

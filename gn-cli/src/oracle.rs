@@ -24,7 +24,7 @@ pub async fn oracle(api: Api, operator: Arc<Signer>, activate: bool) {
     }
 
     if activate {
-        tx::send_tx_in_block(api.clone(), &tx::activate_operator(), Arc::clone(&operator))
+        tx::send::in_block(api.clone(), &tx::activate_operator(), Arc::clone(&operator))
             .await
             .expect("failed to activate operator");
 
@@ -180,7 +180,7 @@ async fn try_submit_answer(
     let tx = tx::oracle_callback(request_id, result);
     let mut retries = 1;
     while retries <= TX_RETRIES {
-        match tx::send_tx_ready(api.clone(), &tx, Arc::clone(&signer)).await {
+        match tx::send::ready(api.clone(), &tx, Arc::clone(&signer)).await {
             Ok(()) => {
                 log::info!(
                     "oracle answer ({}) submitted: {}",

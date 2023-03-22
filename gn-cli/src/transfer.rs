@@ -8,8 +8,8 @@ use std::sync::Arc;
 
 pub async fn transfer(api: Api, signer: Arc<Signer>, id_str: &str, balance: u128) {
     let account_id = AccountId::from_str(id_str).expect("invalid account id string");
-    let payload = tx::fund_account(&account_id, balance);
-    tx::send_tx_in_block(api, &payload, signer)
+    let payload = tx::transfer(&account_id, balance);
+    tx::send::in_block(api, &payload, signer)
         .await
         .expect("failed to send tx");
     println!("{account_id} received {balance} tokens");

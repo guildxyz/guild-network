@@ -2,6 +2,7 @@
 #![deny(clippy::dbg_macro)]
 #![deny(unused_crate_dependencies)]
 
+mod guild;
 mod key;
 mod oracle;
 mod sudo;
@@ -10,10 +11,20 @@ mod transfer;
 use gn_client::tx;
 use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-enum Command {
+#[derive(StructOpt)]
+pub enum Command {
     /// Convenience functions for key handling
     Key(KeySubCmd),
+    /// Start and oracle node
+    Oracle {
+        /// Activate operator before starting to listen to events
+        #[structopt(long)]
+        activate: bool,
+    },
+    /// Chain interactions that require sudo access
+    Sudo(SudoSubCmd),
+    /// Guild-related on-chain interactions
+    Guild(GuildSubCmd),
     /// Transfer funds
     Transfer {
         /// The destination account receiving the transferred amount
@@ -23,18 +34,10 @@ enum Command {
         #[structopt(long, short)]
         balance: u128,
     },
-    /// Chain interactions that require sudo access
-    Sudo(SudoSubCmd),
-    /// Start and oracle node
-    Oracle {
-        /// Activate operator before starting to listen to events
-        #[structopt(long)]
-        activate: bool,
-    },
 }
 
-#[derive(Debug, StructOpt)]
-enum KeySubCmd {
+#[derive(StructOpt)]
+pub enum KeySubCmd {
     /// Generates a new keypair
     Generate {
         /// The elliptic curve where the keypair is defined
@@ -50,8 +53,40 @@ enum KeySubCmd {
     Rotset,
 }
 
-#[derive(Debug, StructOpt)]
-enum SudoSubCmd {
+#[derive(StructOpt)]
+pub enum GuildSubCmd {
+    /// Register an identity on Guild Network
+    Register(Identity),
+    /// Join a specific role in a guild
+    Join { guild: String, role: String }, // TODO add create guild and create role where input can be parsed from a
+                                          // json file
+}
+
+#[derive(StructOpt)]
+pub enum Identity {
+    /// Discord identity handle
+    Discord {
+        id: String,
+        #[structopt(default_value = "0")]
+        index: u8,
+    },
+    /// Telegram identity handle
+    Telegram {
+        id: String,
+        #[structopt(default_value = "0")]
+        index: u8,
+    },
+    /// EVM specific address and respective signature
+    Evm {
+        address: String,
+        signature: String,
+        #[structopt(default_value = "0")]
+        index: u8,
+    },
+}
+
+#[derive(StructOpt)]
+pub enum SudoSubCmd {
     /// Oracle pallet sudo calls
     Oracle {
         #[structopt(flatten)]
@@ -64,25 +99,25 @@ enum SudoSubCmd {
     },
 }
 
-#[derive(Debug, StructOpt)]
-enum OracleMethod {
+#[derive(StructOpt)]
+pub enum OracleMethod {
     /// Register an oracle operator
     Register { account: Option<String> },
     /// Deregister an oracle operator
     Deregister { account: Option<String> },
 }
 
-#[derive(Debug, StructOpt)]
-enum ValidatorMethod {
+#[derive(StructOpt)]
+pub enum ValidatorMethod {
     /// Add a validator
     Add { account: Option<String> },
     /// Remove a validator
     Remove { account: Option<String> },
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(StructOpt)]
 #[structopt(name = "Guild Network CLI")]
-struct Opt {
+pub struct Opt {
     /// Set logging level
     #[structopt(short, long, default_value = "info")]
     log: String,
@@ -117,6 +152,12 @@ async fn main() {
     log::info!("signer account: {}", signer.account_id());
 
     match opt.command {
+        Command::Guild(GuildSubCmd::Register(identity)) => {
+            guild::register_identity(api, signer, identity).await
+        }
+        Command::Guild(GuildSubCmd::Join { guild, role }) => {
+            guild::join(api, signer, guild, role).await
+        }
         Command::Key(KeySubCmd::Generate { curve, password }) => {
             key::generate(&curve, password.as_deref())
         }

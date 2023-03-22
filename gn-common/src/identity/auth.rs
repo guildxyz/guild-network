@@ -79,6 +79,26 @@ impl IdentityWithAuth {
             _ => false,
         }
     }
+
+    pub fn from_evm(address: &str, signature: &str) -> Result<Self, &'static str> {
+        let mut address20_bytes = [0u8; 20];
+        hex::decode_to_slice(address.trim_start_matches("0x"), &mut address20_bytes)
+            .map_err(|_| "invalid address")?;
+
+        let mut signature_bytes = [0u8; 65];
+        hex::decode_to_slice(signature.trim_start_matches("0x"), &mut signature_bytes)
+            .map_err(|_| "invalid signature")?;
+
+        // EIP-155 correction
+        if signature_bytes[64] >= 27 {
+            signature_bytes[64] -= 27;
+        }
+
+        Ok(IdentityWithAuth::Ecdsa(
+            Identity::Address20(address20_bytes),
+            EcdsaSignature(signature_bytes),
+        ))
+    }
 }
 
 pub fn recover_prehashed(
@@ -262,5 +282,49 @@ mod test {
         let signature = EcdsaSignature([0u8; 65]);
         let id_with_auth = IdentityWithAuth::Ecdsa(address, signature);
         assert!(!id_with_auth.verify(""));
+    }
+
+    #[tokio::test]
+    async fn parse() {
+        let seed = [2u8; 32];
+        let sp_signer = sp_core::ecdsa::Pair::from_seed_slice(&seed).unwrap();
+        let signing_key = SigningKey::from_bytes(&seed).unwrap();
+        let eth_signer = LocalWallet::from(signing_key);
+
+        let address_bytes = eth_signer.address().to_fixed_bytes();
+        let identity = Identity::Address20(address_bytes);
+
+        let msg = "hello";
+        let prehashed = eth_hash_message(msg);
+        let sp_signature = sp_signer.sign_prehashed(&prehashed);
+        let eth_signature = eth_signer.sign_message(msg).await.unwrap().to_vec();
+        assert_eq!(&sp_signature.0[0..64], &eth_signature[0..64]);
+        assert_ne!(&sp_signature.0[64], &eth_signature[64]);
+
+        let sp_sig_string = hex::encode(sp_signature.0);
+        let eth_sig_string = hex::encode(&eth_signature);
+        let address_string = hex::encode(eth_signer.address().to_fixed_bytes());
+
+        let sp_id_with_auth = IdentityWithAuth::from_evm(&address_string, &sp_sig_string);
+        let eth_id_with_auth = IdentityWithAuth::from_evm(&address_string, &eth_sig_string);
+
+        assert_eq!(
+            sp_id_with_auth,
+            Ok(IdentityWithAuth::Ecdsa(
+                identity,
+                EcdsaSignature(sp_signature.into())
+            ))
+        );
+
+        assert_eq!(sp_id_with_auth, eth_id_with_auth);
+
+        assert_eq!(
+            IdentityWithAuth::from_evm("hello", &eth_sig_string),
+            Err("invalid address")
+        );
+        assert_eq!(
+            IdentityWithAuth::from_evm(&address_string, "hello"),
+            Err("invalid signature")
+        );
     }
 }

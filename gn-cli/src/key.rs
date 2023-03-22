@@ -1,9 +1,12 @@
+#[cfg(feature = "verify")]
+use gn_client::query;
 use gn_client::{
-    query,
     tx::{self, Keypair, PairT, Signer},
     Api, SessionKeys,
 };
-use parity_scale_codec::{Decode, Encode};
+use parity_scale_codec::Decode;
+#[cfg(feature = "verify")]
+use parity_scale_codec::Encode;
 
 use std::sync::Arc;
 
@@ -31,16 +34,26 @@ pub async fn set(api: Api, signer: Arc<Signer>, encoded_keys: Vec<u8>) {
     let proof = Vec::new();
     let payload = tx::set_session_keys(keys, proof);
 
-    tx::send_tx_in_block(api.clone(), &payload, signer.clone())
+    #[cfg(not(feature = "verify"))]
+    tx::send::in_block(api.clone(), &payload, signer.clone())
         .await
         .expect("failed to send tx");
 
-    let keys = SessionKeys::decode(&mut &encoded_keys[..]).expect("invalid keys");
-    let on_chain_keys = query::next_session_keys(api, signer.account_id())
-        .await
-        .expect("failed to query session keys");
+    #[cfg(feature = "verify")]
+    {
+        tx::send::ready(api.clone(), &payload, signer.clone())
+            .await
+            .expect("failed to send tx");
+        // NOTE needs to be decoded again because `SessionKeys` is imported via
+        // the subxt macro into a dummy runtime module where `Clone` is not
+        // implemented for `SessionKeys`
+        let keys = SessionKeys::decode(&mut &encoded_keys[..]).expect("invalid keys");
+        let on_chain_keys = query::next_session_keys(api, signer.account_id())
+            .await
+            .expect("failed to query session keys");
 
-    assert_eq!(keys.encode(), on_chain_keys.encode());
+        assert_eq!(keys.encode(), on_chain_keys.encode());
 
-    println!("session keys set successfully");
+        println!("session keys set successfully");
+    }
 }
