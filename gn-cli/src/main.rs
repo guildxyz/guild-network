@@ -11,6 +11,9 @@ mod transfer;
 use gn_client::tx;
 use structopt::StructOpt;
 
+const TX_ERROR: &str = "failed to send tx";
+const QUERY_ERROR: &str = "failed to execute query";
+
 #[derive(StructOpt)]
 pub enum Command {
     /// Convenience functions for key handling
@@ -53,13 +56,27 @@ pub enum KeySubCmd {
     Rotset,
 }
 
+// TODO add create guild and create role where input can be parsed from a
+// json file
 #[derive(StructOpt)]
 pub enum GuildSubCmd {
     /// Register an identity on Guild Network
     Register(Identity),
     /// Join a specific role in a guild
-    Join { guild: String, role: String }, // TODO add create guild and create role where input can be parsed from a
-                                          // json file
+    Join {
+        /// Guild name
+        #[structopt(long, short)]
+        guild: String,
+        /// Role name
+        #[structopt(long, short)]
+        role: String,
+        /// Index among the user's registered identities
+        #[structopt(long, short, requires("leaf"))]
+        id: Option<u8>,
+        /// Index of identity in the role's allowlist
+        #[structopt(long, short, requires("id"))]
+        leaf: Option<usize>,
+    },
 }
 
 #[derive(StructOpt)]
@@ -155,8 +172,16 @@ async fn main() {
         Command::Guild(GuildSubCmd::Register(identity)) => {
             guild::register_identity(api, signer, identity).await
         }
-        Command::Guild(GuildSubCmd::Join { guild, role }) => {
-            guild::join(api, signer, guild, role).await
+        Command::Guild(GuildSubCmd::Join {
+            guild,
+            role,
+            id,
+            leaf,
+        }) => {
+            let indices = id
+                .zip(leaf)
+                .map(|(i, l)| guild::ProofIndices { id: i, leaf: l });
+            guild::join(api, signer, guild, role, indices).await
         }
         Command::Key(KeySubCmd::Generate { curve, password }) => {
             key::generate(&curve, password.as_deref())

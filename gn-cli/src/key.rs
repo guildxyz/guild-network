@@ -1,3 +1,4 @@
+use super::{QUERY_ERROR, TX_ERROR};
 #[cfg(feature = "verify")]
 use gn_client::query;
 use gn_client::{
@@ -14,9 +15,9 @@ pub fn generate(curve: &str, password: Option<&str>) {
     match curve {
         "sr25519" => {
             let (keypair, phrase, seed) = Keypair::generate_with_phrase(password);
-            println!("{}", keypair.public());
-            println!("{phrase}");
-            println!("{seed:?}");
+            log::info!("{}", keypair.public());
+            log::info!("{phrase}");
+            log::info!("{seed:?}");
         }
         _ => unimplemented!(),
     }
@@ -24,8 +25,8 @@ pub fn generate(curve: &str, password: Option<&str>) {
 
 pub async fn rotate(api: Api) -> Vec<u8> {
     let keys = api.rpc().rotate_keys().await.unwrap();
-    println!("aura: 0x{}", hex::encode(&keys.0[0..32]));
-    println!("gran: 0x{}", hex::encode(&keys.0[32..64]));
+    log::info!("aura: 0x{}", hex::encode(&keys.0[0..32]));
+    log::info!("gran: 0x{}", hex::encode(&keys.0[32..64]));
     keys.0
 }
 
@@ -37,23 +38,23 @@ pub async fn set(api: Api, signer: Arc<Signer>, encoded_keys: Vec<u8>) {
     #[cfg(not(feature = "verify"))]
     tx::send::in_block(api.clone(), &payload, signer.clone())
         .await
-        .expect("failed to send tx");
+        .expect(TX_ERROR);
 
     #[cfg(feature = "verify")]
     {
         tx::send::ready(api.clone(), &payload, signer.clone())
             .await
-            .expect("failed to send tx");
+            .expect(TX_ERROR);
         // NOTE needs to be decoded again because `SessionKeys` is imported via
         // the subxt macro into a dummy runtime module where `Clone` is not
         // implemented for `SessionKeys`
         let keys = SessionKeys::decode(&mut &encoded_keys[..]).expect("invalid keys");
         let on_chain_keys = query::next_session_keys(api, signer.account_id())
             .await
-            .expect("failed to query session keys");
+            .expect(QUERY_ERROR);
 
         assert_eq!(keys.encode(), on_chain_keys.encode());
 
-        println!("session keys set successfully");
+        log::info!("session keys set successfully");
     }
 }

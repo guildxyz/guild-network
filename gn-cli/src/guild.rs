@@ -1,12 +1,19 @@
-use super::Identity as CliIdentity;
+use super::{Identity as CliIdentity, QUERY_ERROR, TX_ERROR};
 use gn_client::{
+    query,
     tx::{self, Signer},
     Api,
 };
 use gn_common::identity::{Identity, IdentityWithAuth};
+use gn_common::merkle::Proof as MerkleProof;
 use gn_common::pad::pad_to_n_bytes;
 
 use std::sync::Arc;
+
+pub struct ProofIndices {
+    pub id: u8,
+    pub leaf: usize,
+}
 
 pub async fn register_identity(api: Api, signer: Arc<Signer>, identity: CliIdentity) {
     let payload = match identity {
@@ -31,10 +38,33 @@ pub async fn register_identity(api: Api, signer: Arc<Signer>, identity: CliIdent
         }
     };
 
-    tx::send::in_block(api, &payload, signer)
+    tx::send::ready(api, &payload, signer)
         .await
-        .expect("failed to send tx");
+        .expect(TX_ERROR);
 }
 
-#[allow(unused)]
-pub async fn join(api: Api, signer: Arc<Signer>, guild: String, role: String) {}
+pub async fn join(
+    api: Api,
+    signer: Arc<Signer>,
+    guild: String,
+    role: String,
+    maybe_indices: Option<ProofIndices>,
+) {
+    let guild = pad_to_n_bytes::<32, _>(&guild);
+    let role = pad_to_n_bytes::<32, _>(&role);
+    let proof = if let Some(indices) = maybe_indices {
+        query::allowlist(api.clone(), guild, role)
+            .await
+            .expect(QUERY_ERROR)
+            .map(|allowlist| MerkleProof::new(&allowlist, indices.leaf, indices.id))
+    } else {
+        log::info!("no proof generated");
+        None
+    };
+
+    let payload = tx::join(guild, role, proof);
+
+    tx::send::ready(api, &payload, signer)
+        .await
+        .expect(TX_ERROR);
+}

@@ -1,3 +1,4 @@
+use super::TX_ERROR;
 use gn_client::{
     tx::{self, Signer},
     AccountId, Api,
@@ -11,6 +12,6 @@ pub async fn transfer(api: Api, signer: Arc<Signer>, id_str: &str, balance: u128
     let payload = tx::transfer(&account_id, balance);
     tx::send::in_block(api, &payload, signer)
         .await
-        .expect("failed to send tx");
-    println!("{account_id} received {balance} tokens");
+        .expect(TX_ERROR);
+    log::info!("{account_id} received {balance} tokens");
 }
