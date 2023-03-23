@@ -2,6 +2,7 @@
 #![deny(clippy::dbg_macro)]
 #![deny(unused_crate_dependencies)]
 
+mod evm;
 mod guild;
 mod key;
 mod oracle;
@@ -10,6 +11,8 @@ mod transfer;
 
 use gn_client::tx;
 use structopt::StructOpt;
+
+use std::path::PathBuf;
 
 const TX_ERROR: &str = "failed to send tx";
 const QUERY_ERROR: &str = "failed to execute query";
@@ -36,6 +39,23 @@ pub enum Command {
         /// The balance to be transferred to the destination account
         #[structopt(long, short)]
         balance: u128,
+    },
+    /// Evm related convenience functions
+    Evm(EvmSubCmd),
+}
+
+#[derive(StructOpt)]
+pub enum EvmSubCmd {
+    AddressGen {
+        /// Output file path
+        #[structopt(long, short, default_value = "/tmp/addresses.txt")]
+        output: PathBuf,
+        /// Number of accounts to generate
+        #[structopt(long, short, default_value = "100")]
+        num: usize,
+        /// Initial seed
+        #[structopt(long, short, default_value = "guild network")]
+        seed: String,
     },
 }
 
@@ -169,6 +189,9 @@ async fn main() {
     log::info!("signer account: {}", signer.account_id());
 
     match opt.command {
+        Command::Evm(EvmSubCmd::AddressGen { output, num, seed }) => {
+            evm::generate_test_accounts(output, num, &seed)
+        }
         Command::Guild(GuildSubCmd::Register(identity)) => {
             guild::register_identity(api, signer, identity).await
         }

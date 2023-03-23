@@ -19,10 +19,12 @@ pub async fn api_with_signer(
     password: Option<&str>,
 ) -> Result<(Api, Arc<Signer>), SubxtError> {
     let api = Api::from_url(url).await?;
+    let signer = signer(seed, password)?;
+    Ok((api, signer))
+}
 
-    let keypair = Arc::new(Signer::new(
-        Keypair::from_string(seed, password).map_err(|e| SubxtError::Other(e.to_string()))?,
-    ));
-
-    Ok((api, keypair))
+pub fn signer(seed: &str, password: Option<&str>) -> Result<Arc<Signer>, SubxtError> {
+    let keypair =
+        Keypair::from_string(seed, password).map_err(|e| SubxtError::Other(e.to_string()))?;
+    Ok(Arc::new(Signer::new(keypair)))
 }
