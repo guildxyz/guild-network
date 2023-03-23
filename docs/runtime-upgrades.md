@@ -1,7 +1,8 @@
 # Runtime upgrade history
 
 ## 2023-03-22
-Runtime version bumped from `101` to `102`. [Respective PR](https://todo.com).
+Runtime version bumped from `101` to `102`. [Respective
+PR](https://github.com/agoraxyz/guild-network/pull/114)
 
 ### Detailed info
 This [release](https://github.com/agoraxyz/guild-network/releases/tag/alpha-runtime-102)
