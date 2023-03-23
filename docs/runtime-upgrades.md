@@ -33,9 +33,11 @@ validator set.
 Don't worry if your node goes offline and gets removed from the active
 validator set, you can rotate your keys again. You'll receive 96 bytes of keys
 in the response which you should split into three 32 byte long keys:
+
 - aura (32 bytes, add `0x` to the front)
 - grandpa (32 bytes, add `0x` to the front)
 - im-online (32 bytes, add `0x` to the front)
+
 and submit them in the explorer via `Session > setKeys`. You should simply add
 `0x` as the proof. Then, you should submit the `ValidatorManager >
 addValidatorAgain` transaction from the explorer
