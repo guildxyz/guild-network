@@ -30,11 +30,12 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "frame-system-rpc-runtime-api/std",
-  "frame-try-runtime/std",
+  "frame-try-runtime?/std",
   "pallet-aura/std",
   "pallet-balances/std",
   "pallet-grandpa/std",
   "pallet-guild/std",
+  "pallet-im-online/std",
   "pallet-oracle/std",
   "pallet-randomness-collective-flip/std",
   "pallet-session/std",
@@ -57,12 +58,14 @@ std = [
 ]
 try-runtime = [
   "frame-executive/try-runtime",
+  "frame-support/try-runtime",
   "frame-system/try-runtime",
   "frame-try-runtime",
   "pallet-aura/try-runtime",
   "pallet-balances/try-runtime",
   "pallet-grandpa/try-runtime",
   "pallet-guild/try-runtime",
+  "pallet-im-online/try-runtime",
   "pallet-oracle/try-runtime",
   "pallet-randomness-collective-flip/try-runtime",
   "pallet-sudo/try-runtime",
@@ -81,6 +84,7 @@ pallet-validator-manager = { version = "0.0.0-alpha", path = "../gn-pallets/pall
 hex-literal = { version = "0.3.4", optional = true }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
+log = { version = "0.4.17", default-features = false }
 
 # substrate frame
 frame-benchmarking = { workspace = true, optional = true }
@@ -89,12 +93,13 @@ frame-support = { workspace = true, optional = true }
 frame-system = { workspace = true, optional = true }
 frame-system-benchmarking = { workspace = true, optional = true }
 frame-system-rpc-runtime-api = { workspace = true, optional = true }
-frame-try-runtime = { workspace = true, optional = true }
+frame-try-runtime = { workspace = true, features = ["try-runtime"], optional = true }
 
 # substrate pallets
 pallet-aura = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-grandpa = { workspace = true }
+pallet-im-online = { workspace = true }
 pallet-randomness-collective-flip = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }

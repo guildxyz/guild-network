@@ -16,7 +16,6 @@
 #![deny(clippy::dbg_macro)]
 #![deny(unused_crate_dependencies)]
 
-pub mod migration;
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
