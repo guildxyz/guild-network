@@ -8,6 +8,7 @@ use gn_common::identity::{EcdsaSignature, Identity, IdentityWithAuth};
 use gn_common::merkle::Proof as MerkleProof;
 use gn_test_data::*;
 use rand::{rngs::StdRng, SeedableRng};
+use subxt::tx::DynamicTxPayload;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -41,22 +42,15 @@ pub async fn dummy_accounts() -> BTreeMap<AccountId, Accounts> {
 pub async fn register_operators(
     api: Api,
     root: Arc<Signer>,
-    mut accounts: impl Iterator<Item = &AccountId>,
+    accounts: impl Iterator<Item = &AccountId>,
 ) {
-    // skip first
-    let skipped_account = accounts.next().unwrap();
-    for account in accounts {
-        let payload = tx::register_operator(account);
-        tx::send::ready(api.clone(), &tx::sudo(payload), Arc::clone(&root))
-            .await
-            .unwrap();
-    }
+    let payloads = accounts
+        .map(|account| tx::register_operator(account))
+        .collect::<Vec<DynamicTxPayload>>();
 
-    // wait for the skipped one to be included in a block
-    let payload = tx::register_operator(skipped_account);
-    tx::send::in_block(api.clone(), &payload, root)
+    tx::send::batch(api, payloads.iter(), root)
         .await
-        .expect("failed to register operator");
+        .expect("failed to send batch tx");
 
     println!("operator registrations in block");
 }

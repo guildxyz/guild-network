@@ -33,7 +33,7 @@ pub async fn register_other_identity(api: Api, num: usize, seed: &str, tps: usiz
         let chunk = chunk_start..(chunk_start + tps).min(num);
         let tx_futures = chunk
             .map(|_| {
-                let password = format!("//{}", hex::encode(&seed_bytes));
+                let password = format!("//{}", hex::encode(seed_bytes));
                 let signer = tx::signer("", Some(&password)).expect("invalid signer");
                 let identity = Identity::Other(pad_to_n_bytes::<64, _>(format!("other{}", id)));
                 let identity_with_auth = IdentityWithAuth::Other(identity, [0u8; 64]);
