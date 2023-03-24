@@ -2,10 +2,10 @@
 #![deny(clippy::dbg_macro)]
 #![deny(unused_crate_dependencies)]
 
-mod evm;
 mod guild;
 mod key;
 mod oracle;
+mod stress;
 mod sudo;
 mod transfer;
 
@@ -40,22 +40,47 @@ pub enum Command {
         #[structopt(long, short)]
         balance: u128,
     },
-    /// Evm related convenience functions
-    Evm(EvmSubCmd),
+    /// Run stress tests
+    Stress {
+        /// Number of accounts to register
+        #[structopt(long, short, default_value = "100")]
+        num: usize,
+        /// Transactions per second
+        #[structopt(long, short, default_value = "10")]
+        tps: usize,
+        /// Initial seed
+        #[structopt(long, short, default_value = "guild network")]
+        seed: String,
+        /// Subcommand
+        #[structopt(subcommand)]
+        subcommand: StressSubCmd,
+    },
 }
 
 #[derive(StructOpt)]
-pub enum EvmSubCmd {
+pub enum StressSubCmd {
     AddressGen {
         /// Output file path
         #[structopt(long, short, default_value = "/tmp/addresses.txt")]
         output: PathBuf,
-        /// Number of accounts to generate
-        #[structopt(long, short, default_value = "100")]
-        num: usize,
-        /// Initial seed
-        #[structopt(long, short, default_value = "guild network")]
-        seed: String,
+    },
+    RegisterEvm {
+        /// Identity index
+        #[structopt(long, short, default_value = "0")]
+        index: u8,
+    },
+    RegisterOther {
+        /// Identity index
+        #[structopt(long, short, default_value = "0")]
+        index: u8,
+    },
+    Join {
+        /// Guild name
+        #[structopt(long, short)]
+        guild: String,
+        /// Role name
+        #[structopt(long, short)]
+        role: String,
     },
 }
 
@@ -189,9 +214,20 @@ async fn main() {
     log::info!("signer account: {}", signer.account_id());
 
     match opt.command {
-        Command::Evm(EvmSubCmd::AddressGen { output, num, seed }) => {
-            evm::generate_test_accounts(output, num, &seed)
-        }
+        Command::Stress {
+            num,
+            tps,
+            seed,
+            subcommand,
+        } => match subcommand {
+            StressSubCmd::AddressGen { output } => {
+                stress::generate_evm_addresses(output, num, &seed)
+            }
+            StressSubCmd::RegisterOther { index } => {
+                stress::register_other_identity(api, num, &seed, tps, index).await
+            }
+            _ => todo!(),
+        },
         Command::Guild(GuildSubCmd::Register(identity)) => {
             guild::register_identity(api, signer, identity).await
         }
