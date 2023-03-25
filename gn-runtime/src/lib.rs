@@ -14,6 +14,8 @@ pub use pallet_balances::Call as BalancesCall;
 use pallet_grandpa::{
     fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
+use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
+use parity_scale_codec::Encode;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
@@ -24,7 +26,7 @@ use sp_runtime::{
         Verify,
     },
     transaction_validity::{TransactionSource, TransactionValidity},
-    ApplyExtrinsicResult, MultiSignature,
+    ApplyExtrinsicResult, MultiSignature, SaturatedConversion,
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -32,7 +34,9 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
 use frame_support::{
-    construct_runtime, parameter_types,
+    construct_runtime,
+    pallet_prelude::TransactionPriority,
+    parameter_types,
     traits::{ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem},
     weights::{
         constants::{RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
@@ -75,10 +79,20 @@ pub mod opaque {
     /// Opaque block identifier type.
     pub type BlockId = generic::BlockId<Block>;
 
+    // TODO Remove after im_online runtime upgrade is done.
+    impl_opaque_keys! {
+        pub struct OldSessionKeys {
+            pub aura: Aura,
+            pub grandpa: Grandpa,
+
+        }
+    }
+
     impl_opaque_keys! {
         pub struct SessionKeys {
             pub aura: Aura,
             pub grandpa: Grandpa,
+            pub im_online: ImOnline,
         }
     }
 }
@@ -95,7 +109,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 100,
+    spec_version: 102,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -145,6 +159,10 @@ parameter_types! {
     pub const MinAuthorities: u32 = 2;
     pub const Period: u32 = 2 * MINUTES;
     pub const Offset: u32 = 0;
+    pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
+    pub const MaxKeys: u32 = 10_000;
+    pub const MaxPeerInHeartbeats: u32 = 10_000;
+    pub const MaxPeerDataEncodingSize: u32 = 1_000;
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -202,6 +220,79 @@ impl frame_system::Config for Runtime {
 }
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
+
+impl<Call> frame_system::offchain::CreateSignedTransaction<Call> for Runtime
+where
+    RuntimeCall: From<Call>,
+{
+    fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+        call: RuntimeCall,
+        public: <Signature as Verify>::Signer,
+        account: AccountId,
+        nonce: Index,
+    ) -> Option<(
+        RuntimeCall,
+        <UncheckedExtrinsic as sp_runtime::traits::Extrinsic>::SignaturePayload,
+    )> {
+        let tip = 0;
+        let period = BlockHashCount::get()
+            .checked_next_power_of_two()
+            .map(|c| c / 2)
+            .unwrap_or(2) as u64;
+        let current_block = System::block_number()
+            .saturated_into::<u64>()
+            .saturating_sub(1);
+        let era = generic::Era::mortal(period, current_block);
+        let extra = (
+            frame_system::CheckNonZeroSender::<Runtime>::new(),
+            frame_system::CheckSpecVersion::<Runtime>::new(),
+            frame_system::CheckTxVersion::<Runtime>::new(),
+            frame_system::CheckGenesis::<Runtime>::new(),
+            frame_system::CheckEra::<Runtime>::from(era),
+            frame_system::CheckNonce::<Runtime>::from(nonce),
+            frame_system::CheckWeight::<Runtime>::new(),
+            pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
+        );
+        let raw_payload = SignedPayload::new(call, extra)
+            .map_err(|e| {
+                log::warn!("Unable to create signed payload: {:?}", e);
+            })
+            .ok()?;
+        let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
+        let address = account;
+        let (call, extra, _) = raw_payload.deconstruct();
+        Some((
+            call,
+            (sp_runtime::MultiAddress::Id(address), signature, extra),
+        ))
+    }
+}
+
+impl<Call> frame_system::offchain::SendTransactionTypes<Call> for Runtime
+where
+    RuntimeCall: From<Call>,
+{
+    type Extrinsic = UncheckedExtrinsic;
+    type OverarchingCall = RuntimeCall;
+}
+
+impl frame_system::offchain::SigningTypes for Runtime {
+    type Public = <Signature as Verify>::Signer;
+    type Signature = Signature;
+}
+
+impl pallet_im_online::Config for Runtime {
+    type AuthorityId = ImOnlineId;
+    type RuntimeEvent = RuntimeEvent;
+    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+    type ValidatorSet = ValidatorManager;
+    type ReportUnresponsiveness = ();
+    type UnsignedPriority = ImOnlineUnsignedPriority;
+    type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
+    type MaxKeys = MaxKeys;
+    type MaxPeerInHeartbeats = MaxPeerInHeartbeats;
+    type MaxPeerDataEncodingSize = MaxPeerDataEncodingSize;
+}
 
 impl pallet_aura::Config for Runtime {
     type AuthorityId = AuraId;
@@ -299,6 +390,26 @@ impl pallet_validator_manager::Config for Runtime {
     type MinAuthorities = MinAuthorities;
 }
 
+// should be removed along with UpgradeSessionKeys
+fn transform_session_keys(_v: AccountId, old: opaque::OldSessionKeys) -> opaque::SessionKeys {
+    let dummy_id = pallet_im_online::sr25519::AuthorityId::try_from(old.aura.as_ref()).unwrap();
+
+    opaque::SessionKeys {
+        grandpa: old.grandpa,
+        aura: old.aura,
+        im_online: dummy_id,
+    }
+}
+
+// When this is removed, should also remove `OldSessionKeys`.
+pub struct UpgradeSessionKeys;
+impl frame_support::traits::OnRuntimeUpgrade for UpgradeSessionKeys {
+    fn on_runtime_upgrade() -> frame_support::weights::Weight {
+        Session::upgrade_keys::<opaque::OldSessionKeys, _>(transform_session_keys);
+        BlockWeights::get().max_block
+    }
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -315,6 +426,7 @@ construct_runtime!(
         Timestamp: pallet_timestamp,
         ValidatorManager: pallet_validator_manager,
         Session: pallet_session,
+        ImOnline: pallet_im_online,
         Aura: pallet_aura,
         Grandpa: pallet_grandpa,
 
@@ -354,40 +466,8 @@ pub type Executive = frame_executive::Executive<
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPalletsWithSystem,
-    // TODO remove this after migration
-    vm_upgrade::Upgrade,
+    UpgradeSessionKeys,
 >;
-
-// TODO remove this after migration (validator manager pallet)
-mod vm_upgrade {
-    use super::*;
-    use frame_support::traits::OnRuntimeUpgrade;
-
-    pub struct Upgrade;
-    impl OnRuntimeUpgrade for Upgrade {
-        fn on_runtime_upgrade() -> Weight {
-            pallet_validator_manager::migration::on_runtime_upgrade::<Runtime>();
-            BlockWeights::get().max_block
-        }
-
-        #[cfg(feature = "try-runtime")]
-        fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
-            assert!(!ValidatorManager::validators().is_empty(), "invalid state");
-            Ok(Vec::new())
-        }
-
-        #[cfg(feature = "try-runtime")]
-        fn post_upgrade(_state: Vec<u8>) -> Result<(), &'static str> {
-            assert!(!ValidatorManager::validators().is_empty(), "invalid state");
-            assert_eq!(
-                ValidatorManager::validators(),
-                ValidatorManager::approved_validators(),
-                "migration failed"
-            );
-            Ok(())
-        }
-    }
-}
 
 #[cfg(feature = "runtime-benchmarks")]
 #[macro_use]
@@ -589,8 +669,6 @@ impl_runtime_apis! {
             Ok(batches)
         }
     }
-
-
 
     #[cfg(feature = "try-runtime")]
     impl frame_try_runtime::TryRuntime<Block> for Runtime {
