@@ -1,10 +1,9 @@
-use futures::StreamExt;
-use gn_api::runtime::oracle::events::OracleRequest;
+use futures::{future::try_join_all, StreamExt};
 use gn_api::{
     query,
     tx::{self, Signer},
+    Api, GuildCall, OracleCallback, OracleRequest, SubxtError,
 };
-use gn_api::{Api, GuildCall, SubxtError};
 use gn_common::identity::Identity;
 use gn_common::utils::{matches_variant, verification_msg};
 use gn_common::{RequestData, RequestIdentifier};
@@ -12,8 +11,6 @@ use gn_common::{RequestData, RequestIdentifier};
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
-
-const TX_RETRIES: u64 = 10;
 
 pub async fn oracle(api: Api, operator: Arc<Signer>, activate: bool) {
     if !query::is_operator_registered(api.clone(), operator.account_id())
@@ -53,15 +50,14 @@ pub async fn oracle(api: Api, operator: Arc<Signer>, activate: bool) {
         match block_result {
             Ok(block) => match block.events().await {
                 Ok(events) => {
-                    events
+                    let requests = events
                         .iter()
                         .filter_map(|event_result| event_result.ok())
                         .filter_map(|event_details| {
                             event_details.as_event::<OracleRequest>().ok().flatten()
                         })
-                        .for_each(|oracle_request| {
-                            submit_answer(api.clone(), Arc::clone(&operator), oracle_request)
-                        });
+                        .collect::<Vec<OracleRequest>>();
+                    submit_answers(api.clone(), Arc::clone(&operator), requests)
                 }
                 Err(err) => log::error!("invalid block events: {err}"),
             },
@@ -71,47 +67,53 @@ pub async fn oracle(api: Api, operator: Arc<Signer>, activate: bool) {
     log::error!("block subscription aborted");
 }
 
-fn submit_answer(api: Api, signer: Arc<Signer>, request: OracleRequest) {
+fn submit_answers(api: Api, signer: Arc<Signer>, requests: Vec<OracleRequest>) {
     tokio::spawn(async move {
-        let OracleRequest {
-            request_id,
-            operator,
-            callback,
-            fee,
-        } = request;
+        let answer_futures = requests
+            .into_iter()
+            .filter(|request| {
+                if &request.operator != signer.account_id() {
+                    // request wasn't delegated to us so return
+                    log::trace!("request not delegated to us");
+                    return false;
+                }
 
-        log::info!(
-            "OracleRequest: {}, {}, {:?}, {}",
-            request_id,
-            operator,
-            callback,
-            fee
-        );
+                // check whether the incoming request originates from the guild
+                // pallet just for testing basically
+                if !matches_variant(&request.callback, &GuildCall::callback { result: vec![] }) {
+                    log::trace!("callback mismatch");
+                    return false;
+                }
+                true
+            })
+            .map(|request| {
+                log::info!(
+                    "OracleRequest: {}, {}, {:?}, {}",
+                    request.request_id,
+                    request.operator,
+                    request.callback,
+                    request.fee
+                );
 
-        if &operator != signer.account_id() {
-            // request wasn't delegated to us so return
-            log::trace!("request not delegated to us");
-            return;
-        }
+                compile_answer(api.clone(), request.request_id)
+            })
+            .collect::<Vec<_>>();
 
-        // check whether the incoming request originates from the guild
-        // pallet just for testing basically
-        if !matches_variant(&callback, &GuildCall::callback { result: vec![] }) {
-            log::trace!("callback mismatch");
-            return;
-        }
-
-        if let Err(e) = try_submit_answer(api, signer, request_id).await {
-            log::error!("{e}");
+        match try_join_all(answer_futures).await {
+            Ok(answers) => {
+                if let Err(e) = tx::send::batch(api, answers.iter(), signer).await {
+                    log::warn!("failed to send oracle answers: {}", e)
+                }
+            }
+            Err(e) => log::warn!("failed to compile oracle answers: {}", e),
         }
     });
 }
 
-async fn try_submit_answer(
+async fn compile_answer(
     api: Api,
-    signer: Arc<Signer>,
     request_id: RequestIdentifier,
-) -> Result<(), SubxtError> {
+) -> Result<OracleCallback, SubxtError> {
     let oracle_request = query::oracle_request(api.clone(), request_id).await?;
 
     let oracle_answer = match oracle_request.data {
@@ -122,7 +124,7 @@ async fn try_submit_answer(
             log::info!("[registration request] acc: {}", oracle_request.requester);
             // deserialize user identities
             let expected_msg = verification_msg(&oracle_request.requester);
-            identity_with_auth.verify(&expected_msg)
+            identity_with_auth.verify(expected_msg)
         }
         RequestData::ReqCheck {
             account,
@@ -177,24 +179,6 @@ async fn try_submit_answer(
     };
 
     let result = vec![u8::from(oracle_answer)];
-    let tx = tx::oracle_callback(request_id, result);
-    let mut retries = 1;
-    while retries <= TX_RETRIES {
-        match tx::send::ready(api.clone(), &tx, Arc::clone(&signer)).await {
-            Ok(()) => {
-                log::info!(
-                    "oracle answer ({}) submitted: {}",
-                    request_id,
-                    oracle_answer
-                );
-                break;
-            }
-            Err(error) => {
-                log::warn!("submitting transaction returned error: {}", error);
-                tokio::time::sleep(tokio::time::Duration::from_millis(retries)).await;
-                retries += 1;
-            }
-        }
-    }
-    Ok(())
+    log::info!("oracle answer ({}): {:?}", request_id, result);
+    Ok(tx::oracle_callback(request_id, result))
 }

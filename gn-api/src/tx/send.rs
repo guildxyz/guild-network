@@ -1,13 +1,12 @@
 use super::status::{track_progress, TxStatus};
-use super::Signer;
+use super::{Signer, TxPayloadT};
 use crate::{Api, SubxtError, H256};
 use futures::future::try_join_all;
-use subxt::tx::TxPayload;
 
 use std::ops::Deref;
 use std::sync::Arc;
 
-async fn send<T: TxPayload>(
+async fn send<T: TxPayloadT>(
     api: Api,
     tx: &T,
     signer: Arc<Signer>,
@@ -23,7 +22,7 @@ async fn send<T: TxPayload>(
 
 pub async fn batch<'a, T, P>(api: Api, payloads: P, signer: Arc<Signer>) -> Result<(), SubxtError>
 where
-    T: TxPayload + 'a,
+    T: TxPayloadT + 'a,
     P: Iterator<Item = &'a T>,
 {
     let account_nonce = api
@@ -52,7 +51,7 @@ where
     try_join_all(tx_futures).await.map(|_| ())
 }
 
-pub async fn owned<T: TxPayload>(
+pub async fn owned<T: TxPayloadT>(
     api: Api,
     tx: T,
     signer: Arc<Signer>,
@@ -61,11 +60,11 @@ pub async fn owned<T: TxPayload>(
     send(api, &tx, signer, status).await
 }
 
-pub async fn ready<T: TxPayload>(api: Api, tx: &T, signer: Arc<Signer>) -> Result<(), SubxtError> {
+pub async fn ready<T: TxPayloadT>(api: Api, tx: &T, signer: Arc<Signer>) -> Result<(), SubxtError> {
     send(api, tx, signer, TxStatus::Ready).await.map(|_| ())
 }
 
-pub async fn broadcast<T: TxPayload>(
+pub async fn broadcast<T: TxPayloadT>(
     api: Api,
     tx: &T,
     signer: Arc<Signer>,
@@ -73,7 +72,7 @@ pub async fn broadcast<T: TxPayload>(
     send(api, tx, signer, TxStatus::Broadcast).await.map(|_| ())
 }
 
-pub async fn in_block<T: TxPayload>(
+pub async fn in_block<T: TxPayloadT>(
     api: Api,
     tx: &T,
     signer: Arc<Signer>,
@@ -82,7 +81,7 @@ pub async fn in_block<T: TxPayload>(
     hash.ok_or_else(|| SubxtError::Other("transaction hash is None".into()))
 }
 
-pub async fn finalized<T: TxPayload>(
+pub async fn finalized<T: TxPayloadT>(
     api: Api,
     tx: &T,
     signer: Arc<Signer>,

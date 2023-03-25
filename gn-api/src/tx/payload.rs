@@ -1,17 +1,17 @@
-use crate::{cast, runtime, AccountId, MultiAddress, SessionKeys, SubxtError};
+use crate::{cast, runtime, AccountId, MultiAddress, OracleCallback, SessionKeys, SubxtError};
 use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
 use gn_common::identity::{Identity, IdentityWithAuth};
 use gn_common::merkle::Proof as MerkleProof;
 use gn_common::{GuildName, RoleName};
 use gn_engine::RequirementsWithLogic;
 use subxt::dynamic::Value;
-use subxt::tx::{DynamicTxPayload, TxPayload};
+pub use subxt::tx::{DynamicTxPayload as TxPayload, TxPayload as TxPayloadT};
 
-pub fn sudo<'a>(call: DynamicTxPayload<'_>) -> DynamicTxPayload<'a> {
+pub fn sudo<'a>(call: TxPayload<'_>) -> TxPayload<'a> {
     subxt::dynamic::tx("Sudo", "sudo", vec![("call", call.into_value())])
 }
 
-pub fn register_operator<'a>(operator: &AccountId) -> DynamicTxPayload<'a> {
+pub fn register_operator<'a>(operator: &AccountId) -> TxPayload<'a> {
     subxt::dynamic::tx(
         "Oracle",
         "register_operator",
@@ -19,7 +19,7 @@ pub fn register_operator<'a>(operator: &AccountId) -> DynamicTxPayload<'a> {
     )
 }
 
-pub fn deregister_operator<'a>(operator: &AccountId) -> DynamicTxPayload<'a> {
+pub fn deregister_operator<'a>(operator: &AccountId) -> TxPayload<'a> {
     subxt::dynamic::tx(
         "Oracle",
         "deregister_operator",
@@ -27,7 +27,7 @@ pub fn deregister_operator<'a>(operator: &AccountId) -> DynamicTxPayload<'a> {
     )
 }
 
-pub fn add_validator<'a>(validator: &AccountId) -> DynamicTxPayload<'a> {
+pub fn add_validator<'a>(validator: &AccountId) -> TxPayload<'a> {
     subxt::dynamic::tx(
         "ValidatorManager",
         "add_validator",
@@ -35,7 +35,7 @@ pub fn add_validator<'a>(validator: &AccountId) -> DynamicTxPayload<'a> {
     )
 }
 
-pub fn remove_validator<'a>(validator: &AccountId) -> DynamicTxPayload<'a> {
+pub fn remove_validator<'a>(validator: &AccountId) -> TxPayload<'a> {
     subxt::dynamic::tx(
         "ValidatorManager",
         "remove_validator",
@@ -43,29 +43,29 @@ pub fn remove_validator<'a>(validator: &AccountId) -> DynamicTxPayload<'a> {
     )
 }
 
-pub fn transfer(account: &AccountId, amount: u128) -> impl TxPayload {
+pub fn transfer(account: &AccountId, amount: u128) -> impl TxPayloadT {
     runtime::tx()
         .balances()
         .transfer(MultiAddress::Id(account.clone()), amount)
 }
 
-pub fn activate_operator() -> impl TxPayload {
+pub fn activate_operator() -> impl TxPayloadT {
     runtime::tx().oracle().activate_operator()
 }
 
-pub fn deactivate_operator() -> impl TxPayload {
+pub fn deactivate_operator() -> impl TxPayloadT {
     runtime::tx().oracle().deactivate_operator()
 }
 
-pub fn oracle_callback(request_id: u64, data: Vec<u8>) -> impl TxPayload {
+pub fn oracle_callback(request_id: u64, data: Vec<u8>) -> OracleCallback {
     runtime::tx().oracle().callback(request_id, data)
 }
 
-pub fn create_guild(guild_name: GuildName, metadata: Vec<u8>) -> impl TxPayload {
+pub fn create_guild(guild_name: GuildName, metadata: Vec<u8>) -> impl TxPayloadT {
     runtime::tx().guild().create_guild(guild_name, metadata)
 }
 
-pub fn create_free_role(guild_name: GuildName, role_name: RoleName) -> impl TxPayload {
+pub fn create_free_role(guild_name: GuildName, role_name: RoleName) -> impl TxPayloadT {
     runtime::tx()
         .guild()
         .create_free_role(guild_name, role_name)
@@ -77,7 +77,7 @@ pub fn create_role_with_allowlist(
     allowlist: Vec<Identity>,
     filter_logic: FilterLogic,
     requirements: Option<RequirementsWithLogic>,
-) -> Result<impl TxPayload, SubxtError> {
+) -> Result<impl TxPayloadT, SubxtError> {
     let serialized_requirements = requirements
         .map(RequirementsWithLogic::into_serialized_tuple)
         .transpose()
@@ -97,7 +97,7 @@ pub fn create_child_role(
     filter: GuildFilter,
     filter_logic: FilterLogic,
     requirements: Option<RequirementsWithLogic>,
-) -> Result<impl TxPayload, SubxtError> {
+) -> Result<impl TxPayloadT, SubxtError> {
     let serialized_requirements = requirements
         .map(RequirementsWithLogic::into_serialized_tuple)
         .transpose()
@@ -115,7 +115,7 @@ pub fn create_unfiltered_role(
     guild_name: GuildName,
     role_name: RoleName,
     requirements: RequirementsWithLogic,
-) -> Result<impl TxPayload, SubxtError> {
+) -> Result<impl TxPayloadT, SubxtError> {
     let serialized_requirements = requirements
         .into_serialized_tuple()
         .map_err(|e| SubxtError::Other(e.to_string()))?;
@@ -124,7 +124,7 @@ pub fn create_unfiltered_role(
         .create_unfiltered_role(guild_name, role_name, serialized_requirements))
 }
 
-pub fn register(identity_with_auth: IdentityWithAuth, index: u8) -> impl TxPayload {
+pub fn register(identity_with_auth: IdentityWithAuth, index: u8) -> impl TxPayloadT {
     runtime::tx()
         .guild()
         .register(cast::id_with_auth::to_runtime(identity_with_auth), index)
@@ -134,16 +134,16 @@ pub fn join(
     guild_name: GuildName,
     role_name: RoleName,
     proof: Option<MerkleProof>,
-) -> impl TxPayload {
+) -> impl TxPayloadT {
     runtime::tx()
         .guild()
         .join(guild_name, role_name, proof.map(cast::proof::to_runtime))
 }
 
-pub fn leave(guild_name: GuildName, role_name: RoleName) -> impl TxPayload {
+pub fn leave(guild_name: GuildName, role_name: RoleName) -> impl TxPayloadT {
     runtime::tx().guild().leave(guild_name, role_name)
 }
 
-pub fn set_session_keys(keys: SessionKeys, proof: Vec<u8>) -> impl TxPayload {
+pub fn set_session_keys(keys: SessionKeys, proof: Vec<u8>) -> impl TxPayloadT {
     runtime::tx().session().set_keys(keys, proof)
 }

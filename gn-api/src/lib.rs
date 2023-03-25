@@ -18,6 +18,7 @@ pub type AccountId = subxt::utils::AccountId32;
 pub type Balance = u128;
 pub type GuildCall = runtime::runtime_types::pallet_guild::pallet::Call;
 pub type OracleRequest = runtime::oracle::events::OracleRequest;
+pub type OracleCallback = subxt::tx::StaticTxPayload<runtime::oracle::calls::Callback>;
 pub type Request = gn_common::Request<AccountId>;
 pub type SessionKeys = runtime::runtime_types::gn_runtime::opaque::SessionKeys;
 pub type SubxtError = subxt::Error;

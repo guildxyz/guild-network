@@ -8,7 +8,6 @@ use gn_common::identity::{EcdsaSignature, Identity, IdentityWithAuth};
 use gn_common::merkle::Proof as MerkleProof;
 use gn_test_data::*;
 use rand::{rngs::StdRng, SeedableRng};
-use subxt::tx::DynamicTxPayload;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -46,7 +45,7 @@ pub async fn register_operators(
 ) {
     let payloads = accounts
         .map(|account| tx::sudo(tx::register_operator(account)))
-        .collect::<Vec<DynamicTxPayload>>();
+        .collect::<Vec<tx::TxPayload>>();
 
     tx::send::batch(api, payloads.iter(), root)
         .await
@@ -74,6 +73,7 @@ pub async fn activate_operators(api: Api, accounts: impl Iterator<Item = &Accoun
     println!("operators activated");
 }
 
+#[cfg(not(feature = "external-oracle"))]
 pub async fn wait_for_registered_operator(api: Api, operator: &AccountId) {
     let mut i = 0;
     loop {
