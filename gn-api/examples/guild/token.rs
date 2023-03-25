@@ -1,6 +1,6 @@
 use crate::common::*;
 use ethers::types::{Address, U256};
-use gn_client::{
+use gn_api::{
     query,
     tx::{self, Signer},
     Api,

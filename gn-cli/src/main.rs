@@ -9,7 +9,7 @@ mod stress;
 mod sudo;
 mod transfer;
 
-use gn_client::tx;
+use gn_api::tx;
 use structopt::StructOpt;
 
 use std::path::PathBuf;

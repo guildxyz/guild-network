@@ -1,5 +1,5 @@
 [package]
-name = "gn-client"
+name = "gn-api"
 version = "0.0.0-alpha"
 edition = "2021"
 

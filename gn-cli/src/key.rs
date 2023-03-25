@@ -1,6 +1,6 @@
 #[cfg(feature = "verify")]
-use gn_client::query;
-use gn_client::{
+use gn_api::query;
+use gn_api::{
     tx::{self, Keypair, PairT, Signer},
     Api, SessionKeys,
 };

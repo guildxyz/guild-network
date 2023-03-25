@@ -1,10 +1,10 @@
 use futures::StreamExt;
-use gn_client::runtime::oracle::events::OracleRequest;
-use gn_client::{
+use gn_api::runtime::oracle::events::OracleRequest;
+use gn_api::{
     query,
     tx::{self, Signer},
 };
-use gn_client::{Api, GuildCall, SubxtError};
+use gn_api::{Api, GuildCall, SubxtError};
 use gn_common::identity::Identity;
 use gn_common::utils::{matches_variant, verification_msg};
 use gn_common::{RequestData, RequestIdentifier};

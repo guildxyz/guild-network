@@ -1,7 +1,7 @@
 use ethers::core::k256::ecdsa::SigningKey;
 use ethers::signers::{LocalWallet, Signer};
 use futures::future::try_join_all;
-use gn_client::{
+use gn_api::{
     tx::{self, TxStatus},
     Api,
 };

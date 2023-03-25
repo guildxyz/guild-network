@@ -1,6 +1,6 @@
 #[cfg(feature = "verify")]
-use gn_client::query;
-use gn_client::{
+use gn_api::query;
+use gn_api::{
     tx::{self, Signer},
     AccountId, Api,
 };
@@ -33,13 +33,21 @@ pub async fn sudo(api: Api, signer: Arc<Signer>, maybe_operator: Option<&str>, m
     #[cfg(not(feature = "verify"))]
     {
         //tx::send::ready(api.clone(), &tx::sudo(payload), Arc::clone(&signer))
-        tx::send::ready(api.clone(), &tx::sudo(tx::add_validator(&account_id)), Arc::clone(&signer))
-            .await
-            .expect("failed to send tx");
+        tx::send::ready(
+            api.clone(),
+            &tx::sudo(tx::add_validator(&account_id)),
+            Arc::clone(&signer),
+        )
+        .await
+        .expect("failed to send tx");
 
-        tx::send::batch(api, vec![tx::sudo(tx::add_validator(&account_id))].iter(), signer)
-            .await
-            .expect("lol");
+        tx::send::batch(
+            api,
+            vec![tx::sudo(tx::add_validator(&account_id))].iter(),
+            signer,
+        )
+        .await
+        .expect("lol");
     }
 
     #[cfg(feature = "verify")]

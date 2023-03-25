@@ -11,7 +11,7 @@ verify = []
 env_logger = "0.9.0"
 ethers = { version = "1.0.2", default-features = false }
 futures = "0.3.25"
-gn-client = { version = "0.0.0-alpha", path = "../gn-client" }
+gn-api = { version = "0.0.0-alpha", path = "../gn-api" }
 gn-common = { version = "0.0.0-alpha", path = "../gn-common" }
 hex = "0.4.3"
 log = "0.4.17"

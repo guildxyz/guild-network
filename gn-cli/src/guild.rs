@@ -1,5 +1,5 @@
 use super::{Identity as CliIdentity, QUERY_ERROR, TX_ERROR};
-use gn_client::{
+use gn_api::{
     query,
     tx::{self, Signer},
     Api,

@@ -2,7 +2,7 @@ mod common;
 mod join;
 mod token;
 
-use gn_client::tx;
+use gn_api::tx;
 
 use structopt::StructOpt;
 

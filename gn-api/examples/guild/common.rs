@@ -1,8 +1,8 @@
 use ethers::signers::{LocalWallet, Signer as EthSigner};
 use futures::future::try_join_all;
-use gn_client::query;
-use gn_client::tx::{self, Keypair, PairT, Signer, TxStatus};
-use gn_client::{AccountId, Api};
+use gn_api::query;
+use gn_api::tx::{self, Keypair, PairT, Signer, TxStatus};
+use gn_api::{AccountId, Api};
 use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
 use gn_common::identity::{EcdsaSignature, Identity, IdentityWithAuth};
 use gn_common::merkle::Proof as MerkleProof;

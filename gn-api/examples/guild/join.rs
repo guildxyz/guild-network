@@ -1,6 +1,6 @@
 use crate::common::*;
 use ethers::signers::Signer as EthSigner;
-use gn_client::{query, tx::Signer, Api};
+use gn_api::{query, tx::Signer, Api};
 use gn_common::filter::Guild as GuildFilter;
 use gn_common::identity::Identity;
 use gn_common::pad::padded_id;

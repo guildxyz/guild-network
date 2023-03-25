@@ -1,5 +1,5 @@
 use super::TX_ERROR;
-use gn_client::{
+use gn_api::{
     tx::{self, Signer},
     AccountId, Api,
 };
