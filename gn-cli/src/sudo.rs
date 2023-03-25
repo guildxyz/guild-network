@@ -31,9 +31,16 @@ pub async fn sudo(api: Api, signer: Arc<Signer>, maybe_operator: Option<&str>, m
     };
 
     #[cfg(not(feature = "verify"))]
-    tx::send::ready(api, &tx::sudo(payload), signer)
-        .await
-        .expect("failed to send tx");
+    {
+        //tx::send::ready(api.clone(), &tx::sudo(payload), Arc::clone(&signer))
+        tx::send::ready(api.clone(), &tx::sudo(tx::add_validator(&account_id)), Arc::clone(&signer))
+            .await
+            .expect("failed to send tx");
+
+        tx::send::batch(api, vec![tx::sudo(tx::add_validator(&account_id))].iter(), signer)
+            .await
+            .expect("lol");
+    }
 
     #[cfg(feature = "verify")]
     {

@@ -1,4 +1,3 @@
-use super::{QUERY_ERROR, TX_ERROR};
 #[cfg(feature = "verify")]
 use gn_client::query;
 use gn_client::{
@@ -38,20 +37,20 @@ pub async fn set(api: Api, signer: Arc<Signer>, encoded_keys: Vec<u8>) {
     #[cfg(not(feature = "verify"))]
     tx::send::in_block(api.clone(), &payload, signer.clone())
         .await
-        .expect(TX_ERROR);
+        .expect(super::TX_ERROR);
 
     #[cfg(feature = "verify")]
     {
         tx::send::ready(api.clone(), &payload, signer.clone())
             .await
-            .expect(TX_ERROR);
+            .expect(super::TX_ERROR);
         // NOTE needs to be decoded again because `SessionKeys` is imported via
         // the subxt macro into a dummy runtime module where `Clone` is not
         // implemented for `SessionKeys`
         let keys = SessionKeys::decode(&mut &encoded_keys[..]).expect("invalid keys");
         let on_chain_keys = query::next_session_keys(api, signer.account_id())
             .await
-            .expect(QUERY_ERROR);
+            .expect(super::QUERY_ERROR);
 
         assert_eq!(keys.encode(), on_chain_keys.encode());
 

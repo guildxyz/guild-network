@@ -4,7 +4,7 @@
 // re-exports
 pub use subxt::utils::MultiAddress;
 pub use subxt::utils::H256;
-pub use subxt::{Config as ConfigT, SubstrateConfig as ClientConfig};
+pub use subxt::PolkadotConfig as ClientConfig;
 
 mod cast;
 #[subxt::subxt(runtime_metadata_path = "./artifacts/metadata.scale")]
@@ -14,7 +14,7 @@ pub mod query;
 pub mod tx;
 
 pub type Api = subxt::OnlineClient<ClientConfig>;
-pub type AccountId = <ClientConfig as ConfigT>::AccountId;
+pub type AccountId = subxt::utils::AccountId32;
 pub type Balance = u128;
 pub type GuildCall = runtime::runtime_types::pallet_guild::pallet::Call;
 pub type OracleRequest = runtime::oracle::events::OracleRequest;

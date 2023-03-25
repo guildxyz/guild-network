@@ -4,6 +4,7 @@ use crate::{Api, SubxtError, H256};
 use futures::future::try_join_all;
 use subxt::tx::TxPayload;
 
+use std::ops::Deref;
 use std::sync::Arc;
 
 async fn send<T: TxPayload>(
@@ -40,8 +41,13 @@ where
         encoded_extrinsics.push(signed_tx.into_encoded());
     }
     let tx_futures = encoded_extrinsics
-        .iter()
-        .map(|ext| api.rpc().submit_extrinsic(ext))
+        .into_iter()
+        .map(|ext| {
+            api.rpc().deref().request::<H256>(
+                "author_submitExtrinsic",
+                subxt::rpc::rpc_params![subxt::rpc::types::Bytes::from(ext)],
+            )
+        })
         .collect::<Vec<_>>();
     try_join_all(tx_futures).await.map(|_| ())
 }

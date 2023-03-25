@@ -45,14 +45,14 @@ pub async fn register_operators(
     accounts: impl Iterator<Item = &AccountId>,
 ) {
     let payloads = accounts
-        .map(|account| tx::register_operator(account))
+        .map(|account| tx::sudo(tx::register_operator(account)))
         .collect::<Vec<DynamicTxPayload>>();
 
     tx::send::batch(api, payloads.iter(), root)
         .await
         .expect("failed to send batch tx");
 
-    println!("operator registrations in block");
+    println!("operator registrations submitted");
 }
 
 #[cfg(not(feature = "external-oracle"))]
@@ -72,6 +72,24 @@ pub async fn activate_operators(api: Api, accounts: impl Iterator<Item = &Accoun
     try_join_all(tx_futures).await.unwrap();
 
     println!("operators activated");
+}
+
+pub async fn wait_for_registered_operator(api: Api, operator: &AccountId) {
+    let mut i = 0;
+    loop {
+        if query::is_operator_registered(api.clone(), operator)
+            .await
+            .expect("failed to fetch registered operator")
+        {
+            break;
+        }
+        i += 1;
+        println!("waiting for registered operators");
+        if i == RETRIES {
+            panic!("no registered operators found");
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
+    }
 }
 
 pub async fn wait_for_active_operator(api: Api) {

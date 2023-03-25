@@ -12,6 +12,7 @@ pub async fn join(api: Api, root: Arc<Signer>) {
     #[cfg(not(feature = "external-oracle"))]
     {
         register_operators(api.clone(), Arc::clone(&root), operators.keys()).await;
+        wait_for_registered_operator(api.clone(), operators.keys().next().unwrap()).await;
         activate_operators(api.clone(), operators.values()).await;
         let active_operators = query::active_operators(api.clone())
             .await
