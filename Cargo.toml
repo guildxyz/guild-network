@@ -27,7 +27,7 @@ default-members = [
 ]
 
 [profile.release]
-panic = "abort"
+panic = "unwind"
 
 [workspace.dependencies]
 # general
