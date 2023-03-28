@@ -10,7 +10,7 @@ mod sudo;
 mod transfer;
 
 use gn_api::tx;
-use sp_core::crypto::{Zeroize, SecretString, ExposeSecret};
+use sp_core::crypto::{ExposeSecret, SecretString, Zeroize};
 use structopt::StructOpt;
 
 use std::path::PathBuf;
