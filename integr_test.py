@@ -16,7 +16,7 @@ def start_node():
         line = node.stderr.readline()
         if int(time.time() - start) == 10:
             print("Node startup timeout, exiting...")
-            os._exit(-1)
+            os._exit(1)
     sys.stdout.buffer.write(line)
     sys.stdout.buffer.flush()
     return node
@@ -32,7 +32,7 @@ def start_oracle():
         line = oracle.stderr.readline()
         if int(time.time() - start) == 10:
             print("Oracle startup timeout, exiting...")
-            os._exit(-1)
+            os._exit(2)
     sys.stdout.buffer.write(line)
     sys.stdout.buffer.flush()
     return oracle
@@ -58,7 +58,7 @@ def monitor_process(process):
             return retcode
 
 
-def run_tests(*commands, timeout=500):
+def run_tests(*commands, timeout=300):
     try:
         for cmd in commands:
             test = run(shlex.split(cmd), timeout=timeout)
@@ -75,7 +75,7 @@ def main():
     try:
         node = start_node()
         command = "./target/release/gn-cli sudo oracle register"
-        run_tests(command, timeout=120)
+        run_tests(command, timeout=90)
         oracle = start_oracle()
         oracle_monitor = Thread(target=monitor_oracle, args=(oracle, node,))
 
@@ -84,7 +84,7 @@ def main():
         command = "cargo run --release --example guild --features external-oracle -- "
 
         status = run_tests(command + "join",
-                           command + "token", timeout=120)
+                           command + "token", timeout=90)
         node.send_signal(15)
         oracle.send_signal(15)
         while node.poll() is None or oracle.poll() is None:
