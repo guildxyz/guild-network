@@ -5,6 +5,13 @@ import shlex
 import os
 import time
 
+def print_to_strerr(msg):
+    sys.stderr.write(msg)
+    sys.stderr.flush()
+
+def print_to_stdout(msg):
+    sys.stdout.buffer.write(msg)
+    sys.stdout.buffer.flush()
 
 def start_node():
     node = Popen(['./target/release/gn-node', '--dev', '--enable-offchain-indexing', 'true'],
@@ -14,11 +21,10 @@ def start_node():
     line = b""
     while b"Running JSON-RPC WS" not in line:
         line = node.stderr.readline()
-        sys.stdout.buffer.write(line)
+        print_to_stdout(line)
         if int(time.time() - start) == 10:
-            sys.stderr.write("Node startup timeout, exiting...")
+            print_to_strerr("Node startup timeout, exiting...")
             os._exit(111)
-    sys.stdout.buffer.flush()
     return node
 
 
@@ -31,10 +37,9 @@ def start_oracle():
     while line == b"":
         line = oracle.stderr.readline()
         if int(time.time() - start) == 10:
-            sys.stderr.write("Oracle startup timeout, exiting...")
+            print_to_strerr("Oracle startup timeout, exiting...")
             os._exit(222)
-    sys.stdout.buffer.write(line)
-    sys.stdout.buffer.flush()
+    print_to_stdout(line)
     return oracle
 
 
@@ -51,8 +56,7 @@ def monitor_process(process):
     while True:
         line = process.stderr.readline()
         if line != b"":
-            sys.stderr.buffer.write(line)
-            sys.stderr.buffer.flush()
+            print_to_strerr(line)
         retcode = process.poll()
         if retcode is not None:
             return retcode
@@ -65,8 +69,7 @@ def run_tests(*commands, timeout=300):
             print("Test finished with return code:", test.returncode)
             return test.returncode
     except TimeoutExpired:
-        sys.stderr.write("Test timeout expired\n")
-        sys.stderr.flush()
+        print_to_strerr("Test timeout expired\n")
         return -1
 
 
