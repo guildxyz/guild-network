@@ -14,11 +14,10 @@ def start_node():
     line = b""
     while b"Running JSON-RPC WS" not in line:
         line = node.stderr.readline()
-        sys.stdout.write(line)
+        sys.stdout.buffer.write(line)
         if int(time.time() - start) == 10:
             sys.stderr.write("Node startup timeout, exiting...")
             os._exit(1)
-    sys.stdout.buffer.write(line)
     sys.stdout.buffer.flush()
     return node
 
