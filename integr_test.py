@@ -6,8 +6,8 @@ import os
 import time
 
 def print_to_strerr(msg):
-    sys.stderr.write(msg)
-    sys.stderr.flush()
+    sys.stderr.buffer.write(msg)
+    sys.stderr.buffer.flush()
 
 def print_to_stdout(msg):
     sys.stdout.buffer.write(msg)
@@ -23,7 +23,7 @@ def start_node():
         line = node.stderr.readline()
         print_to_stdout(line)
         if int(time.time() - start) == 10:
-            print_to_strerr("Node startup timeout, exiting...")
+            print_to_strerr(b"Node startup timeout, exiting...")
             os._exit(111)
     return node
 
@@ -37,7 +37,7 @@ def start_oracle():
     while line == b"":
         line = oracle.stderr.readline()
         if int(time.time() - start) == 10:
-            print_to_strerr("Oracle startup timeout, exiting...")
+            print_to_strerr(b"Oracle startup timeout, exiting...")
             os._exit(222)
     print_to_stdout(line)
     return oracle
@@ -69,7 +69,7 @@ def run_tests(*commands, timeout=300):
             print("Test finished with return code:", test.returncode)
             return test.returncode
     except TimeoutExpired:
-        print_to_strerr("Test timeout expired\n")
+        print_to_strerr(b"Test timeout expired\n")
         return -1
 
 
