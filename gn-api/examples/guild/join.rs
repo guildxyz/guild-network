@@ -1,6 +1,6 @@
 use crate::common::*;
 use ethers::signers::Signer as EthSigner;
-use gn_client::{query, tx::Signer, Api};
+use gn_api::{query, tx::Signer, Api};
 use gn_common::filter::Guild as GuildFilter;
 use gn_common::identity::Identity;
 use gn_common::pad::padded_id;
@@ -12,6 +12,7 @@ pub async fn join(api: Api, root: Arc<Signer>) {
     #[cfg(not(feature = "external-oracle"))]
     {
         register_operators(api.clone(), Arc::clone(&root), operators.keys()).await;
+        wait_for_registered_operator(api.clone(), operators.keys().next().unwrap()).await;
         activate_operators(api.clone(), operators.values()).await;
         let active_operators = query::active_operators(api.clone())
             .await

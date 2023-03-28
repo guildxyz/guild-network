@@ -1,4 +1,5 @@
-use crate::{TransactionStatus, H256};
+use crate::{SubxtError, TransactionProgress, TransactionStatus, H256};
+use futures::StreamExt;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TxStatus {
@@ -40,6 +41,25 @@ impl TxStatus {
         }
         (reached, tx_hash)
     }
+}
+
+pub async fn track_progress(
+    progress: &mut TransactionProgress,
+    status: TxStatus,
+) -> Result<Option<H256>, SubxtError> {
+    while let Some(try_event) = progress.next().await {
+        let tx_progress_status = try_event?;
+        let (reached, tx_hash) = status.reached(&tx_progress_status);
+        if reached {
+            log::info!(
+                "transaction status {:?} reached, hash: {:?}",
+                status,
+                tx_hash
+            );
+            return Ok(tx_hash);
+        }
+    }
+    Ok(None)
 }
 
 #[test]

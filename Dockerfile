@@ -16,7 +16,7 @@ RUN apt update -y \
     && apt upgrade -y \
     && apt install build-essential librocksdb-dev libclang-dev clang cmake g++-multilib libssl-dev pkg-config protobuf-compiler -y
 
-RUN rustup target add wasm32-unknown-unknown --toolchain nightly
+RUN rustup install nightly-2023-03-22 && rustup target add wasm32-unknown-unknown --toolchain nightly-2023-03-22
 
 RUN cargo +nightly chef cook --release --recipe-path recipe.json
 

@@ -1,10 +1,10 @@
 [workspace]
 members = [
-    "gn-client",
+    "gn-api",
+    "gn-cli",
     "gn-common",
     "gn-engine",
     "gn-node",
-    "gn-oracle",
     "gn-pallets/pallet-oracle",
     "gn-pallets/pallet-guild",
     "gn-pallets/pallet-validator-manager",
@@ -14,11 +14,11 @@ members = [
 ]
 # don't include wasm in the build process
 default-members = [
-    "gn-client",
+    "gn-api",
+    "gn-cli",
     "gn-common",
     "gn-engine",
     "gn-node",
-    "gn-oracle",
     "gn-pallets/pallet-oracle",
     "gn-pallets/pallet-guild",
     "gn-pallets/pallet-validator-manager",
@@ -27,7 +27,7 @@ default-members = [
 ]
 
 [profile.release]
-panic = "abort"
+panic = "unwind"
 
 [workspace.dependencies]
 # general

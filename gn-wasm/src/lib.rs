@@ -2,7 +2,7 @@
 #![deny(clippy::dbg_macro)]
 #![deny(unused_crate_dependencies)]
 
-use gn_client::{query, AccountId, Api};
+use gn_api::{query, AccountId, Api};
 use gn_common::filter::Guild as GuildFilter;
 use gn_common::identity::Identity;
 use gn_common::merkle::Proof;
@@ -247,7 +247,7 @@ mod test {
     #[cfg(feature = "queries")]
     mod queries {
         use super::*;
-        use gn_client::{query::FilteredRequirements, AccountId};
+        use gn_api::{query::FilteredRequirements, AccountId};
         use gn_common::filter::{Filter, Logic as FilterLogic};
         use gn_common::identity::Identity;
         use gn_common::Guild;
@@ -314,7 +314,7 @@ mod test {
                     .unwrap();
             let requirements: FilteredRequirements =
                 deserialize_from_value(requirements_js).unwrap();
-            let root = gn_client::H256::from_str(
+            let root = gn_api::H256::from_str(
                 "0xf6bace20645fc288795dc16cf6780d755772ba7fbe8815d78d911023ff3c8f5b",
             )
             .unwrap();

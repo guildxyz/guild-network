@@ -1,8 +1,8 @@
 use ethers::signers::{LocalWallet, Signer as EthSigner};
 use futures::future::try_join_all;
-use gn_client::query;
-use gn_client::tx::{self, Keypair, PairT, Signer, TxStatus};
-use gn_client::{AccountId, Api};
+use gn_api::query;
+use gn_api::tx::{self, Keypair, PairT, Signer, TxStatus};
+use gn_api::{AccountId, Api};
 use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
 use gn_common::identity::{EcdsaSignature, Identity, IdentityWithAuth};
 use gn_common::merkle::Proof as MerkleProof;
@@ -41,24 +41,17 @@ pub async fn dummy_accounts() -> BTreeMap<AccountId, Accounts> {
 pub async fn register_operators(
     api: Api,
     root: Arc<Signer>,
-    mut accounts: impl Iterator<Item = &AccountId>,
+    accounts: impl Iterator<Item = &AccountId>,
 ) {
-    // skip first
-    let skipped_account = accounts.next().unwrap();
-    for account in accounts {
-        let payload = tx::register_operator(account);
-        tx::send_tx_ready(api.clone(), &tx::sudo(payload), Arc::clone(&root))
-            .await
-            .unwrap();
-    }
+    let payloads = accounts
+        .map(|account| tx::sudo(tx::register_operator(account)))
+        .collect::<Vec<tx::TxPayload>>();
 
-    // wait for the skipped one to be included in a block
-    let payload = tx::register_operator(skipped_account);
-    tx::send_tx_in_block(api.clone(), &payload, root)
+    tx::send::batch(api, payloads.iter(), root)
         .await
-        .expect("failed to register operator");
+        .expect("failed to send batch tx");
 
-    println!("operator registrations in block");
+    println!("operator registrations submitted");
 }
 
 #[cfg(not(feature = "external-oracle"))]
@@ -66,7 +59,7 @@ pub async fn activate_operators(api: Api, accounts: impl Iterator<Item = &Accoun
     println!("activating operators");
     let tx_futures = accounts
         .map(|acc| {
-            tx::send_owned_tx(
+            tx::send::owned(
                 api.clone(),
                 tx::activate_operator(),
                 Arc::clone(&acc.substrate),
@@ -78,6 +71,25 @@ pub async fn activate_operators(api: Api, accounts: impl Iterator<Item = &Accoun
     try_join_all(tx_futures).await.unwrap();
 
     println!("operators activated");
+}
+
+#[cfg(not(feature = "external-oracle"))]
+pub async fn wait_for_registered_operator(api: Api, operator: &AccountId) {
+    let mut i = 0;
+    loop {
+        if query::is_operator_registered(api.clone(), operator)
+            .await
+            .expect("failed to fetch registered operator")
+        {
+            break;
+        }
+        i += 1;
+        println!("waiting for registered operators");
+        if i == RETRIES {
+            panic!("no registered operators found");
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
+    }
 }
 
 pub async fn wait_for_active_operator(api: Api) {
@@ -124,7 +136,7 @@ pub async fn create_dummy_guilds(
     accounts: impl Iterator<Item = &Accounts>,
 ) {
     // create two guilds
-    tx::send_tx_ready(
+    tx::send::ready(
         api.clone(),
         &tx::create_guild(FIRST_GUILD, vec![1, 2, 3]),
         Arc::clone(&signer),
@@ -134,7 +146,7 @@ pub async fn create_dummy_guilds(
 
     println!("first guild created");
 
-    tx::send_tx_in_block(
+    tx::send::in_block(
         api.clone(),
         &tx::create_guild(SECOND_GUILD, vec![4, 5, 6]),
         Arc::clone(&signer),
@@ -154,21 +166,21 @@ pub async fn create_dummy_guilds(
     };
     // add one free and one filtered role to each guild
     // NOTE cannot try-join them because of different `impl TxPayload` opaque types
-    tx::send_tx_ready(
+    tx::send::ready(
         api.clone(),
         &tx::create_free_role(FIRST_GUILD, FIRST_ROLE),
         Arc::clone(&signer),
     )
     .await
     .unwrap();
-    tx::send_tx_ready(
+    tx::send::ready(
         api.clone(),
         &tx::create_free_role(SECOND_GUILD, FIRST_ROLE),
         Arc::clone(&signer),
     )
     .await
     .unwrap();
-    tx::send_tx_ready(
+    tx::send::ready(
         api.clone(),
         &tx::create_role_with_allowlist(
             FIRST_GUILD,
@@ -182,7 +194,7 @@ pub async fn create_dummy_guilds(
     )
     .await
     .unwrap();
-    tx::send_tx_in_block(
+    tx::send::in_block(
         api.clone(),
         &tx::create_child_role(SECOND_GUILD, SECOND_ROLE, filter, FilterLogic::Or, None).unwrap(),
         signer,
@@ -199,7 +211,7 @@ pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
     let join_request_futures = users
         .iter()
         .map(|(_, accounts)| {
-            tx::send_tx_in_block(api.clone(), &payload, Arc::clone(&accounts.substrate))
+            tx::send::in_block(api.clone(), &payload, Arc::clone(&accounts.substrate))
         })
         .collect::<Vec<_>>();
 
@@ -226,7 +238,7 @@ pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
         .take(2)
         .enumerate()
         .map(|(i, (_, accounts))| {
-            tx::send_tx_in_block(api.clone(), &payloads[i], Arc::clone(&accounts.substrate))
+            tx::send::in_block(api.clone(), &payloads[i], Arc::clone(&accounts.substrate))
         })
         .collect::<Vec<_>>();
 
@@ -241,7 +253,7 @@ pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
         .iter()
         .take(5)
         .map(|(_, accounts)| {
-            tx::send_tx_in_block(api.clone(), &payload, Arc::clone(&accounts.substrate))
+            tx::send::in_block(api.clone(), &payload, Arc::clone(&accounts.substrate))
         })
         .collect::<Vec<_>>();
 
@@ -255,7 +267,7 @@ pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
         .iter()
         .skip(5)
         .map(|(_, accounts)| {
-            tx::send_tx_in_block(api.clone(), &payload, Arc::clone(&accounts.substrate))
+            tx::send::in_block(api.clone(), &payload, Arc::clone(&accounts.substrate))
         })
         .collect::<Vec<_>>();
 
@@ -310,7 +322,7 @@ pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {
         .into_iter()
         .zip(users.iter())
         .map(|(tx_payload, (_, accounts))| {
-            tx::send_owned_tx(
+            tx::send::owned(
                 api.clone(),
                 tx_payload,
                 Arc::clone(&accounts.substrate),
@@ -329,7 +341,7 @@ pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {
         .into_iter()
         .zip(users.iter())
         .map(|(tx_payload, (_, accounts))| {
-            tx::send_owned_tx(
+            tx::send::owned(
                 api.clone(),
                 tx_payload,
                 Arc::clone(&accounts.substrate),
@@ -354,7 +366,7 @@ pub async fn send_dummy_oracle_answers(api: Api, operators: &BTreeMap<AccountId,
     for (request_id, operator) in oracle_requests {
         let tx = tx::oracle_callback(request_id, vec![u8::from(true)]);
         let accounts = operators.get(&operator).unwrap();
-        tx::send_tx_ready(api.clone(), &tx, Arc::clone(&accounts.substrate))
+        tx::send::ready(api.clone(), &tx, Arc::clone(&accounts.substrate))
             .await
             .expect("failed to submit oracle answer");
     }

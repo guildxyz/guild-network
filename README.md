@@ -26,9 +26,9 @@ list with a brief overview for each crate:
 	- `gn-pallets` - [pallets](https://docs.substrate.io/tutorials/work-with-pallets/) are essentially pluggable extensions for the runtime that customize how the runtime behaves
 		- `pallet-guild` - this is the pallet through which users can submit their Guild-related transactions
 		- `pallet-oracle` - this is the pallet through which oracle operators can interact with the network
-- `gn-oracle` - a binary crate that oracle nodes need to run in order to subscribe to blockchain events, retrieve data from EVM blockchains and check requirements
-- `gn-client` - essentially a wrapper around [a subxt client](https://docs.rs/subxt/latest/subxt/) that connects to network nodes for queries an submitting transactions
-- `gn-wasm` - WASM wrappers around logic in `gn-client` used by the front-end application
+- `gn-api` - essentially a wrapper around [a subxt client](https://docs.rs/subxt/latest/subxt/) that connects to network nodes for queries an submitting transactions
+- `gn-cli` - CLI for interacting with a network node or running an oracle node
+- `gn-wasm` - WASM wrappers around logic in `gn-api` used by the front-end application
 - `gn-engine` - logic for creating requirements and verifying them
 - `gn-common` - common types, functions and wrappers that are used in most crates above
 - `gn-test-data` - dummy test data for integration tests

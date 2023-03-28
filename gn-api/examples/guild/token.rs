@@ -1,6 +1,6 @@
 use crate::common::*;
 use ethers::types::{Address, U256};
-use gn_client::{
+use gn_api::{
     query,
     tx::{self, Signer},
     Api,
@@ -61,7 +61,7 @@ pub async fn token(api: Api, root: Arc<Signer>) {
 
     let index = 0;
     let tx_payload = tx::register(evm_identity, index);
-    tx::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&root))
+    tx::send::in_block(api.clone(), &tx_payload, Arc::clone(&root))
         .await
         .expect("failed to register");
 
@@ -138,28 +138,28 @@ pub async fn token(api: Api, root: Arc<Signer>) {
     };
 
     let tx_payload = tx::create_guild(TOKEN_GUILD, vec![1, 2, 3]);
-    tx::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&root))
+    tx::send::in_block(api.clone(), &tx_payload, Arc::clone(&root))
         .await
         .expect("failed to create guild");
 
     println!("GUILD CREATED");
 
     let tx_payload = tx::create_unfiltered_role(TOKEN_GUILD, FIRST_ROLE, first_reqs).unwrap();
-    tx::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&root))
+    tx::send::in_block(api.clone(), &tx_payload, Arc::clone(&root))
         .await
         .expect("failed to create guild");
 
     println!("FIRST ROLE CREATED");
 
     let tx_payload = tx::create_unfiltered_role(TOKEN_GUILD, SECOND_ROLE, second_reqs).unwrap();
-    tx::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&root))
+    tx::send::in_block(api.clone(), &tx_payload, Arc::clone(&root))
         .await
         .expect("failed to create guild");
 
     println!("SECOND ROLE CREATED");
 
     let tx_payload = tx::join(TOKEN_GUILD, FIRST_ROLE, None);
-    tx::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&root))
+    tx::send::in_block(api.clone(), &tx_payload, Arc::clone(&root))
         .await
         .expect("failed to join guild");
 
@@ -184,7 +184,7 @@ pub async fn token(api: Api, root: Arc<Signer>) {
     println!("FIRST_ROLE JOINED");
 
     let tx_payload = tx::join(TOKEN_GUILD, SECOND_ROLE, None);
-    tx::send_tx_in_block(api.clone(), &tx_payload, Arc::clone(&root))
+    tx::send::in_block(api.clone(), &tx_payload, Arc::clone(&root))
         .await
         .expect("failed to join guild");
 

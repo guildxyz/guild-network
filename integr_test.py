@@ -5,6 +5,13 @@ import shlex
 import os
 import time
 
+def print_to_strerr(msg):
+    sys.stderr.buffer.write(msg)
+    sys.stderr.buffer.flush()
+
+def print_to_stdout(msg):
+    sys.stdout.buffer.write(msg)
+    sys.stdout.buffer.flush()
 
 def start_node():
     node = Popen(['./target/release/gn-node', '--dev', '--enable-offchain-indexing', 'true'],
@@ -14,16 +21,15 @@ def start_node():
     line = b""
     while b"Running JSON-RPC WS" not in line:
         line = node.stderr.readline()
+        print_to_stdout(line)
         if int(time.time() - start) == 10:
-            print("Node startup timeout, exiting...")
-            os._exit(-1)
-    sys.stdout.buffer.write(line)
-    sys.stdout.buffer.flush()
+            print_to_strerr(b"Node startup timeout, exiting...")
+            os._exit(111)
     return node
 
 
 def start_oracle():
-    oracle = Popen(['./target/release/gn-oracle', '--log', 'info', '--activate'],
+    oracle = Popen(['./target/release/gn-cli', 'oracle', '--activate'],
                    stderr=PIPE, stdout=DEVNULL)
 
     start = time.time()
@@ -31,10 +37,9 @@ def start_oracle():
     while line == b"":
         line = oracle.stderr.readline()
         if int(time.time() - start) == 10:
-            print("Oracle startup timeout, exiting...")
-            os._exit(-1)
-    sys.stdout.buffer.write(line)
-    sys.stdout.buffer.flush()
+            print_to_strerr(b"Oracle startup timeout, exiting...")
+            os._exit(222)
+    print_to_stdout(line)
     return oracle
 
 
@@ -51,8 +56,7 @@ def monitor_process(process):
     while True:
         line = process.stderr.readline()
         if line != b"":
-            sys.stderr.buffer.write(line)
-            sys.stderr.buffer.flush()
+            print_to_strerr(line)
         retcode = process.poll()
         if retcode is not None:
             return retcode
@@ -65,8 +69,7 @@ def run_tests(*commands, timeout=300):
             print("Test finished with return code:", test.returncode)
             return test.returncode
     except TimeoutExpired:
-        sys.stderr.write("Test timeout expired\n")
-        sys.stderr.flush()
+        print_to_strerr(b"Test timeout expired\n")
         return -1
 
 
@@ -74,7 +77,7 @@ def run_tests(*commands, timeout=300):
 def main():
     try:
         node = start_node()
-        command = "cargo run --release --example guild -- sudo --pallet oracle --method register"
+        command = "./target/release/gn-cli sudo oracle register"
         run_tests(command, timeout=90)
         oracle = start_oracle()
         oracle_monitor = Thread(target=monitor_oracle, args=(oracle, node,))

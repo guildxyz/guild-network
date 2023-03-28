@@ -11,7 +11,7 @@ queries = []
 
 [dependencies]
 # local
-gn-client = { version = "0.0.0-alpha", path = "../gn-client", default-features = false, features = ["wasm"] }
+gn-api = { version = "0.0.0-alpha", path = "../gn-api", default-features = false, features = ["wasm"] }
 gn-common = { version = "0.0.0-alpha", path = "../gn-common", default-features = false }
 gn-engine = { version = "0.0.0-alpha", path = "../gn-engine", default-features = false }
 

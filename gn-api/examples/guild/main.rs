@@ -1,44 +1,15 @@
 mod common;
-mod fund;
 mod join;
-mod key;
-mod sudo;
 mod token;
 
-use gn_client::tx;
+use gn_api::tx;
 
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 enum Example {
-    Fund {
-        #[structopt(long, short)]
-        account: String,
-        #[structopt(long, short)]
-        balance: u128,
-    },
     Join,
-    Key(Key),
     Token,
-    Sudo {
-        #[structopt(long, short)]
-        pallet: String,
-        #[structopt(long, short)]
-        method: String,
-        #[structopt(long, short)]
-        account: Option<String>,
-    },
-}
-
-#[derive(Debug, StructOpt)]
-enum Key {
-    Generate {
-        #[structopt(long, short, default_value = "sr25519")]
-        curve: String,
-        #[structopt(long, short)]
-        password: Option<String>,
-    },
-    Rotate,
 }
 
 #[derive(Debug, StructOpt)]
@@ -77,26 +48,7 @@ async fn main() {
     println!("signer pubkey: {}", signer.account_id());
 
     match opt.example {
-        Example::Fund { account, balance } => fund::fund(api, signer, &account, balance).await,
         Example::Join => join::join(api, signer).await,
-        Example::Key(Key::Generate { curve, password }) => {
-            key::generate(&curve, password.as_deref())
-        }
-        Example::Key(Key::Rotate) => key::rotate(api).await,
-        Example::Sudo {
-            pallet,
-            method,
-            account,
-        } => {
-            sudo::sudo(
-                api,
-                signer,
-                &pallet.to_lowercase(),
-                &method.to_lowercase(),
-                account.as_deref(),
-            )
-            .await
-        }
         Example::Token => token::token(api, signer).await,
     }
 }
