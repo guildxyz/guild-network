@@ -14,8 +14,9 @@ def start_node():
     line = b""
     while b"Running JSON-RPC WS" not in line:
         line = node.stderr.readline()
+        sys.stdout.write(line)
         if int(time.time() - start) == 10:
-            print("Node startup timeout, exiting...")
+            sys.stderr.write("Node startup timeout, exiting...")
             os._exit(1)
     sys.stdout.buffer.write(line)
     sys.stdout.buffer.flush()
@@ -31,7 +32,7 @@ def start_oracle():
     while line == b"":
         line = oracle.stderr.readline()
         if int(time.time() - start) == 10:
-            print("Oracle startup timeout, exiting...")
+            sys.stderr.write("Oracle startup timeout, exiting...")
             os._exit(2)
     sys.stdout.buffer.write(line)
     sys.stdout.buffer.flush()

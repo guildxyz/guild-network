@@ -10,10 +10,10 @@ use parity_scale_codec::Encode;
 
 use std::sync::Arc;
 
-pub fn generate(curve: &str, password: Option<&str>) {
+pub fn generate(curve: &str, password: &str) {
     match curve {
         "sr25519" => {
-            let (keypair, phrase, seed) = Keypair::generate_with_phrase(password);
+            let (keypair, phrase, seed) = Keypair::generate_with_phrase(Some(password));
             log::info!("{}", keypair.public());
             log::info!("{phrase}");
             log::info!("{seed:?}");

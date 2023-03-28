@@ -10,6 +10,7 @@ mod sudo;
 mod transfer;
 
 use gn_api::tx;
+use sp_core::crypto::{Zeroize, SecretString, ExposeSecret};
 use structopt::StructOpt;
 
 use std::path::PathBuf;
@@ -91,9 +92,6 @@ pub enum KeySubCmd {
         /// The elliptic curve where the keypair is defined
         #[structopt(long, short, default_value = "sr25519")]
         curve: String,
-        /// Optional password for the generated keypair
-        #[structopt(long, short)]
-        password: Option<String>,
     },
     /// Rotate session keys of the node (requires unsafe rpc calls exposed)
     Rotate,
@@ -193,8 +191,8 @@ pub struct Opt {
     #[structopt(long = "seed", default_value = "//Alice")]
     seed: String,
     /// Set operator account password
-    #[structopt(long = "password")]
-    password: Option<String>,
+    #[structopt(long = "password", default_value = "")]
+    password: SecretString,
     /// CLI command to execute
     #[structopt(subcommand)]
     command: Command,
@@ -202,14 +200,16 @@ pub struct Opt {
 
 #[tokio::main]
 async fn main() {
-    let opt = Opt::from_args();
+    let mut opt = Opt::from_args();
 
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(opt.log)).init();
 
     let url = format!("ws://{}:{}", opt.node_ip, opt.node_port);
-    let (api, signer) = tx::api_with_signer(url, &opt.seed, opt.password.as_deref())
+    let (api, signer) = tx::api_with_signer(url, &opt.seed, Some(opt.password.expose_secret()))
         .await
         .expect("failed to initialize client and signer");
+
+    opt.seed.zeroize();
 
     log::info!("signer account: {}", signer.account_id());
 
@@ -242,8 +242,8 @@ async fn main() {
                 .map(|(i, l)| guild::ProofIndices { id: i, leaf: l });
             guild::join(api, signer, guild, role, indices).await
         }
-        Command::Key(KeySubCmd::Generate { curve, password }) => {
-            key::generate(&curve, password.as_deref())
+        Command::Key(KeySubCmd::Generate { curve }) => {
+            key::generate(&curve, opt.password.expose_secret())
         }
         Command::Key(KeySubCmd::Rotate) => {
             key::rotate(api).await;

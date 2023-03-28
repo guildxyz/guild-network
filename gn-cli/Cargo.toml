@@ -17,5 +17,6 @@ hex = "0.4.3"
 log = "0.4.17"
 parity-scale-codec = { workspace = true }
 requiem = { git = "https://github.com/agoraxyz/requiem" }
+sp-core = { workspace = true }
 structopt = "0.3.26"
 tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
