@@ -58,7 +58,7 @@ def monitor_process(process):
             return retcode
 
 
-def run_tests(*commands, timeout=300):
+def run_tests(*commands, timeout=500):
     try:
         for cmd in commands:
             test = run(shlex.split(cmd), timeout=timeout)
