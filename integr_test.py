@@ -17,7 +17,7 @@ def start_node():
         sys.stdout.buffer.write(line)
         if int(time.time() - start) == 10:
             sys.stderr.write("Node startup timeout, exiting...")
-            os._exit(1)
+            os._exit(111)
     sys.stdout.buffer.flush()
     return node
 
@@ -32,7 +32,7 @@ def start_oracle():
         line = oracle.stderr.readline()
         if int(time.time() - start) == 10:
             sys.stderr.write("Oracle startup timeout, exiting...")
-            os._exit(2)
+            os._exit(222)
     sys.stdout.buffer.write(line)
     sys.stdout.buffer.flush()
     return oracle
