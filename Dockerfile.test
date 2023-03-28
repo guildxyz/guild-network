@@ -4,7 +4,7 @@ RUN apt update -y \
     && apt upgrade -y \
     && apt install build-essential git librocksdb-dev clang cmake g++-multilib llvm llvm-dev libssl-dev pkg-config protobuf-compiler python3 -y
 
-RUN rustup target add wasm32-unknown-unknown --toolchain nightly
+RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2023-03-22
 
 WORKDIR /opt/app
 COPY . .
