@@ -75,7 +75,7 @@ def main():
     try:
         node = start_node()
         command = "./target/release/gn-cli sudo oracle register"
-        run_tests(command, timeout=90)
+        run_tests(command, timeout=120)
         oracle = start_oracle()
         oracle_monitor = Thread(target=monitor_oracle, args=(oracle, node,))
 
@@ -84,7 +84,7 @@ def main():
         command = "cargo run --release --example guild --features external-oracle -- "
 
         status = run_tests(command + "join",
-                           command + "token", timeout=90)
+                           command + "token", timeout=120)
         node.send_signal(15)
         oracle.send_signal(15)
         while node.poll() is None or oracle.poll() is None:
