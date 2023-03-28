@@ -46,3 +46,4 @@ toward a decentralized solution that nobody can just switch off.
 - [running a validator](docs/validator.md)
 - [interacting with the chain](docs/interaction.md)
 - [genesis chain spec](docs/chain-spec.md)
+- [runtime upgrades](docs/runtime-upgrades.md)
