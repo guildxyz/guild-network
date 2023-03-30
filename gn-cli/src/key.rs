@@ -35,13 +35,13 @@ pub async fn set(api: Api, signer: Arc<Signer>, encoded_keys: Vec<u8>) {
     let payload = tx::set_session_keys(keys, proof);
 
     #[cfg(not(feature = "verify"))]
-    tx::send::in_block(api.clone(), &payload, signer.clone())
+    tx::send::ready(api.clone(), &payload, signer.clone())
         .await
         .expect(super::TX_ERROR);
 
     #[cfg(feature = "verify")]
     {
-        tx::send::ready(api.clone(), &payload, signer.clone())
+        tx::send::in_block(api.clone(), &payload, signer.clone())
             .await
             .expect(super::TX_ERROR);
         // NOTE needs to be decoded again because `SessionKeys` is imported via
