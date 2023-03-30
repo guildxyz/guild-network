@@ -28,6 +28,7 @@ use sp_runtime::{
     transaction_validity::{TransactionSource, TransactionValidity},
     ApplyExtrinsicResult, MultiSignature, SaturatedConversion,
 };
+use sp_staking::offence::ReportOffence;
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -437,7 +438,40 @@ pub type Executive = frame_executive::Executive<
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPalletsWithSystem,
+    ActivateImOnlinePallet,
 >;
+
+pub struct ActivateImOnlinePallet;
+
+impl frame_support::traits::OnRuntimeUpgrade for ActivateImOnlinePallet {
+    fn on_runtime_upgrade() -> frame_support::weights::Weight {
+        BlockWeights::get().max_block
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
+        // () returns hard-coded true in `is_known_offence`
+        assert!(
+            <<Runtime as pallet_im_online::Config>::ReportUnresponsiveness as ReportOffence<
+                AccountId,
+                (AccountId, AccountId),
+                pallet_im_online::UnresponsivenessOffence<AccountId>,
+            >>::is_known_offence(&[], &0u8)
+        );
+        Ok(Vec::new())
+    }
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(_state: Vec<u8>) -> Result<(), &'static str> {
+        // ValidatorManager returns hard-coded false in `is_known_offence`
+        assert!(
+            !<Runtime as pallet_im_online::Config>::ReportUnresponsiveness::is_known_offence(
+                &[],
+                &0u8
+            )
+        );
+        Ok(())
+    }
+}
 
 #[cfg(feature = "runtime-benchmarks")]
 #[macro_use]
