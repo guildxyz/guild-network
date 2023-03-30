@@ -452,7 +452,7 @@ impl frame_support::traits::OnRuntimeUpgrade for ActivateImOnlinePallet {
     fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
         // () returns hard-coded true in `is_known_offence`
         assert!(
-            <<Runtime as pallet_im_online::Config>::ReportUnresponsiveness as ReportOffence<
+            !<<Runtime as pallet_im_online::Config>::ReportUnresponsiveness as ReportOffence<
                 AccountId,
                 (AccountId, AccountId),
                 pallet_im_online::UnresponsivenessOffence<(AccountId, AccountId)>,
