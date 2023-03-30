@@ -455,8 +455,8 @@ impl frame_support::traits::OnRuntimeUpgrade for ActivateImOnlinePallet {
             <<Runtime as pallet_im_online::Config>::ReportUnresponsiveness as ReportOffence<
                 AccountId,
                 (AccountId, AccountId),
-                pallet_im_online::UnresponsivenessOffence<AccountId>,
-            >>::is_known_offence(&[], &0u8)
+                pallet_im_online::UnresponsivenessOffence<(AccountId, AccountId)>,
+            >>::is_known_offence(&[], &1u32)
         );
         Ok(Vec::new())
     }
@@ -464,10 +464,11 @@ impl frame_support::traits::OnRuntimeUpgrade for ActivateImOnlinePallet {
     fn post_upgrade(_state: Vec<u8>) -> Result<(), &'static str> {
         // ValidatorManager returns hard-coded false in `is_known_offence`
         assert!(
-            !<Runtime as pallet_im_online::Config>::ReportUnresponsiveness::is_known_offence(
-                &[],
-                &0u8
-            )
+            !<<Runtime as pallet_im_online::Config>::ReportUnresponsiveness as ReportOffence<
+                AccountId,
+                (AccountId, AccountId),
+                pallet_im_online::UnresponsivenessOffence<(AccountId, AccountId)>,
+            >>::is_known_offence(&[], &0u32)
         );
         Ok(())
     }
