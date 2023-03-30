@@ -32,10 +32,10 @@ RUN apt update -y \
 
 EXPOSE 30333 30333/udp 9944 9933
 
-FROM runtime as gn-oracle
-COPY --from=builder /opt/app/target/release/gn-oracle /usr/local/bin/
+FROM runtime as gn-cli
+COPY --from=builder /opt/app/target/release/gn-cli /usr/local/bin/
 
-CMD ["gn-oracle"]
+CMD ["gn-cli"]
 
 FROM runtime AS gn-node
 COPY --from=builder /opt/app/target/release/gn-node /usr/local/bin/
