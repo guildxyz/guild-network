@@ -28,6 +28,7 @@ use sp_runtime::{
     transaction_validity::{TransactionSource, TransactionValidity},
     ApplyExtrinsicResult, MultiSignature, SaturatedConversion,
 };
+#[cfg(feature = "try-runtime")]
 use sp_staking::offence::ReportOffence;
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -441,6 +442,8 @@ pub type Executive = frame_executive::Executive<
     ActivateImOnlinePallet,
 >;
 
+// TODO remove this before the next upgrade
+// also remove the `sp_staking` dependency
 pub struct ActivateImOnlinePallet;
 
 impl frame_support::traits::OnRuntimeUpgrade for ActivateImOnlinePallet {

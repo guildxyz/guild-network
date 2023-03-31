@@ -1,5 +1,28 @@
 # Runtime upgrade history
 
+## 2023-03-30
+Runtime version bumped from `102` to `103`. [Respective
+PR](https://github.com/agoraxyz/guild-network/pull/123)
+
+### Detailed info
+This [release](https://github.com/agoraxyz/guild-network/releases/tag/alpha-runtime-103)
+simply changed the `pallet_im_online::Config::ReportUnresponsiveness` type from
+`()` to `ValidatorManager`. This means that the `ValidatorManager` pallet is
+now responsible for automatically removing unresponsive (offline) validators
+after approximately two sessions. Validators consistently sending heartbeats
+are safe.
+
+In case a validator gets removed from the active validator set due to going
+offline, they can still join the active validator set once they come online
+again; the operator just needs to submit a `ValidatorManager >
+addValidatorAgain` transaction (from the explorer).
+
+### Required steps for node operators
+#### Validator nodes
+- no steps required
+#### Oracle nodes
+- no steps required
+
 ## 2023-03-22
 Runtime version bumped from `101` to `102`. [Respective
 PR](https://github.com/agoraxyz/guild-network/pull/114)
