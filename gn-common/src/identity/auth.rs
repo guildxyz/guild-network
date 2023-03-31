@@ -8,7 +8,7 @@ use secp256k1::{
     Message, Secp256k1,
 };
 
-const ETHEREUM_HASH_PREFIX: &str = "\x19Ethereum Signed Message:\n";
+pub const ETHEREUM_HASH_PREFIX: &str = "\x19Ethereum Signed Message:\n";
 const SR_SIGNING_CTX: &[u8] = b"substrate";
 
 #[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Copy, Debug)]

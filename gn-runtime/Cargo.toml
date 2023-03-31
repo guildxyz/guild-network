@@ -23,6 +23,7 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
+  "gn-dummy/std",
   "parity-scale-codec/std",
   "scale-info/std",
   "frame-benchmarking?/std",
@@ -77,6 +78,7 @@ try-runtime = [
 
 [dependencies]
 # local
+gn-dummy = { version = "0.0.0-alpha", path = "../gn-dummy", default-features = false }
 pallet-guild = { version = "0.0.0-alpha", path = "../gn-pallets/pallet-guild", default-features = false }
 pallet-oracle = { version = "0.0.0-alpha", path = "../gn-pallets/pallet-oracle", default-features = false }
 pallet-validator-manager = { version = "0.0.0-alpha", path = "../gn-pallets/pallet-validator-manager", default-features = false }

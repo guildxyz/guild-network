@@ -1,3 +1,4 @@
+mod eth;
 mod common;
 mod join;
 mod token;
@@ -8,6 +9,7 @@ use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 enum Example {
+    Eth,
     Join,
     Token,
 }
@@ -48,6 +50,7 @@ async fn main() {
     println!("signer pubkey: {}", signer.account_id());
 
     match opt.example {
+        Example::Eth => eth::eth(api, signer).await,
         Example::Join => join::join(api, signer).await,
         Example::Token => token::token(api, signer).await,
     }

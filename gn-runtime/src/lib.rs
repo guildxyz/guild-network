@@ -26,8 +26,10 @@ use sp_runtime::{
         Verify,
     },
     transaction_validity::{TransactionSource, TransactionValidity},
-    ApplyExtrinsicResult, MultiSignature, SaturatedConversion,
+    ApplyExtrinsicResult, SaturatedConversion,
 };
+
+use gn_dummy::MultiSignature;
 #[cfg(feature = "try-runtime")]
 use sp_staking::offence::ReportOffence;
 use sp_std::prelude::*;
