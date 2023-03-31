@@ -28,6 +28,8 @@ use sp_runtime::{
     transaction_validity::{TransactionSource, TransactionValidity},
     ApplyExtrinsicResult, MultiSignature, SaturatedConversion,
 };
+#[cfg(feature = "try-runtime")]
+use sp_staking::offence::ReportOffence;
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -79,15 +81,6 @@ pub mod opaque {
     /// Opaque block identifier type.
     pub type BlockId = generic::BlockId<Block>;
 
-    // TODO Remove after im_online runtime upgrade is done.
-    impl_opaque_keys! {
-        pub struct OldSessionKeys {
-            pub aura: Aura,
-            pub grandpa: Grandpa,
-
-        }
-    }
-
     impl_opaque_keys! {
         pub struct SessionKeys {
             pub aura: Aura,
@@ -109,7 +102,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 102,
+    spec_version: 103,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -286,7 +279,7 @@ impl pallet_im_online::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
     type ValidatorSet = ValidatorManager;
-    type ReportUnresponsiveness = ();
+    type ReportUnresponsiveness = ValidatorManager;
     type UnsignedPriority = ImOnlineUnsignedPriority;
     type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
     type MaxKeys = MaxKeys;
@@ -390,26 +383,6 @@ impl pallet_validator_manager::Config for Runtime {
     type MinAuthorities = MinAuthorities;
 }
 
-// should be removed along with UpgradeSessionKeys
-fn transform_session_keys(_v: AccountId, old: opaque::OldSessionKeys) -> opaque::SessionKeys {
-    let dummy_id = pallet_im_online::sr25519::AuthorityId::try_from(old.aura.as_ref()).unwrap();
-
-    opaque::SessionKeys {
-        grandpa: old.grandpa,
-        aura: old.aura,
-        im_online: dummy_id,
-    }
-}
-
-// When this is removed, should also remove `OldSessionKeys`.
-pub struct UpgradeSessionKeys;
-impl frame_support::traits::OnRuntimeUpgrade for UpgradeSessionKeys {
-    fn on_runtime_upgrade() -> frame_support::weights::Weight {
-        Session::upgrade_keys::<opaque::OldSessionKeys, _>(transform_session_keys);
-        BlockWeights::get().max_block
-    }
-}
-
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -466,8 +439,43 @@ pub type Executive = frame_executive::Executive<
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPalletsWithSystem,
-    UpgradeSessionKeys,
+    ActivateImOnlinePallet,
 >;
+
+// TODO remove this before the next upgrade
+// also remove the `sp_staking` dependency
+pub struct ActivateImOnlinePallet;
+
+impl frame_support::traits::OnRuntimeUpgrade for ActivateImOnlinePallet {
+    fn on_runtime_upgrade() -> frame_support::weights::Weight {
+        BlockWeights::get().max_block
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
+        // () returns hard-coded true in `is_known_offence`
+        assert!(
+            !<<Runtime as pallet_im_online::Config>::ReportUnresponsiveness as ReportOffence<
+                AccountId,
+                (AccountId, AccountId),
+                pallet_im_online::UnresponsivenessOffence<(AccountId, AccountId)>,
+            >>::is_known_offence(&[], &1u32)
+        );
+        Ok(Vec::new())
+    }
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(_state: Vec<u8>) -> Result<(), &'static str> {
+        // ValidatorManager returns hard-coded false in `is_known_offence`
+        assert!(
+            !<<Runtime as pallet_im_online::Config>::ReportUnresponsiveness as ReportOffence<
+                AccountId,
+                (AccountId, AccountId),
+                pallet_im_online::UnresponsivenessOffence<(AccountId, AccountId)>,
+            >>::is_known_offence(&[], &0u32)
+        );
+        Ok(())
+    }
+}
 
 #[cfg(feature = "runtime-benchmarks")]
 #[macro_use]
