@@ -1,15 +1,15 @@
 use super::status::{track_progress, TxStatus};
-use super::{Signer, TxPayloadT};
+use super::{SignerT, TxPayloadT, ClientConfig};
 use crate::{Api, SubxtError, H256};
 use futures::future::try_join_all;
 
 use std::ops::Deref;
 use std::sync::Arc;
 
-async fn send<T: TxPayloadT>(
+async fn send<T: TxPayloadT, S: SignerT<ClientConfig>>(
     api: Api,
     tx: &T,
-    signer: Arc<Signer>,
+    signer: Arc<S>,
     status: TxStatus,
 ) -> Result<Option<H256>, SubxtError> {
     let mut progress = api
@@ -20,10 +20,11 @@ async fn send<T: TxPayloadT>(
     track_progress(&mut progress, status).await
 }
 
-pub async fn batch<'a, T, P>(api: Api, payloads: P, signer: Arc<Signer>) -> Result<(), SubxtError>
+pub async fn batch<'a, T, P, S>(api: Api, payloads: P, signer: Arc<S>) -> Result<(), SubxtError>
 where
     T: TxPayloadT + 'a,
     P: Iterator<Item = &'a T>,
+    S: SignerT<ClientConfig>
 {
     let account_nonce = api
         .rpc()
@@ -51,40 +52,40 @@ where
     try_join_all(tx_futures).await.map(|_| ())
 }
 
-pub async fn owned<T: TxPayloadT>(
+pub async fn owned<T: TxPayloadT, S: SignerT<ClientConfig>>(
     api: Api,
     tx: T,
-    signer: Arc<Signer>,
+    signer: Arc<S>,
     status: TxStatus,
 ) -> Result<Option<H256>, SubxtError> {
     send(api, &tx, signer, status).await
 }
 
-pub async fn ready<T: TxPayloadT>(api: Api, tx: &T, signer: Arc<Signer>) -> Result<(), SubxtError> {
+pub async fn ready<T: TxPayloadT, S: SignerT<ClientConfig>>(api: Api, tx: &T, signer: Arc<S>) -> Result<(), SubxtError> {
     send(api, tx, signer, TxStatus::Ready).await.map(|_| ())
 }
 
-pub async fn broadcast<T: TxPayloadT>(
+pub async fn broadcast<T: TxPayloadT, S: SignerT<ClientConfig>>(
     api: Api,
     tx: &T,
-    signer: Arc<Signer>,
+    signer: Arc<S>,
 ) -> Result<(), SubxtError> {
     send(api, tx, signer, TxStatus::Broadcast).await.map(|_| ())
 }
 
-pub async fn in_block<T: TxPayloadT>(
+pub async fn in_block<T: TxPayloadT, S: SignerT<ClientConfig>>(
     api: Api,
     tx: &T,
-    signer: Arc<Signer>,
+    signer: Arc<S>,
 ) -> Result<H256, SubxtError> {
     let hash = send(api, tx, signer, TxStatus::InBlock).await?;
     hash.ok_or_else(|| SubxtError::Other("transaction hash is None".into()))
 }
 
-pub async fn finalized<T: TxPayloadT>(
+pub async fn finalized<T: TxPayloadT, S: SignerT<ClientConfig>>(
     api: Api,
     tx: &T,
-    signer: Arc<Signer>,
+    signer: Arc<S>,
 ) -> Result<H256, SubxtError> {
     let hash = send(api, tx, signer, TxStatus::Finalized).await?;
     hash.ok_or_else(|| SubxtError::Other("transaction hash is None".into()))

@@ -1,7 +1,7 @@
 use ethers::core::k256::ecdsa::SigningKey;
 use ethers::signers::{LocalWallet, Signer as EthSignerT};
 use gn_api::tx::{self, Signer};
-use gn_api::{Api, ClientConfig};
+use gn_api::{Api, ClientConfig, query};
 use sp_core::hashing::blake2_256;
 
 use subxt::utils::{MultiAddress, MultiSignature};
@@ -28,17 +28,27 @@ impl subxt::tx::Signer<ClientConfig> for EthSigner {
     }
 
     fn address(&self) -> <ClientConfig as subxt::Config>::Address {
-        MultiAddress::Address20(self.wallet.address().into())
+        //MultiAddress::Address20(self.wallet.address().into())
+        MultiAddress::Id(self.account_id.clone())
     }
 
     fn sign(&self, signer_payload: &[u8]) -> <ClientConfig as subxt::Config>::Signature {
         futures::executor::block_on(async move {
-            let signature = self.wallet.sign_message(signer_payload).await.unwrap();
+            let mut signature: [u8; 65] = self.wallet.sign_message(signer_payload).await.unwrap().into();
+            if signature[64] >= 27 {
+                signature[64] -= 27;
+            }
             MultiSignature::Ecdsa(signature.into())
         })
     }
 }
 
 pub async fn eth(api: Api, _signer: Arc<Signer>) {
-    todo!()
+    let eth_signer = Arc::new(EthSigner::from_seed([2u8; 32]));
+    let guild_name = [111u8; 32];
+    let payload = tx::create_guild(guild_name, vec![1, 2, 3]);
+    tx::send::in_block(api.clone(), &payload, Arc::clone(&eth_signer)).await.unwrap();
+
+    let guild_id = query::guild_id(api, guild_name).await.unwrap();
+    println!("{:?}", guild_id);
 }
