@@ -171,6 +171,22 @@ mod test {
     }
 
     #[tokio::test]
+    async fn sp_io_ecdsa() {
+        let seed = [2u8; 32];
+        let signing_key = SigningKey::from_bytes(&seed).unwrap();
+        let eth_signer = LocalWallet::from(signing_key);
+
+        let message = b"hello";
+        let signature = eth_signer.sign_message(message).await.unwrap();
+
+        let hashed = eth_hash_message(message);
+        let Ok(recovered) = sp_io::crypto::secp256k1_ecdsa_recover(&signature.into(), &hashed) else {
+            panic!()
+        };
+        assert_eq!(&sp_io::hashing::keccak_256(recovered.as_ref())[12..], eth_signer.address().as_ref());
+    }
+
+    #[tokio::test]
     async fn ethereum_ecdsa() {
         // check ethereum specific message hashing
         let msg = verification_msg(TEST_ACCOUNT);

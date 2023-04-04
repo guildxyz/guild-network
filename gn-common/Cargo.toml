@@ -37,3 +37,4 @@ tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
 
 # substrate primitives
 sp-core = { workspace = true, features = ["std"] }
+sp-io = { workspace = true, features = ["std"] }

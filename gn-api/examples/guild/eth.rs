@@ -33,13 +33,14 @@ impl subxt::tx::Signer<ClientConfig> for EthSigner {
     }
 
     fn sign(&self, signer_payload: &[u8]) -> <ClientConfig as subxt::Config>::Signature {
-        println!("{:?}", signer_payload);
+        println!("LEN: {:?}", signer_payload.len());
+        println!("MSG: {:?}", signer_payload);
         futures::executor::block_on(async move {
             let mut signature: [u8; 65] = self.wallet.sign_message(signer_payload).await.unwrap().into();
-            if signature[64] >= 27 {
-                signature[64] -= 27;
-            }
-            MultiSignature::Ecdsa(dbg!(signature.into()))
+            //if signature[64] >= 27 {
+            //    signature[64] -= 27;
+            //}
+            MultiSignature::Ecdsa(signature.into())
         })
     }
 }

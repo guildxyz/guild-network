@@ -199,11 +199,12 @@ impl Verify for MultiSignature {
                     msg.as_ref().len()
                 )
                 .into_bytes();
+                log::info!("PFX: {:?}", prefixed_msg);
                 prefixed_msg.extend_from_slice(msg);
                 log::info!("MSG: {:?}", prefixed_msg);
                 log::info!("SIG: {:?}", <ecdsa::Signature as AsRef<[u8]>>::as_ref(sig));
                 let m = sp_io::hashing::keccak_256(&prefixed_msg);
-                match sp_io::crypto::secp256k1_ecdsa_recover_compressed(sig.as_ref(), &m) {
+                match sp_io::crypto::secp256k1_ecdsa_recover(sig.as_ref(), &m) {
                     Ok(pubkey) => {
                         log::info!("PUBKEY: {:?}", pubkey);
                         let address = &sp_io::hashing::keccak_256(pubkey.as_ref())[12..];
