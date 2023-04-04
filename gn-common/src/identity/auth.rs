@@ -107,10 +107,7 @@ pub fn eth_address(pubkey: &PublicKey) -> [u8; 20] {
         .expect("this is 20 bytes; qed")
 }
 
-pub fn recover_prehashed(
-    message: [u8; 32],
-    signature: &[u8; 65],
-) -> Option<secp256k1::PublicKey> {
+pub fn recover_prehashed(message: [u8; 32], signature: &[u8; 65]) -> Option<secp256k1::PublicKey> {
     let rid = RecoveryId::from_i32(signature[64] as i32).ok()?;
     let sig = RecoverableSignature::from_compact(&signature[..64], rid).ok()?;
     // NOTE this never fails because the prehashed message is 32 bytes

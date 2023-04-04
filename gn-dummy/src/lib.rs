@@ -196,18 +196,9 @@ impl Verify for MultiSignature {
                 let Some(pubkey) = gn_common::identity::recover_prehashed(prehashed, sig.as_ref()) else {
                     return false
                 };
-                log::info!("{:?}", pubkey.as_ref());
-                log::info!("{:?}", <dyn AsRef<[u8; 32]>>::as_ref(who));
 
                 &sp_io::hashing::blake2_256(&gn_common::identity::eth_address(&pubkey))
                     == <dyn AsRef<[u8; 32]>>::as_ref(who)
-
-                //match sp_io::crypto::secp256k1_ecdsa_recover(sig.as_ref(), &m) {
-                //    Ok(pubkey) => {
-                //        address == <dyn AsRef<[u8; 32]>>::as_ref(who)
-                //    }
-                //    _ => false,
-                //}
             }
         }
     }

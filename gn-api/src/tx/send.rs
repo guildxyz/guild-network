@@ -1,5 +1,5 @@
 use super::status::{track_progress, TxStatus};
-use super::{SignerT, TxPayloadT, ClientConfig};
+use super::{ClientConfig, SignerT, TxPayloadT};
 use crate::{Api, SubxtError, H256};
 use futures::future::try_join_all;
 
@@ -24,7 +24,7 @@ pub async fn batch<'a, T, P, S>(api: Api, payloads: P, signer: Arc<S>) -> Result
 where
     T: TxPayloadT + 'a,
     P: Iterator<Item = &'a T>,
-    S: SignerT<ClientConfig>
+    S: SignerT<ClientConfig>,
 {
     let account_nonce = api
         .rpc()
@@ -61,7 +61,11 @@ pub async fn owned<T: TxPayloadT, S: SignerT<ClientConfig>>(
     send(api, &tx, signer, status).await
 }
 
-pub async fn ready<T: TxPayloadT, S: SignerT<ClientConfig>>(api: Api, tx: &T, signer: Arc<S>) -> Result<(), SubxtError> {
+pub async fn ready<T: TxPayloadT, S: SignerT<ClientConfig>>(
+    api: Api,
+    tx: &T,
+    signer: Arc<S>,
+) -> Result<(), SubxtError> {
     send(api, tx, signer, TxStatus::Ready).await.map(|_| ())
 }
 

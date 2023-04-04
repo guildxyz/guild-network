@@ -1,5 +1,5 @@
-mod eth;
 mod common;
+mod eth;
 mod join;
 mod token;
 
