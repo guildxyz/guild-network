@@ -192,27 +192,22 @@ impl Verify for MultiSignature {
                 Err(()) => false,
             },
             (Self::Ecdsa(ref sig), who) => {
-                let msg = msg.get();
-                let mut prefixed_msg = scale_info::prelude::format!(
-                    "{}{}",
-                    gn_common::identity::ETHEREUM_HASH_PREFIX,
-                    msg.as_ref().len()
-                )
-                .into_bytes();
-                log::info!("PFX: {:?}", prefixed_msg);
-                prefixed_msg.extend_from_slice(msg);
-                log::info!("MSG: {:?}", prefixed_msg);
-                log::info!("SIG: {:?}", <ecdsa::Signature as AsRef<[u8]>>::as_ref(sig));
-                let m = sp_io::hashing::keccak_256(&prefixed_msg);
-                match sp_io::crypto::secp256k1_ecdsa_recover(sig.as_ref(), &m) {
-                    Ok(pubkey) => {
-                        log::info!("PUBKEY: {:?}", pubkey);
-                        let address = &sp_io::hashing::keccak_256(pubkey.as_ref())[12..];
-                        log::info!("ADDRESS: {:?}", address);
-                        address == <dyn AsRef<[u8; 32]>>::as_ref(who)
-                    }
-                    _ => false,
-                }
+                let prehashed = gn_common::identity::eth_hash_message(msg.get());
+                let Some(pubkey) = gn_common::identity::recover_prehashed(prehashed, sig.as_ref()) else {
+                    return false
+                };
+                log::info!("{:?}", pubkey.as_ref());
+                log::info!("{:?}", <dyn AsRef<[u8; 32]>>::as_ref(who));
+
+                &sp_io::hashing::blake2_256(&gn_common::identity::eth_address(&pubkey))
+                    == <dyn AsRef<[u8; 32]>>::as_ref(who)
+
+                //match sp_io::crypto::secp256k1_ecdsa_recover(sig.as_ref(), &m) {
+                //    Ok(pubkey) => {
+                //        address == <dyn AsRef<[u8; 32]>>::as_ref(who)
+                //    }
+                //    _ => false,
+                //}
             }
         }
     }
