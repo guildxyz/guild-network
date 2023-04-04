@@ -33,18 +33,20 @@ impl subxt::tx::Signer<ClientConfig> for EthSigner {
     }
 
     fn sign(&self, signer_payload: &[u8]) -> <ClientConfig as subxt::Config>::Signature {
+        println!("{:?}", signer_payload);
         futures::executor::block_on(async move {
             let mut signature: [u8; 65] = self.wallet.sign_message(signer_payload).await.unwrap().into();
             if signature[64] >= 27 {
                 signature[64] -= 27;
             }
-            MultiSignature::Ecdsa(signature.into())
+            MultiSignature::Ecdsa(dbg!(signature.into()))
         })
     }
 }
 
 pub async fn eth(api: Api, _signer: Arc<Signer>) {
     let eth_signer = Arc::new(EthSigner::from_seed([2u8; 32]));
+    println!("{:?}", eth_signer.as_ref().wallet.address().as_ref());
     let guild_name = [111u8; 32];
     let payload = tx::create_guild(guild_name, vec![1, 2, 3]);
     tx::send::in_block(api.clone(), &payload, Arc::clone(&eth_signer)).await.unwrap();

@@ -192,15 +192,23 @@ impl Verify for MultiSignature {
                 Err(()) => false,
             },
             (Self::Ecdsa(ref sig), who) => {
-                let mut prefixed_msg = gn_common::identity::ETHEREUM_HASH_PREFIX
-                    .as_bytes()
-                    .to_vec();
-                prefixed_msg.extend_from_slice(msg.get());
+                let msg = msg.get();
+                let mut prefixed_msg = scale_info::prelude::format!(
+                    "{}{}",
+                    gn_common::identity::ETHEREUM_HASH_PREFIX,
+                    msg.as_ref().len()
+                )
+                .into_bytes();
+                prefixed_msg.extend_from_slice(msg);
+                log::info!("MSG: {:?}", prefixed_msg);
+                log::info!("SIG: {:?}", <ecdsa::Signature as AsRef<[u8]>>::as_ref(sig));
                 let m = sp_io::hashing::keccak_256(&prefixed_msg);
                 match sp_io::crypto::secp256k1_ecdsa_recover_compressed(sig.as_ref(), &m) {
                     Ok(pubkey) => {
-                        &sp_io::hashing::keccak_256(pubkey.as_ref())[12..]
-                            == <dyn AsRef<[u8; 32]>>::as_ref(who)
+                        log::info!("PUBKEY: {:?}", pubkey);
+                        let address = &sp_io::hashing::keccak_256(pubkey.as_ref())[12..];
+                        log::info!("ADDRESS: {:?}", address);
+                        address == <dyn AsRef<[u8; 32]>>::as_ref(who)
                     }
                     _ => false,
                 }
