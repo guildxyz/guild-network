@@ -42,7 +42,7 @@ impl subxt::tx::Signer<ClientConfig> for EthSigner {
             if signature[64] >= 27 {
                 signature[64] -= 27;
             }
-            MultiSignature::Ecdsa(signature.into())
+            MultiSignature::Ecdsa(signature)
         })
     }
 }

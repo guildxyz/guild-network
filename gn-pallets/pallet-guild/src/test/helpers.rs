@@ -55,7 +55,7 @@ pub fn dummy_ecdsa_id_with_auth(user: AccountId, seed: [u8; 32]) -> (Identity, E
     let keypair_ecdsa = sp_core::ecdsa::Pair::from_seed_slice(&seed).unwrap();
     let msg = gn_common::utils::verification_msg(user);
     let ecdsa_sig = EcdsaSignature(keypair_ecdsa.sign(msg.as_ref()).0);
-    let ecdsa_pubkey = recover_prehashed(eth_hash_message(&msg), &ecdsa_sig).unwrap();
+    let ecdsa_pubkey = recover_prehashed(eth_hash_message(&msg), &ecdsa_sig.0).unwrap();
     let ecdsa_address: [u8; 20] = sp_core::keccak_256(&ecdsa_pubkey.serialize_uncompressed()[1..])
         [12..]
         .try_into()
