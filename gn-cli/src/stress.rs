@@ -20,7 +20,8 @@ pub fn generate_evm_addresses(output: PathBuf, num: usize, seed: &str) {
     for _ in 0..num {
         let signing_key = SigningKey::from_bytes(&seed_bytes).expect("invalid seed");
         let signer = LocalWallet::from(signing_key);
-        increment_array(&mut seed_bytes, &mut index);
+        seed_bytes[index] = seed_bytes[index].wrapping_add(1);
+        index = index.wrapping_add(1) % seed_bytes.len();
         write!(&mut file, "\n{:?}", signer.address()).expect("failed to write file");
     }
 }
