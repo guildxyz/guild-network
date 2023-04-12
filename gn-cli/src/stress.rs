@@ -38,7 +38,8 @@ pub async fn register_other_identity(api: Api, num: usize, seed: &str, tps: usiz
                 let identity = Identity::Other(pad_to_n_bytes::<64, _>(format!("other{}", id)));
                 let identity_with_auth = IdentityWithAuth::Other(identity, [0u8; 64]);
                 id += 1;
-                increment_array(&mut seed_bytes, &mut index);
+                seed_bytes[index] = seed_bytes[index].wrapping_add(1);
+                index = index.wrapping_add(1) % seed_bytes.len();
                 let payload = tx::register(identity_with_auth, id_index);
                 tx::send::owned(api.clone(), payload, signer, TxStatus::Ready)
             })
@@ -50,48 +51,5 @@ pub async fn register_other_identity(api: Api, num: usize, seed: &str, tps: usiz
 
         tokio::time::sleep(std::time::Duration::from_millis(950)).await;
         log::info!("registration batch {} submitted", i);
-    }
-}
-
-// panics if index is out of bounds
-fn increment_array(array: &mut [u8], index: &mut usize) {
-    if array[*index] == u8::MAX {
-        *index += 1;
-        increment_array(array, index)
-    } else {
-        array[*index] += 1;
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    #[should_panic]
-    fn overflow() {
-        let mut seed = [u8::MAX; 32];
-        increment_array(&mut seed, &mut 0);
-    }
-
-    #[test]
-    fn array_incremented_properly() {
-        let mut seed = [0u8; 32];
-        let mut index = 0usize;
-        increment_array(&mut seed, &mut index);
-        assert_eq!(index, 0);
-        assert_eq!(seed[index], 1);
-
-        for _ in 1..u8::MAX {
-            increment_array(&mut seed, &mut index);
-        }
-
-        assert_eq!(index, 0);
-        assert_eq!(seed[index], u8::MAX);
-
-        increment_array(&mut seed, &mut index);
-
-        assert_eq!(index, 1);
-        assert_eq!(seed[index], 1);
     }
 }
