@@ -5,13 +5,16 @@ import shlex
 import os
 import time
 
+
 def print_to_strerr(msg):
     sys.stderr.buffer.write(msg)
     sys.stderr.buffer.flush()
 
+
 def print_to_stdout(msg):
     sys.stdout.buffer.write(msg)
     sys.stdout.buffer.flush()
+
 
 def start_node():
     node = Popen(['./target/release/gn-node', '--dev', '--enable-offchain-indexing', 'true'],
