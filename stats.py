@@ -8,7 +8,6 @@ import time
 import numpy as np
 import pandas as pd
 from substrateinterface import SubstrateInterface
-from pprint import pprint
 
 substr = SubstrateInterface(url="wss://1.oracle.network.guild.xyz")
 print("Connected")
