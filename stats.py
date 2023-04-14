@@ -1,3 +1,9 @@
+# NOTE: this script requires the packages numpy, pandas and substrate-interface
+# it is recommended to run this in a python venv and install the dependencies with the following commands:
+# python3 -m venv venv
+# . venv/bin/activate
+# pip install -r requirements.txt
+
 import time
 import numpy as np
 import pandas as pd
