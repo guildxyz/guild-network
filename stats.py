@@ -10,13 +10,14 @@ print("Connected")
 baseline_data = pd.DataFrame(columns=['size', 'extrs', 'latency'])
 capture_data = pd.DataFrame(columns=['timestamp', 'size', 'extrs', 'latency'])
 
-BASELINE_TIMEFRAME = 10
+BASELINE_TIMEFRAME = 25
 END_CAPTURE_TIMEFRAME = 5
 
 baseline_deviation = 0
 capture = False
 end_capture = END_CAPTURE_TIMEFRAME
-z_score = 0
+z_extr = 0
+z_lat = 0
 gather_baseline = True
 last_timestamp = np.nan
 
@@ -26,7 +27,7 @@ print(
 
 
 def subscription_handler(obj, update_nr, subscription_id):
-    global baseline_data, baseline_deviation, capture, end_capture, z_score, gather_baseline, last_timestamp
+    global baseline_data, baseline_deviation, capture, end_capture, z_extr, z_lat, gather_baseline, last_timestamp
 
     block_num = obj['header']['number']
     print(f"New block #{block_num}")
@@ -36,32 +37,42 @@ def subscription_handler(obj, update_nr, subscription_id):
         return
 
     timestamp = block['extrinsics'][0].value['call']['call_args'][0]['value']
+    latency = (timestamp - last_timestamp) / 1000
     extr_num = len(block['extrinsics'])
 
     if gather_baseline:
         baseline_data.loc[block_num] = {
             'size': 0,
             'extrs': extr_num,
-            'latency': timestamp - last_timestamp
+            'latency': latency
         }
-        print(baseline_data)
         if update_nr == BASELINE_TIMEFRAME - 1:
             gather_baseline = False
-            baseline_deviation = baseline_data['extrs'].std()
             print(
-                f"Established baseline with {len(baseline_data)} blocks. Current baseline stdev: {baseline_deviation:.3f}"
+                f"Established baseline with {len(baseline_data)} blocks.",
+            )
+            print(
+                f"baseline stdev (extrinsics): {baseline_data['extrs'].std():.3f}"
+            )
+            print(
+                f"baseline stdev (latency): {baseline_data['latency'].std():.3f}"
             )
     else:
-        z_score = (
-            extr_num - np.mean(baseline_data['extrs'])) / baseline_deviation
-        print(f"Z-score of current sample: {z_score:.3f}")
+        z_extr = (
+            extr_num - baseline_data['extrs'].mean()) / baseline_data['extrs'].std()
+        z_lat = (
+            latency - baseline_data['latency'].mean()) / baseline_data['latency'].std()
+        print(f"z-lat: {z_lat:.3f}")
 
-    if z_score > 8 and not capture:
+    if abs(z_extr) > 3 and not capture:
         capture = True
         print("CAPTURE TRIGGERED")
 
+    if abs(z_lat) > 3:
+        print("ANOMALY IN BLOCKTIME DETECTED")
+
     if capture:
-        if z_score < 3:
+        if abs(z_extr) < 3:
             end_capture -= 1
         else:
             end_capture = END_CAPTURE_TIMEFRAME
@@ -73,11 +84,10 @@ def subscription_handler(obj, update_nr, subscription_id):
             'timestamp': timestamp,
             'size': 0,
             'extrs': extr_num,
-            'latency': timestamp - last_timestamp
+            'latency': latency
         }
-    else:
-        print(f"Latency: {(timestamp - last_timestamp) / 1000:.3f}")
-        print(f"Number of extrinsics: {extr_num}")
+    print(f"Latency: {latency:.3f}")
+    print(f"Number of extrinsics: {extr_num}")
     last_timestamp = timestamp
 
 
