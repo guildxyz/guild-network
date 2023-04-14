@@ -27,7 +27,8 @@ print(
 
 
 def subscription_handler(obj, update_nr, subscription_id):
-    global baseline_data, baseline_deviation, capture, end_capture, z_extr, z_lat, gather_baseline, last_timestamp
+    global baseline_data, baseline_deviation, capture, end_capture, \
+        z_extr, z_lat, gather_baseline, last_timestamp
 
     block_num = obj['header']['number']
     print(f"New block #{block_num}")
@@ -62,24 +63,28 @@ def subscription_handler(obj, update_nr, subscription_id):
             extr_num - baseline_data['extrs'].mean()) / baseline_data['extrs'].std()
         z_lat = (
             latency - baseline_data['latency'].mean()) / baseline_data['latency'].std()
-        print(f"z-lat: {z_lat:.3f}")
 
     if abs(z_extr) > 3 and not capture:
         capture = True
         print("CAPTURE TRIGGERED")
+        print("Press Ctrl-C to end capture and show the results")
 
     if abs(z_lat) > 3:
         print("ANOMALY IN BLOCKTIME DETECTED")
+        print(f"z-lat: {z_lat:.3f}")
 
     if capture:
-        if abs(z_extr) < 3:
-            end_capture -= 1
-        else:
-            end_capture = END_CAPTURE_TIMEFRAME
-
-        if end_capture == 0:
-            print("END OF CAPTURE")
-            return "Done"
+        # FIXME: some tests take an unreasonably long "pause" in the middle
+        # (going below baseline for longer than 6-8 blocks);
+        # disabling automatic detection for now
+        #
+        # if abs(z_extr) < 3:
+        #     end_capture -= 1
+        # else:
+        #     end_capture = END_CAPTURE_TIMEFRAME
+        # if end_capture == 0:
+        #     print("END OF CAPTURE")
+        #     return "Done"
         capture_data.loc[block_num] = {  # type: ignore
             'timestamp': timestamp,
             'size': 0,
@@ -91,14 +96,20 @@ def subscription_handler(obj, update_nr, subscription_id):
     last_timestamp = timestamp
 
 
-result = substr.subscribe_block_headers(subscription_handler)
+# TEMP: see FIXME
+try:
+    result = substr.subscribe_block_headers(subscription_handler)
+except KeyboardInterrupt:
+    pass
 
 # drop last n entries recorded after the capture should've ended
+# # TEMP: see FIXME
+print(capture_data)
+n = int(input("Enter how many rows should be removed from the end (after the end of the test): "))
 capture_data.drop(capture_data.tail(END_CAPTURE_TIMEFRAME - 1).index,
                   inplace=True)
 capture_data['z-lat'] = (capture_data['latency'] - capture_data['latency'].mean()
                          ) / capture_data['latency'].std()
-
 
 print(capture_data)
 
