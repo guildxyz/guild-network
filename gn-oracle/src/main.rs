@@ -56,10 +56,14 @@ async fn main() {
 
     log::info!("signer account: {}", signer.account_id());
 
-    oracle(api, signer, opt.activate).await
+    if opt.activate {
+        activate(api.clone(), Arc::clone(&signer)).await;
+    }
+
+    run(api, signer).await
 }
 
-pub async fn oracle(api: Api, operator: Arc<Signer>, activate: bool) {
+pub async fn activate(api: Api, operator: Arc<Signer>) {
     if !query::is_operator_registered(api.clone(), operator.account_id())
         .await
         .expect("failed to fetch operator info")
@@ -67,20 +71,21 @@ pub async fn oracle(api: Api, operator: Arc<Signer>, activate: bool) {
         panic!("{} is not registered as an operator", operator.account_id());
     }
 
-    if activate {
-        tx::send::in_block(api.clone(), &tx::activate_operator(), Arc::clone(&operator))
-            .await
-            .expect("failed to activate operator");
+    tx::send::in_block(api.clone(), &tx::activate_operator(), Arc::clone(&operator))
+        .await
+        .expect("failed to activate operator");
 
-        log::info!("operator activation request submitted");
-    }
+    log::info!("operator activation request submitted");
+}
 
+pub async fn run(api: Api, operator: Arc<Signer>) {
     let active = query::active_operators(api.clone())
         .await
         .expect("failed to fetch active operators");
+
     if !active.contains(operator.account_id()) {
         panic!(
-            "{} not activated. Run oracle with the '--activate' flag",
+            "{} not activated, start oracle with the '--activate' flag",
             operator.account_id()
         );
     } else {
