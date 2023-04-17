@@ -82,18 +82,6 @@ pub mod pallet {
         OptionQuery,
     >;
 
-    #[pallet::storage]
-    #[pallet::getter(fn user_data)]
-    pub type UserData<T: Config> = StorageDoubleMap<
-        _,
-        Blake2_128Concat,
-        T::AccountId,
-        Blake2_128Concat,
-        u8,
-        Identity,
-        OptionQuery,
-    >;
-
     #[pallet::config]
     pub trait Config: OracleConfig<Callback = Call<Self>> + frame_system::Config {
         #[pallet::constant]

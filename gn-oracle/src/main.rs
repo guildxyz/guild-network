@@ -102,6 +102,8 @@ pub async fn run(api: Api, operator: Arc<Signer>) {
         match block_result {
             Ok(block) => match block.events().await {
                 Ok(events) => {
+                    //let mut challenge_requests = Vec::new();
+                    //let mut join_requests = Vec::new();
                     let requests = events
                         .iter()
                         .filter_map(|event_result| event_result.ok())
@@ -109,7 +111,9 @@ pub async fn run(api: Api, operator: Arc<Signer>) {
                             event_details.as_event::<OracleRequest>().ok().flatten()
                         })
                         .collect::<Vec<OracleRequest>>();
-                    submit_answers(api.clone(), Arc::clone(&operator), requests)
+                    // query identity + requirement
+                    // Redis
+                    //submit_answers(api.clone(), Arc::clone(&operator), requests)
                 }
                 Err(err) => log::error!("invalid block events: {err}"),
             },
@@ -118,6 +122,17 @@ pub async fn run(api: Api, operator: Arc<Signer>) {
     }
     log::error!("block subscription aborted");
 }
+
+//fn engine(client, id, role, redis) -> Result<bool, ...> {
+//    ...
+//}
+
+//fn challenger(redis, address, h_id) {
+//    // gen r
+//    // cache to redis
+//    // H_c -> frontend
+//    // H_id, H_c^m from bots
+//}
 
 fn submit_answers(api: Api, signer: Arc<Signer>, requests: Vec<OracleRequest>) {
     tokio::spawn(async move {
