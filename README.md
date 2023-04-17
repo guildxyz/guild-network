@@ -27,11 +27,12 @@ list with a brief overview for each crate:
 		- `pallet-guild` - this is the pallet through which users can submit their Guild-related transactions
 		- `pallet-oracle` - this is the pallet through which oracle operators can interact with the network
 - `gn-api` - essentially a wrapper around [a subxt client](https://docs.rs/subxt/latest/subxt/) that connects to network nodes for queries an submitting transactions
-- `gn-cli` - CLI for interacting with a network node or running an oracle node
-- `gn-wasm` - WASM wrappers around logic in `gn-api` used by the front-end application
-- `gn-engine` - logic for creating requirements and verifying them
+- `gn-cli` - CLI for interacting with a network node
 - `gn-common` - common types, functions and wrappers that are used in most crates above
+- `gn-engine` - logic for creating requirements and verifying them
+- `gn-oracle` - binary package for running an oracle node
 - `gn-test-data` - dummy test data for integration tests
+- `gn-wasm` - WASM wrappers around logic in `gn-api` used by the front-end application
 
 The chain is currently in a free-to-use demo stage that **doesn't require** any
 funds to interact with. However, you should always keep your private keys

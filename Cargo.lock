@@ -3109,7 +3109,6 @@ dependencies = [
  "hex",
  "log",
  "parity-scale-codec 3.4.0",
- "requiem",
  "sp-core",
  "structopt",
  "tokio",
@@ -3193,6 +3192,21 @@ dependencies = [
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "try-runtime-cli",
+]
+
+[[package]]
+name = "gn-oracle"
+version = "0.0.0-alpha"
+dependencies = [
+ "env_logger 0.9.3",
+ "futures",
+ "gn-api",
+ "gn-common",
+ "log",
+ "requiem",
+ "sp-core",
+ "structopt",
+ "tokio",
 ]
 
 [[package]]

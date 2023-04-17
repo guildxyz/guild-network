@@ -4,7 +4,6 @@
 
 mod guild;
 mod key;
-mod oracle;
 mod stress;
 mod sudo;
 mod transfer;
@@ -22,12 +21,6 @@ const QUERY_ERROR: &str = "failed to execute query";
 pub enum Command {
     /// Convenience functions for key handling
     Key(KeySubCmd),
-    /// Start and oracle node
-    Oracle {
-        /// Activate operator before starting to listen to events
-        #[structopt(long)]
-        activate: bool,
-    },
     /// Chain interactions that require sudo access
     Sudo(SudoSubCmd),
     /// Guild-related on-chain interactions
@@ -252,7 +245,6 @@ async fn main() {
             let keys = key::rotate(api.clone()).await;
             key::set(api, signer, keys).await
         }
-        Command::Oracle { activate } => oracle::oracle(api, signer, activate).await,
         Command::Sudo(SudoSubCmd::Oracle { method }) => match method {
             OracleMethod::Register { account } => {
                 sudo::sudo(
