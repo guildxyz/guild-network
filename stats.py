@@ -17,6 +17,7 @@ capture_data = pd.DataFrame(columns=['timestamp', 'size', 'extrs', 'latency'])
 
 BASELINE_TIMEFRAME = 25
 END_CAPTURE_TIMEFRAME = 5
+BLOCK_OVERHEAD = 187  # bytes
 
 baseline_deviation = 0
 capture = False
@@ -43,12 +44,14 @@ def subscription_handler(obj, update_nr, subscription_id):
         return
 
     timestamp = block['extrinsics'][0].value['call']['call_args'][0]['value']
-    latency = (timestamp - last_timestamp) / 1000
+    block_size = sum([len(ext.data)
+                     for ext in block['extrinsics']]) + BLOCK_OVERHEAD
     extr_num = len(block['extrinsics'])
+    latency = (timestamp - last_timestamp) / 1000
 
     if gather_baseline:
         baseline_data.loc[block_num] = {
-            'size': 0,
+            'size': block_size,
             'extrs': extr_num,
             'latency': latency
         }
@@ -56,6 +59,9 @@ def subscription_handler(obj, update_nr, subscription_id):
             gather_baseline = False
             print(
                 f"Established baseline with {len(baseline_data)} blocks.",
+            )
+            print(
+                f"baseline stdev (block size): {baseline_data['size'].std():.3f}"
             )
             print(
                 f"baseline stdev (extrinsics): {baseline_data['extrs'].std():.3f}"
@@ -92,11 +98,12 @@ def subscription_handler(obj, update_nr, subscription_id):
         #     return "Done"
         capture_data.loc[block_num] = {  # type: ignore
             'timestamp': timestamp,
-            'size': 0,
+            'size': block_size,
             'extrs': extr_num,
             'latency': latency
         }
     print(f"Latency: {latency:.3f}")
+    print(f"Block size: {block_size}")
     print(f"Number of extrinsics: {extr_num}")
     last_timestamp = timestamp
 
@@ -111,7 +118,7 @@ except KeyboardInterrupt:
 # # TEMP: see FIXME
 print(capture_data)
 n = int(input("Enter how many rows should be removed from the end (after the end of the test): "))
-capture_data.drop(capture_data.tail(END_CAPTURE_TIMEFRAME - 1).index,
+capture_data.drop(capture_data.tail(n).index,
                   inplace=True)
 capture_data['z-lat'] = (capture_data['latency'] - capture_data['latency'].mean()
                          ) / capture_data['latency'].std()
@@ -128,6 +135,8 @@ print(
     f"extrinsics per second: {capture_data['extrs'].sum() / (capture_data['extrs'].count() * 3):.3f}"
 )
 
-print(f"Test lasted {len(capture_data.index)} blocks")
+print(f"block size total: {capture_data['size'].sum():.3f}")
+print(f"block size mean: {capture_data['size'].mean():.3f}")
+print(f"block size stdev: {capture_data['size'].std():.3f}")
 
-print("blocksize: TODO")
+print(f"Test lasted {len(capture_data.index)} blocks")
