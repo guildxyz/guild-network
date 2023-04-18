@@ -197,7 +197,7 @@ impl Verify for MultiSignature {
                     return false
                 };
 
-                &sp_io::hashing::blake2_256(&gn_common::identity::eth_address(&pubkey))
+                &gn_common::utils::evm_to_account(gn_common::identity::eth_address(&pubkey))
                     == <dyn AsRef<[u8; 32]>>::as_ref(who)
             }
         }

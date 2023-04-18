@@ -1,5 +1,5 @@
 [package]
-name = "gn-dummy"
+name = "gn-sig"
 version = "0.0.0-alpha"
 edition = "2021"
 

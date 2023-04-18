@@ -2,7 +2,7 @@ use ethers::core::k256::ecdsa::SigningKey;
 use ethers::signers::{LocalWallet, Signer as EthSignerT};
 use gn_api::tx::{self, Signer};
 use gn_api::{query, Api, ClientConfig};
-use sp_core::hashing::blake2_256;
+use gn_common::utils::evm_to_account;
 
 use subxt::utils::{MultiAddress, MultiSignature};
 
@@ -16,8 +16,9 @@ pub struct EthSigner {
 impl EthSigner {
     pub fn from_seed(seed: [u8; 32]) -> Self {
         let wallet = LocalWallet::from(SigningKey::from_bytes(&seed).unwrap());
-        let account_id =
-            <ClientConfig as subxt::Config>::AccountId::from(blake2_256(wallet.address().as_ref()));
+        let account_id = <ClientConfig as subxt::Config>::AccountId::from(evm_to_account(
+            wallet.address().to_fixed_bytes(),
+        ));
         Self { account_id, wallet }
     }
 }

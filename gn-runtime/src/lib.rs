@@ -29,7 +29,7 @@ use sp_runtime::{
     ApplyExtrinsicResult, SaturatedConversion,
 };
 
-use gn_dummy::MultiSignature;
+use gn_sig::MultiSignature;
 #[cfg(feature = "try-runtime")]
 use sp_staking::offence::ReportOffence;
 use sp_std::prelude::*;
