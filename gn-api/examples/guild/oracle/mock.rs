@@ -1,6 +1,6 @@
 use super::*;
-use gn_api::tx::{self, Keypair, PairT, TxStatus};
 use futures::future::try_join_all;
+use gn_api::tx::{self, Keypair, PairT, TxStatus};
 
 use std::sync::Arc;
 
