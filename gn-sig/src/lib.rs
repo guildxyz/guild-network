@@ -112,7 +112,7 @@ impl IdentifyAccount for MultiSigner {
         match self {
             Self::Ed25519(who) => <[u8; 32]>::from(who).into(),
             Self::Sr25519(who) => <[u8; 32]>::from(who).into(),
-            Self::Ecdsa(who) => gn_common::utils::evm_to_account(who.as_ref()).into(),
+            Self::Ecdsa(who) => gn_common::utils::evm_to_account(who.into()).into(),
         }
     }
 }
