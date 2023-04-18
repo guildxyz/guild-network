@@ -95,10 +95,10 @@ pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>, accounts: &[Arc<
     println!("all roles created");
 }
 
-pub async fn join_guilds(api: Api, user: &[Arc<EthSigner>]) {
+pub async fn join_guilds(api: Api, users: &[Arc<EthSigner>]) {
     // everybody joins the first guild's free role
     let payload = tx::join(FIRST_GUILD, FIRST_ROLE, None);
-    let join_request_futures = user
+    let join_request_futures = users
         .iter()
         .map(|acc| tx::send::in_block(api.clone(), &payload, Arc::clone(acc)))
         .collect::<Vec<_>>();
@@ -121,7 +121,7 @@ pub async fn join_guilds(api: Api, user: &[Arc<EthSigner>]) {
         tx::join(FIRST_GUILD, SECOND_ROLE, Some(proof_1)),
     ];
 
-    let join_request_futures = user
+    let join_request_futures = users
         .iter()
         .take(2)
         .enumerate()
@@ -135,7 +135,7 @@ pub async fn join_guilds(api: Api, user: &[Arc<EthSigner>]) {
     // only 5 joins the child role (they are all registered in first guild's
     // first role
     let payload = tx::join(SECOND_GUILD, SECOND_ROLE, None);
-    let join_request_futures = user
+    let join_request_futures = users
         .iter()
         .take(5)
         .map(|acc| tx::send::in_block(api.clone(), &payload, Arc::clone(acc)))
@@ -147,7 +147,7 @@ pub async fn join_guilds(api: Api, user: &[Arc<EthSigner>]) {
 
     // other 5 joins the free role of the second guild
     let payload = tx::join(SECOND_GUILD, FIRST_ROLE, None);
-    let join_request_futures = user
+    let join_request_futures = users
         .iter()
         .skip(5)
         .map(|acc| tx::send::in_block(api.clone(), &payload, Arc::clone(acc)))
