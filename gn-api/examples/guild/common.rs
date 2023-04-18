@@ -1,140 +1,29 @@
-use ethers::signers::{LocalWallet, Signer as EthSigner};
+use crate::eth::EthSigner;
 use futures::future::try_join_all;
 use gn_api::query;
-use gn_api::tx::{self, Keypair, PairT, Signer, TxStatus};
+use gn_api::tx::{self, Signer, SignerT, TxStatus};
 use gn_api::{AccountId, Api};
 use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
 use gn_common::identity::{EcdsaSignature, Identity, IdentityWithAuth};
 use gn_common::merkle::Proof as MerkleProof;
+use gn_common::pad::unpad_from_n_bytes;
 use gn_test_data::*;
-use rand::{rngs::StdRng, SeedableRng};
 
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
-const RETRIES: u8 = 10;
-const SLEEP_DURATION_MS: u64 = 1000;
-
-pub struct Accounts {
-    pub substrate: Arc<Signer>,
-    pub eth: LocalWallet,
-}
-
-pub async fn dummy_accounts() -> BTreeMap<AccountId, Accounts> {
-    let mut rng = StdRng::seed_from_u64(0);
+pub fn dummy_users() -> Vec<Arc<EthSigner>> {
     let mut seed = ACCOUNT_SEED;
     (0..N_TEST_ACCOUNTS)
         .map(|_| {
-            let keypair = Arc::new(Signer::new(Keypair::from_seed(&seed)));
+            let signer = Arc::new(EthSigner::from_seed(seed));
             seed[0] += 1;
-            let accounts = Accounts {
-                substrate: keypair,
-                eth: LocalWallet::new(&mut rng),
-            };
-            (accounts.substrate.as_ref().account_id().clone(), accounts)
+            signer
         })
-        .inspect(|(id, _)| println!("new account: {id}"))
-        .collect::<BTreeMap<AccountId, Accounts>>()
+        .inspect(|acc| println!("new evm account: {}", acc.account_id()))
+        .collect()
 }
 
-#[cfg(not(feature = "external-oracle"))]
-pub async fn register_operators(
-    api: Api,
-    root: Arc<Signer>,
-    accounts: impl Iterator<Item = &AccountId>,
-) {
-    let payloads = accounts
-        .map(|account| tx::sudo(tx::register_operator(account)))
-        .collect::<Vec<tx::TxPayload>>();
-
-    tx::send::batch(api, payloads.iter(), root)
-        .await
-        .expect("failed to send batch tx");
-
-    println!("operator registrations submitted");
-}
-
-#[cfg(not(feature = "external-oracle"))]
-pub async fn activate_operators(api: Api, accounts: impl Iterator<Item = &Accounts>) {
-    println!("activating operators");
-    let tx_futures = accounts
-        .map(|acc| {
-            tx::send::owned(
-                api.clone(),
-                tx::activate_operator(),
-                Arc::clone(&acc.substrate),
-                TxStatus::InBlock,
-            )
-        })
-        .collect::<Vec<_>>();
-
-    try_join_all(tx_futures).await.unwrap();
-
-    println!("operators activated");
-}
-
-#[cfg(not(feature = "external-oracle"))]
-pub async fn wait_for_registered_operator(api: Api, operator: &AccountId) {
-    let mut i = 0;
-    loop {
-        if query::is_operator_registered(api.clone(), operator)
-            .await
-            .expect("failed to fetch registered operator")
-        {
-            break;
-        }
-        i += 1;
-        println!("waiting for registered operators");
-        if i == RETRIES {
-            panic!("no registered operators found");
-        }
-        tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
-    }
-}
-
-pub async fn wait_for_active_operator(api: Api) {
-    let mut i = 0;
-    loop {
-        let active_operators = query::active_operators(api.clone())
-            .await
-            .expect("failed to fetch active operators");
-        if active_operators.is_empty() {
-            i += 1;
-            println!("waiting for active operators");
-            if i == RETRIES {
-                panic!("no active operators found");
-            }
-            tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
-        } else {
-            println!("found an active operator");
-            break;
-        }
-    }
-}
-
-pub async fn wait_for_oracle_answers(api: Api) {
-    let mut i = 0;
-    loop {
-        let oracle_requests = query::oracle_requests(api.clone(), PAGE_SIZE)
-            .await
-            .expect("failed to fetch oracle requests");
-        if !oracle_requests.is_empty() {
-            i += 1;
-            if i == RETRIES {
-                panic!("ran out of retries while checking oracle requests")
-            }
-            tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
-        } else {
-            break;
-        }
-    }
-}
-
-pub async fn create_dummy_guilds(
-    api: Api,
-    signer: Arc<Signer>,
-    accounts: impl Iterator<Item = &Accounts>,
-) {
+pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>, accounts: &[Arc<EthSigner>]) {
     // create two guilds
     tx::send::ready(
         api.clone(),
@@ -157,7 +46,8 @@ pub async fn create_dummy_guilds(
     println!("second guild created");
 
     let allowlist: Vec<Identity> = accounts
-        .map(|acc| Identity::Address20(acc.eth.address().to_fixed_bytes()))
+        .iter()
+        .map(|acc| Identity::Address20(acc.as_ref().evm_address()))
         .collect();
 
     let filter = GuildFilter {
@@ -205,14 +95,12 @@ pub async fn create_dummy_guilds(
     println!("all roles created");
 }
 
-pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
+pub async fn join_guilds(api: Api, user: &[Arc<EthSigner>]) {
     // everybody joins the first guild's free role
     let payload = tx::join(FIRST_GUILD, FIRST_ROLE, None);
-    let join_request_futures = users
+    let join_request_futures = user
         .iter()
-        .map(|(_, accounts)| {
-            tx::send::in_block(api.clone(), &payload, Arc::clone(&accounts.substrate))
-        })
+        .map(|acc| tx::send::in_block(api.clone(), &payload, Arc::clone(acc)))
         .collect::<Vec<_>>();
 
     try_join_all(join_request_futures).await.unwrap();
@@ -233,13 +121,11 @@ pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
         tx::join(FIRST_GUILD, SECOND_ROLE, Some(proof_1)),
     ];
 
-    let join_request_futures = users
+    let join_request_futures = user
         .iter()
         .take(2)
         .enumerate()
-        .map(|(i, (_, accounts))| {
-            tx::send::in_block(api.clone(), &payloads[i], Arc::clone(&accounts.substrate))
-        })
+        .map(|(i, acc)| tx::send::in_block(api.clone(), &payloads[i], Arc::clone(acc)))
         .collect::<Vec<_>>();
 
     try_join_all(join_request_futures).await.unwrap();
@@ -249,12 +135,10 @@ pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
     // only 5 joins the child role (they are all registered in first guild's
     // first role
     let payload = tx::join(SECOND_GUILD, SECOND_ROLE, None);
-    let join_request_futures = users
+    let join_request_futures = user
         .iter()
         .take(5)
-        .map(|(_, accounts)| {
-            tx::send::in_block(api.clone(), &payload, Arc::clone(&accounts.substrate))
-        })
+        .map(|acc| tx::send::in_block(api.clone(), &payload, Arc::clone(acc)))
         .collect::<Vec<_>>();
 
     try_join_all(join_request_futures).await.unwrap();
@@ -263,12 +147,10 @@ pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
 
     // other 5 joins the free role of the second guild
     let payload = tx::join(SECOND_GUILD, FIRST_ROLE, None);
-    let join_request_futures = users
+    let join_request_futures = user
         .iter()
         .skip(5)
-        .map(|(_, accounts)| {
-            tx::send::in_block(api.clone(), &payload, Arc::clone(&accounts.substrate))
-        })
+        .map(|acc| tx::send::in_block(api.clone(), &payload, Arc::clone(acc)))
         .collect::<Vec<_>>();
 
     try_join_all(join_request_futures).await.unwrap();
@@ -276,29 +158,20 @@ pub async fn join_guilds(api: Api, users: &BTreeMap<AccountId, Accounts>) {
     println!("second guild first role joined");
 }
 
-pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {
-    let signature_futures = users
+pub async fn register_users(api: Api, users: &[Arc<EthSigner>]) {
+    let register_address_payloads = users
         .iter()
-        .map(|(id, accounts)| {
-            let msg = gn_common::utils::verification_msg(id);
+        .map(|acc| {
+            let msg = gn_common::utils::verification_msg(acc.account_id());
 
-            accounts.eth.sign_message(msg)
-        })
-        .collect::<Vec<_>>();
+            let signature = match acc.sign(msg.as_bytes()) {
+                subxt::utils::MultiSignature::Ecdsa(sig) => sig,
+                _ => unreachable!(),
+            };
 
-    let signatures = try_join_all(signature_futures)
-        .await
-        .expect("failed to sign messages");
-
-    let register_address_payloads = signatures
-        .into_iter()
-        .zip(users.iter())
-        .map(|(sig, (_, accounts))| {
-            let mut sig: [u8; 65] = sig.to_vec().try_into().unwrap();
-            sig[64] -= 27; // due to eip-155 stuff in ethers
             let id_with_auth = IdentityWithAuth::Ecdsa(
-                Identity::Address20(accounts.eth.address().to_fixed_bytes()),
-                EcdsaSignature(sig),
+                Identity::Address20(acc.evm_address()),
+                EcdsaSignature(signature),
             );
             tx::register(id_with_auth, 0)
         })
@@ -320,14 +193,9 @@ pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {
 
     let register_futures = register_address_payloads
         .into_iter()
-        .zip(users.iter())
-        .map(|(tx_payload, (_, accounts))| {
-            tx::send::owned(
-                api.clone(),
-                tx_payload,
-                Arc::clone(&accounts.substrate),
-                TxStatus::InBlock,
-            )
+        .zip(users)
+        .map(|(tx_payload, acc)| {
+            tx::send::owned(api.clone(), tx_payload, Arc::clone(acc), TxStatus::InBlock)
         })
         .collect::<Vec<_>>();
 
@@ -339,14 +207,9 @@ pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {
 
     let register_futures = register_discord_payloads
         .into_iter()
-        .zip(users.iter())
-        .map(|(tx_payload, (_, accounts))| {
-            tx::send::owned(
-                api.clone(),
-                tx_payload,
-                Arc::clone(&accounts.substrate),
-                TxStatus::InBlock,
-            )
+        .zip(users)
+        .map(|(tx_payload, acc)| {
+            tx::send::owned(api.clone(), tx_payload, Arc::clone(acc), TxStatus::InBlock)
         })
         .collect::<Vec<_>>();
 
@@ -357,19 +220,53 @@ pub async fn register_users(api: Api, users: &BTreeMap<AccountId, Accounts>) {
     println!("discord registrations successfully submitted");
 }
 
-#[cfg(not(feature = "external-oracle"))]
-pub async fn send_dummy_oracle_answers(api: Api, operators: &BTreeMap<AccountId, Accounts>) {
-    let oracle_requests = query::oracle_requests(api.clone(), PAGE_SIZE)
-        .await
-        .expect("failed to fetch oracle requests");
-
-    for (request_id, operator) in oracle_requests {
-        let tx = tx::oracle_callback(request_id, vec![u8::from(true)]);
-        let accounts = operators.get(&operator).unwrap();
-        tx::send::ready(api.clone(), &tx, Arc::clone(&accounts.substrate))
+pub async fn wait_for_members(api: Api, filter: &GuildFilter, member_count: usize) {
+    let mut i = 0;
+    loop {
+        let members = query::members(api.clone(), filter, PAGE_SIZE)
             .await
-            .expect("failed to submit oracle answer");
+            .expect("failed to query members");
+        if members.len() == member_count {
+            if let Some(role) = filter.role {
+                println!(
+                    "found {member_count} member(s) in role \"{}\" of guild \"{}\":",
+                    unpad_from_n_bytes::<32>(&role),
+                    unpad_from_n_bytes::<32>(&filter.name)
+                );
+            } else {
+                println!(
+                    "found {member_count} member(s) in guild \"{}\":",
+                    unpad_from_n_bytes::<32>(&filter.name)
+                );
+            }
+            members.iter().for_each(|member| println!("\t{member}"));
+            break;
+        } else {
+            i += 1;
+            if i == RETRIES {
+                panic!("found {} members, expected {member_count}", members.len());
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
+        }
     }
+}
 
-    println!("oracle requests successfully answered");
+pub async fn wait_for_identity(api: Api, account: &AccountId, identity: &Identity, index: usize) {
+    let mut i = 0;
+    loop {
+        let user_identity = query::user_identity(api.clone(), account)
+            .await
+            .expect("failed to fetch user identities");
+        if user_identity.len() > index {
+            assert_eq!(user_identity.get(index), Some(identity));
+            println!("USER ID REGISTERED");
+            break;
+        } else {
+            i += 1;
+            if i == RETRIES {
+                panic!("couldn't find identity at index {index}")
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
+        }
+    }
 }

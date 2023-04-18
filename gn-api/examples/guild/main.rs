@@ -1,6 +1,7 @@
 mod common;
 mod eth;
 mod join;
+mod oracle;
 mod token;
 
 use gn_api::tx;

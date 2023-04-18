@@ -21,6 +21,10 @@ impl EthSigner {
         ));
         Self { account_id, wallet }
     }
+
+    pub fn evm_address(&self) -> [u8; 20] {
+        self.wallet.address().to_fixed_bytes()
+    }
 }
 
 impl subxt::tx::Signer<ClientConfig> for EthSigner {

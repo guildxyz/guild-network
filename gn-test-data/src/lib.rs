@@ -31,3 +31,6 @@ pub const TOKEN_GUILD: [u8; 32] = [
 pub const N_TEST_ACCOUNTS: usize = 10;
 pub const PAGE_SIZE: u32 = 10;
 pub const URL: &str = "ws://127.0.0.1:9944";
+
+pub const RETRIES: u8 = 10;
+pub const SLEEP_DURATION_MS: u64 = 1000;
