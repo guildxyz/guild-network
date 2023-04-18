@@ -22,7 +22,7 @@ BLOCK_OVERHEAD = 187  # bytes
 baseline_deviation = 0
 capture = False
 end_capture = END_CAPTURE_TIMEFRAME
-z_extr = 0
+z_size = 0
 z_lat = 0
 gather_baseline = True
 last_timestamp = np.nan
@@ -34,7 +34,7 @@ print(
 
 def subscription_handler(obj, update_nr, subscription_id):
     global baseline_data, baseline_deviation, capture, end_capture, \
-        z_extr, z_lat, gather_baseline, last_timestamp
+        z_size, z_lat, gather_baseline, last_timestamp
 
     block_num = obj['header']['number']
     print(f"New block #{block_num}")
@@ -61,23 +61,29 @@ def subscription_handler(obj, update_nr, subscription_id):
                 f"Established baseline with {len(baseline_data)} blocks.",
             )
             print(
-                f"baseline stdev (block size): {baseline_data['size'].std():.3f}"
+                f"[latency] baseline mean: {baseline_data['latency'].mean():.3f} stdev: {baseline_data['latency'].std():.3f}"
             )
             print(
-                f"baseline stdev (extrinsics): {baseline_data['extrs'].std():.3f}"
+                f"[block size] baseline mean: {baseline_data['size'].mean():.3f} stdev: {baseline_data['size'].std():.3f}"
             )
             print(
-                f"baseline stdev (latency): {baseline_data['latency'].std():.3f}"
+                f"[extrinsics] baseline mean: {baseline_data['extrs'].mean():.3f} stdev: {baseline_data['extrs'].std():.3f}"
             )
     else:
-        z_extr = (
-            extr_num - baseline_data['extrs'].mean()) / baseline_data['extrs'].std()
+        # z_extr = (
+        #     extr_num - baseline_data['extrs'].mean()) / baseline_data['extrs'].std()
+        z_size = (
+            block_size - baseline_data['size'].mean()) / baseline_data['size'].std()
         z_lat = (
             latency - baseline_data['latency'].mean()) / baseline_data['latency'].std()
 
-    if abs(z_extr) > 3 and not capture:
+    print((block_size - baseline_data['size'].mean()
+           ) / baseline_data['size'].std())
+
+    if abs(z_size) > 5 and not capture:
         capture = True
         print("CAPTURE TRIGGERED")
+        print(f"z-size: {z_size}")
         print("Press Ctrl-C to end capture and show the results")
 
     if abs(z_lat) > 3:
@@ -120,8 +126,11 @@ print(capture_data)
 n = int(input("Enter how many rows should be removed from the end (after the end of the test): "))
 capture_data.drop(capture_data.tail(n).index,
                   inplace=True)
+
 capture_data['z-lat'] = (capture_data['latency'] - capture_data['latency'].mean()
                          ) / capture_data['latency'].std()
+capture_data['z-size'] = (capture_data['latency'] - capture_data['latency'].mean()
+                          ) / capture_data['latency'].std()
 
 print(capture_data)
 
