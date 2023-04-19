@@ -5,10 +5,10 @@ use ed25519_zebra::{Signature as EdSig, VerificationKey as EdKey};
 use schnorrkel::{PublicKey as SrKey, Signature as SrSig};
 use secp256k1::{
     ecdsa::{RecoverableSignature, RecoveryId},
-    Message, Secp256k1,
+    Message, PublicKey, Secp256k1,
 };
 
-const ETHEREUM_HASH_PREFIX: &str = "\x19Ethereum Signed Message:\n";
+pub const ETHEREUM_HASH_PREFIX: &str = "\x19Ethereum Signed Message:\n";
 const SR_SIGNING_CTX: &[u8] = b"substrate";
 
 #[derive(Encode, Decode, TypeInfo, Eq, PartialEq, Clone, Copy, Debug)]
@@ -32,13 +32,11 @@ impl IdentityWithAuth {
             // Ethereum specific ecdsa
             Self::Ecdsa(Identity::Address20(address), sig) => {
                 let prehashed_msg = eth_hash_message(msg);
-                let Some(recovered_pk) = recover_prehashed(prehashed_msg, sig) else {
+                let Some(recovered_pk) = recover_prehashed(prehashed_msg, &sig.0) else {
                     return false
                 };
 
-                let serialized_pk = recovered_pk.serialize_uncompressed();
-                debug_assert_eq!(serialized_pk[0], 0x04);
-                &keccak256(&serialized_pk[1..])[12..] == address
+                &eth_address(&recovered_pk) == address
             }
             // generic ecdsa - only works with prehashed messages because
             // everyone might choose different hashing algorithms
@@ -46,7 +44,7 @@ impl IdentityWithAuth {
                 let Ok(prehashed_msg) = msg.as_ref().try_into() else {
                     return false
                 };
-                let Some(recovered_pk) = recover_prehashed(prehashed_msg,  sig) else {
+                let Some(recovered_pk) = recover_prehashed(prehashed_msg,  &sig.0) else {
                     return false
                 };
                 &recovered_pk.serialize()[1..] == address
@@ -101,12 +99,17 @@ impl IdentityWithAuth {
     }
 }
 
-pub fn recover_prehashed(
-    message: [u8; 32],
-    signature: &EcdsaSignature,
-) -> Option<secp256k1::PublicKey> {
-    let rid = RecoveryId::from_i32(signature.0[64] as i32).ok()?;
-    let sig = RecoverableSignature::from_compact(&signature.0[..64], rid).ok()?;
+pub fn eth_address(pubkey: &PublicKey) -> [u8; 20] {
+    let serialized_pk = pubkey.serialize_uncompressed();
+    debug_assert_eq!(serialized_pk[0], 0x04);
+    keccak256(&serialized_pk[1..])[12..]
+        .try_into()
+        .expect("this is 20 bytes; qed")
+}
+
+pub fn recover_prehashed(message: [u8; 32], signature: &[u8; 65]) -> Option<secp256k1::PublicKey> {
+    let rid = RecoveryId::from_i32(signature[64] as i32).ok()?;
+    let sig = RecoverableSignature::from_compact(&signature[..64], rid).ok()?;
     // NOTE this never fails because the prehashed message is 32 bytes
     let message = Message::from_slice(&message).expect("Message is 32 bytes; qed");
     Secp256k1::verification_only()
@@ -143,7 +146,7 @@ pub fn test_ecdsa_id_with_auth<M: AsRef<[u8]>>(
 ) -> (Identity, EcdsaSignature) {
     let prehashed = eth_hash_message(msg);
     let signature = sign_prehashed(seed, prehashed);
-    let pubkey = recover_prehashed(prehashed, &signature).unwrap();
+    let pubkey = recover_prehashed(prehashed, &signature.0).unwrap();
     let address: [u8; 20] = keccak256(&pubkey.serialize_uncompressed()[1..])[12..]
         .try_into()
         .unwrap();
@@ -168,6 +171,25 @@ mod test {
         let msg = verification_msg(TEST_ACCOUNT);
         let eth_hashed_msg = eth_hash_message(&msg);
         assert_eq!(ethers::utils::hash_message(&msg).as_bytes(), eth_hashed_msg);
+    }
+
+    #[tokio::test]
+    async fn sp_io_ecdsa() {
+        let seed = [2u8; 32];
+        let signing_key = SigningKey::from_bytes(&seed).unwrap();
+        let eth_signer = LocalWallet::from(signing_key);
+
+        let message = b"hello";
+        let signature = eth_signer.sign_message(message).await.unwrap();
+
+        let hashed = eth_hash_message(message);
+        let Ok(recovered) = sp_io::crypto::secp256k1_ecdsa_recover(&signature.into(), &hashed) else {
+            panic!()
+        };
+        assert_eq!(
+            &sp_io::hashing::keccak_256(recovered.as_ref())[12..],
+            eth_signer.address().as_ref()
+        );
     }
 
     #[tokio::test]

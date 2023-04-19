@@ -3134,6 +3134,7 @@ dependencies = [
  "serde_test",
  "sha3 0.10.6",
  "sp-core",
+ "sp-io",
  "tokio",
 ]
 
@@ -3206,6 +3207,7 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
+ "gn-sig",
  "hex-literal",
  "log",
  "pallet-aura",
@@ -3236,6 +3238,18 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "substrate-wasm-builder",
+]
+
+[[package]]
+name = "gn-sig"
+version = "0.0.0-alpha"
+dependencies = [
+ "gn-common",
+ "parity-scale-codec 3.4.0",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]

@@ -87,7 +87,9 @@ def main():
         command = "cargo run --release --example guild --features external-oracle -- "
 
         status = run_tests(command + "join",
-                           command + "token", timeout=90)
+                           command + "token", 
+                           command + "eth", 
+                           timeout=90)
         node.send_signal(15)
         oracle.send_signal(15)
         while node.poll() is None or oracle.poll() is None:
