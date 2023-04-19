@@ -20,6 +20,18 @@ async fn send<T: TxPayloadT>(
     track_progress(&mut progress, status).await
 }
 
+async fn send_but_dont_watch<T: TxPayloadT>(
+    api: Api,
+    tx: &T,
+    signer: Arc<Signer>,
+) -> Result<Option<H256>, SubxtError> {
+    Ok(Some(
+        api.tx()
+            .sign_and_submit_default(tx, signer.as_ref())
+            .await?,
+    ))
+}
+
 pub async fn batch<'a, T, P>(api: Api, payloads: P, signer: Arc<Signer>) -> Result<(), SubxtError>
 where
     T: TxPayloadT + 'a,
@@ -58,6 +70,14 @@ pub async fn owned<T: TxPayloadT>(
     status: TxStatus,
 ) -> Result<Option<H256>, SubxtError> {
     send(api, &tx, signer, status).await
+}
+
+pub async fn owned_but_dont_watch<T: TxPayloadT>(
+    api: Api,
+    tx: T,
+    signer: Arc<Signer>,
+) -> Result<Option<H256>, SubxtError> {
+    send_but_dont_watch(api, &tx, signer).await
 }
 
 pub async fn ready<T: TxPayloadT>(api: Api, tx: &T, signer: Arc<Signer>) -> Result<(), SubxtError> {

@@ -1,10 +1,7 @@
 use ethers::core::k256::ecdsa::SigningKey;
 use ethers::signers::{LocalWallet, Signer};
 use futures::future::try_join_all;
-use gn_api::{
-    tx::{self, TxStatus},
-    Api,
-};
+use gn_api::{tx, Api};
 use gn_common::identity::{Identity, IdentityWithAuth};
 use gn_common::pad::pad_to_n_bytes;
 
@@ -42,7 +39,7 @@ pub async fn register_other_identity(api: Api, num: usize, seed: &str, tps: usiz
                 seed_bytes[index] = seed_bytes[index].wrapping_add(1);
                 index = index.wrapping_add(1) % seed_bytes.len();
                 let payload = tx::register(identity_with_auth, id_index);
-                tx::send::owned(api.clone(), payload, signer, TxStatus::Ready)
+                tx::send::owned_but_dont_watch(api.clone(), payload, signer)
             })
             .collect::<Vec<_>>();
 
