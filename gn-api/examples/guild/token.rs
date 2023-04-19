@@ -1,7 +1,7 @@
 use crate::common::*;
+use crate::oracle::*;
 use ethers::types::{Address, U256};
 use gn_api::{
-    query,
     tx::{self, Signer},
     Api,
 };
@@ -29,35 +29,16 @@ const ADDRESS: &str = "e43878ce78934fe8007748ff481f03b8ee3b97de";
 const SIGNATURE: &str = "a7d8263c96a8bb689d462b2782a45b81f02777607c27d1b322a1c46910482e274320fbf353a543a1504dc3c0ded9c2930dffc4b15541d97da7b240f40416f12a1b";
 
 pub async fn token(api: Api, root: Arc<Signer>) {
+    let _operators = init_operators(api.clone(), Arc::clone(&root)).await;
+
     let mut signature = [0u8; 65];
     hex::decode_to_slice(SIGNATURE, &mut signature).expect("this should not fail");
     signature[64] -= 27; // ethereum's eip-115 normalization stuff
     let mut address = [0u8; 20];
     hex::decode_to_slice(ADDRESS, &mut address).expect("this should not fail");
-
-    #[cfg(not(feature = "external-oracle"))]
-    let operators = dummy_accounts().await;
-
-    #[cfg(not(feature = "external-oracle"))]
-    {
-        register_operators(api.clone(), Arc::clone(&root), operators.keys()).await;
-        activate_operators(api.clone(), operators.values()).await;
-        let active_operators = query::active_operators(api.clone())
-            .await
-            .expect("failed to fetch active operators");
-
-        for active in &active_operators {
-            assert!(operators.get(active).is_some());
-        }
-    }
-
-    #[cfg(feature = "external-oracle")]
-    {
-        wait_for_active_operator(api.clone()).await;
-    }
     // register root with test evm address + signature
-    let evm_identity =
-        IdentityWithAuth::Ecdsa(Identity::Address20(address), EcdsaSignature(signature));
+    let identity = Identity::Address20(address);
+    let evm_identity = IdentityWithAuth::Ecdsa(identity, EcdsaSignature(signature));
 
     let index = 0;
     let tx_payload = tx::register(evm_identity, index);
@@ -66,22 +47,15 @@ pub async fn token(api: Api, root: Arc<Signer>) {
         .expect("failed to register");
 
     #[cfg(not(feature = "external-oracle"))]
-    send_dummy_oracle_answers(api.clone(), &operators).await;
+    send_dummy_oracle_answers(api.clone(), &_operators).await;
 
-    loop {
-        let user_identity = query::user_identity(api.clone(), root.account_id())
-            .await
-            .expect("failed to fetch user identities");
-        if user_identity.len() == 1 {
-            assert_eq!(
-                user_identity.get(index as usize),
-                Some(&Identity::Address20(address))
-            );
-            break;
-        }
-    }
-
-    println!("USER REGISTERED");
+    wait_for_identity(
+        api.clone(),
+        root.account_id(),
+        &identity,
+        usize::from(index),
+    )
+    .await;
 
     let mut one = [0u8; 32];
     one[0] = 1;
@@ -169,17 +143,9 @@ pub async fn token(api: Api, root: Arc<Signer>) {
     };
 
     #[cfg(not(feature = "external-oracle"))]
-    send_dummy_oracle_answers(api.clone(), &operators).await;
+    send_dummy_oracle_answers(api.clone(), &_operators).await;
 
-    loop {
-        let members = query::members(api.clone(), &guild_filter, PAGE_SIZE)
-            .await
-            .expect("failed to query members");
-        if members.len() == 1 {
-            assert_eq!(members.get(0).unwrap(), root.account_id());
-            break;
-        }
-    }
+    wait_for_members(api.clone(), &guild_filter, 1).await;
 
     println!("FIRST_ROLE JOINED");
 
@@ -194,17 +160,9 @@ pub async fn token(api: Api, root: Arc<Signer>) {
     };
 
     #[cfg(not(feature = "external-oracle"))]
-    send_dummy_oracle_answers(api.clone(), &operators).await;
+    send_dummy_oracle_answers(api.clone(), &_operators).await;
 
-    loop {
-        let members = query::members(api.clone(), &guild_filter, PAGE_SIZE)
-            .await
-            .expect("failed to query members");
-        if members.len() == 1 {
-            assert_eq!(members.get(0).unwrap(), root.account_id());
-            break;
-        }
-    }
+    wait_for_members(api.clone(), &guild_filter, 1).await;
 
     println!("SECOND_ROLE JOINED");
 }

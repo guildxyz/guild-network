@@ -112,7 +112,7 @@ fn successful_on_chain_registrations() {
         let sig_ristretto = Sr25519Signature(keypair_ristretto.sign(msg.as_ref()).0);
 
         // generate identities with auth
-        let ecdsa_pubkey = recover_prehashed(eth_hash_message(&msg), &sig_ecdsa).unwrap();
+        let ecdsa_pubkey = recover_prehashed(eth_hash_message(&msg), &sig_ecdsa.0).unwrap();
         let ecdsa_address: [u8; 20] =
             sp_core::keccak_256(&ecdsa_pubkey.serialize_uncompressed()[1..])[12..]
                 .try_into()

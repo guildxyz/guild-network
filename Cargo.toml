@@ -6,11 +6,12 @@ members = [
     "gn-engine",
     "gn-node",
     "gn-oracle",
-    "gn-pallets/pallet-oracle",
     "gn-pallets/pallet-guild",
     "gn-pallets/pallet-guild-identity",
+    "gn-pallets/pallet-oracle",
     "gn-pallets/pallet-validator-manager",
     "gn-runtime",
+    "gn-sig",
     "gn-test-data",
     "gn-wasm",
 ]
@@ -22,11 +23,12 @@ default-members = [
     "gn-engine",
     "gn-node",
     "gn-oracle",
-    "gn-pallets/pallet-oracle",
     "gn-pallets/pallet-guild",
     "gn-pallets/pallet-guild-identity",
+    "gn-pallets/pallet-oracle",
     "gn-pallets/pallet-validator-manager",
     "gn-runtime",
+    "gn-sig",
     "gn-test-data",
 ]
 

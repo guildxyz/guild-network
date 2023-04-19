@@ -1,5 +1,23 @@
 # Runtime upgrade history
 
+## 2023-04-19
+Runtime version bumped from `103` to `104`. [Respective
+PR](https://github.com/agoraxyz/guild-network/pull/138)
+
+### Detailed info
+This [release](https://github.com/agoraxyz/guild-network/releases/tag/alpha-runtime-104)
+enabled the runtime to accept extrinsics that were signed by EVM-specific wallets
+(e.g. Metamask). This was simply achieved by replacing the runtime's `MultiSignature`
+type to our own implementation that is compatible with EVM-specific ECDSA signatures.
+After the frontend is updated accordingly, users can interact with the guild pallet via
+Metamask. `Sr25519` and `Ed25519` signatures are still supported without any change.
+
+### Required steps for node operators
+#### Validator nodes
+- no steps required
+#### Oracle nodes
+- no steps required
+
 ## 2023-03-30
 Runtime version bumped from `102` to `103`. [Respective
 PR](https://github.com/agoraxyz/guild-network/pull/123)
