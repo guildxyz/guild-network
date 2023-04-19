@@ -1,8 +1,34 @@
 [package]
-name = "pallet-guild-identity"
-version = "0.1.0"
 edition = "2021"
+name = "pallet-guild-identity"
+version = "0.0.0-alpha"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = ["std"]
+runtime-benchmarks = []
+std = [
+	"frame-support/std",
+	"frame-system/std",
+	"pallet-oracle/std",
+	"parity-scale-codec/std",
+	"scale-info/std",
+	"sp-std/std",
+]
+try-runtime = []
 
 [dependencies]
+# local
+pallet-oracle = { version = "0.0.0-alpha", path = "../pallet-oracle", default-features = false }
+
+# general
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive"] }
+
+# substrate frame
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+
+# substrate primitives
+sp-std = { workspace = true }
+
+[dev-dependencies]

@@ -5507,6 +5507,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-guild-identity"
+version = "0.0.0-alpha"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-oracle",
+ "parity-scale-codec 3.4.0",
+ "scale-info",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-im-online"
 version = "14.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

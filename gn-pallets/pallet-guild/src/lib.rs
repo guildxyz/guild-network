@@ -104,7 +104,6 @@ pub mod pallet {
     pub enum Event<T: Config> {
         AllowlistWritten(SpVec<u8>),
         GuildCreated(T::AccountId, GuildName),
-        IdRegistered(T::AccountId, u8),
         RoleCreated(T::AccountId, GuildName, RoleName),
         RoleAssigned(T::AccountId, GuildName, RoleName),
         RoleStripped(T::AccountId, GuildName, RoleName),
@@ -465,8 +464,6 @@ pub mod pallet {
         #[pallet::call_index(9)]
         #[pallet::weight((0, DispatchClass::Operational, Pays::No))]
         pub fn callback(origin: OriginFor<T>, result: SerializedData) -> DispatchResult {
-            // NOTE this ensures that only the root can call this function via
-            // a callback, see `frame_system::RawOrigin`
             ensure_root(origin)?;
 
             // cannot wrap codec::Error in this error type because
