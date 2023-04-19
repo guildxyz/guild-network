@@ -89,51 +89,67 @@ def subscription_handler(obj, update_nr, subscription_id):
     last_timestamp = timestamp
 
 
-# TEMP: see FIXME
-try:
-    result = substr.subscribe_block_headers(subscription_handler)
-except KeyboardInterrupt:
-    pass
-
-# drop last n entries recorded after the capture should've ended
-# # TEMP: see FIXME
-capture_data['z-size'] = (capture_data['size'] - baseline["size_mean"]
-                          ) / baseline["size_stdev"]
-print(capture_data)
-n = int(input("Enter how many rows should be removed from the end (after the end of the test): "))
-capture_data.drop(capture_data.tail(n).index,
-                  inplace=True)
-
-capture_data['z-lat'] = (capture_data['latency'] - capture_data['latency'].mean()
-                         ) / capture_data['latency'].std()
-capture_data['z-size'] = (capture_data['size'] - capture_data['size'].mean()
-                          ) / capture_data['size'].std()
-
-print(capture_data)
-print("### Block time")
-if capture_data['latency'].std() > baseline["lat_stdev"] * 3:
-    print(f"  - stdev: {capture_data['latency'].std():.3f}")
-    print(f"  - mean: {capture_data['latency'].mean():.3f}")
-    print(
-        f"  - change in baseline: {capture_data['latency'].mean()  - baseline['lat_mean']:.3f}"
+def compute_stats():
+    # drop last n entries recorded after the capture should've ended
+    # # TEMP: see FIXME
+    capture_data['z-size'] = (capture_data['size'] - baseline["size_mean"]
+                              ) / baseline["size_stdev"]
+    print(capture_data)
+    inp = input(
+        "Enter how many rows should be removed from the end (after the end of the test): "
     )
-else:
-    print("  - change in baseline: none")
+    if inp == "":
+        inp = "0"
+    n = int(inp)
+    capture_data.drop(capture_data.tail(n).index,
+                      inplace=True)
 
-print("### Block size")
-print(f"  - total stored: {capture_data['size'].sum()}")
-print(f"  - stdev: {capture_data['size'].std():.3f}")
-print(f"  - mean: {capture_data['size'].mean():.3f}")
-print(
-    f"  - change in baseline: {capture_data['size'].mean()  - baseline['size_mean']:.3f}"
-)
+    capture_data['z-lat'] = (capture_data['latency'] - capture_data['latency'].mean()
+                             ) / capture_data['latency'].std()
+    capture_data['z-size'] = (capture_data['size'] - capture_data['size'].mean()
+                              ) / capture_data['size'].std()
 
-print("### Extrinsics")
-print(f"  - total executed: {capture_data['extrs'].sum()}")
-print(f"  - extrinsics per second: {capture_data['extrs'].mean() * 3:.3f}")
-print(f"  - stdev: {capture_data['extrs'].std():.3f}")
-print(f"  - mean: {capture_data['extrs'].mean():.3f}")
-print(
-    f"  - change in baseline: {capture_data['extrs'].mean()  - baseline['extr_mean']:.3f}"
-)
-print(f"Test lasted {len(capture_data.index)} blocks")
+
+def print_stats():
+    print(capture_data)
+    print("### Block time")
+    if capture_data['latency'].std() > baseline["lat_stdev"] * 3:
+        print(f"  - stdev: {capture_data['latency'].std():.3f}")
+        print(f"  - mean: {capture_data['latency'].mean():.3f}")
+        print(
+            f"  - change in baseline: {capture_data['latency'].mean()  - baseline['lat_mean']:.3f}"
+        )
+    else:
+        print("  - change in baseline: none")
+
+    print("### Block size")
+    print(f"  - total stored: {capture_data['size'].sum()}")
+    print(f"  - stdev: {capture_data['size'].std():.3f}")
+    print(f"  - mean: {capture_data['size'].mean():.3f}")
+    print(
+        f"  - change in baseline: {capture_data['size'].mean()  - baseline['size_mean']:.3f}"
+    )
+
+    print("### Extrinsics")
+    print(f"  - total executed: {capture_data['extrs'].sum()}")
+    print(f"  - extrinsics per second: {capture_data['extrs'].mean() * 3:.3f}")
+    print(f"  - stdev: {capture_data['extrs'].std():.3f}")
+    print(f"  - mean: {capture_data['extrs'].mean():.3f}")
+    print(
+        f"  - change in baseline: {capture_data['extrs'].mean()  - baseline['extr_mean']:.3f}"
+    )
+    print(f"Test lasted {len(capture_data.index)} blocks")
+
+
+def main():
+    # TEMP: see FIXME
+    try:
+        result = substr.subscribe_block_headers(subscription_handler)
+    except KeyboardInterrupt:
+        pass
+    compute_stats()
+    print_stats()
+
+
+if __name__ == "__main__":
+    main()
