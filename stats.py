@@ -12,28 +12,31 @@ from substrateinterface import SubstrateInterface
 substr = SubstrateInterface(url="wss://1.oracle.network.guild.xyz")
 print("Connected")
 
-baseline_data = pd.DataFrame(columns=['size', 'extrs', 'latency'])
 capture_data = pd.DataFrame(columns=['timestamp', 'size', 'extrs', 'latency'])
 
-BASELINE_TIMEFRAME = 25
-END_CAPTURE_TIMEFRAME = 5
 BLOCK_OVERHEAD = 187  # bytes
 
-baseline_deviation = 0
 capture = False
-end_capture = END_CAPTURE_TIMEFRAME
 z_size = 0
 z_lat = 0
 gather_baseline = True
 last_timestamp = np.nan
 
+baseline = {
+    "size_mean": 255.776,
+    "size_stdev": 119.025,
+    "lat_mean": 3.0,
+    "lat_stdev": 0.001,
+    "extr_mean": 1.316,
+    "extr_stdev": 0.659
+}
 print(
-    f"Establishing baseline in {BASELINE_TIMEFRAME} blocks ({BASELINE_TIMEFRAME * 3} seconds)..."
+    f"Baseline stats: {baseline}"
 )
 
 
 def subscription_handler(obj, update_nr, subscription_id):
-    global baseline_data, baseline_deviation, capture, end_capture, \
+    global capture, end_capture, \
         z_size, z_lat, gather_baseline, last_timestamp
 
     block_num = obj['header']['number']
@@ -49,36 +52,8 @@ def subscription_handler(obj, update_nr, subscription_id):
     extr_num = len(block['extrinsics'])
     latency = (timestamp - last_timestamp) / 1000
 
-    if gather_baseline:
-        baseline_data.loc[block_num] = {
-            'size': block_size,
-            'extrs': extr_num,
-            'latency': latency
-        }
-        if update_nr == BASELINE_TIMEFRAME - 1:
-            gather_baseline = False
-            print(
-                f"Established baseline with {len(baseline_data)} blocks.",
-            )
-            print(
-                f"[latency] baseline mean: {baseline_data['latency'].mean():.3f} stdev: {baseline_data['latency'].std():.3f}"
-            )
-            print(
-                f"[block size] baseline mean: {baseline_data['size'].mean():.3f} stdev: {baseline_data['size'].std():.3f}"
-            )
-            print(
-                f"[extrinsics] baseline mean: {baseline_data['extrs'].mean():.3f} stdev: {baseline_data['extrs'].std():.3f}"
-            )
-    else:
-        # z_extr = (
-        #     extr_num - baseline_data['extrs'].mean()) / baseline_data['extrs'].std()
-        z_size = (
-            block_size - baseline_data['size'].mean()) / baseline_data['size'].std()
-        z_lat = (
-            latency - baseline_data['latency'].mean()) / baseline_data['latency'].std()
-
-    print((block_size - baseline_data['size'].mean()
-           ) / baseline_data['size'].std())
+    z_size = (block_size - baseline["size_mean"]) / baseline["size_stdev"]
+    z_lat = (latency - baseline["lat_mean"]) / baseline["lat_stdev"]
 
     if abs(z_size) > 5 and not capture:
         capture = True
@@ -122,6 +97,8 @@ except KeyboardInterrupt:
 
 # drop last n entries recorded after the capture should've ended
 # # TEMP: see FIXME
+capture_data['z-size'] = (capture_data['size'] - baseline["size_mean"]
+                          ) / baseline["size_stdev"]
 print(capture_data)
 n = int(input("Enter how many rows should be removed from the end (after the end of the test): "))
 capture_data.drop(capture_data.tail(n).index,
@@ -129,23 +106,34 @@ capture_data.drop(capture_data.tail(n).index,
 
 capture_data['z-lat'] = (capture_data['latency'] - capture_data['latency'].mean()
                          ) / capture_data['latency'].std()
-capture_data['z-size'] = (capture_data['latency'] - capture_data['latency'].mean()
-                          ) / capture_data['latency'].std()
+capture_data['z-size'] = (capture_data['size'] - capture_data['size'].mean()
+                          ) / capture_data['size'].std()
 
 print(capture_data)
+print("### Block time")
+if capture_data['latency'].std() > baseline["lat_stdev"] * 3:
+    print(f"  - stdev: {capture_data['latency'].std():.3f}")
+    print(f"  - mean: {capture_data['latency'].mean():.3f}")
+    print(
+        f"  - change in baseline: {capture_data['latency'].mean()  - baseline['lat_mean']:.3f}"
+    )
+else:
+    print("  - change in baseline: none")
 
-print(f"latency mean: {capture_data['latency'].mean():.3f}")
-print(f"latency stdev: {capture_data['latency'].std():.3f}")
-
-print(f"extrinsic count: {capture_data['extrs'].sum()}")
-print(f"extrinsic mean: {capture_data['extrs'].mean():.3f}")
-print(f"extrinsic stdev: {capture_data['extrs'].std():.3f}")
+print("### Block size")
+print(f"  - total stored: {capture_data['size'].sum()}")
+print(f"  - stdev: {capture_data['size'].std():.3f}")
+print(f"  - mean: {capture_data['size'].mean():.3f}")
 print(
-    f"extrinsics per second: {capture_data['extrs'].sum() / (capture_data['extrs'].count() * 3):.3f}"
+    f"  - change in baseline: {capture_data['size'].mean()  - baseline['size_mean']:.3f}"
 )
 
-print(f"block size total: {capture_data['size'].sum():.3f}")
-print(f"block size mean: {capture_data['size'].mean():.3f}")
-print(f"block size stdev: {capture_data['size'].std():.3f}")
-
+print("### Extrinsics")
+print(f"  - total executed: {capture_data['extrs'].sum()}")
+print(f"  - extrinsics per second: {capture_data['extrs'].mean() * 3:.3f}")
+print(f"  - stdev: {capture_data['extrs'].std():.3f}")
+print(f"  - mean: {capture_data['extrs'].mean():.3f}")
+print(
+    f"  - change in baseline: {capture_data['extrs'].mean()  - baseline['extr_mean']:.3f}"
+)
 print(f"Test lasted {len(capture_data.index)} blocks")
