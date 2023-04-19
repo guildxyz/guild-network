@@ -14,8 +14,8 @@ pub fn matches_variant<T>(a: &T, b: &T) -> bool {
 }
 
 pub fn evm_to_account(evm_address: [u8; 20]) -> [u8; 32] {
-    let mut address = [0u8; 24];
-    address[0..4].copy_from_slice(b"evm:");
-    address[4..].copy_from_slice(&evm_address);
-    crate::hash::blake2256(address)
+    let mut address = [0u8; 32];
+    address[0..12].copy_from_slice(b"evm-address:");
+    address[12..].copy_from_slice(&evm_address);
+    address
 }

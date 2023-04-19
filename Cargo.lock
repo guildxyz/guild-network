@@ -3120,7 +3120,6 @@ name = "gn-common"
 version = "0.0.0-alpha"
 dependencies = [
  "binary-merkle-tree",
- "blake2",
  "ed25519-zebra",
  "ethers",
  "hash-db",

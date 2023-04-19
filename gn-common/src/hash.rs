@@ -10,14 +10,6 @@ pub fn keccak256<T: AsRef<[u8]>>(input: T) -> Hash {
     output
 }
 
-pub fn blake2256<T: AsRef<[u8]>>(input: T) -> Hash {
-    let mut output = [0u8; 32];
-    let mut hasher = blake2::Blake2s256::new();
-    hasher.update(input.as_ref());
-    hasher.finalize_into((&mut output).into());
-    output
-}
-
 pub struct Keccak256;
 
 impl hash_db::Hasher for Keccak256 {
