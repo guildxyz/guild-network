@@ -86,7 +86,10 @@ impl Verify for MultiSignature {
             },
             (Self::Ecdsa(ref sig), who) => {
                 let prehashed = crate::eth::hash_message(msg.get());
-                let Some(pubkey) = crate::eth::recover_prehashed(&prehashed, sig.as_ref()) else {
+                // we need the uncompressed pubkey to obtain the address, hence
+                // we cannot use signature type's own recovery method because
+                // it returns the compressed pubkey
+                let Some(pubkey) = crate::recover_prehashed(&prehashed, sig.as_ref()) else {
                     return false
                 };
 
