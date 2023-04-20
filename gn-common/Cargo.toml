@@ -7,25 +7,18 @@ edition = "2021"
 default = ["std"]
 std = [
     "binary-merkle-tree/std",
-    "ed25519-zebra/std",
     "parity-scale-codec/std",
     "scale-info/std",
-    "schnorrkel/std",
     "sha3/std",
 ]
 test-sig = []
 
 [dependencies]
 binary-merkle-tree = { version = "4.0.0", default-features = false }
-ed25519-zebra = { version  = "3.1.0", default-features = false }
 hash-db = { version = "0.15.2", default-features = false }
-hex = { version = "0.4.3", default-features = false }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
-schnorrkel = { version = "0.9.1", default-features = false, features = ["u64_backend"] }
-secp256k1 = { version = "0.26.0", default-features = false, features = ["alloc", "recovery"] }
 serde = { version = "1.0.144", default-features = false, features = ["derive"] }
-serde_bytes = { version = "0.11.9", default-features = false, features = ["alloc"] }
 sha3 = { version = "0.10.6", default-features = false }
 
 [dev-dependencies]

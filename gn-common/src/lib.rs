@@ -5,7 +5,6 @@
 
 pub mod filter;
 pub mod hash;
-pub mod identity;
 pub mod merkle;
 pub mod pad;
 pub mod utils;
@@ -26,29 +25,13 @@ pub fn offchain_allowlist_key(key: &[u8]) -> SpVec<u8> {
 pub type GuildName = [u8; 32];
 pub type RoleName = [u8; 32];
 
+pub type Authority = [u8; 32];
+pub type Identity = [u8; 32];
 pub type OperatorIdentifier = u64;
+pub type Prefix = [u8; 8];
 pub type RequestIdentifier = u64;
 pub type SerializedData = SpVec<u8>;
 pub type SerializedRequirements = (SpVec<SerializedData>, SerializedData);
-
-#[derive(Encode, Decode, TypeInfo, Clone, Debug)]
-pub struct Request<T> {
-    pub requester: T,
-    pub data: RequestData<T>,
-}
-
-#[derive(Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq)]
-pub enum RequestData<T> {
-    Register {
-        identity_with_auth: identity::IdentityWithAuth,
-        index: u8,
-    },
-    ReqCheck {
-        account: T,
-        guild_name: GuildName,
-        role_name: RoleName,
-    },
-}
 
 #[derive(Serialize, Deserialize, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq)]
 pub struct Guild<T> {

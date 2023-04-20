@@ -17,15 +17,12 @@ pub mod pallet {
     };
     use frame_system::pallet_prelude::OriginFor;
     use frame_system::{ensure_root, ensure_signed};
-    use gn_common::SerializedData;
+    use gn_common::{Authority, Identity, Prefix, SerializedData};
     use pallet_oracle::{CallbackWithParameter, Config as OracleConfig, OracleAnswer};
 
-    type Authority = [u8; 32];
     type BalanceOf<T> = <<T as OracleConfig>::Currency as Currency<
         <T as frame_system::Config>::AccountId,
     >>::Balance;
-    type Prefix = [u8; 8];
-    type Identity = [u8; 32];
 
     #[pallet::config]
     pub trait Config: OracleConfig<Callback = Call<Self>> + frame_system::Config {

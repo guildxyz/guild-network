@@ -20,8 +20,13 @@ gn-common = { version = "0.0.0-alpha", path = "../gn-common", default-features =
 # general
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
+secp256k1 = { version = "0.26.0", default-features = false, features = ["alloc", "recovery"] }
 serde = { version = "1.0", default-features = false, features = ["derive"], optional = true }
 
 # substrate primitives
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
+
+[dev-dependencies]
+ethers = "1.0.2"
+futures = "0.3.25"

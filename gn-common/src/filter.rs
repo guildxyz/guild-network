@@ -1,6 +1,5 @@
 use crate::hash::{Hash, Keccak256};
-use crate::identity::Identity;
-use crate::{GuildName, RoleName};
+use crate::{GuildName, Identity, RoleName};
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};

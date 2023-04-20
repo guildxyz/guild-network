@@ -3119,16 +3119,11 @@ name = "gn-common"
 version = "0.0.0-alpha"
 dependencies = [
  "binary-merkle-tree",
- "ed25519-zebra",
  "ethers",
  "hash-db",
- "hex",
  "parity-scale-codec 3.4.0",
  "scale-info",
- "schnorrkel",
- "secp256k1 0.26.0",
  "serde",
- "serde_bytes",
  "serde_json",
  "serde_test",
  "sha3 0.10.6",
@@ -3258,9 +3253,12 @@ dependencies = [
 name = "gn-sig"
 version = "0.0.0-alpha"
 dependencies = [
+ "ethers",
+ "futures",
  "gn-common",
  "parity-scale-codec 3.4.0",
  "scale-info",
+ "secp256k1 0.26.0",
  "serde",
  "sp-core",
  "sp-runtime",
@@ -8147,7 +8145,7 @@ version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4124a35fe33ae14259c490fd70fa199a32b9ce9502f2ee6bc4f81ec06fa65894"
 dependencies = [
- "secp256k1-sys 0.8.0",
+ "secp256k1-sys 0.8.1",
 ]
 
 [[package]]
@@ -8170,9 +8168,9 @@ dependencies = [
 
 [[package]]
 name = "secp256k1-sys"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "642a62736682fdd8c71da0eb273e453c8ac74e33b9fb310e22ba5b03ec7651ff"
+checksum = "70a129b9e9efbfb223753b9163c4ab3b13cff7fd9c7f010fbac25ab4099fa07e"
 dependencies = [
  "cc",
 ]
@@ -8282,15 +8280,6 @@ dependencies = [
  "js-sys",
  "serde",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "serde_bytes"
-version = "0.11.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "416bda436f9aab92e02c8e10d49a15ddd339cea90b6e340fe51ed97abb548294"
-dependencies = [
- "serde",
 ]
 
 [[package]]

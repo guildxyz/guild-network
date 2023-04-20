@@ -1,25 +1,18 @@
 use crate::hash::{Hash, Keccak256};
-use crate::identity::Identity;
-use crate::{Decode, Encode, SpVec, TypeInfo};
+use crate::{Decode, Encode, Identity, SpVec, TypeInfo};
 use serde::{Deserialize, Serialize};
 
 pub use binary_merkle_tree::merkle_root as root;
 pub type Leaf<'a> = binary_merkle_tree::Leaf<'a, Hash>;
 
 #[derive(Serialize, Deserialize, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq)]
-pub struct Proof {
-    pub path: SpVec<Hash>,
-    pub id_index: u8,
-}
+pub struct Proof(SpVec<Hash>);
 
 impl Proof {
-    pub fn new(allowlist: &[Identity], leaf_index: usize, id_index: u8) -> Self {
+    pub fn new(allowlist: &[Identity], leaf_index: usize) -> Self {
         let merkle_proof =
             binary_merkle_tree::merkle_proof::<Keccak256, _, _>(allowlist, leaf_index);
-        Self {
-            path: merkle_proof.proof,
-            id_index,
-        }
+        Self(merkle_proof.proof)
     }
 
     // NOTE leaf index does not play a role in verification
@@ -33,7 +26,7 @@ impl Proof {
     pub fn verify(&self, root: &Hash, n_leaves: usize, leaf: Leaf) -> bool {
         binary_merkle_tree::verify_proof::<'_, Keccak256, _, _>(
             root,
-            self.path.iter().copied(),
+            self.0.iter().copied(),
             n_leaves,
             0,
             leaf,
