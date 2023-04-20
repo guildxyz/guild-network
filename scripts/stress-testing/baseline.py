@@ -15,7 +15,7 @@ print("Connected")
 baseline_data = pd.DataFrame(columns=['size', 'extrs', 'latency'])
 capture_data = pd.DataFrame(columns=['timestamp', 'size', 'extrs', 'latency'])
 
-BASELINE_TIMEFRAME = 250
+BASELINE_TIMEFRAME = 500
 END_CAPTURE_TIMEFRAME = 5
 BLOCK_OVERHEAD = 187  # bytes
 
@@ -59,6 +59,7 @@ def subscription_handler(obj, update_nr, subscription_id):
     print(f"Number of extrinsics: {extr_num}")
     last_timestamp = timestamp
 
+    print(f"Sample number: {update_nr}, time left: {(BASELINE_TIMEFRAME - update_nr) * 3} seconds")
     if update_nr == BASELINE_TIMEFRAME - 1:
         return "Done"
 
@@ -77,7 +78,7 @@ capture_data['z-lat'] = (capture_data['latency'] - capture_data['latency'].mean(
                          ) / capture_data['latency'].std()
 capture_data['z-size'] = (capture_data['latency'] - capture_data['latency'].mean()
                           ) / capture_data['latency'].std()
-
+capture_data.to_csv("baseline.csv", sep=";")
 print(capture_data)
 
 print(f"latency mean: {capture_data['latency'].mean():.3f}")

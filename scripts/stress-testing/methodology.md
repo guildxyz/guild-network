@@ -22,10 +22,10 @@ will no longer function reliably. The testing will involve the following phases:
 ## Phase 1
 
 In order to identify the minimum parameters that result in a failure probability
-greater than 0%, we will utilize the following approach:
+greater than 5%, we will utilize the following approach:
 
 - Testing will begin by both parameters set to 256.
-- One iteration will consist of the test repeated 10 times with the same parameters.
+- One iteration will consist of the test repeated 20 times with the same parameters.
 - After an iteration both parameters will be increased by 256 until a significant
   failure is detected.
 
