@@ -28,5 +28,7 @@ sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 
 [dev-dependencies]
+base64 = "0.21"
 ethers = "1.0.2"
 futures = "0.3.25"
+hex = "0.4"

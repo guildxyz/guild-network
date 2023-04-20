@@ -3253,9 +3253,11 @@ dependencies = [
 name = "gn-sig"
 version = "0.0.0-alpha"
 dependencies = [
+ "base64 0.21.0",
  "ethers",
  "futures",
  "gn-common",
+ "hex",
  "parity-scale-codec 3.4.0",
  "scale-info",
  "secp256k1 0.26.0",
