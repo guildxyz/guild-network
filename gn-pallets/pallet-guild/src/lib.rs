@@ -41,10 +41,6 @@ pub mod pallet {
     pub type Nonce<T: Config> = StorageValue<_, u64, ValueQuery>;
 
     #[pallet::storage]
-    #[pallet::getter(fn next_request_id)]
-    pub type NextRequestIdentifier<T: Config> = StorageValue<_, RequestIdentifier, ValueQuery>;
-
-    #[pallet::storage]
     #[pallet::getter(fn guild_id)]
     pub type GuildIdMap<T: Config> =
         StorageMap<_, Blake2_128Concat, GuildName, T::Hash, OptionQuery>;

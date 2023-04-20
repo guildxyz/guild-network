@@ -5512,6 +5512,7 @@ version = "0.0.0-alpha"
 dependencies = [
  "frame-support",
  "frame-system",
+ "gn-common",
  "pallet-oracle",
  "parity-scale-codec 3.4.0",
  "scale-info",

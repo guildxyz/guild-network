@@ -9,6 +9,7 @@ runtime-benchmarks = []
 std = [
 	"frame-support/std",
 	"frame-system/std",
+	"gn-common/std",
 	"pallet-oracle/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
@@ -18,6 +19,7 @@ try-runtime = []
 
 [dependencies]
 # local
+gn-common = { version = "0.0.0-alpha", path = "../../gn-common", default-features = false }
 pallet-oracle = { version = "0.0.0-alpha", path = "../pallet-oracle", default-features = false }
 
 # general

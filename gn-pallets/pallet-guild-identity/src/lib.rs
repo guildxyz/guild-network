@@ -7,20 +7,25 @@ pub use pallet::*;
 
 pub mod weights;
 
+#[allow(clippy::type_complexity)]
 #[frame_support::pallet]
 pub mod pallet {
     use super::weights::WeightInfo;
     use frame_support::pallet_prelude::*;
-    use frame_support::BoundedBTreeMap;
+    use frame_support::{
+        sp_runtime::traits::UniqueSaturatedFrom, traits::Currency, BoundedBTreeMap,
+    };
     use frame_system::pallet_prelude::OriginFor;
     use frame_system::{ensure_root, ensure_signed};
+    use gn_common::SerializedData;
     use pallet_oracle::{CallbackWithParameter, Config as OracleConfig, OracleAnswer};
 
-    use sp_std::vec::Vec as SpVec;
-
+    type Authority = [u8; 32];
+    type BalanceOf<T> = <<T as OracleConfig>::Currency as Currency<
+        <T as frame_system::Config>::AccountId,
+    >>::Balance;
     type Prefix = [u8; 8];
     type Identity = [u8; 32];
-    type Authority = [u8; 32];
 
     #[pallet::config]
     pub trait Config: OracleConfig<Callback = Call<Self>> + frame_system::Config {
@@ -70,9 +75,9 @@ pub mod pallet {
         AccountRegistered(T::AccountId),
         AccountDeregistered(T::AccountId),
         AddressLinked(T::AccountId, Prefix, T::AccountId),
-        AddressRemoved(T::AccountId, Prefix, T::AccountId),
+        AddressUnlinked(T::AccountId, Prefix, T::AccountId),
         IdentityLinked(T::AccountId, Prefix, Identity),
-        IdentityRemoved(T::AccountId, Prefix, Identity),
+        IdentityUnlinked(T::AccountId, Prefix, Identity),
     }
 
     #[pallet::error]
@@ -81,8 +86,12 @@ pub mod pallet {
         AccountAlreadyExists,
         AddressAlreadyLinked,
         AddressDoesNotExist,
+        AddressPrefixDoesNotExist,
         IdentityAlreadyLinked,
         IdentityDoesNotExist,
+        MaxLinkedAddressesExceeded,
+        MaxLinkedAddressTypesExceeded,
+        MaxLinkedIdentityTypesExceeded,
     }
 
     #[pallet::pallet]
@@ -100,6 +109,8 @@ pub mod pallet {
                 !Authorities::<T>::contains_key(&signer),
                 Error::<T>::AccountAlreadyExists
             );
+            Addresses::<T>::insert(&signer, BoundedBTreeMap::new());
+            Identities::<T>::insert(&signer, BoundedBTreeMap::new());
             Authorities::<T>::insert(&signer, [None::<[u8; 32]>; 2]);
             Self::deposit_event(Event::AccountRegistered(signer));
             Ok(())
@@ -124,7 +135,7 @@ pub mod pallet {
         #[pallet::weight((<T as Config>::WeightInfo::authorize(), Pays::No))]
         pub fn authorize(origin: OriginFor<T>, authority: Authority) -> DispatchResult {
             let signer = ensure_signed(origin)?;
-            Authorities::<T>::try_mutate(signer, |maybe_authorities| {
+            Authorities::<T>::try_mutate(&signer, |maybe_authorities| {
                 if let Some(authorities) = maybe_authorities {
                     match authorities {
                         [Some(_), None] => authorities[1] = Some(authority),
@@ -135,6 +146,7 @@ pub mod pallet {
                     Err(Error::<T>::AccountDoesNotExist)
                 }
             })?;
+            Self::deposit_event(Event::Authorized(signer, authority));
             Ok(())
         }
 
@@ -142,16 +154,74 @@ pub mod pallet {
         #[pallet::weight((<T as Config>::WeightInfo::link_address(), Pays::No))]
         pub fn link_address(
             origin: OriginFor<T>,
+            primary: T::AccountId,
             prefix: Prefix,
-            address: T::AccountId,
+            auth_sig: [u8; 65],
         ) -> DispatchResult {
-            todo!()
+            let signer = ensure_signed(origin)?;
+            // TODO
+            // verify authority signature
+            // message = Hash(signer),
+            // authority_pk = recover(message, auth_sig)
+            // assert!(Authorities::<T>::get(&signer).iter().any(|authority| authority == Hash(authority_pk)));
+
+            Addresses::<T>::try_mutate(&primary, |maybe_address_map| {
+                if let Some(address_map) = maybe_address_map {
+                    if let Some(address_vec) = address_map.get_mut(&prefix) {
+                        if address_vec.iter().any(|address| address == &signer) {
+                            return Err(Error::<T>::AddressAlreadyLinked);
+                        }
+                        address_vec
+                            .try_push(signer.clone())
+                            .map_err(|_| Error::<T>::MaxLinkedAddressesExceeded)?;
+                    } else {
+                        let mut address_vec = BoundedVec::with_max_capacity();
+                        // should never fail because we just created a new
+                        // vector however, handling the error shouldn't hurt.
+                        // It would only fail if the bound for the vec is 0 and
+                        // it's questionable whether that would ever occur
+                        address_vec
+                            .try_push(signer.clone())
+                            .map_err(|_| Error::<T>::MaxLinkedAddressesExceeded)?;
+                        address_map
+                            .try_insert(prefix, address_vec)
+                            .map_err(|_| Error::<T>::MaxLinkedAddressTypesExceeded)?;
+                    }
+                    Ok(())
+                } else {
+                    Err(Error::<T>::AccountDoesNotExist)
+                }
+            })?;
+            Self::deposit_event(Event::AddressLinked(primary, prefix, signer));
+            Ok(())
         }
 
         #[pallet::call_index(4)]
         #[pallet::weight((<T as Config>::WeightInfo::unlink_address(), Pays::No))]
-        pub fn unlink_address(origin: OriginFor<T>, prefix: Prefix) -> DispatchResult {
-            todo!()
+        pub fn unlink_address(
+            origin: OriginFor<T>,
+            prefix: Prefix,
+            address_to_unlink: T::AccountId,
+        ) -> DispatchResult {
+            let signer = ensure_signed(origin)?;
+            Addresses::<T>::try_mutate(&signer, |maybe_address_map| {
+                if let Some(address_map) = maybe_address_map {
+                    if let Some(address_vec) = address_map.get_mut(&prefix) {
+                        let index = address_vec
+                            .iter()
+                            .position(|address| address == &address_to_unlink)
+                            .ok_or(Error::<T>::AddressDoesNotExist)?;
+                        address_vec.remove(index);
+                        Ok(())
+                    } else {
+                        Err(Error::<T>::AddressPrefixDoesNotExist)
+                    }
+                } else {
+                    Err(Error::<T>::AccountDoesNotExist)
+                }
+            })?;
+            Self::deposit_event(Event::AddressUnlinked(signer, prefix, address_to_unlink));
+            Ok(())
         }
 
         #[pallet::call_index(5)]
@@ -159,22 +229,57 @@ pub mod pallet {
         pub fn link_identity(
             origin: OriginFor<T>,
             prefix: Prefix,
-            address: Identity,
+            identity: Identity,
         ) -> DispatchResult {
-            todo!()
+            let signer = ensure_signed(origin.clone())?;
+            let identity_map = Self::identities(&signer).ok_or(Error::<T>::AccountDoesNotExist)?;
+            if identity_map.contains_key(&prefix) {
+                return Err(Error::<T>::IdentityAlreadyLinked.into());
+            }
+            // compile and send oracle request
+            let call: <T as OracleConfig>::Callback = Call::callback {
+                result: SerializedData::new(),
+            };
+            let fee = BalanceOf::<T>::unique_saturated_from(<T as OracleConfig>::MinimumFee::get());
+            let mut data = SerializedData::new();
+            data.extend_from_slice(&prefix);
+            data.extend_from_slice(&identity);
+            <pallet_oracle::Pallet<T>>::initiate_request(origin, call, data, fee)?;
+            Ok(())
         }
 
         #[pallet::call_index(6)]
         #[pallet::weight((<T as Config>::WeightInfo::unlink_identity(), Pays::No))]
         pub fn unlink_identity(origin: OriginFor<T>, prefix: Prefix) -> DispatchResult {
-            todo!()
+            let signer = ensure_signed(origin)?;
+            Identities::<T>::try_mutate(&signer, |maybe_identity_map| {
+                if let Some(identity_map) = maybe_identity_map {
+                    let identity = identity_map
+                        .remove(&prefix)
+                        .ok_or(Error::<T>::IdentityDoesNotExist)?;
+                    Self::deposit_event(Event::IdentityUnlinked(signer.clone(), prefix, identity));
+                    Ok(())
+                } else {
+                    Err(Error::<T>::AccountDoesNotExist)
+                }
+            })?;
+            Ok(())
         }
 
         #[pallet::call_index(9)]
         #[pallet::weight((0, DispatchClass::Operational, Pays::No))]
-        pub fn callback(origin: OriginFor<T>, result: SpVec<u8>) -> DispatchResult {
+        pub fn callback(origin: OriginFor<T>, result: SerializedData) -> DispatchResult {
             ensure_root(origin)?;
             todo!();
+        }
+    }
+
+    impl<T: Config> CallbackWithParameter for Call<T> {
+        fn with_result(&self, result: SerializedData) -> Option<Self> {
+            match self {
+                Call::callback { .. } => Some(Call::callback { result }),
+                _ => None,
+            }
         }
     }
 }
