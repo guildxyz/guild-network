@@ -20,3 +20,4 @@ requiem = { git = "https://github.com/agoraxyz/requiem" }
 sp-core = { workspace = true }
 structopt = "0.3.26"
 tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
+itertools = "0.10.5"

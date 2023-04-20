@@ -3107,6 +3107,7 @@ dependencies = [
  "gn-api",
  "gn-common",
  "hex",
+ "itertools",
  "log",
  "parity-scale-codec 3.4.0",
  "requiem",
