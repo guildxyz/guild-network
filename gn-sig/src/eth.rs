@@ -1,5 +1,8 @@
 use gn_common::hash::keccak256;
-use secp256k1::PublicKey;
+use secp256k1::{
+    ecdsa::{RecoverableSignature, RecoveryId},
+    Message, PublicKey, Secp256k1,
+};
 
 const ETHEREUM_HASH_PREFIX: &str = "\x19Ethereum Signed Message:\n";
 
@@ -30,9 +33,25 @@ pub fn hash_message<M: AsRef<[u8]>>(message: M) -> [u8; 32] {
     keccak256(&eth_message)
 }
 
+/// Recovers the signer's public key from a pre-hashed message and the provided
+/// signature.
+///
+/// In case of an invalid signature, the function returns None. It is important
+/// that the recovery id of the signature (the last byte) is normalized to
+/// either 0 or 1.
+pub fn recover_prehashed(message: &[u8; 32], signature: &[u8; 65]) -> Option<PublicKey> {
+    let rid = RecoveryId::from_i32(signature[64] as i32).ok()?;
+    let sig = RecoverableSignature::from_compact(&signature[..64], rid).ok()?;
+    // NOTE this never fails because the prehashed message is 32 bytes
+    let message = Message::from_slice(message).expect("Message is 32 bytes; qed");
+    Secp256k1::verification_only()
+        .recover_ecdsa(&message, &sig)
+        .ok()
+}
+
 #[cfg(test)]
 mod test {
-    use super::{hash_message, pubkey2account, pubkey2address};
+    use super::{hash_message, pubkey2account, pubkey2address, recover_prehashed};
     use ethers::core::k256::ecdsa::SigningKey;
     use ethers::signers::{LocalWallet, Signer as SignerT};
 
@@ -72,7 +91,7 @@ mod test {
         signature[64] -= 27;
 
         // recover signer's public key
-        let recovered_key = crate::recover_prehashed(&hashed_msg, &signature).unwrap();
+        let recovered_key = recover_prehashed(&hashed_msg, &signature).unwrap();
 
         // check key validity
         assert_eq!(pubkey2address(&recovered_key), address_bytes);

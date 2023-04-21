@@ -18,6 +18,8 @@ std = [
 # local
 gn-common = { version = "0.0.0-alpha", path = "../gn-common", default-features = false }
 # general
+ecdsa = { version = "0.16", default-features = false }
+p256 = { version = "0.13.2", default-features = false, features = ["ecdsa"] }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
 secp256k1 = { version = "0.26.0", default-features = false, features = ["alloc", "recovery"] }
