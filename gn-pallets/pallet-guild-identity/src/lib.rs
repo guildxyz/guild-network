@@ -5,6 +5,10 @@
 
 pub use pallet::*;
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod test;
 pub mod weights;
 
 #[allow(clippy::type_complexity)]
@@ -31,7 +35,7 @@ pub mod pallet {
         #[pallet::constant]
         type MaxLinkedAddressTypes: Get<u32>;
         #[pallet::constant]
-        type MaxLinkedIdentityTypes: Get<u32>;
+        type MaxLinkedIdentities: Get<u32>;
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type WeightInfo: WeightInfo;
     }
@@ -56,7 +60,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         T::AccountId,
-        BoundedBTreeMap<Prefix, Identity, T::MaxLinkedIdentityTypes>,
+        BoundedBTreeMap<Prefix, Identity, T::MaxLinkedIdentities>,
         OptionQuery,
     >;
 

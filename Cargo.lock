@@ -5611,9 +5611,12 @@ dependencies = [
  "frame-system",
  "gn-common",
  "gn-sig",
+ "pallet-balances",
  "pallet-oracle",
  "parity-scale-codec 3.4.0",
  "scale-info",
+ "sp-core",
+ "sp-runtime",
  "sp-std",
 ]
 
