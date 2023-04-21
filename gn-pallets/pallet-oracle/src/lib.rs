@@ -34,7 +34,7 @@ pub mod pallet {
     use super::weights::WeightInfo;
     use frame_support::dispatch::DispatchResult;
     use frame_support::traits::{
-        BalanceStatus, Currency, Get, ReservableCurrency, UnfilteredDispatchable,
+        BalanceStatus, Currency, Get, ReservableCurrency, UnfilteredDispatchable, CallMetadata
     };
     use frame_support::{ensure, pallet_prelude::*, Parameter};
     use frame_system::{ensure_signed, pallet_prelude::*};
@@ -45,12 +45,11 @@ pub mod pallet {
     #[pallet::config]
     pub trait Config: frame_system::Config {
         type Currency: ReservableCurrency<Self::AccountId>;
-        // A reference to an Extrinsic that can have a result injected. Used as Oracle callback
-        type Callback: Parameter
-            + UnfilteredDispatchable<RuntimeOrigin = Self::RuntimeOrigin>
-            + Codec
-            + Eq
-            + CallbackWithParameter;
+        //type Callback: Parameter
+        //    + UnfilteredDispatchable<RuntimeOrigin = Self::RuntimeOrigin>
+        //    + Codec
+        //    + Eq
+        //    + CallbackWithParameter;
         // Minimum fee paid for all requests to disincentivize spam requests
         #[pallet::constant]
         type MinimumFee: Get<<Self::Currency as Currency<Self::AccountId>>::Balance>;
@@ -104,7 +103,7 @@ pub mod pallet {
         OracleRequest {
             request_id: RequestIdentifier,
             operator: T::AccountId,
-            callback: T::Callback,
+            callback: CallMetadata,
             fee: BalanceOf<T>,
         },
         /// A request has been answered. Corresponding fee payment is transferred
@@ -157,27 +156,26 @@ pub mod pallet {
     pub type NextOperator<T: Config> = StorageValue<_, OperatorIdentifier, ValueQuery>;
 
     #[derive(Encode, Decode, Clone, TypeInfo)]
-    pub struct GenericRequest<AccountId, Callback, BlockNumber, BalanceOf> {
+    pub struct GenericRequest<AccountId, BlockNumber, BalanceOf> {
         pub requester: AccountId,
         pub operator: AccountId,
+        pub block_number: BlockNumber,
+        pub fee: BalanceOf,
         pub callback: Callback,
         pub data: SpVec<u8>,
-        pub fee: BalanceOf,
-        pub block_number: BlockNumber,
     }
+
+    pub type OracleRequest<T> = GenericRequest<
+        <T as frame_system::Config>::AccountId,
+        <T as frame_system::Config>::BlockNumber,
+        BalanceOf<T>,
+    >;
 
     #[derive(Encode, Decode, Clone)]
     pub struct OracleAnswer {
         pub data: SpVec<u8>,
         pub result: SpVec<u8>,
     }
-
-    pub type OracleRequest<T> = GenericRequest<
-        <T as frame_system::Config>::AccountId,
-        <T as Config>::Callback,
-        <T as frame_system::Config>::BlockNumber,
-        BalanceOf<T>,
-    >;
 
     #[pallet::storage]
     #[pallet::getter(fn request)]
@@ -276,6 +274,7 @@ pub mod pallet {
             })
         }
 
+        /*
         /// Hint specified Operator (via its `AccountId`) of a request to be
         /// performed.
         ///
@@ -409,6 +408,7 @@ pub mod pallet {
 
             Ok(())
         }
+        */
     }
 
     #[pallet::hooks]
