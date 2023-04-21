@@ -10,6 +10,7 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"gn-common/std",
+	"gn-sig/std",
 	"pallet-oracle/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
@@ -20,6 +21,7 @@ try-runtime = []
 [dependencies]
 # local
 gn-common = { version = "0.0.0-alpha", path = "../../gn-common", default-features = false }
+gn-sig = { version = "0.0.0-alpha", path = "../../gn-sig", default-features = false }
 pallet-oracle = { version = "0.0.0-alpha", path = "../pallet-oracle", default-features = false }
 
 # general

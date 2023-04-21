@@ -12,6 +12,10 @@ pub fn hash_pubkey(pubkey: &VerifyingKey) -> [u8; 32] {
     sha2_256(pubkey.to_encoded_point(false).as_bytes())
 }
 
+pub fn hash_account_id<T: parity_scale_codec::Encode>(account_id: T) -> [u8; 32] {
+    sha2_256(account_id.encode())
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

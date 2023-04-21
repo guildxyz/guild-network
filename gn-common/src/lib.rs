@@ -46,3 +46,17 @@ pub struct Role {
     pub filter: Option<filter::Filter>,
     pub requirements: Option<SerializedRequirements>,
 }
+
+#[derive(Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq)]
+pub struct LinkIdentityRequest<T> {
+    pub requester: T,
+    pub prefix: Prefix,
+    pub identity: Identity,
+}
+
+#[derive(Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq)]
+pub struct ReqCheckRequest<T> {
+    pub account: T,
+    pub guild_name: GuildName,
+    pub role_name: RoleName,
+}

@@ -17,7 +17,7 @@ pub mod pallet {
     };
     use frame_system::pallet_prelude::OriginFor;
     use frame_system::{ensure_root, ensure_signed};
-    use gn_common::{Authority, Identity, Prefix, SerializedData};
+    use gn_common::{Authority, Identity, LinkIdentityRequest, Prefix, SerializedData};
     use pallet_oracle::{CallbackWithParameter, Config as OracleConfig, OracleAnswer};
 
     type BalanceOf<T> = <<T as OracleConfig>::Currency as Currency<
@@ -86,9 +86,13 @@ pub mod pallet {
         AddressPrefixDoesNotExist,
         IdentityAlreadyLinked,
         IdentityDoesNotExist,
+        IdentityCheckFailed,
+        InvalidAuthoritySignature,
+        InvalidOracleAnswer,
         MaxLinkedAddressesExceeded,
         MaxLinkedAddressTypesExceeded,
-        MaxLinkedIdentityTypesExceeded,
+        MaxLinkedIdentitiesExceeded,
+        UnknownAuthority,
     }
 
     #[pallet::pallet]
@@ -156,11 +160,19 @@ pub mod pallet {
             auth_sig: [u8; 65],
         ) -> DispatchResult {
             let signer = ensure_signed(origin)?;
-            // TODO
             // verify authority signature
-            // message = Hash(signer),
-            // authority_pk = recover(message, auth_sig)
-            // assert!(Authorities::<T>::get(&signer).iter().any(|authority| authority == Hash(authority_pk)));
+            let message = gn_sig::webcrypto::hash_account_id(&signer);
+            let authority_pubkey = gn_sig::webcrypto::recover_prehashed(&message, &auth_sig)
+                .ok_or(Error::<T>::InvalidAuthoritySignature)?;
+            let hashed_authority_pubkey = gn_sig::webcrypto::hash_pubkey(&authority_pubkey);
+            let authorities =
+                Authorities::<T>::get(&signer).ok_or(Error::<T>::AccountDoesNotExist)?;
+            if !authorities
+                .iter()
+                .any(|authority| authority == &Some(hashed_authority_pubkey))
+            {
+                return Err(Error::<T>::UnknownAuthority.into());
+            }
 
             Addresses::<T>::try_mutate(&primary, |maybe_address_map| {
                 if let Some(address_map) = maybe_address_map {
@@ -238,10 +250,12 @@ pub mod pallet {
                 result: SerializedData::new(),
             };
             let fee = BalanceOf::<T>::unique_saturated_from(<T as OracleConfig>::MinimumFee::get());
-            let mut data = SerializedData::new();
-            data.extend_from_slice(&prefix);
-            data.extend_from_slice(&identity);
-            <pallet_oracle::Pallet<T>>::initiate_request(origin, call, data, fee)?;
+            let request = LinkIdentityRequest {
+                requester: signer,
+                prefix,
+                identity,
+            };
+            <pallet_oracle::Pallet<T>>::initiate_request(origin, call, request.encode(), fee)?;
             Ok(())
         }
 
@@ -267,6 +281,40 @@ pub mod pallet {
         #[pallet::weight((0, DispatchClass::Operational, Pays::No))]
         pub fn callback(origin: OriginFor<T>, result: SerializedData) -> DispatchResult {
             ensure_root(origin)?;
+            // cannot wrap codec::Error in this error type because
+            // it doesn't implement the required traits
+            let answer = OracleAnswer::decode(&mut result.as_slice())
+                .map_err(|_| Error::<T>::InvalidOracleAnswer)?;
+
+            ensure!(answer.result.len() == 1, Error::<T>::InvalidOracleAnswer);
+
+            let request = LinkIdentityRequest::<T::AccountId>::decode(&mut answer.data.as_slice())
+                .map_err(|_| Error::<T>::InvalidOracleAnswer)?;
+
+            if answer.result[0] == 1 {
+                return Err(Error::<T>::IdentityCheckFailed.into());
+            }
+
+            Identities::<T>::try_mutate(request.requester.clone(), |maybe_identity_map| {
+                if let Some(identity_map) = maybe_identity_map {
+                    if !identity_map.contains_key(&request.prefix) {
+                        identity_map
+                            .try_insert(request.prefix, request.identity)
+                            .map_err(|_| Error::<T>::MaxLinkedIdentitiesExceeded)?;
+                        Self::deposit_event(Event::IdentityLinked(
+                            request.requester,
+                            request.prefix,
+                            request.identity,
+                        ));
+                        Ok(())
+                    } else {
+                        Err(Error::<T>::IdentityAlreadyLinked)
+                    }
+                } else {
+                    Err(Error::<T>::AccountDoesNotExist)
+                }
+            })?;
+
             todo!();
         }
     }
