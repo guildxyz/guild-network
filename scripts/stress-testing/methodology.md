@@ -25,13 +25,19 @@ In order to identify the minimum parameters that result in a failure probability
 greater than 5%, we will utilize the following approach:
 
 - Testing will begin by both parameters set to 256.
-- One iteration will consist of the test repeated 20 times with the same parameters.
-- After an iteration both parameters will be increased by 256 until a significant
-  failure is detected.
+- One test cycle will consist of 20 iterations of the same test repeated with
+  the same parameters.
+- After a test cycle, both parameters will be increased by 256 until a
+  significant failure is detected.
 
-A significant failure includes:
- - an crashed node runtime (manifesting as a 6 second blocktime) in 2 or more tests per iteration
- - TODO
+A significant failure is defined as:
+ - a crashed node runtime (manifesting as a 6 second blocktime) in more than 20%
+   of the iterations
+ - less extrinsics being overall executed than sent initially in a test
+ - a statistically significant (3 sigma) amount of anomalies manifesting in more
+   than 20% of the iterations, consisting of minor block time anomalies, minor
+   deviations in expected block size, and minor deviations in both mean and
+   dispersion
 
 ## Phase 2
 

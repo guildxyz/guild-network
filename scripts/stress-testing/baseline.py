@@ -15,7 +15,7 @@ print("Connected")
 baseline_data = pd.DataFrame(columns=['size', 'extrs', 'latency'])
 capture_data = pd.DataFrame(columns=['timestamp', 'size', 'extrs', 'latency'])
 
-BASELINE_TIMEFRAME = 500
+BASELINE_TIMEFRAME = 1000
 END_CAPTURE_TIMEFRAME = 5
 BLOCK_OVERHEAD = 187  # bytes
 
