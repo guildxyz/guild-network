@@ -1,4 +1,5 @@
 use crate::eth::EthSigner;
+use ethers::types::{Address, U256};
 use futures::future::try_join_all;
 use gn_api::query;
 use gn_api::tx::{self, Signer, SignerT, TxStatus};
@@ -7,8 +8,12 @@ use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
 use gn_common::identity::{EcdsaSignature, Identity, IdentityWithAuth};
 use gn_common::merkle::Proof as MerkleProof;
 use gn_common::pad::unpad_from_n_bytes;
+use gn_engine::balance::{Balance, Relation, TokenType};
+use gn_engine::chains::EvmChain;
+use gn_engine::{Requirement, RequirementsWithLogic};
 use gn_test_data::*;
 
+use std::str::FromStr;
 use std::sync::Arc;
 
 pub fn dummy_users() -> Vec<Arc<EthSigner>> {
@@ -269,4 +274,62 @@ pub async fn wait_for_identity(api: Api, account: &AccountId, identity: &Identit
             tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
         }
     }
+}
+
+pub fn dummy_requirements_with_logic() -> (RequirementsWithLogic, RequirementsWithLogic) {
+    let mut one = [0u8; 32];
+    one[0] = 1;
+
+    let first_reqs = RequirementsWithLogic {
+        logic: "0 AND 1".to_string(),
+        requirements: vec![
+            Requirement::EvmBalance(Balance {
+                token_type: Some(TokenType::NonFungible {
+                    address: Address::from_str(ETH_ERC721_ADDRESS)
+                        .unwrap()
+                        .to_fixed_bytes(),
+                    id: Some(U256::from_dec_str(ETH_ERC721_ID).unwrap().into()),
+                }),
+                relation: Relation::EqualTo(one),
+                chain: EvmChain::Ethereum,
+            }),
+            Requirement::EvmBalance(Balance {
+                token_type: None,
+                relation: Relation::GreaterThan([0u8; 32]),
+                chain: EvmChain::Ethereum,
+            }),
+        ],
+    };
+    let second_reqs = RequirementsWithLogic {
+        logic: "0 OR (1 AND 2)".to_string(),
+        requirements: vec![
+            Requirement::EvmBalance(Balance {
+                token_type: None,
+                relation: Relation::GreaterThan([1u8; 32]),
+                chain: EvmChain::Ethereum,
+            }),
+            Requirement::EvmBalance(Balance {
+                token_type: Some(TokenType::NonFungible {
+                    address: Address::from_str(GNOSIS_ERC721_ADDRESS_0)
+                        .unwrap()
+                        .to_fixed_bytes(),
+                    id: Some(U256::from_dec_str(GNOSIS_ERC721_ID_0).unwrap().into()),
+                }),
+                relation: Relation::EqualTo(one),
+                chain: EvmChain::Gnosis,
+            }),
+            Requirement::EvmBalance(Balance {
+                token_type: Some(TokenType::NonFungible {
+                    address: Address::from_str(GNOSIS_ERC721_ADDRESS_1)
+                        .unwrap()
+                        .to_fixed_bytes(),
+                    id: Some(U256::from_dec_str(GNOSIS_ERC721_ID_1).unwrap().into()),
+                }),
+                relation: Relation::EqualTo(U256::from(1).into()),
+                chain: EvmChain::Gnosis,
+            }),
+        ],
+    };
+
+    (first_reqs, second_reqs)
 }

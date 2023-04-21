@@ -1,29 +1,14 @@
 use crate::common::*;
 use crate::oracle::*;
-use ethers::types::{Address, U256};
 use gn_api::{
     tx::{self, Signer},
     Api,
 };
 use gn_common::filter::Guild as GuildFilter;
 use gn_common::identity::{EcdsaSignature, Identity, IdentityWithAuth};
-use gn_engine::balance::{Balance, Relation, TokenType};
-use gn_engine::chains::EvmChain;
-use gn_engine::{Requirement, RequirementsWithLogic};
 use gn_test_data::*;
 
-use std::str::FromStr;
 use std::sync::Arc;
-
-const ETH_ERC721_ADDRESS: &str = "57f1887a8bf19b14fc0df6fd9b2acc9af147ea85";
-const ETH_ERC721_ID: &str =
-    "61313325075603536901663283754390960556726744542208800735045237225934362163454";
-
-const GNOSIS_ERC721_ADDRESS_0: &str = "22c1f6050e56d2876009903609a2cc3fef83b415";
-const GNOSIS_ERC721_ID_0: &str = "5752323";
-
-const GNOSIS_ERC721_ADDRESS_1: &str = "22c1f6050e56d2876009903609a2cc3fef83b415";
-const GNOSIS_ERC721_ID_1: &str = "5819774";
 
 const ADDRESS: &str = "e43878ce78934fe8007748ff481f03b8ee3b97de";
 const SIGNATURE: &str = "a7d8263c96a8bb689d462b2782a45b81f02777607c27d1b322a1c46910482e274320fbf353a543a1504dc3c0ded9c2930dffc4b15541d97da7b240f40416f12a1b";
@@ -57,59 +42,7 @@ pub async fn token(api: Api, root: Arc<Signer>) {
     )
     .await;
 
-    let mut one = [0u8; 32];
-    one[0] = 1;
-
-    let first_reqs = RequirementsWithLogic {
-        logic: "0 AND 1".to_string(),
-        requirements: vec![
-            Requirement::EvmBalance(Balance {
-                token_type: Some(TokenType::NonFungible {
-                    address: Address::from_str(ETH_ERC721_ADDRESS)
-                        .unwrap()
-                        .to_fixed_bytes(),
-                    id: Some(U256::from_dec_str(ETH_ERC721_ID).unwrap().into()),
-                }),
-                relation: Relation::EqualTo(one),
-                chain: EvmChain::Ethereum,
-            }),
-            Requirement::EvmBalance(Balance {
-                token_type: None,
-                relation: Relation::GreaterThan([0u8; 32]),
-                chain: EvmChain::Ethereum,
-            }),
-        ],
-    };
-    let second_reqs = RequirementsWithLogic {
-        logic: "0 OR (1 AND 2)".to_string(),
-        requirements: vec![
-            Requirement::EvmBalance(Balance {
-                token_type: None,
-                relation: Relation::GreaterThan([1u8; 32]),
-                chain: EvmChain::Ethereum,
-            }),
-            Requirement::EvmBalance(Balance {
-                token_type: Some(TokenType::NonFungible {
-                    address: Address::from_str(GNOSIS_ERC721_ADDRESS_0)
-                        .unwrap()
-                        .to_fixed_bytes(),
-                    id: Some(U256::from_dec_str(GNOSIS_ERC721_ID_0).unwrap().into()),
-                }),
-                relation: Relation::EqualTo(one),
-                chain: EvmChain::Gnosis,
-            }),
-            Requirement::EvmBalance(Balance {
-                token_type: Some(TokenType::NonFungible {
-                    address: Address::from_str(GNOSIS_ERC721_ADDRESS_1)
-                        .unwrap()
-                        .to_fixed_bytes(),
-                    id: Some(U256::from_dec_str(GNOSIS_ERC721_ID_1).unwrap().into()),
-                }),
-                relation: Relation::EqualTo(U256::from(1).into()),
-                chain: EvmChain::Gnosis,
-            }),
-        ],
-    };
+    let (first_reqs, second_reqs) = dummy_requirements_with_logic();
 
     let tx_payload = tx::create_guild(TOKEN_GUILD, vec![1, 2, 3]);
     tx::send::in_block(api.clone(), &tx_payload, Arc::clone(&root))
