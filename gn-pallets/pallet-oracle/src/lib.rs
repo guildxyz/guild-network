@@ -33,23 +33,17 @@ pub use pallet::*;
 pub mod pallet {
     use super::weights::WeightInfo;
     use frame_support::dispatch::DispatchResult;
-    use frame_support::traits::{
-        BalanceStatus, Currency, Get, ReservableCurrency, UnfilteredDispatchable, CallMetadata
-    };
-    use frame_support::{ensure, pallet_prelude::*, Parameter};
+    use frame_support::traits::{BalanceStatus, Currency, Get, ReservableCurrency};
+    use frame_support::{ensure, pallet_prelude::*};
     use frame_system::{ensure_signed, pallet_prelude::*};
-    use gn_common::{OperatorIdentifier, RequestIdentifier};
-    use parity_scale_codec::Codec;
+    use gn_common::{Callback, OperatorIdentifier, RequestIdentifier};
     use sp_std::{prelude::*, vec::Vec as SpVec};
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
         type Currency: ReservableCurrency<Self::AccountId>;
-        //type Callback: Parameter
-        //    + UnfilteredDispatchable<RuntimeOrigin = Self::RuntimeOrigin>
-        //    + Codec
-        //    + Eq
-        //    + CallbackWithParameter;
+        #[pallet::constant]
+        type MaxOperators: Get<u32>;
         // Minimum fee paid for all requests to disincentivize spam requests
         #[pallet::constant]
         type MinimumFee: Get<<Self::Currency as Currency<Self::AccountId>>::Balance>;
@@ -57,8 +51,6 @@ pub mod pallet {
         // Period during which a request is valid
         #[pallet::constant]
         type ValidityPeriod: Get<Self::BlockNumber>;
-        #[pallet::constant]
-        type MaxOperators: Get<u32>;
         type WeightInfo: WeightInfo;
     }
 
@@ -103,15 +95,13 @@ pub mod pallet {
         OracleRequest {
             request_id: RequestIdentifier,
             operator: T::AccountId,
-            callback: CallMetadata,
+            callback: Callback,
             fee: BalanceOf<T>,
         },
         /// A request has been answered. Corresponding fee payment is transferred
         OracleAnswer {
             request_id: RequestIdentifier,
             operator: T::AccountId,
-            fee: BalanceOf<T>,
-            result: SpVec<u8>,
         },
         /// A new operator has been registered by the root
         OperatorRegistered(T::AccountId),
@@ -274,7 +264,6 @@ pub mod pallet {
             })
         }
 
-        /*
         /// Hint specified Operator (via its `AccountId`) of a request to be
         /// performed.
         ///
@@ -291,7 +280,7 @@ pub mod pallet {
         #[pallet::weight((T::WeightInfo::initiate_request(data.len() as u32), Pays::No))]
         pub fn initiate_request(
             origin: OriginFor<T>,
-            callback: <T as Config>::Callback,
+            callback: Callback,
             data: Vec<u8>,
             fee: BalanceOf<T>,
         ) -> DispatchResult {
@@ -353,11 +342,7 @@ pub mod pallet {
         /// as soon as this callback is called.
         #[pallet::call_index(5)]
         #[pallet::weight((0, DispatchClass::Operational, Pays::No))]
-        pub fn callback(
-            origin: OriginFor<T>,
-            request_id: RequestIdentifier,
-            result: Vec<u8>,
-        ) -> DispatchResult {
+        pub fn callback(origin: OriginFor<T>, request_id: RequestIdentifier) -> DispatchResult {
             let signer = ensure_signed(origin)?;
 
             let request = Requests::<T>::get(request_id).ok_or(Error::<T>::UnknownRequest)?;
@@ -382,33 +367,16 @@ pub mod pallet {
                 BalanceStatus::Free,
             )?;
 
-            let answer = OracleAnswer {
-                data: request.data,
-                result: result.clone(),
-            };
-
-            // Dispatch the result to the original callback registered by the caller
-            let callback = request
-                .callback
-                .with_result(answer.encode())
-                .ok_or(Error::<T>::UnknownCallback)?;
-            callback
-                .dispatch_bypass_filter(frame_system::RawOrigin::Root.into())
-                .map_err(|e| e.error)?;
-
             // Remove the request from the queue
             Requests::<T>::remove(request_id);
 
             Self::deposit_event(Event::OracleAnswer {
                 request_id,
                 operator: request.operator,
-                fee: request.fee,
-                result,
             });
 
             Ok(())
         }
-        */
     }
 
     #[pallet::hooks]

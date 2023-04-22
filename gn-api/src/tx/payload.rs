@@ -1,6 +1,5 @@
 use crate::{cast, runtime, AccountId, MultiAddress, OracleCallback, SessionKeys, SubxtError};
 use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
-use gn_common::identity::{Identity, IdentityWithAuth};
 use gn_common::merkle::Proof as MerkleProof;
 use gn_common::{GuildName, RoleName};
 use gn_engine::RequirementsWithLogic;
@@ -71,25 +70,25 @@ pub fn create_free_role(guild_name: GuildName, role_name: RoleName) -> impl TxPa
         .create_free_role(guild_name, role_name)
 }
 
-pub fn create_role_with_allowlist(
-    guild_name: GuildName,
-    role_name: RoleName,
-    allowlist: Vec<Identity>,
-    filter_logic: FilterLogic,
-    requirements: Option<RequirementsWithLogic>,
-) -> Result<impl TxPayloadT, SubxtError> {
-    let serialized_requirements = requirements
-        .map(RequirementsWithLogic::into_serialized_tuple)
-        .transpose()
-        .map_err(|e| SubxtError::Other(e.to_string()))?;
-    Ok(runtime::tx().guild().create_role_with_allowlist(
-        guild_name,
-        role_name,
-        cast::id_vec::to_runtime(allowlist),
-        cast::filter_logic::to_runtime(filter_logic),
-        serialized_requirements,
-    ))
-}
+//pub fn create_role_with_allowlist(
+//    guild_name: GuildName,
+//    role_name: RoleName,
+//    allowlist: Vec<Identity>,
+//    filter_logic: FilterLogic,
+//    requirements: Option<RequirementsWithLogic>,
+//) -> Result<impl TxPayloadT, SubxtError> {
+//    let serialized_requirements = requirements
+//        .map(RequirementsWithLogic::into_serialized_tuple)
+//        .transpose()
+//        .map_err(|e| SubxtError::Other(e.to_string()))?;
+//    Ok(runtime::tx().guild().create_role_with_allowlist(
+//        guild_name,
+//        role_name,
+//        cast::id_vec::to_runtime(allowlist),
+//        cast::filter_logic::to_runtime(filter_logic),
+//        serialized_requirements,
+//    ))
+//}
 
 pub fn create_child_role(
     guild_name: GuildName,
@@ -124,11 +123,11 @@ pub fn create_unfiltered_role(
         .create_unfiltered_role(guild_name, role_name, serialized_requirements))
 }
 
-pub fn register(identity_with_auth: IdentityWithAuth, index: u8) -> impl TxPayloadT {
-    runtime::tx()
-        .guild()
-        .register(cast::id_with_auth::to_runtime(identity_with_auth), index)
-}
+//pub fn register(identity_with_auth: IdentityWithAuth, index: u8) -> impl TxPayloadT {
+//    runtime::tx()
+//        .guild()
+//        .register(cast::id_with_auth::to_runtime(identity_with_auth), index)
+//}
 
 pub fn join(
     guild_name: GuildName,

@@ -4,17 +4,10 @@
 #![cfg_attr(feature = "runtime-benchmarks", allow(unused))]
 pub use crate as pallet_oracle;
 
-use frame_support::dispatch::{
-    DispatchResultWithPostInfo, PostDispatchInfo, UnfilteredDispatchable,
-};
-use frame_support::pallet_prelude::Pays;
 use frame_support::parameter_types;
-use parity_scale_codec::{Decode, Encode, EncodeLike};
-use scale_info::TypeInfo;
 use sp_core::H256;
 use sp_runtime::testing::Header;
 use sp_runtime::traits::{BlakeTwo256, ConstU32, ConstU64, IdentityLookup};
-use sp_std::vec::Vec as SpVec;
 
 type Balance = u64;
 type Block = frame_system::mocking::MockBlock<TestRuntime>;
@@ -79,44 +72,12 @@ impl pallet_balances::Config for TestRuntime {
 }
 
 impl pallet_oracle::Config for TestRuntime {
-    type WeightInfo = ();
-    type RuntimeEvent = RuntimeEvent;
     type Currency = pallet_balances::Pallet<TestRuntime>;
-    type Callback = MockCallback<Self>;
-    type ValidityPeriod = ValidityPeriod;
     type MaxOperators = MaxOperators;
     type MinimumFee = MinimumFee;
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, TypeInfo, Encode, Decode)]
-pub struct MockCallback<T>(pub core::marker::PhantomData<T>);
-
-impl<T> EncodeLike<()> for MockCallback<T> {}
-
-impl<T> pallet_oracle::CallbackWithParameter for MockCallback<T> {
-    fn with_result(&self, result: SpVec<u8>) -> Option<Self> {
-        if result == [0, 0] {
-            None
-        } else {
-            Some(Self(core::marker::PhantomData))
-        }
-    }
-}
-
-impl UnfilteredDispatchable for MockCallback<TestRuntime> {
-    type RuntimeOrigin = <TestRuntime as frame_system::Config>::RuntimeOrigin;
-    fn dispatch_bypass_filter(self, _origin: Self::RuntimeOrigin) -> DispatchResultWithPostInfo {
-        Ok(PostDispatchInfo {
-            actual_weight: None,
-            pays_fee: Pays::No,
-        })
-    }
-}
-
-impl MockCallback<TestRuntime> {
-    pub fn test() -> Self {
-        Self(core::marker::PhantomData)
-    }
+    type RuntimeEvent = RuntimeEvent;
+    type ValidityPeriod = ValidityPeriod;
+    type WeightInfo = ();
 }
 
 pub const GENESIS_BALANCE: <TestRuntime as pallet_balances::Config>::Balance = 10;

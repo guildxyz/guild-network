@@ -5,6 +5,7 @@ use secp256k1::{
 };
 
 const ETHEREUM_HASH_PREFIX: &str = "\x19Ethereum Signed Message:\n";
+pub const EVM_ADDRESS_PREFIX: &[u8] = b"evm-address:";
 
 pub fn pubkey2address(pubkey: &PublicKey) -> [u8; 20] {
     let serialized_pk = pubkey.serialize_uncompressed();
@@ -16,7 +17,7 @@ pub fn pubkey2address(pubkey: &PublicKey) -> [u8; 20] {
 
 pub fn address2account(evm_address: [u8; 20]) -> [u8; 32] {
     let mut address = [0u8; 32];
-    address[0..12].copy_from_slice(b"evm-address:");
+    address[0..12].copy_from_slice(EVM_ADDRESS_PREFIX);
     address[12..].copy_from_slice(&evm_address);
     address
 }

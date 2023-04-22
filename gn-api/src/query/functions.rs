@@ -1,7 +1,6 @@
 use super::FilteredRequirements;
-use crate::{cast, runtime, AccountId, Api, Request, SessionKeys, SubxtError, H256};
+use crate::{cast, runtime, AccountId, Api, SessionKeys, SubxtError, H256};
 use gn_common::filter::Guild as GuildFilter;
-use gn_common::identity::Identity;
 use gn_common::{Guild, GuildName, RequestIdentifier, RoleName};
 use gn_engine::RequirementsWithLogic;
 use subxt::ext::codec::Decode;
@@ -44,21 +43,21 @@ pub async fn is_validator_added(api: Api, id: &AccountId) -> Result<bool, SubxtE
     Ok(validators.contains(id))
 }
 
-pub async fn user_identity(api: Api, user_id: &AccountId) -> Result<Vec<Identity>, SubxtError> {
-    let mut i = 0u8;
-    let mut identities = Vec::new();
-    while let Some(identity) = api
-        .storage()
-        .at(None)
-        .await?
-        .fetch(&runtime::storage().guild().user_data(user_id, i))
-        .await?
-    {
-        identities.push(cast::id::from_runtime(identity));
-        i += 1;
-    }
-    Ok(identities)
-}
+//pub async fn user_identity(api: Api, user_id: &AccountId) -> Result<Vec<Identity>, SubxtError> {
+//    let mut i = 0u8;
+//    let mut identities = Vec::new();
+//    while let Some(identity) = api
+//        .storage()
+//        .at(None)
+//        .await?
+//        .fetch(&runtime::storage().guild().user_data(user_id, i))
+//        .await?
+//    {
+//        identities.push(cast::id::from_runtime(identity));
+//        i += 1;
+//    }
+//    Ok(identities)
+//}
 
 pub async fn members(
     api: Api,
@@ -158,20 +157,20 @@ pub async fn role_ids(
     Ok(role_ids)
 }
 
-pub async fn oracle_request(api: Api, id: RequestIdentifier) -> Result<Request, SubxtError> {
-    let key = runtime::storage().oracle().requests(id);
-    let request = api
-        .storage()
-        .at(None)
-        .await?
-        .fetch(&key)
-        .await?
-        .ok_or_else(|| SubxtError::Other(format!("no request with id: {id}")))?;
-
-    let request = Request::decode(&mut request.data.as_slice())?;
-
-    Ok(request)
-}
+//pub async fn oracle_request(api: Api, id: RequestIdentifier) -> Result<Request, SubxtError> {
+//    let key = runtime::storage().oracle().requests(id);
+//    let request = api
+//        .storage()
+//        .at(None)
+//        .await?
+//        .fetch(&key)
+//        .await?
+//        .ok_or_else(|| SubxtError::Other(format!("no request with id: {id}")))?;
+//
+//    let request = Request::decode(&mut request.data.as_slice())?;
+//
+//    Ok(request)
+//}
 
 pub async fn oracle_requests(
     api: Api,
@@ -244,20 +243,20 @@ pub async fn requirements(
         .map(|x| x.requirements)
 }
 
-pub async fn allowlist(
-    api: Api,
-    guild_name: GuildName,
-    role_name: RoleName,
-) -> Result<Option<Vec<Identity>>, SubxtError> {
-    let role_id = role_id(api.clone(), guild_name, role_name).await?;
-    let offchain_key = gn_common::offchain_allowlist_key(role_id.as_ref());
-
-    let maybe_encoded_allowlist = api.rpc().offchain(&offchain_key).await?;
-    maybe_encoded_allowlist
-        .map(|x| Vec::<Identity>::decode(&mut &x.0[..]))
-        .transpose()
-        .map_err(SubxtError::Codec)
-}
+//pub async fn allowlist(
+//    api: Api,
+//    guild_name: GuildName,
+//    role_name: RoleName,
+//) -> Result<Option<Vec<Identity>>, SubxtError> {
+//    let role_id = role_id(api.clone(), guild_name, role_name).await?;
+//    let offchain_key = gn_common::offchain_allowlist_key(role_id.as_ref());
+//
+//    let maybe_encoded_allowlist = api.rpc().offchain(&offchain_key).await?;
+//    maybe_encoded_allowlist
+//        .map(|x| Vec::<Identity>::decode(&mut &x.0[..]))
+//        .transpose()
+//        .map_err(SubxtError::Codec)
+//}
 
 pub async fn next_session_keys(api: Api, validator: &AccountId) -> Result<SessionKeys, SubxtError> {
     let storage_key = runtime::storage().session().next_keys(validator);

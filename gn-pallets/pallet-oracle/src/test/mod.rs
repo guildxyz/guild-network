@@ -3,6 +3,7 @@ use helpers::*;
 
 use crate::mock::*;
 use frame_support::traits::OnFinalize;
+use gn_common::Callback;
 use pallet_oracle::Event as OracleEvent;
 use parity_scale_codec::{Decode, Encode};
 
@@ -42,14 +43,14 @@ fn invalid_transactions_fail() {
             (
                 <Oracle>::initiate_request(
                     RuntimeOrigin::signed(1),
-                    MockCallback::test(),
+                    Callback::default(),
                     vec![],
                     minimum_fee(),
                 ),
                 "NoActiveOperators",
             ),
             (
-                <Oracle>::callback(RuntimeOrigin::signed(ACCOUNT_0), 0, 10.encode()),
+                <Oracle>::callback(RuntimeOrigin::signed(ACCOUNT_0), 0),
                 "UnknownRequest",
             ),
         ];
@@ -212,11 +213,10 @@ fn operator_activation_and_deactivation() {
 fn initiate_requests_valid() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        let callback = MockCallback::test();
+        let callback = Callback::default();
         let fee = minimum_fee();
         let parameters = ("a", "b");
         let data = parameters.encode();
-        let result = vec![10, 0, 0, 0];
         let request_id = 0;
 
         <Oracle>::register_operator(RuntimeOrigin::root(), ACCOUNT_0).unwrap();
@@ -246,15 +246,13 @@ fn initiate_requests_valid() {
         assert_eq!(parameters.0, std::str::from_utf8(&r.0).unwrap());
         assert_eq!(parameters.1, std::str::from_utf8(&r.1).unwrap());
 
-        <Oracle>::callback(RuntimeOrigin::signed(ACCOUNT_0), request_id, result.clone()).unwrap();
+        <Oracle>::callback(RuntimeOrigin::signed(ACCOUNT_0), request_id).unwrap();
 
         assert_eq!(
             last_event(),
             OracleEvent::OracleAnswer {
                 request_id,
                 operator: ACCOUNT_0,
-                fee,
-                result,
             }
         );
     });
@@ -271,7 +269,7 @@ fn linear_request_delegation() {
         let operator_2 = 12;
         let operator_3 = 13;
         let data = vec![];
-        let callback = MockCallback::test();
+        let callback = Callback::default();
         let fee = minimum_fee();
         let mut request_id = 0;
 
@@ -456,7 +454,7 @@ fn initiate_requests_invalid_insufficient_fee() {
         <Oracle>::activate_operator(RuntimeOrigin::signed(ACCOUNT_0)).unwrap();
         let error = <Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_1),
-            MockCallback::test(),
+            Callback::default(),
             vec![],
             minimum_fee() - 1,
         )
@@ -473,7 +471,7 @@ fn initiate_requests_invalid_insufficient_balance_for_fee() {
         <Oracle>::activate_operator(RuntimeOrigin::signed(ACCOUNT_0)).unwrap();
         let error = <Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_1),
-            MockCallback::test(),
+            Callback::default(),
             vec![],
             GENESIS_BALANCE + 1,
         )
@@ -489,35 +487,13 @@ fn initiate_requests_invalid_wrong_operator() {
         <Oracle>::activate_operator(RuntimeOrigin::signed(ACCOUNT_0)).unwrap();
         <Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_1),
-            MockCallback::test(),
+            Callback::default(),
             vec![],
             minimum_fee(),
         )
         .unwrap();
-        let error = <Oracle>::callback(RuntimeOrigin::signed(99), 0, vec![1]).unwrap_err();
+        let error = <Oracle>::callback(RuntimeOrigin::signed(99), 0).unwrap_err();
         assert_eq!(error_msg(error), "WrongOperator");
-    });
-}
-
-#[test]
-fn unknown_callback() {
-    new_test_ext().execute_with(|| {
-        <Oracle>::register_operator(RuntimeOrigin::root(), ACCOUNT_0).unwrap();
-        <Oracle>::activate_operator(RuntimeOrigin::signed(ACCOUNT_0)).unwrap();
-        <Oracle>::initiate_request(
-            RuntimeOrigin::signed(ACCOUNT_1),
-            MockCallback::test(),
-            vec![],
-            minimum_fee(),
-        )
-        .unwrap();
-        // Sending an empty result in this test runtime environment causes
-        // MockCallback to return None for the `with_result` call. The
-        // resulting None will trigger the UnknownCallback error. Note, that
-        // this is a very specific implementation of `CallbackWithParameter`
-        // that was tailored for this edge case.
-        let error = <Oracle>::callback(RuntimeOrigin::signed(ACCOUNT_0), 0, vec![]).unwrap_err();
-        assert_eq!(error_msg(error), "UnknownCallback");
     });
 }
 
@@ -530,7 +506,7 @@ fn kill_request() {
         <Oracle>::activate_operator(RuntimeOrigin::signed(ACCOUNT_0)).unwrap();
         <Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_1),
-            MockCallback::test(),
+            Callback::default(),
             vec![],
             minimum_fee(),
         )
@@ -547,8 +523,7 @@ fn kill_request() {
         );
         // Request has been killed, too old
         // Unknown request error
-        let error =
-            <Oracle>::callback(RuntimeOrigin::signed(1), request_id, 10.encode()).unwrap_err();
+        let error = <Oracle>::callback(RuntimeOrigin::signed(1), request_id).unwrap_err();
         assert_eq!(error_msg(error), "UnknownRequest");
         assert!(<Oracle>::request(request_id).is_none());
     });
