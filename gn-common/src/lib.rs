@@ -60,9 +60,3 @@ pub struct ReqCheckRequest<T> {
     pub guild_name: GuildName,
     pub role_name: RoleName,
 }
-
-#[derive(Encode, Decode, TypeInfo, Copy, Clone, Debug, Eq, PartialEq, Default)]
-pub struct Callback {
-    pub pallet: u8,
-    pub call: u8,
-}

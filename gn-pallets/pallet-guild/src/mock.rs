@@ -76,7 +76,6 @@ impl pallet_balances::Config for TestRuntime {
 
 impl pallet_guild::Config for TestRuntime {
     type MaxAllowlistLen = MaxAllowlistLen;
-    type MaxIdentities = MaxIdentities;
     type MaxRolesPerGuild = MaxRolesPerGuild;
     type MaxReqsPerRole = MaxReqsPerRole;
     type MaxSerializedLen = MaxSerializedLen;
@@ -87,7 +86,6 @@ impl pallet_guild::Config for TestRuntime {
 
 impl pallet_oracle::Config for TestRuntime {
     type Currency = pallet_balances::Pallet<TestRuntime>;
-    type Callback = pallet_guild::Call<TestRuntime>;
     type MaxOperators = ConstU32<10>;
     type MinimumFee = MinimumFee;
     type RuntimeEvent = RuntimeEvent;

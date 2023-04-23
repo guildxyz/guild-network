@@ -29,7 +29,8 @@ pub mod pallet {
         Guild, GuildName, Request, RequestData, RequestIdentifier, Role, RoleName, SerializedData,
         SerializedRequirements,
     };
-    use pallet_oracle::{CallbackWithParameter, Config as OracleConfig, OracleAnswer};
+    use pallet_guild_identity::Config as IdentityConfig;
+    use pallet_oracle::{Config as OracleConfig, OracleAnswer};
     use sp_std::vec::Vec as SpVec;
 
     type BalanceOf<T> = <<T as OracleConfig>::Currency as Currency<
@@ -88,8 +89,6 @@ pub mod pallet {
         type MaxReqsPerRole: Get<u32>;
         #[pallet::constant]
         type MaxSerializedLen: Get<u32>;
-        #[pallet::constant]
-        type MaxIdentities: Get<u8>;
         type MyRandomness: Randomness<Self::Hash, Self::BlockNumber>;
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type WeightInfo: WeightInfo;
@@ -118,7 +117,6 @@ pub mod pallet {
         UserNotRegistered,
         IdNotRegistered,
         CodecError,
-        MaxIdentitiesExceeded,
         MaxRolesPerGuildExceeded,
         MaxReqsPerRoleExceeded,
         MaxSerializedLenExceeded,

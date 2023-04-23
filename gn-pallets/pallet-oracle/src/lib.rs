@@ -36,7 +36,7 @@ pub mod pallet {
     use frame_support::traits::{BalanceStatus, Currency, Get, ReservableCurrency};
     use frame_support::{ensure, pallet_prelude::*};
     use frame_system::{ensure_signed, pallet_prelude::*};
-    use gn_common::{Callback, OperatorIdentifier, RequestIdentifier};
+    use gn_common::{OperatorIdentifier, RequestIdentifier};
     use sp_std::{prelude::*, vec::Vec as SpVec};
 
     #[pallet::config]
@@ -56,13 +56,6 @@ pub mod pallet {
 
     pub type BalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-
-    // A trait allowing to inject Operator results back into the specified Call
-    pub trait CallbackWithParameter {
-        fn with_result(&self, result: SpVec<u8>) -> Option<Self>
-        where
-            Self: core::marker::Sized;
-    }
 
     #[pallet::error]
     pub enum Error<T> {
@@ -95,7 +88,7 @@ pub mod pallet {
         OracleRequest {
             request_id: RequestIdentifier,
             operator: T::AccountId,
-            callback: Callback,
+            pallet_index: u8,
             fee: BalanceOf<T>,
         },
         /// A request has been answered. Corresponding fee payment is transferred
@@ -151,7 +144,7 @@ pub mod pallet {
         pub operator: AccountId,
         pub block_number: BlockNumber,
         pub fee: BalanceOf,
-        pub callback: Callback,
+        pub pallet_index: u8,
         pub data: SpVec<u8>,
     }
 
@@ -160,12 +153,6 @@ pub mod pallet {
         <T as frame_system::Config>::BlockNumber,
         BalanceOf<T>,
     >;
-
-    #[derive(Encode, Decode, Clone)]
-    pub struct OracleAnswer {
-        pub data: SpVec<u8>,
-        pub result: SpVec<u8>,
-    }
 
     #[pallet::storage]
     #[pallet::getter(fn request)]
@@ -280,7 +267,7 @@ pub mod pallet {
         #[pallet::weight((T::WeightInfo::initiate_request(data.len() as u32), Pays::No))]
         pub fn initiate_request(
             origin: OriginFor<T>,
-            callback: Callback,
+            pallet_index: u8,
             data: Vec<u8>,
             fee: BalanceOf<T>,
         ) -> DispatchResult {
@@ -317,7 +304,7 @@ pub mod pallet {
             let request = OracleRequest::<T> {
                 requester,
                 operator: operator.clone(),
-                callback: callback.clone(),
+                pallet_index,
                 data,
                 fee,
                 block_number: now,
@@ -327,7 +314,7 @@ pub mod pallet {
             Self::deposit_event(Event::OracleRequest {
                 request_id,
                 operator,
-                callback,
+                pallet_index,
                 fee,
             });
 

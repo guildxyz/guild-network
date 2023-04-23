@@ -17,25 +17,27 @@ pub mod pallet {
     use super::weights::WeightInfo;
     use frame_support::pallet_prelude::*;
     use frame_support::{
-        sp_runtime::traits::UniqueSaturatedFrom, traits::Currency, BoundedBTreeMap,
+        sp_runtime::traits::UniqueSaturatedFrom,
+        traits::{Currency, PalletInfo},
+        BoundedBTreeMap,
     };
+    use frame_system::ensure_signed;
     use frame_system::pallet_prelude::OriginFor;
-    use frame_system::{ensure_root, ensure_signed};
-    use gn_common::{Authority, Identity, LinkIdentityRequest, Prefix, SerializedData};
-    use pallet_oracle::{CallbackWithParameter, Config as OracleConfig, OracleAnswer};
+    use gn_common::{Authority, Identity, LinkIdentityRequest, Prefix, RequestIdentifier};
 
-    type BalanceOf<T> = <<T as OracleConfig>::Currency as Currency<
+    type BalanceOf<T> = <<T as pallet_oracle::Config>::Currency as Currency<
         <T as frame_system::Config>::AccountId,
     >>::Balance;
 
     #[pallet::config]
-    pub trait Config: OracleConfig<Callback = Call<Self>> + frame_system::Config {
+    pub trait Config: pallet_oracle::Config + frame_system::Config {
         #[pallet::constant]
         type MaxLinkedAddresses: Get<u32>;
         #[pallet::constant]
         type MaxLinkedAddressTypes: Get<u32>;
         #[pallet::constant]
         type MaxLinkedIdentities: Get<u32>;
+        type PalletInfo: PalletInfo;
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type WeightInfo: WeightInfo;
     }
@@ -93,6 +95,7 @@ pub mod pallet {
         IdentityCheckFailed,
         InvalidAuthoritySignature,
         InvalidOracleAnswer,
+        InvalidOracleRequest,
         MaxLinkedAddressesExceeded,
         MaxLinkedAddressTypesExceeded,
         MaxLinkedIdentitiesExceeded,
@@ -249,17 +252,22 @@ pub mod pallet {
             if identity_map.contains_key(&prefix) {
                 return Err(Error::<T>::IdentityAlreadyLinked.into());
             }
-            // compile and send oracle request
-            let call: <T as OracleConfig>::Callback = Call::callback {
-                result: SerializedData::new(),
-            };
-            let fee = BalanceOf::<T>::unique_saturated_from(<T as OracleConfig>::MinimumFee::get());
+            let fee = BalanceOf::<T>::unique_saturated_from(
+                <T as pallet_oracle::Config>::MinimumFee::get(),
+            );
             let request = LinkIdentityRequest {
                 requester: signer,
                 prefix,
                 identity,
             };
-            <pallet_oracle::Pallet<T>>::initiate_request(origin, call, request.encode(), fee)?;
+            let pallet_index = <T as Config>::PalletInfo::index::<Self>()
+                .ok_or(Error::<T>::InvalidOracleRequest)?;
+            <pallet_oracle::Pallet<T>>::initiate_request(
+                origin,
+                pallet_index as u8,
+                request.encode(),
+                fee,
+            )?;
             Ok(())
         }
 
@@ -281,21 +289,30 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::call_index(9)]
+        #[pallet::call_index(7)]
         #[pallet::weight((0, DispatchClass::Operational, Pays::No))]
-        pub fn callback(origin: OriginFor<T>, result: SerializedData) -> DispatchResult {
-            ensure_root(origin)?;
-            // cannot wrap codec::Error in this error type because
-            // it doesn't implement the required traits
-            let answer = OracleAnswer::decode(&mut result.as_slice())
+        pub fn callback(
+            origin: OriginFor<T>,
+            request_id: RequestIdentifier,
+            result: bool,
+        ) -> DispatchResult {
+            let request = <pallet_oracle::Pallet<T>>::request(request_id)
+                .ok_or(Error::<T>::InvalidOracleAnswer)?;
+
+            let pallet_index = <T as Config>::PalletInfo::index::<Self>()
+                .ok_or(Error::<T>::InvalidOracleRequest)?;
+
+            ensure!(
+                request.pallet_index == pallet_index as u8,
+                Error::<T>::InvalidOracleAnswer
+            );
+
+            let request = LinkIdentityRequest::<T::AccountId>::decode(&mut request.data.as_slice())
                 .map_err(|_| Error::<T>::InvalidOracleAnswer)?;
 
-            ensure!(answer.result.len() == 1, Error::<T>::InvalidOracleAnswer);
+            <pallet_oracle::Pallet<T>>::callback(origin, request_id)?;
 
-            let request = LinkIdentityRequest::<T::AccountId>::decode(&mut answer.data.as_slice())
-                .map_err(|_| Error::<T>::InvalidOracleAnswer)?;
-
-            if answer.result[0] == 1 {
+            if !result {
                 return Err(Error::<T>::IdentityCheckFailed.into());
             }
 
@@ -318,17 +335,7 @@ pub mod pallet {
                     Err(Error::<T>::AccountDoesNotExist)
                 }
             })?;
-
-            todo!();
-        }
-    }
-
-    impl<T: Config> CallbackWithParameter for Call<T> {
-        fn with_result(&self, result: SerializedData) -> Option<Self> {
-            match self {
-                Call::callback { .. } => Some(Call::callback { result }),
-                _ => None,
-            }
+            Ok(())
         }
     }
 }
