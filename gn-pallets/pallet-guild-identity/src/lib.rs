@@ -37,7 +37,6 @@ pub mod pallet {
         type MaxLinkedAddressTypes: Get<u32>;
         #[pallet::constant]
         type MaxLinkedIdentities: Get<u32>;
-        type PalletInfo: PalletInfo;
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type WeightInfo: WeightInfo;
     }
@@ -260,7 +259,7 @@ pub mod pallet {
                 prefix,
                 identity,
             };
-            let pallet_index = <T as Config>::PalletInfo::index::<Self>()
+            let pallet_index = <T as frame_system::Config>::PalletInfo::index::<Self>()
                 .ok_or(Error::<T>::InvalidOracleRequest)?;
             <pallet_oracle::Pallet<T>>::initiate_request(
                 origin,
@@ -299,7 +298,7 @@ pub mod pallet {
             let request = <pallet_oracle::Pallet<T>>::request(request_id)
                 .ok_or(Error::<T>::InvalidOracleAnswer)?;
 
-            let pallet_index = <T as Config>::PalletInfo::index::<Self>()
+            let pallet_index = <T as frame_system::Config>::PalletInfo::index::<Self>()
                 .ok_or(Error::<T>::InvalidOracleRequest)?;
 
             ensure!(

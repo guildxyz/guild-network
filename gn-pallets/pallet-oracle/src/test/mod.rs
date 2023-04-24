@@ -3,60 +3,53 @@ use helpers::*;
 
 use crate::mock::*;
 use frame_support::traits::OnFinalize;
-use gn_common::Callback;
-use pallet_oracle::Event as OracleEvent;
+use frame_support::{assert_noop, assert_ok};
 use parity_scale_codec::{Decode, Encode};
 
 #[test]
 fn invalid_transactions_fail() {
     new_test_ext().execute_with(|| {
-        System::set_block_number(1);
         let failing_transactions = vec![
             (
                 <Oracle>::register_operator(RuntimeOrigin::none(), 0),
-                "BadOrigin",
+                DispatchError::BadOrigin,
             ),
             (
                 <Oracle>::register_operator(RuntimeOrigin::signed(0), 0),
-                "BadOrigin",
+                DispatchError::BadOrigin,
             ),
             (
                 <Oracle>::deregister_operator(RuntimeOrigin::none(), 0),
-                "BadOrigin",
+                DispatchError::BadOrigin,
             ),
             (
                 <Oracle>::deregister_operator(RuntimeOrigin::signed(1), 0),
-                "BadOrigin",
+                DispatchError::BadOrigin,
             ),
             (
                 <Oracle>::activate_operator(RuntimeOrigin::signed(1)),
-                "UnknownOperator",
+                OracleError::UnknownOperator.into(),
             ),
             (
                 <Oracle>::deactivate_operator(RuntimeOrigin::signed(1)),
-                "UnknownOperator",
+                OracleError::UnknownOperator.into(),
             ),
             (
                 <Oracle>::deregister_operator(RuntimeOrigin::root(), 1),
-                "UnknownOperator",
+                OracleError::UnknownOperator.into(),
             ),
             (
-                <Oracle>::initiate_request(
-                    RuntimeOrigin::signed(1),
-                    Callback::default(),
-                    vec![],
-                    minimum_fee(),
-                ),
-                "NoActiveOperators",
+                <Oracle>::initiate_request(RuntimeOrigin::signed(1), 0, vec![], minimum_fee()),
+                OracleError::NoActiveOperators.into(),
             ),
             (
                 <Oracle>::callback(RuntimeOrigin::signed(ACCOUNT_0), 0),
-                "UnknownRequest",
+                OracleError::UnknownRequest.into(),
             ),
         ];
 
-        for (tx, raw_error_msg) in failing_transactions {
-            assert_eq!(error_msg(tx.unwrap_err()), raw_error_msg);
+        for (tx_result, error) in failing_transactions {
+            assert_noop!(tx_result, error);
         }
     });
 }
@@ -65,10 +58,9 @@ fn invalid_transactions_fail() {
 fn operator_registration_valid() {
     new_test_ext().execute_with(|| {
         // This is required for some reason otherwise the last_event() method fails
-        System::set_block_number(1);
         let operator = 1;
         assert_eq!(<Oracle>::num_registered_operators(), 0);
-        assert!(<Oracle>::register_operator(RuntimeOrigin::root(), operator).is_ok());
+        assert_ok!(<Oracle>::register_operator(RuntimeOrigin::root(), operator));
         assert!(<Oracle>::operator(operator).is_some());
         assert_eq!(<Oracle>::num_registered_operators(), 1);
         assert_eq!(last_event(), OracleEvent::OperatorRegistered(operator));
@@ -80,17 +72,25 @@ fn operator_registration_invalid_operator_already_registered() {
     new_test_ext().execute_with(|| {
         let operator_1 = 1;
         let operator_2 = 2;
-        assert!(<Oracle>::register_operator(RuntimeOrigin::root(), operator_1).is_ok());
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            operator_1
+        ));
         assert!(<Oracle>::operator(operator_1).is_some());
         assert_eq!(<Oracle>::num_registered_operators(), 1);
 
         // Operator already registered error
-        let error = <Oracle>::register_operator(RuntimeOrigin::root(), operator_1).unwrap_err();
-        assert_eq!(error_msg(error), "OperatorAlreadyRegistered");
+        assert_noop!(
+            <Oracle>::register_operator(RuntimeOrigin::root(), operator_1),
+            OracleError::OperatorAlreadyRegistered
+        );
         assert!(<Oracle>::operator(operator_1).is_some());
         assert_eq!(<Oracle>::num_registered_operators(), 1);
 
-        assert!(<Oracle>::register_operator(RuntimeOrigin::root(), operator_2).is_ok());
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            operator_2
+        ));
         assert!(<Oracle>::operator(operator_1).is_some());
         assert!(<Oracle>::operator(operator_2).is_some());
         assert_eq!(<Oracle>::num_registered_operators(), 2);
@@ -100,21 +100,38 @@ fn operator_registration_invalid_operator_already_registered() {
 #[test]
 fn operator_deregistration_valid() {
     new_test_ext().execute_with(|| {
-        System::set_block_number(1);
         let operator_0 = 0;
         let operator_1 = 1;
         let operator_2 = 2;
 
-        assert!(<Oracle>::register_operator(RuntimeOrigin::root(), operator_1).is_ok());
-        assert!(<Oracle>::deregister_operator(RuntimeOrigin::root(), operator_1).is_ok());
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            operator_1
+        ));
+        assert_ok!(<Oracle>::deregister_operator(
+            RuntimeOrigin::root(),
+            operator_1
+        ));
         assert_eq!(<Oracle>::num_registered_operators(), 0);
 
         assert_eq!(last_event(), OracleEvent::OperatorDeregistered(operator_1));
 
-        assert!(<Oracle>::register_operator(RuntimeOrigin::root(), operator_2).is_ok());
-        assert!(<Oracle>::register_operator(RuntimeOrigin::root(), operator_0).is_ok());
-        assert!(<Oracle>::register_operator(RuntimeOrigin::root(), operator_1).is_ok());
-        assert!(<Oracle>::deregister_operator(RuntimeOrigin::root(), operator_0).is_ok());
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            operator_2
+        ));
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            operator_0
+        ));
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            operator_1
+        ));
+        assert_ok!(<Oracle>::deregister_operator(
+            RuntimeOrigin::root(),
+            operator_0
+        ));
         assert_eq!(<Oracle>::num_registered_operators(), 2);
         assert!(<Oracle>::operator(operator_1).is_some());
         assert!(<Oracle>::operator(operator_2).is_some());
@@ -126,20 +143,34 @@ fn operator_deregistration_valid() {
 #[test]
 fn operator_activation_and_deactivation() {
     new_test_ext().execute_with(|| {
-        System::set_block_number(1);
         let operator_0 = 0;
         let operator_1 = 1;
         let operator_2 = 2;
         let operator_3 = 3;
         let operator_4 = 4;
 
-        <Oracle>::register_operator(RuntimeOrigin::root(), operator_0).unwrap();
-        <Oracle>::register_operator(RuntimeOrigin::root(), operator_1).unwrap();
-        <Oracle>::register_operator(RuntimeOrigin::root(), operator_2).unwrap();
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            operator_0
+        ));
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            operator_1
+        ));
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            operator_2
+        ));
 
-        <Oracle>::activate_operator(RuntimeOrigin::signed(operator_2)).unwrap();
-        <Oracle>::activate_operator(RuntimeOrigin::signed(operator_0)).unwrap();
-        <Oracle>::activate_operator(RuntimeOrigin::signed(operator_1)).unwrap();
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(
+            operator_2
+        )));
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(
+            operator_0
+        )));
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(
+            operator_1
+        )));
 
         assert_eq!(last_event(), OracleEvent::OperatorActivated(operator_1));
         assert_eq!(
@@ -149,59 +180,84 @@ fn operator_activation_and_deactivation() {
         assert_eq!(<Oracle>::num_registered_operators(), 3);
 
         // deactivate operator_0
-        <Oracle>::deactivate_operator(RuntimeOrigin::signed(operator_0)).unwrap();
+        assert_ok!(<Oracle>::deactivate_operator(RuntimeOrigin::signed(
+            operator_0
+        )));
 
         assert_eq!(last_event(), OracleEvent::OperatorDeactivated(operator_0));
         assert_eq!(<Oracle>::active_operators(), vec![operator_1, operator_2]);
         assert_eq!(<Oracle>::num_registered_operators(), 3);
 
         // activate all registered operators (reactivate operator_0
-        <Oracle>::register_operator(RuntimeOrigin::root(), operator_3).unwrap();
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            operator_3
+        ));
         assert_eq!(<Oracle>::num_registered_operators(), 4);
-        <Oracle>::activate_operator(RuntimeOrigin::signed(operator_3)).unwrap();
-        <Oracle>::activate_operator(RuntimeOrigin::signed(operator_0)).unwrap();
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(
+            operator_3
+        )));
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(
+            operator_0
+        )));
         assert_eq!(
             <Oracle>::active_operators(),
             vec![operator_0, operator_1, operator_2, operator_3]
         );
 
         // not yet registered operator tries to activate
-        assert_eq!(
-            error_msg(<Oracle>::activate_operator(RuntimeOrigin::signed(operator_4)).unwrap_err()),
-            "UnknownOperator"
+        assert_noop!(
+            <Oracle>::activate_operator(RuntimeOrigin::signed(operator_4)),
+            OracleError::UnknownOperator
         );
 
         // deregister an activated operator
-        <Oracle>::deregister_operator(RuntimeOrigin::root(), operator_1).unwrap();
+        assert_ok!(<Oracle>::deregister_operator(
+            RuntimeOrigin::root(),
+            operator_1
+        ));
         assert_eq!(<Oracle>::num_registered_operators(), 3);
         assert_eq!(
             <Oracle>::active_operators(),
             vec![operator_0, operator_2, operator_3]
         );
-        assert_eq!(
-            error_msg(
-                <Oracle>::deactivate_operator(RuntimeOrigin::signed(operator_1)).unwrap_err()
-            ),
-            "UnknownOperator"
+        assert_noop!(
+            <Oracle>::deactivate_operator(RuntimeOrigin::signed(operator_1)),
+            OracleError::UnknownOperator
         );
         // deregister a deactivated operator
-        <Oracle>::deactivate_operator(RuntimeOrigin::signed(operator_2)).unwrap();
+        assert_ok!(<Oracle>::deactivate_operator(RuntimeOrigin::signed(
+            operator_2
+        )));
         assert_eq!(<Oracle>::active_operators(), vec![operator_0, operator_3]);
         assert_eq!(<Oracle>::num_registered_operators(), 3);
-        <Oracle>::deregister_operator(RuntimeOrigin::root(), operator_2).unwrap();
+        assert_ok!(<Oracle>::deregister_operator(
+            RuntimeOrigin::root(),
+            operator_2
+        ));
         assert_eq!(<Oracle>::num_registered_operators(), 2);
         // deregistered tries to re-activate again
-        assert_eq!(
-            error_msg(<Oracle>::activate_operator(RuntimeOrigin::signed(operator_2)).unwrap_err()),
-            "UnknownOperator"
+        assert_noop!(
+            <Oracle>::activate_operator(RuntimeOrigin::signed(operator_2)),
+            OracleError::UnknownOperator
         );
         // register a new operator
-        <Oracle>::register_operator(RuntimeOrigin::root(), operator_4).unwrap();
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            operator_4
+        ));
         assert_eq!(<Oracle>::num_registered_operators(), 3);
-        <Oracle>::register_operator(RuntimeOrigin::root(), operator_2).unwrap();
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            operator_2
+        ));
         assert_eq!(<Oracle>::num_registered_operators(), 4);
-        <Oracle>::activate_operator(RuntimeOrigin::signed(operator_4)).unwrap();
-        <Oracle>::activate_operator(RuntimeOrigin::signed(operator_2)).unwrap();
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(
+            operator_4
+        )));
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(
+            operator_2
+        )));
         assert_eq!(
             <Oracle>::active_operators(),
             vec![operator_0, operator_2, operator_3, operator_4]
@@ -212,32 +268,35 @@ fn operator_activation_and_deactivation() {
 #[test]
 fn initiate_requests_valid() {
     new_test_ext().execute_with(|| {
-        System::set_block_number(1);
-        let callback = Callback::default();
+        let pallet_index = 0;
         let fee = minimum_fee();
         let parameters = ("a", "b");
         let data = parameters.encode();
         let request_id = 0;
 
-        <Oracle>::register_operator(RuntimeOrigin::root(), ACCOUNT_0).unwrap();
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            ACCOUNT_0
+        ));
         assert_eq!(last_event(), OracleEvent::OperatorRegistered(ACCOUNT_0));
-        <Oracle>::activate_operator(RuntimeOrigin::signed(ACCOUNT_0)).unwrap();
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(
+            ACCOUNT_0
+        )));
         assert_eq!(last_event(), OracleEvent::OperatorActivated(ACCOUNT_0));
 
-        <Oracle>::initiate_request(
+        assert_ok!(<Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_1),
-            callback,
+            pallet_index,
             data.clone(),
             fee,
-        )
-        .unwrap();
+        ));
 
         assert_eq!(
             last_event(),
             OracleEvent::OracleRequest {
                 request_id,
                 operator: ACCOUNT_0,
-                callback,
+                pallet_index,
                 fee,
             }
         );
@@ -246,7 +305,10 @@ fn initiate_requests_valid() {
         assert_eq!(parameters.0, std::str::from_utf8(&r.0).unwrap());
         assert_eq!(parameters.1, std::str::from_utf8(&r.1).unwrap());
 
-        <Oracle>::callback(RuntimeOrigin::signed(ACCOUNT_0), request_id).unwrap();
+        assert_ok!(<Oracle>::callback(
+            RuntimeOrigin::signed(ACCOUNT_0),
+            request_id
+        ));
 
         assert_eq!(
             last_event(),
@@ -261,129 +323,145 @@ fn initiate_requests_valid() {
 #[test]
 fn linear_request_delegation() {
     new_test_ext().execute_with(|| {
-        System::set_block_number(1);
-
         let operator = 9;
         let operator_0 = 10;
         let operator_1 = 11;
         let operator_2 = 12;
         let operator_3 = 13;
         let data = vec![];
-        let callback = Callback::default();
+        let pallet_index = 0;
         let fee = minimum_fee();
         let mut request_id = 0;
 
-        <Oracle>::register_operator(RuntimeOrigin::root(), operator).unwrap();
-        <Oracle>::register_operator(RuntimeOrigin::root(), operator_0).unwrap();
-        <Oracle>::register_operator(RuntimeOrigin::root(), operator_1).unwrap();
-        <Oracle>::register_operator(RuntimeOrigin::root(), operator_2).unwrap();
-        assert_eq!(
-            error_msg(<Oracle>::register_operator(RuntimeOrigin::root(), operator_3).unwrap_err()),
-            "MaxOperatorsRegistered"
+        assert_ok!(<Oracle>::register_operator(RuntimeOrigin::root(), operator));
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            operator_0
+        ));
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            operator_1
+        ));
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            operator_2
+        ));
+        assert_noop!(
+            <Oracle>::register_operator(RuntimeOrigin::root(), operator_3),
+            OracleError::MaxOperatorsRegistered
         );
         assert_eq!(
             <Oracle>::num_registered_operators(),
             <TestRuntime as pallet_oracle::Config>::MaxOperators::get()
         );
-        <Oracle>::deregister_operator(RuntimeOrigin::root(), operator).unwrap();
-        <Oracle>::register_operator(RuntimeOrigin::root(), operator_3).unwrap();
+        assert_ok!(<Oracle>::deregister_operator(
+            RuntimeOrigin::root(),
+            operator
+        ));
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            operator_3
+        ));
 
         // activate operators
-        <Oracle>::activate_operator(RuntimeOrigin::signed(operator_0)).unwrap();
-        <Oracle>::activate_operator(RuntimeOrigin::signed(operator_1)).unwrap();
-        <Oracle>::activate_operator(RuntimeOrigin::signed(operator_2)).unwrap();
-        <Oracle>::activate_operator(RuntimeOrigin::signed(operator_3)).unwrap();
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(
+            operator_0
+        )));
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(
+            operator_1
+        )));
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(
+            operator_2
+        )));
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(
+            operator_3
+        )));
 
-        <Oracle>::initiate_request(
+        assert_ok!(<Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_0),
-            callback,
+            pallet_index,
             data.clone(),
             fee,
-        )
-        .unwrap();
+        ));
 
         assert_eq!(
             last_event(),
             OracleEvent::OracleRequest {
                 request_id,
                 operator: operator_0,
-                callback,
+                pallet_index,
                 fee,
             }
         );
         request_id += 1;
 
-        <Oracle>::initiate_request(
+        assert_ok!(<Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_0),
-            callback,
+            pallet_index,
             data.clone(),
             fee,
-        )
-        .unwrap();
+        ));
 
         assert_eq!(
             last_event(),
             OracleEvent::OracleRequest {
                 request_id,
                 operator: operator_1,
-                callback,
+                pallet_index,
                 fee,
             }
         );
         request_id += 1;
 
-        <Oracle>::initiate_request(
+        assert_ok!(<Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_0),
-            callback,
+            pallet_index,
             data.clone(),
             fee,
-        )
-        .unwrap();
+        ));
 
         assert_eq!(
             last_event(),
             OracleEvent::OracleRequest {
                 request_id,
                 operator: operator_2,
-                callback,
+                pallet_index,
                 fee,
             }
         );
         request_id += 1;
 
-        <Oracle>::initiate_request(
+        assert_ok!(<Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_0),
-            callback,
+            pallet_index,
             data.clone(),
             fee,
-        )
-        .unwrap();
+        ));
 
         assert_eq!(
             last_event(),
             OracleEvent::OracleRequest {
                 request_id,
                 operator: operator_3,
-                callback,
+                pallet_index,
                 fee,
             }
         );
         request_id += 1;
 
-        <Oracle>::initiate_request(
+        assert_ok!(<Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_0),
-            callback,
+            pallet_index,
             data.clone(),
             fee,
-        )
-        .unwrap();
+        ));
 
         assert_eq!(
             last_event(),
             OracleEvent::OracleRequest {
                 request_id,
                 operator: operator_0,
-                callback,
+                pallet_index,
                 fee,
             }
         );
@@ -391,21 +469,24 @@ fn linear_request_delegation() {
         request_id += 1;
 
         // operator_1, and operator_2 deactivates
-        <Oracle>::deactivate_operator(RuntimeOrigin::signed(operator_1)).unwrap();
-        <Oracle>::deactivate_operator(RuntimeOrigin::signed(operator_2)).unwrap();
-        <Oracle>::initiate_request(
+        assert_ok!(<Oracle>::deactivate_operator(RuntimeOrigin::signed(
+            operator_1
+        )));
+        assert_ok!(<Oracle>::deactivate_operator(RuntimeOrigin::signed(
+            operator_2
+        )));
+        assert_ok!(<Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_0),
-            callback,
+            pallet_index,
             data.clone(),
             fee,
-        )
-        .unwrap();
+        ));
         assert_eq!(
             last_event(),
             OracleEvent::OracleRequest {
                 request_id,
                 operator: operator_3,
-                callback,
+                pallet_index,
                 fee,
             }
         );
@@ -413,34 +494,41 @@ fn linear_request_delegation() {
         request_id += 1;
 
         // operator_0 is deregistered by root
-        <Oracle>::deregister_operator(RuntimeOrigin::root(), operator_0).unwrap();
+        assert_ok!(<Oracle>::deregister_operator(
+            RuntimeOrigin::root(),
+            operator_0
+        ));
         assert_eq!(<Oracle>::active_operators(), vec![operator_3]);
-        <Oracle>::initiate_request(
+        assert_ok!(<Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_0),
-            callback,
+            pallet_index,
             data.clone(),
             fee,
-        )
-        .unwrap();
+        ));
         assert_eq!(
             last_event(),
             OracleEvent::OracleRequest {
                 request_id,
                 operator: operator_3,
-                callback,
+                pallet_index,
                 fee,
             }
         );
 
         request_id += 1;
 
-        <Oracle>::initiate_request(RuntimeOrigin::signed(ACCOUNT_0), callback, data, fee).unwrap();
+        assert_ok!(<Oracle>::initiate_request(
+            RuntimeOrigin::signed(ACCOUNT_0),
+            pallet_index,
+            data,
+            fee
+        ));
         assert_eq!(
             last_event(),
             OracleEvent::OracleRequest {
                 request_id,
                 operator: operator_3,
-                callback,
+                pallet_index,
                 fee,
             }
         );
@@ -450,50 +538,67 @@ fn linear_request_delegation() {
 #[test]
 fn initiate_requests_invalid_insufficient_fee() {
     new_test_ext().execute_with(|| {
-        <Oracle>::register_operator(RuntimeOrigin::root(), ACCOUNT_0).unwrap();
-        <Oracle>::activate_operator(RuntimeOrigin::signed(ACCOUNT_0)).unwrap();
-        let error = <Oracle>::initiate_request(
-            RuntimeOrigin::signed(ACCOUNT_1),
-            Callback::default(),
-            vec![],
-            minimum_fee() - 1,
-        )
-        .unwrap_err();
-
-        assert_eq!(error_msg(error), "InsufficientFee");
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            ACCOUNT_0
+        ));
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(
+            ACCOUNT_0
+        )));
+        assert_noop!(
+            <Oracle>::initiate_request(
+                RuntimeOrigin::signed(ACCOUNT_1),
+                0,
+                vec![],
+                minimum_fee() - 1,
+            ),
+            OracleError::InsufficientFee
+        );
     });
 }
 
 #[test]
 fn initiate_requests_invalid_insufficient_balance_for_fee() {
     new_test_ext().execute_with(|| {
-        <Oracle>::register_operator(RuntimeOrigin::root(), ACCOUNT_0).unwrap();
-        <Oracle>::activate_operator(RuntimeOrigin::signed(ACCOUNT_0)).unwrap();
-        let error = <Oracle>::initiate_request(
-            RuntimeOrigin::signed(ACCOUNT_1),
-            Callback::default(),
-            vec![],
-            GENESIS_BALANCE + 1,
-        )
-        .unwrap_err();
-        assert_eq!(error_msg(error), "InsufficientBalance");
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            ACCOUNT_0
+        ));
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(
+            ACCOUNT_0
+        )));
+        assert_noop!(
+            <Oracle>::initiate_request(
+                RuntimeOrigin::signed(ACCOUNT_1),
+                0,
+                vec![],
+                GENESIS_BALANCE + 1,
+            ),
+            pallet_balances::Error::<TestRuntime, _>::InsufficientBalance
+        );
     });
 }
 
 #[test]
 fn initiate_requests_invalid_wrong_operator() {
     new_test_ext().execute_with(|| {
-        <Oracle>::register_operator(RuntimeOrigin::root(), ACCOUNT_0).unwrap();
-        <Oracle>::activate_operator(RuntimeOrigin::signed(ACCOUNT_0)).unwrap();
-        <Oracle>::initiate_request(
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            ACCOUNT_0
+        ));
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(
+            ACCOUNT_0
+        )));
+        assert_ok!(<Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_1),
-            Callback::default(),
+            0,
             vec![],
-            minimum_fee(),
-        )
-        .unwrap();
-        let error = <Oracle>::callback(RuntimeOrigin::signed(99), 0).unwrap_err();
-        assert_eq!(error_msg(error), "WrongOperator");
+            minimum_fee()
+        ));
+        assert_noop!(
+            <Oracle>::callback(RuntimeOrigin::signed(99), 0),
+            OracleError::WrongOperator
+        );
     });
 }
 
@@ -501,30 +606,36 @@ fn initiate_requests_invalid_wrong_operator() {
 fn kill_request() {
     new_test_ext().execute_with(|| {
         let request_id = 0;
+        let current_block = <System>::block_number();
 
-        <Oracle>::register_operator(RuntimeOrigin::root(), ACCOUNT_0).unwrap();
-        <Oracle>::activate_operator(RuntimeOrigin::signed(ACCOUNT_0)).unwrap();
-        <Oracle>::initiate_request(
+        assert_ok!(<Oracle>::register_operator(
+            RuntimeOrigin::root(),
+            ACCOUNT_0
+        ));
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(
+            ACCOUNT_0
+        )));
+        assert_ok!(<Oracle>::initiate_request(
             RuntimeOrigin::signed(ACCOUNT_1),
-            Callback::default(),
+            0,
             vec![],
-            minimum_fee(),
-        )
-        .unwrap();
+            minimum_fee()
+        ));
 
         <Oracle as OnFinalize<u64>>::on_finalize(
-            <TestRuntime as pallet_oracle::Config>::ValidityPeriod::get() - 1,
+            current_block + <TestRuntime as pallet_oracle::Config>::ValidityPeriod::get() - 1,
         );
 
         assert!(<Oracle>::request(request_id).is_some());
 
         <Oracle as OnFinalize<u64>>::on_finalize(
-            <TestRuntime as pallet_oracle::Config>::ValidityPeriod::get() + 1,
+            current_block + <TestRuntime as pallet_oracle::Config>::ValidityPeriod::get() + 1,
         );
-        // Request has been killed, too old
-        // Unknown request error
-        let error = <Oracle>::callback(RuntimeOrigin::signed(1), request_id).unwrap_err();
-        assert_eq!(error_msg(error), "UnknownRequest");
+        // Request has been killed, too old Unknown request error
+        assert_noop!(
+            <Oracle>::callback(RuntimeOrigin::signed(ACCOUNT_0), request_id),
+            OracleError::UnknownRequest
+        );
         assert!(<Oracle>::request(request_id).is_none());
     });
 }

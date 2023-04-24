@@ -1,7 +1,6 @@
 pub use crate as pallet_guild_identity;
 
 use frame_support::parameter_types;
-use frame_support::traits::{OnFinalize, OnInitialize};
 use sp_core::H256;
 use sp_runtime::testing::Header;
 use sp_runtime::traits::{BlakeTwo256, ConstU32, ConstU64, IdentityLookup};
@@ -81,7 +80,6 @@ impl pallet_guild_identity::Config for TestRuntime {
 
 impl pallet_oracle::Config for TestRuntime {
     type Currency = pallet_balances::Pallet<TestRuntime>;
-    type Callback = pallet_guild::Call<TestRuntime>;
     type MaxOperators = ConstU32<10>;
     type MinimumFee = MinimumFee;
     type RuntimeEvent = RuntimeEvent;
@@ -103,7 +101,5 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 fn init_chain() {
     for i in 0..2 {
         System::set_block_number(i);
-        <RandomnessCollectiveFlip as OnInitialize<u64>>::on_initialize(i);
-        <RandomnessCollectiveFlip as OnFinalize<u64>>::on_finalize(i);
     }
 }

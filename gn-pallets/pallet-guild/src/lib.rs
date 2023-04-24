@@ -33,6 +33,21 @@ pub mod pallet {
     use pallet_oracle::{Config as OracleConfig, OracleAnswer};
     use sp_std::vec::Vec as SpVec;
 
+    #[pallet::config]
+    pub trait Config: OracleConfig<Callback = Call<Self>> + frame_system::Config {
+        #[pallet::constant]
+        type MaxAllowlistLen: Get<u32>;
+        #[pallet::constant]
+        type MaxRolesPerGuild: Get<u32>;
+        #[pallet::constant]
+        type MaxReqsPerRole: Get<u32>;
+        #[pallet::constant]
+        type MaxSerializedLen: Get<u32>;
+        type MyRandomness: Randomness<Self::Hash, Self::BlockNumber>;
+        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        type WeightInfo: WeightInfo;
+    }
+
     type BalanceOf<T> = <<T as OracleConfig>::Currency as Currency<
         <T as frame_system::Config>::AccountId,
     >>::Balance;
@@ -78,21 +93,6 @@ pub mod pallet {
         bool,
         OptionQuery,
     >;
-
-    #[pallet::config]
-    pub trait Config: OracleConfig<Callback = Call<Self>> + frame_system::Config {
-        #[pallet::constant]
-        type MaxAllowlistLen: Get<u32>;
-        #[pallet::constant]
-        type MaxRolesPerGuild: Get<u32>;
-        #[pallet::constant]
-        type MaxReqsPerRole: Get<u32>;
-        #[pallet::constant]
-        type MaxSerializedLen: Get<u32>;
-        type MyRandomness: Randomness<Self::Hash, Self::BlockNumber>;
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-        type WeightInfo: WeightInfo;
-    }
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
