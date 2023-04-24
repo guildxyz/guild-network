@@ -68,7 +68,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn authorities)]
     pub type Authorities<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::AccountId, [Option<Authority>; 2], OptionQuery>;
+        StorageMap<_, Blake2_128Concat, T::AccountId, [Authority; 2], OptionQuery>;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -89,6 +89,7 @@ pub mod pallet {
         AddressAlreadyLinked,
         AddressDoesNotExist,
         AddressPrefixDoesNotExist,
+        AlreadyAuthorized,
         IdentityAlreadyLinked,
         IdentityDoesNotExist,
         IdentityCheckFailed,
@@ -118,7 +119,7 @@ pub mod pallet {
             );
             Addresses::<T>::insert(&signer, BoundedBTreeMap::new());
             Identities::<T>::insert(&signer, BoundedBTreeMap::new());
-            Authorities::<T>::insert(&signer, [None::<[u8; 32]>; 2]);
+            Authorities::<T>::insert(&signer, [[0u8; 32]; 2]);
             Self::deposit_event(Event::AccountRegistered(signer));
             Ok(())
         }
@@ -140,15 +141,20 @@ pub mod pallet {
 
         #[pallet::call_index(2)]
         #[pallet::weight((<T as Config>::WeightInfo::authorize(), Pays::No))]
-        pub fn authorize(origin: OriginFor<T>, authority: Authority) -> DispatchResult {
+        pub fn authorize(
+            origin: OriginFor<T>,
+            authority: Authority,
+            index: bool,
+        ) -> DispatchResult {
             let signer = ensure_signed(origin)?;
             Authorities::<T>::try_mutate(&signer, |maybe_authorities| {
                 if let Some(authorities) = maybe_authorities {
-                    match authorities {
-                        [Some(_), None] => authorities[1] = Some(authority),
-                        _ => authorities[0] = Some(authority),
+                    if authorities[usize::from(!index)] == authority {
+                        Err(Error::<T>::AlreadyAuthorized)
+                    } else {
+                        authorities[usize::from(index)] = authority;
+                        Ok(())
                     }
-                    Ok(())
                 } else {
                     Err(Error::<T>::AccountDoesNotExist)
                 }
@@ -172,10 +178,10 @@ pub mod pallet {
                 .ok_or(Error::<T>::InvalidAuthoritySignature)?;
             let hashed_authority_pubkey = gn_sig::webcrypto::hash_pubkey(&authority_pubkey);
             let authorities =
-                Authorities::<T>::get(&signer).ok_or(Error::<T>::AccountDoesNotExist)?;
+                Authorities::<T>::get(&primary).ok_or(Error::<T>::AccountDoesNotExist)?;
             if !authorities
                 .iter()
-                .any(|authority| authority == &Some(hashed_authority_pubkey))
+                .any(|authority| authority == &hashed_authority_pubkey)
             {
                 return Err(Error::<T>::UnknownAuthority.into());
             }

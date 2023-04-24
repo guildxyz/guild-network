@@ -36,7 +36,13 @@ frame-system = { workspace = true }
 sp-std = { workspace = true }
 
 [dev-dependencies]
+# local
+gn-sig = { version = "0.0.0-alpha", path = "../../gn-sig", features = ["wallet"] }
+
+# substrate pallets
 pallet-balances = { workspace = true, features = ["default"] }
+
+# substrate primitives
 sp-core = { workspace = true, features = ["default"] }
 sp-io = { workspace = true, features = ["default"] }
 sp-runtime = { workspace = true, features = ["default"] }

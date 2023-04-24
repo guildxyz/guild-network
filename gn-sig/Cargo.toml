@@ -13,6 +13,7 @@ std = [
     "sp-core/std",
     "sp-runtime/std",
 ]
+wallet = []
 
 [dependencies]
 # local

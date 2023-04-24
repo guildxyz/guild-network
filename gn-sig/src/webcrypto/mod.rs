@@ -1,3 +1,6 @@
+#[cfg(feature = "wallet")]
+pub mod wallet;
+
 use ecdsa::RecoveryId;
 use gn_common::hash::sha2_256;
 use p256::ecdsa::{Signature, VerifyingKey};
