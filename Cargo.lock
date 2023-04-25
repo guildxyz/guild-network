@@ -5593,12 +5593,12 @@ dependencies = [
  "frame-system",
  "gn-common",
  "pallet-balances",
+ "pallet-guild-identity",
  "pallet-oracle",
  "pallet-randomness-collective-flip",
  "parity-scale-codec 3.4.0",
  "scale-info",
  "sp-core",
- "sp-io",
  "sp-runtime",
  "sp-std",
 ]

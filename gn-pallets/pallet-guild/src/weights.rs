@@ -34,13 +34,15 @@ use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use sp_std::marker::PhantomData;
 
 pub trait WeightInfo {
-	fn register() -> Weight;
-	fn create_guild(n: u32, ) -> Weight;
+	fn create_guild() -> Weight;
 	fn create_free_role() -> Weight;
-	fn create_role_with_allowlist(n: u32, r: u32, _s: u32, ) -> Weight;
-	fn create_child_role(r: u32, s: u32, ) -> Weight;
-	fn create_unfiltered_role(r: u32, s: u32, ) -> Weight;
-	fn join() -> Weight;
+	fn create_role_with_allowlist() -> Weight;
+	fn create_child_role() -> Weight;
+	fn create_unfiltered_role() -> Weight;
+	fn join_free_role() -> Weight;
+	fn join_child_role() -> Weight;
+	fn join_role_with_allowlist() -> Weight;
+	fn join_unfiltered_role() -> Weight;
 	fn leave() -> Weight;
 	fn request_oracle_check() -> Weight;
 }
@@ -48,399 +50,73 @@ pub trait WeightInfo {
 /// Weight functions for `pallet_guild`.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
-	/// Storage: Guild UserData (r:0 w:1)
-	/// Proof Skipped: Guild UserData (max_values: None, max_size: None, mode: Measured)
-	fn register() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 369_767 nanoseconds.
-		Weight::from_ref_time(392_263_000)
-			.saturating_add(T::DbWeight::get().writes(1))
+	fn create_guild() -> Weight {
+		Weight::from_ref_time(1000)
 	}
-	/// Storage: Guild GuildIdMap (r:1 w:1)
-	/// Proof Skipped: Guild GuildIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Nonce (r:1 w:1)
-	/// Proof Skipped: Guild Nonce (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: RandomnessCollectiveFlip RandomMaterial (r:1 w:0)
-	/// Proof: RandomnessCollectiveFlip RandomMaterial (max_values: Some(1), max_size: Some(2594), added: 3089, mode: MaxEncodedLen)
-	/// Storage: Guild Guilds (r:0 w:1)
-	/// Proof Skipped: Guild Guilds (max_values: None, max_size: None, mode: Measured)
-	/// The range of component `n` is `[0, 256]`.
-	fn create_guild(n: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `115`
-		//  Estimated: `6404`
-		// Minimum execution time: 26_721 nanoseconds.
-		Weight::from_parts(39_154_463, 6404)
-			// Standard Error: 3_905
-			.saturating_add(Weight::from_ref_time(2_434).saturating_mul(n.into()))
-			.saturating_add(T::DbWeight::get().reads(3))
-			.saturating_add(T::DbWeight::get().writes(3))
-	}
-	/// Storage: Guild GuildIdMap (r:1 w:0)
-	/// Proof Skipped: Guild GuildIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild RoleIdMap (r:1 w:1)
-	/// Proof Skipped: Guild RoleIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Guilds (r:1 w:1)
-	/// Proof Skipped: Guild Guilds (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Nonce (r:1 w:1)
-	/// Proof Skipped: Guild Nonce (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: RandomnessCollectiveFlip RandomMaterial (r:1 w:0)
-	/// Proof: RandomnessCollectiveFlip RandomMaterial (max_values: Some(1), max_size: Some(2594), added: 3089, mode: MaxEncodedLen)
-	/// Storage: Guild Roles (r:0 w:1)
-	/// Proof Skipped: Guild Roles (max_values: None, max_size: None, mode: Measured)
 	fn create_free_role() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `678`
-		//  Estimated: `14399`
-		// Minimum execution time: 46_699 nanoseconds.
-		Weight::from_parts(52_729_000, 14399)
-			.saturating_add(T::DbWeight::get().reads(5))
-			.saturating_add(T::DbWeight::get().writes(4))
+		Weight::from_ref_time(1000)
 	}
-	/// Storage: Guild GuildIdMap (r:1 w:0)
-	/// Proof Skipped: Guild GuildIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild RoleIdMap (r:1 w:1)
-	/// Proof Skipped: Guild RoleIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Guilds (r:1 w:1)
-	/// Proof Skipped: Guild Guilds (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Nonce (r:1 w:1)
-	/// Proof Skipped: Guild Nonce (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: RandomnessCollectiveFlip RandomMaterial (r:1 w:0)
-	/// Proof: RandomnessCollectiveFlip RandomMaterial (max_values: Some(1), max_size: Some(2594), added: 3089, mode: MaxEncodedLen)
-	/// Storage: Guild Roles (r:0 w:1)
-	/// Proof Skipped: Guild Roles (max_values: None, max_size: None, mode: Measured)
-	/// The range of component `n` is `[1, 128]`.
-	/// The range of component `r` is `[0, 10]`.
-	/// The range of component `s` is `[0, 256]`.
-	fn create_role_with_allowlist(n: u32, r: u32, _s: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `678`
-		//  Estimated: `14399`
-		// Minimum execution time: 77_201 nanoseconds.
-		Weight::from_parts(85_825_100, 14399)
-			// Standard Error: 32_487
-			.saturating_add(Weight::from_ref_time(1_613_995).saturating_mul(n.into()))
-			// Standard Error: 392_769
-			.saturating_add(Weight::from_ref_time(514_801).saturating_mul(r.into()))
-			.saturating_add(T::DbWeight::get().reads(5))
-			.saturating_add(T::DbWeight::get().writes(4))
+	fn create_role_with_allowlist() -> Weight {
+		Weight::from_ref_time(1000)
 	}
-	/// Storage: Guild GuildIdMap (r:1 w:0)
-	/// Proof Skipped: Guild GuildIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild RoleIdMap (r:2 w:1)
-	/// Proof Skipped: Guild RoleIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Guilds (r:1 w:1)
-	/// Proof Skipped: Guild Guilds (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Nonce (r:1 w:1)
-	/// Proof Skipped: Guild Nonce (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: RandomnessCollectiveFlip RandomMaterial (r:1 w:0)
-	/// Proof: RandomnessCollectiveFlip RandomMaterial (max_values: Some(1), max_size: Some(2594), added: 3089, mode: MaxEncodedLen)
-	/// Storage: Guild Roles (r:0 w:1)
-	/// Proof Skipped: Guild Roles (max_values: None, max_size: None, mode: Measured)
-	/// The range of component `r` is `[0, 10]`.
-	/// The range of component `s` is `[0, 256]`.
-	fn create_child_role(r: u32, s: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `894`
-		//  Estimated: `17954`
-		// Minimum execution time: 53_095 nanoseconds.
-		Weight::from_parts(46_540_343, 17954)
-			// Standard Error: 138_192
-			.saturating_add(Weight::from_ref_time(2_136_397).saturating_mul(r.into()))
-			// Standard Error: 5_670
-			.saturating_add(Weight::from_ref_time(52_708).saturating_mul(s.into()))
-			.saturating_add(T::DbWeight::get().reads(6))
-			.saturating_add(T::DbWeight::get().writes(4))
+	fn create_child_role() -> Weight {
+		Weight::from_ref_time(1000)
 	}
-	/// Storage: Guild GuildIdMap (r:1 w:0)
-	/// Proof Skipped: Guild GuildIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild RoleIdMap (r:1 w:1)
-	/// Proof Skipped: Guild RoleIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Guilds (r:1 w:1)
-	/// Proof Skipped: Guild Guilds (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Nonce (r:1 w:1)
-	/// Proof Skipped: Guild Nonce (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: RandomnessCollectiveFlip RandomMaterial (r:1 w:0)
-	/// Proof: RandomnessCollectiveFlip RandomMaterial (max_values: Some(1), max_size: Some(2594), added: 3089, mode: MaxEncodedLen)
-	/// Storage: Guild Roles (r:0 w:1)
-	/// Proof Skipped: Guild Roles (max_values: None, max_size: None, mode: Measured)
-	/// The range of component `r` is `[0, 10]`.
-	/// The range of component `s` is `[0, 256]`.
-	fn create_unfiltered_role(r: u32, s: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `678`
-		//  Estimated: `14399`
-		// Minimum execution time: 44_245 nanoseconds.
-		Weight::from_parts(55_627_418, 14399)
-			// Standard Error: 119_983
-			.saturating_add(Weight::from_ref_time(266_588).saturating_mul(r.into()))
-			// Standard Error: 4_923
-			.saturating_add(Weight::from_ref_time(20_540).saturating_mul(s.into()))
-			.saturating_add(T::DbWeight::get().reads(5))
-			.saturating_add(T::DbWeight::get().writes(4))
+	fn create_unfiltered_role() -> Weight {
+		Weight::from_ref_time(1000)
 	}
-	/// Storage: Guild GuildIdMap (r:1 w:0)
-	/// Proof Skipped: Guild GuildIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild RoleIdMap (r:1 w:0)
-	/// Proof Skipped: Guild RoleIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild UserData (r:2 w:0)
-	/// Proof Skipped: Guild UserData (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Roles (r:1 w:0)
-	/// Proof Skipped: Guild Roles (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Members (r:0 w:1)
-	/// Proof Skipped: Guild Members (max_values: None, max_size: None, mode: Measured)
-	fn join() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `656`
-		//  Estimated: `15655`
-		// Minimum execution time: 54_580 nanoseconds.
-		Weight::from_parts(61_062_000, 15655)
-			.saturating_add(T::DbWeight::get().reads(5))
-			.saturating_add(T::DbWeight::get().writes(1))
+	fn join_free_role() -> Weight {
+		Weight::from_ref_time(1000)
 	}
-	/// Storage: Guild GuildIdMap (r:1 w:0)
-	/// Proof Skipped: Guild GuildIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild RoleIdMap (r:1 w:0)
-	/// Proof Skipped: Guild RoleIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild UserData (r:1 w:0)
-	/// Proof Skipped: Guild UserData (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Members (r:0 w:1)
-	/// Proof Skipped: Guild Members (max_values: None, max_size: None, mode: Measured)
+	fn join_child_role() -> Weight {
+		Weight::from_ref_time(1000)
+	}
+	fn join_role_with_allowlist() -> Weight {
+		Weight::from_ref_time(1000)
+	}
+	fn join_unfiltered_role() -> Weight {
+		Weight::from_ref_time(1000)
+	}
 	fn leave() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `579`
-		//  Estimated: `9741`
-		// Minimum execution time: 35_492 nanoseconds.
-		Weight::from_parts(36_401_000, 9741)
-			.saturating_add(T::DbWeight::get().reads(3))
-			.saturating_add(T::DbWeight::get().writes(1))
-	}
-	/// Storage: Guild GuildIdMap (r:1 w:0)
-	/// Proof Skipped: Guild GuildIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild RoleIdMap (r:1 w:0)
-	/// Proof Skipped: Guild RoleIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild UserData (r:1 w:0)
-	/// Proof Skipped: Guild UserData (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Members (r:1 w:0)
-	/// Proof Skipped: Guild Members (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Roles (r:1 w:0)
-	/// Proof Skipped: Guild Roles (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Oracle ActiveOperators (r:1 w:0)
-	/// Proof Skipped: Oracle ActiveOperators (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: Oracle NextOperator (r:1 w:1)
-	/// Proof Skipped: Oracle NextOperator (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: Oracle NextRequestIdentifier (r:1 w:1)
-	/// Proof Skipped: Oracle NextRequestIdentifier (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: Oracle Requests (r:0 w:1)
-	/// Proof Skipped: Oracle Requests (max_values: None, max_size: None, mode: Measured)
+		Weight::from_ref_time(1000)		
+	}		
 	fn request_oracle_check() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `3784`
-		//  Estimated: `47916`
-		// Minimum execution time: 69_099 nanoseconds.
-		Weight::from_parts(78_144_000, 47916)
-			.saturating_add(T::DbWeight::get().reads(8))
-			.saturating_add(T::DbWeight::get().writes(3))
-	}
+		Weight::from_ref_time(1000)		
+	}		
 }
 
 impl WeightInfo for () {
-	/// Storage: Guild UserData (r:0 w:1)
-	/// Proof Skipped: Guild UserData (max_values: None, max_size: None, mode: Measured)
-	fn register() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 369_767 nanoseconds.
-		Weight::from_ref_time(392_263_000)
-			.saturating_add(RocksDbWeight::get().writes(1))
+	fn create_guild() -> Weight {
+		Weight::from_ref_time(1000)
 	}
-	/// Storage: Guild GuildIdMap (r:1 w:1)
-	/// Proof Skipped: Guild GuildIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Nonce (r:1 w:1)
-	/// Proof Skipped: Guild Nonce (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: RandomnessCollectiveFlip RandomMaterial (r:1 w:0)
-	/// Proof: RandomnessCollectiveFlip RandomMaterial (max_values: Some(1), max_size: Some(2594), added: 3089, mode: MaxEncodedLen)
-	/// Storage: Guild Guilds (r:0 w:1)
-	/// Proof Skipped: Guild Guilds (max_values: None, max_size: None, mode: Measured)
-	/// The range of component `n` is `[0, 256]`.
-	fn create_guild(n: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `115`
-		//  Estimated: `6404`
-		// Minimum execution time: 26_721 nanoseconds.
-		Weight::from_parts(39_154_463, 6404)
-			// Standard Error: 3_905
-			.saturating_add(Weight::from_ref_time(2_434).saturating_mul(n.into()))
-			.saturating_add(RocksDbWeight::get().reads(3))
-			.saturating_add(RocksDbWeight::get().writes(3))
-	}
-	/// Storage: Guild GuildIdMap (r:1 w:0)
-	/// Proof Skipped: Guild GuildIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild RoleIdMap (r:1 w:1)
-	/// Proof Skipped: Guild RoleIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Guilds (r:1 w:1)
-	/// Proof Skipped: Guild Guilds (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Nonce (r:1 w:1)
-	/// Proof Skipped: Guild Nonce (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: RandomnessCollectiveFlip RandomMaterial (r:1 w:0)
-	/// Proof: RandomnessCollectiveFlip RandomMaterial (max_values: Some(1), max_size: Some(2594), added: 3089, mode: MaxEncodedLen)
-	/// Storage: Guild Roles (r:0 w:1)
-	/// Proof Skipped: Guild Roles (max_values: None, max_size: None, mode: Measured)
 	fn create_free_role() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `678`
-		//  Estimated: `14399`
-		// Minimum execution time: 46_699 nanoseconds.
-		Weight::from_parts(52_729_000, 14399)
-			.saturating_add(RocksDbWeight::get().reads(5))
-			.saturating_add(RocksDbWeight::get().writes(4))
+		Weight::from_ref_time(1000)
 	}
-	/// Storage: Guild GuildIdMap (r:1 w:0)
-	/// Proof Skipped: Guild GuildIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild RoleIdMap (r:1 w:1)
-	/// Proof Skipped: Guild RoleIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Guilds (r:1 w:1)
-	/// Proof Skipped: Guild Guilds (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Nonce (r:1 w:1)
-	/// Proof Skipped: Guild Nonce (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: RandomnessCollectiveFlip RandomMaterial (r:1 w:0)
-	/// Proof: RandomnessCollectiveFlip RandomMaterial (max_values: Some(1), max_size: Some(2594), added: 3089, mode: MaxEncodedLen)
-	/// Storage: Guild Roles (r:0 w:1)
-	/// Proof Skipped: Guild Roles (max_values: None, max_size: None, mode: Measured)
-	/// The range of component `n` is `[1, 128]`.
-	/// The range of component `r` is `[0, 10]`.
-	/// The range of component `s` is `[0, 256]`.
-	fn create_role_with_allowlist(n: u32, r: u32, _s: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `678`
-		//  Estimated: `14399`
-		// Minimum execution time: 77_201 nanoseconds.
-		Weight::from_parts(85_825_100, 14399)
-			// Standard Error: 32_487
-			.saturating_add(Weight::from_ref_time(1_613_995).saturating_mul(n.into()))
-			// Standard Error: 392_769
-			.saturating_add(Weight::from_ref_time(514_801).saturating_mul(r.into()))
-			.saturating_add(RocksDbWeight::get().reads(5))
-			.saturating_add(RocksDbWeight::get().writes(4))
+	fn create_role_with_allowlist() -> Weight {
+		Weight::from_ref_time(1000)
 	}
-	/// Storage: Guild GuildIdMap (r:1 w:0)
-	/// Proof Skipped: Guild GuildIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild RoleIdMap (r:2 w:1)
-	/// Proof Skipped: Guild RoleIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Guilds (r:1 w:1)
-	/// Proof Skipped: Guild Guilds (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Nonce (r:1 w:1)
-	/// Proof Skipped: Guild Nonce (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: RandomnessCollectiveFlip RandomMaterial (r:1 w:0)
-	/// Proof: RandomnessCollectiveFlip RandomMaterial (max_values: Some(1), max_size: Some(2594), added: 3089, mode: MaxEncodedLen)
-	/// Storage: Guild Roles (r:0 w:1)
-	/// Proof Skipped: Guild Roles (max_values: None, max_size: None, mode: Measured)
-	/// The range of component `r` is `[0, 10]`.
-	/// The range of component `s` is `[0, 256]`.
-	fn create_child_role(r: u32, s: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `894`
-		//  Estimated: `17954`
-		// Minimum execution time: 53_095 nanoseconds.
-		Weight::from_parts(46_540_343, 17954)
-			// Standard Error: 138_192
-			.saturating_add(Weight::from_ref_time(2_136_397).saturating_mul(r.into()))
-			// Standard Error: 5_670
-			.saturating_add(Weight::from_ref_time(52_708).saturating_mul(s.into()))
-			.saturating_add(RocksDbWeight::get().reads(6))
-			.saturating_add(RocksDbWeight::get().writes(4))
+	fn create_child_role() -> Weight {
+		Weight::from_ref_time(1000)
 	}
-	/// Storage: Guild GuildIdMap (r:1 w:0)
-	/// Proof Skipped: Guild GuildIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild RoleIdMap (r:1 w:1)
-	/// Proof Skipped: Guild RoleIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Guilds (r:1 w:1)
-	/// Proof Skipped: Guild Guilds (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Nonce (r:1 w:1)
-	/// Proof Skipped: Guild Nonce (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: RandomnessCollectiveFlip RandomMaterial (r:1 w:0)
-	/// Proof: RandomnessCollectiveFlip RandomMaterial (max_values: Some(1), max_size: Some(2594), added: 3089, mode: MaxEncodedLen)
-	/// Storage: Guild Roles (r:0 w:1)
-	/// Proof Skipped: Guild Roles (max_values: None, max_size: None, mode: Measured)
-	/// The range of component `r` is `[0, 10]`.
-	/// The range of component `s` is `[0, 256]`.
-	fn create_unfiltered_role(r: u32, s: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `678`
-		//  Estimated: `14399`
-		// Minimum execution time: 44_245 nanoseconds.
-		Weight::from_parts(55_627_418, 14399)
-			// Standard Error: 119_983
-			.saturating_add(Weight::from_ref_time(266_588).saturating_mul(r.into()))
-			// Standard Error: 4_923
-			.saturating_add(Weight::from_ref_time(20_540).saturating_mul(s.into()))
-			.saturating_add(RocksDbWeight::get().reads(5))
-			.saturating_add(RocksDbWeight::get().writes(4))
+	fn create_unfiltered_role() -> Weight {
+		Weight::from_ref_time(1000)
 	}
-	/// Storage: Guild GuildIdMap (r:1 w:0)
-	/// Proof Skipped: Guild GuildIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild RoleIdMap (r:1 w:0)
-	/// Proof Skipped: Guild RoleIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild UserData (r:2 w:0)
-	/// Proof Skipped: Guild UserData (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Roles (r:1 w:0)
-	/// Proof Skipped: Guild Roles (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Members (r:0 w:1)
-	/// Proof Skipped: Guild Members (max_values: None, max_size: None, mode: Measured)
-	fn join() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `656`
-		//  Estimated: `15655`
-		// Minimum execution time: 54_580 nanoseconds.
-		Weight::from_parts(61_062_000, 15655)
-			.saturating_add(RocksDbWeight::get().reads(5))
-			.saturating_add(RocksDbWeight::get().writes(1))
+	fn join_free_role() -> Weight {
+		Weight::from_ref_time(1000)
 	}
-	/// Storage: Guild GuildIdMap (r:1 w:0)
-	/// Proof Skipped: Guild GuildIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild RoleIdMap (r:1 w:0)
-	/// Proof Skipped: Guild RoleIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild UserData (r:1 w:0)
-	/// Proof Skipped: Guild UserData (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Members (r:0 w:1)
-	/// Proof Skipped: Guild Members (max_values: None, max_size: None, mode: Measured)
+	fn join_child_role() -> Weight {
+		Weight::from_ref_time(1000)
+	}
+	fn join_role_with_allowlist() -> Weight {
+		Weight::from_ref_time(1000)
+	}
+	fn join_unfiltered_role() -> Weight {
+		Weight::from_ref_time(1000)
+	}
 	fn leave() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `579`
-		//  Estimated: `9741`
-		// Minimum execution time: 35_492 nanoseconds.
-		Weight::from_parts(36_401_000, 9741)
-			.saturating_add(RocksDbWeight::get().reads(3))
-			.saturating_add(RocksDbWeight::get().writes(1))
-	}
-	/// Storage: Guild GuildIdMap (r:1 w:0)
-	/// Proof Skipped: Guild GuildIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild RoleIdMap (r:1 w:0)
-	/// Proof Skipped: Guild RoleIdMap (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild UserData (r:1 w:0)
-	/// Proof Skipped: Guild UserData (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Members (r:1 w:0)
-	/// Proof Skipped: Guild Members (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Guild Roles (r:1 w:0)
-	/// Proof Skipped: Guild Roles (max_values: None, max_size: None, mode: Measured)
-	/// Storage: Oracle ActiveOperators (r:1 w:0)
-	/// Proof Skipped: Oracle ActiveOperators (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: Oracle NextOperator (r:1 w:1)
-	/// Proof Skipped: Oracle NextOperator (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: Oracle NextRequestIdentifier (r:1 w:1)
-	/// Proof Skipped: Oracle NextRequestIdentifier (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: Oracle Requests (r:0 w:1)
-	/// Proof Skipped: Oracle Requests (max_values: None, max_size: None, mode: Measured)
+		Weight::from_ref_time(1000)		
+	}		
 	fn request_oracle_check() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `3784`
-		//  Estimated: `47916`
-		// Minimum execution time: 69_099 nanoseconds.
-		Weight::from_parts(78_144_000, 47916)
-			.saturating_add(RocksDbWeight::get().reads(8))
-			.saturating_add(RocksDbWeight::get().writes(3))
-	}
+		Weight::from_ref_time(1000)		
+	}		
 }

@@ -11,13 +11,14 @@ runtime-benchmarks = [
 ]
 std = [
   "gn-common/std",
+  "pallet-guild-identity/std",
   "pallet-oracle/std",
   "parity-scale-codec/std",
   "scale-info/std",
   "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
-  "sp-io/std",
+  #"sp-io/std",
   "sp-std/std",
 ]
 try-runtime = ["frame-support/try-runtime"]
@@ -25,6 +26,7 @@ try-runtime = ["frame-support/try-runtime"]
 [dependencies]
 # local
 gn-common = { version = "0.0.0-alpha", path = "../../gn-common", default-features = false }
+pallet-guild-identity = { version = "0.0.0-alpha", path = "../pallet-guild-identity", default-features = false }
 pallet-oracle = { version = "0.0.0-alpha", path = "../pallet-oracle", default-features = false }
 
 # general
@@ -40,7 +42,7 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 
 # substrate primitives
-sp-io = { workspace = true }
+#sp-io = { workspace = true }
 sp-std = { workspace = true }
 
 [dev-dependencies]

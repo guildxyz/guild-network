@@ -18,23 +18,22 @@ pub mod pallet {
     use super::weights::WeightInfo;
     use frame_support::traits::Randomness;
     use frame_support::{
-        dispatch::DispatchResult, pallet_prelude::*, sp_runtime::traits::UniqueSaturatedFrom,
-        traits::Currency, StorageDoubleMap as StorageDoubleMapT,
+        dispatch::DispatchResult,
+        pallet_prelude::*,
+        sp_runtime::traits::UniqueSaturatedFrom,
+        traits::{Currency, PalletInfo},
     };
     use frame_system::pallet_prelude::*;
     use gn_common::filter::{Filter, Logic as FilterLogic};
-    use gn_common::identity::{Identity, IdentityWithAuth};
     use gn_common::merkle::{Leaf as MerkleLeaf, Proof as MerkleProof};
-    use gn_common::{
-        Guild, GuildName, Request, RequestData, RequestIdentifier, Role, RoleName, SerializedData,
-        SerializedRequirements,
-    };
+    use gn_common::*;
     use pallet_guild_identity::Config as IdentityConfig;
-    use pallet_oracle::{Config as OracleConfig, OracleAnswer};
+    use pallet_guild_identity::Pallet as IdentityPallet;
+    use pallet_oracle::Config as OracleConfig;
     use sp_std::vec::Vec as SpVec;
 
     #[pallet::config]
-    pub trait Config: OracleConfig<Callback = Call<Self>> + frame_system::Config {
+    pub trait Config: IdentityConfig + OracleConfig + frame_system::Config {
         #[pallet::constant]
         type MaxAllowlistLen: Get<u32>;
         #[pallet::constant]
@@ -111,11 +110,13 @@ pub mod pallet {
         GuildDoesNotExist,
         RoleAlreadyExists,
         RoleDoesNotExist,
+        NoPalletIndex,
+        IdNotRegistered,
         InvalidAllowlistLen,
+        InvalidJoinRequest,
         InvalidOracleAnswer,
         InvalidOracleRequest,
         UserNotRegistered,
-        IdNotRegistered,
         CodecError,
         MaxRolesPerGuildExceeded,
         MaxReqsPerRoleExceeded,
@@ -131,139 +132,176 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
-        #[pallet::weight((<T as Config>::WeightInfo::register(), Pays::No))]
-        pub fn register(
-            origin: OriginFor<T>,
-            identity_with_auth: IdentityWithAuth,
-            index: u8,
-        ) -> DispatchResult {
-            let signer = ensure_signed(origin.clone())?;
-
-            ensure!(
-                index < T::MaxIdentities::get(),
-                Error::<T>::MaxIdentitiesExceeded
-            );
-
-            match identity_with_auth {
-                IdentityWithAuth::Other(Identity::Other(_), _) => {
-                    let data = RequestData::Register {
-                        identity_with_auth,
-                        index,
-                    };
-                    let request = Request::<T::AccountId> {
-                        requester: signer,
-                        data,
-                    };
-                    let call: <T as OracleConfig>::Callback = Call::callback {
-                        result: SpVec::new(),
-                    };
-                    let fee = BalanceOf::<T>::unique_saturated_from(
-                        <T as OracleConfig>::MinimumFee::get(),
-                    );
-                    <pallet_oracle::Pallet<T>>::initiate_request(
-                        origin,
-                        call,
-                        request.encode(),
-                        fee,
-                    )?;
-                }
-                id_with_auth => {
-                    let msg = gn_common::utils::verification_msg(&signer);
-                    if id_with_auth.verify(msg) {
-                        UserData::<T>::insert(&signer, index, Identity::from(identity_with_auth));
-                        Self::deposit_event(Event::IdRegistered(signer, index));
-                    } else {
-                        return Err(Error::<T>::AccessDenied.into());
-                    }
-                }
-            }
-
-            Ok(())
-        }
-
-        #[pallet::call_index(1)]
-        #[pallet::weight((<T as Config>::WeightInfo::join(), Pays::No))]
-        pub fn join(
+        #[pallet::weight((<T as Config>::WeightInfo::join_free_role(), Pays::No))]
+        pub fn join_free_role(
             origin: OriginFor<T>,
             guild_name: GuildName,
             role_name: RoleName,
-            proof: Option<MerkleProof>,
         ) -> DispatchResult {
             let signer = ensure_signed(origin.clone())?;
-            let role_id = Self::checked_role_id(&signer, &guild_name, &role_name)?;
-            // should not throw an error because we already checked that
-            // 'role_id' exists
-            let role_data = Roles::<T>::get(role_id).ok_or(Error::<T>::RoleDoesNotExist)?;
-            // check the onchain filter first
-            let (onchain_access, logic) = match role_data.filter {
-                Some(Filter::Guild(filter, logic)) => {
-                    let access = Self::check_parent_role(&signer, &filter);
-                    (access, logic)
-                }
-                Some(Filter::Allowlist(root, logic, n_leaves)) => {
-                    let Some(proof) = proof else {
-                        return Err(Error::<T>::MissingAllowlistProof.into())
-                    };
-                    let id = Self::user_data(&signer, proof.id_index)
-                        .ok_or(Error::<T>::IdNotRegistered)?;
-                    let leaf = MerkleLeaf::Value(id.as_ref());
-                    let access = proof.verify(&root, n_leaves as usize, leaf);
-                    (access, logic)
-                }
-                None => (true, FilterLogic::And),
-            };
+            let (role_id, role_data) = Self::checked_role(&signer, &guild_name, &role_name)?;
+            if role_data.filter.is_some() || role_data.requirements.is_some() {
+                return Err(Error::<T>::InvalidJoinRequest.into());
+            }
 
-            match (onchain_access, logic, role_data.requirements.is_some()) {
-                // access is granted without the need for an oracle check if
-                // T || T
-                // T || F
-                // T && F
-                (true, FilterLogic::Or, _) | (true, _, false) => {
-                    Members::<T>::insert(role_id, &signer, true);
-                    Self::deposit_event(Event::RoleAssigned(signer, guild_name, role_name));
-                    Ok(())
-                }
-                // access is denied without the need of an oracle check if
-                // F && T
-                // F && F
-                // F || F
-                (false, FilterLogic::And, _) | (false, FilterLogic::Or, false) => {
-                    Err(Error::<T>::AccessDenied.into())
-                }
-                // else we need external oracle checks
-                // T && T
-                // F || T
-                (true, FilterLogic::And, true) | (false, FilterLogic::Or, true) => {
-                    let data = RequestData::ReqCheck {
-                        account: signer.clone(),
-                        guild_name,
-                        role_name,
-                    };
-                    let request = Request {
-                        requester: signer,
-                        data,
-                    };
-                    let call: <T as OracleConfig>::Callback = Call::callback {
-                        result: SpVec::new(),
-                    };
-                    let fee = BalanceOf::<T>::unique_saturated_from(
-                        <T as OracleConfig>::MinimumFee::get(),
-                    );
-
-                    if role_data.requirements.is_some() {
-                        <pallet_oracle::Pallet<T>>::initiate_request(
-                            origin,
-                            call,
-                            request.encode(),
-                            fee,
-                        )?;
+            Members::<T>::insert(role_id, &signer, true);
+            Self::deposit_event(Event::RoleAssigned(signer, guild_name, role_name));
+            Ok(())
+        }
+        #[pallet::call_index(1)]
+        #[pallet::weight((<T as Config>::WeightInfo::join_child_role(), Pays::No))]
+        pub fn join_child_role(
+            origin: OriginFor<T>,
+            guild_name: GuildName,
+            role_name: RoleName,
+        ) -> DispatchResult {
+            let signer = ensure_signed(origin.clone())?;
+            let (role_id, role_data) = Self::checked_role(&signer, &guild_name, &role_name)?;
+            match (role_data.filter, role_data.requirements) {
+                (Some(Filter::Guild(filter, logic)), maybe_requirements) => {
+                    let filter_access = Self::check_parent_role(&signer, &filter);
+                    match (filter_access, logic, maybe_requirements) {
+                        // result depends on oracle checks
+                        (true, FilterLogic::And, Some(_)) | (false, FilterLogic::Or, Some(_)) => {
+                            let request = AccessCheckRequest {
+                                requester: signer.clone(),
+                                account: signer,
+                                role_id,
+                            };
+                            let fee = BalanceOf::<T>::unique_saturated_from(
+                                <T as pallet_oracle::Config>::MinimumFee::get(),
+                            );
+                            let pallet_index =
+                                <T as frame_system::Config>::PalletInfo::index::<Self>()
+                                    .ok_or(Error::<T>::NoPalletIndex)?;
+                            <pallet_oracle::Pallet<T>>::initiate_request(
+                                origin,
+                                pallet_index as u32,
+                                request.encode(),
+                                fee,
+                            )?;
+                            Ok(())
+                        }
+                        // on chain access denied and there's no need for
+                        // oracle checks
+                        (false, _, None) | (false, FilterLogic::And, Some(_)) => {
+                            Err(Error::<T>::AccessDenied.into())
+                        }
+                        // on chain access granted and there's no noeed for
+                        // oracle checks
+                        (true, _, None) | (true, FilterLogic::Or, Some(_)) => {
+                            Members::<T>::insert(role_id, &signer, true);
+                            Self::deposit_event(Event::RoleAssigned(signer, guild_name, role_name));
+                            Ok(())
+                        }
                     }
-
-                    Ok(())
                 }
+                _ => Err(Error::<T>::InvalidJoinRequest.into()),
             }
         }
+        #[pallet::call_index(2)]
+        #[pallet::weight((<T as Config>::WeightInfo::join_role_with_allowlist(), Pays::No))]
+        pub fn join_role_with_allowlist(origin: OriginFor<T>) -> DispatchResult {
+            todo!()
+        }
+        #[pallet::call_index(3)]
+        #[pallet::weight((<T as Config>::WeightInfo::join_unfiltered_role(), Pays::No))]
+        pub fn join_unfiltered_role(origin: OriginFor<T>) -> DispatchResult {
+            todo!()
+        }
+        /*
+            #[pallet::call_index(0)]
+            #[pallet::weight((<T as Config>::WeightInfo::join(), Pays::No))]
+            pub fn join(
+                origin: OriginFor<T>,
+                guild_name: GuildName,
+                role_name: RoleName,
+                proof: Option<MerkleProof>,
+            ) -> DispatchResult {
+                let signer = ensure_signed(origin.clone())?;
+                if IdentityPallet::<T>::addresses(signer).is_none() {
+                    return Err(Error::<T>::UserNotRegistered.into());
+                }
+                let guild_id = Self::guild_id(guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
+                let role_id = Self::role_id(guild_id, role_name).ok_or(Error::<T>::RoleDoesNotExist)?;
+                let role_data = Roles::<T>::get(role_id).ok_or(Error::<T>::RoleDoesNotExist)?;
+                // check the onchain filter first
+                let (onchain_access, logic) = match role_data.filter {
+                    Some(Filter::Guild(filter, logic)) => {
+                        let access = Self::check_parent_role(&signer, &filter);
+                        (access, logic)
+                    }
+                    Some(Filter::Allowlist(root, logic, n_leaves)) => {
+                        let Some(proof) = proof else {
+                                return Err(Error::<T>::MissingAllowlistProof.into())
+                            };
+                        let id = IdentityPallet::<T>::addresses(&signer)
+                            .ok_or(Error::<T>::UserNotRegistered)?
+                            .get(&proof.prefix)
+                            .ok_or(Error::<T>::IdNotRegistered)?
+                            .get(proof.id_index)
+                            .ok_or(Error::<T>::IdNotRegistered)?;
+                        let leaf = MerkleLeaf::Value(id.as_ref());
+                        let access = proof.verify(&root, n_leaves as usize, leaf);
+                        (access, logic)
+                    }
+                    None => (true, FilterLogic::And),
+                };
 
+                match (onchain_access, logic, role_data.requirements.is_some()) {
+                    // access is granted without the need for an oracle check if
+                    // T || T
+                    // T || F
+                    // T && F
+                    (true, FilterLogic::Or, _) | (true, _, false) => {
+                        Members::<T>::insert(role_id, &signer, true);
+                        Self::deposit_event(Event::RoleAssigned(signer, guild_name, role_name));
+                        Ok(())
+                    }
+                    // access is denied without the need of an oracle check if
+                    // F && T
+                    // F && F
+                    // F || F
+                    (false, FilterLogic::And, _) | (false, FilterLogic::Or, false) => {
+                        Err(Error::<T>::AccessDenied.into())
+                    }
+                    // else we need external oracle checks
+                    // T && T
+                    // F || T
+                    (true, FilterLogic::And, true) | (false, FilterLogic::Or, true) => {
+                        todo!()
+                        //let data = RequestData::ReqCheck {
+                        //    account: signer.clone(),
+                        //    guild_name,
+                        //    role_name,
+                        //};
+                        //let request = Request {
+                        //    requester: signer,
+                        //    data,
+                        //};
+                        //let call: <T as OracleConfig>::Callback = Call::callback {
+                        //    result: SpVec::new(),
+                        //};
+                        //let fee = BalanceOf::<T>::unique_saturated_from(
+                        //    <T as OracleConfig>::MinimumFee::get(),
+                        //);
+
+                        //if role_data.requirements.is_some() {
+                        //    <pallet_oracle::Pallet<T>>::initiate_request(
+                        //        origin,
+                        //        call,
+                        //        request.encode(),
+                        //        fee,
+                        //    )?;
+                        //}
+
+                        //Ok(())
+                    }
+                }
+            }
+        */
+
+        /*
         #[pallet::call_index(2)]
         #[pallet::weight((<T as Config>::WeightInfo::leave(), Pays::No))]
         pub fn leave(
@@ -517,99 +555,104 @@ pub mod pallet {
 
             Ok(())
         }
+        */
     }
 
     impl<T: Config> Pallet<T> {
-        fn checked_role_id(
+        fn checked_role(
             account: &T::AccountId,
             guild_name: &GuildName,
             role_name: &RoleName,
-        ) -> Result<T::Hash, DispatchError> {
+        ) -> Result<(T::Hash, Role), DispatchError> {
             let guild_id = Self::guild_id(guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
             let role_id = Self::role_id(guild_id, role_name).ok_or(Error::<T>::RoleDoesNotExist)?;
 
             // check the requester is registered
             ensure!(
-                <UserData<T>>::contains_prefix(account),
+                IdentityPallet::<T>::addresses(account).is_some(),
                 Error::<T>::UserNotRegistered
             );
 
-            Ok(role_id)
+            let role_data = Self::role(role_id).ok_or(Error::<T>::RoleDoesNotExist)?;
+
+            Ok((role_id, role_data))
         }
 
-        fn get_and_increment_nonce() -> SerializedData {
-            let nonce = Nonce::<T>::get();
-            Nonce::<T>::put(nonce.wrapping_add(1));
-            nonce.encode()
-        }
-
-        fn get_random_uuid() -> T::Hash {
-            let nonce = Self::get_and_increment_nonce();
-            let (random_value, _) = T::MyRandomness::random(&nonce);
-            random_value
-        }
-
-        fn create_role(
-            origin: OriginFor<T>,
-            guild_name: GuildName,
-            role_name: RoleName,
-            filter: Option<Filter>,
-            requirements: Option<SerializedRequirements>,
-        ) -> Result<T::Hash, DispatchError> {
-            let signer = ensure_signed(origin)?;
-            let guild_id = Self::guild_id(guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
-            ensure!(
-                !RoleIdMap::<T>::contains_key(guild_id, role_name),
-                Error::<T>::RoleAlreadyExists
-            );
-
-            if let Some((reqs, logic)) = requirements.as_ref() {
-                ensure!(
-                    reqs.len() <= T::MaxReqsPerRole::get() as usize,
-                    Error::<T>::MaxReqsPerRoleExceeded
-                );
-                ensure!(
-                    logic.len() <= T::MaxSerializedLen::get() as usize,
-                    Error::<T>::MaxSerializedLenExceeded
-                );
-                for req in reqs {
-                    ensure!(
-                        req.len() <= T::MaxSerializedLen::get() as usize,
-                        Error::<T>::MaxSerializedLenExceeded
-                    );
-                }
+        /*
+            fn get_and_increment_nonce() -> SerializedData {
+                let nonce = Nonce::<T>::get();
+                Nonce::<T>::put(nonce.wrapping_add(1));
+                nonce.encode()
             }
 
-            Guilds::<T>::try_mutate(guild_id, |maybe_guild| {
-                if let Some(guild) = maybe_guild {
-                    if guild.owner != signer {
-                        Err(DispatchError::BadOrigin)
-                    } else if guild.roles.len() == T::MaxRolesPerGuild::get() as usize {
-                        Err(Error::<T>::MaxRolesPerGuildExceeded.into())
-                    } else {
-                        guild.roles.push(role_name);
-                        Ok(())
-                    }
-                } else {
-                    // shouldn't occur because we already
-                    // checked that the guild id exists but
-                    // better to make sure
-                    Err(Error::<T>::GuildDoesNotExist.into())
-                }
-            })?;
+            fn get_random_uuid() -> T::Hash {
+                let nonce = Self::get_and_increment_nonce();
+                let (random_value, _) = T::MyRandomness::random(&nonce);
+                random_value
+            }
 
-            let role_id = Self::get_random_uuid();
-            RoleIdMap::<T>::insert(guild_id, role_name, role_id);
-            Roles::<T>::insert(
-                role_id,
-                Role {
-                    filter,
-                    requirements,
-                },
-            );
-            Self::deposit_event(Event::RoleCreated(signer, guild_name, role_name));
-            Ok(role_id)
-        }
+            fn do_create_role(
+                origin: OriginFor<T>,
+                guild_name: GuildName,
+                role_name: RoleName,
+                filter: Option<Filter>,
+                requirements: Option<SerializedRequirements>,
+            ) -> Result<T::Hash, DispatchError> {
+                let signer = ensure_signed(origin)?;
+                let guild_id = Self::guild_id(guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
+                ensure!(
+                    !RoleIdMap::<T>::contains_key(guild_id, role_name),
+                    Error::<T>::RoleAlreadyExists
+                );
+
+                if let Some((reqs, logic)) = requirements.as_ref() {
+                    ensure!(
+                        reqs.len() <= T::MaxReqsPerRole::get() as usize,
+                        Error::<T>::MaxReqsPerRoleExceeded
+                    );
+                    ensure!(
+                        logic.len() <= T::MaxSerializedLen::get() as usize,
+                        Error::<T>::MaxSerializedLenExceeded
+                    );
+                    for req in reqs {
+                        ensure!(
+                            req.len() <= T::MaxSerializedLen::get() as usize,
+                            Error::<T>::MaxSerializedLenExceeded
+                        );
+                    }
+                }
+
+                Guilds::<T>::try_mutate(guild_id, |maybe_guild| {
+                    if let Some(guild) = maybe_guild {
+                        if guild.owner != signer {
+                            Err(DispatchError::BadOrigin)
+                        } else if guild.roles.len() == T::MaxRolesPerGuild::get() as usize {
+                            Err(Error::<T>::MaxRolesPerGuildExceeded.into())
+                        } else {
+                            guild.roles.push(role_name);
+                            Ok(())
+                        }
+                    } else {
+                        // shouldn't occur because we already
+                        // checked that the guild id exists but
+                        // better to make sure
+                        Err(Error::<T>::GuildDoesNotExist.into())
+                    }
+                })?;
+
+                let role_id = Self::get_random_uuid();
+                RoleIdMap::<T>::insert(guild_id, role_name, role_id);
+                Roles::<T>::insert(
+                    role_id,
+                    Role {
+                        filter,
+                        requirements,
+                    },
+                );
+                Self::deposit_event(Event::RoleCreated(signer, guild_name, role_name));
+                Ok(role_id)
+            }
+        */
 
         fn check_parent_role(account: &T::AccountId, parent: &gn_common::filter::Guild) -> bool {
             let Some(guild_id) = Self::guild_id(parent.name) else { return false };
@@ -629,15 +672,6 @@ pub mod pallet {
                     }
                 }
                 access
-            }
-        }
-    }
-
-    impl<T: Config> CallbackWithParameter for Call<T> {
-        fn with_result(&self, result: SerializedData) -> Option<Self> {
-            match self {
-                Call::callback { .. } => Some(Call::callback { result }),
-                _ => None,
             }
         }
     }
