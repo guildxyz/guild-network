@@ -310,7 +310,7 @@ END TEST CYCLE WITH PARAMETERS 2000 num, 2000 tps; FAILURES DETECTED: 12, RATE: 
 
 Test aborted unexpectedly due issues with local node.
 
-# Round 4
+### Round 4
 Conditions: Continuous flood stress with increasing pressure
 Initial parameters:
     - 2100 tps
@@ -324,3 +324,10 @@ END TEST CYCLE WITH PARAMETERS 2200 num, 2200 tps; FAILURES DETECTED: 14, RATE: 
 END TEST CYCLE WITH PARAMETERS 2300 num, 2300 tps; FAILURES DETECTED: 20, RATE: 100.0%
 
 Test aborted prematurely due to 100% failure rate in block time
+
+
+### Conclusion for initial testing
+
+A failure rate of 5% was observed under constant extended load (1200 tps) which
+then continually increased with pressure. Further testing to verify these results is required.
+
