@@ -272,6 +272,9 @@ pub mod pallet {
         ) -> DispatchResult {
             let signer = ensure_signed(origin.clone())?;
             let identity_map = Self::identities(&signer).ok_or(Error::<T>::AccountDoesNotExist)?;
+            if identity_map.len() as u32 == <T as Config>::MaxLinkedIdentities::get() {
+                return Err(Error::<T>::MaxLinkedIdentitiesExceeded.into());
+            }
             if identity_map.contains_key(&prefix) {
                 return Err(Error::<T>::IdentityAlreadyLinked.into());
             }
@@ -287,7 +290,7 @@ pub mod pallet {
                 .ok_or(Error::<T>::InvalidOracleRequest)?;
             <pallet_oracle::Pallet<T>>::initiate_request(
                 origin,
-                pallet_index as u8,
+                pallet_index as u32,
                 request.encode(),
                 fee,
             )?;
@@ -326,7 +329,7 @@ pub mod pallet {
                 .ok_or(Error::<T>::InvalidOracleRequest)?;
 
             ensure!(
-                request.pallet_index == pallet_index as u8,
+                request.pallet_index == pallet_index as u32,
                 Error::<T>::InvalidOracleAnswer
             );
 

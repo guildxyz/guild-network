@@ -1,5 +1,6 @@
 mod address;
 mod authorize;
+mod identity;
 mod register;
 
 use crate::mock::*;
@@ -8,6 +9,7 @@ use frame_support::{assert_noop, assert_ok};
 
 type IdentityEvent = pallet_guild_identity::Event<TestRuntime>;
 type IdentityError = pallet_guild_identity::Error<TestRuntime>;
+type OracleError = pallet_oracle::Error<TestRuntime>;
 
 fn last_event() -> IdentityEvent {
     System::events()

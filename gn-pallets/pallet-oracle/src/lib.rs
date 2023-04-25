@@ -88,7 +88,7 @@ pub mod pallet {
         OracleRequest {
             request_id: RequestIdentifier,
             operator: T::AccountId,
-            pallet_index: u8,
+            pallet_index: u32,
             fee: BalanceOf<T>,
         },
         /// A request has been answered. Corresponding fee payment is transferred
@@ -144,7 +144,7 @@ pub mod pallet {
         pub operator: AccountId,
         pub block_number: BlockNumber,
         pub fee: BalanceOf,
-        pub pallet_index: u8,
+        pub pallet_index: u32,
         pub data: SpVec<u8>,
     }
 
@@ -267,7 +267,7 @@ pub mod pallet {
         #[pallet::weight((T::WeightInfo::initiate_request(data.len() as u32), Pays::No))]
         pub fn initiate_request(
             origin: OriginFor<T>,
-            pallet_index: u8,
+            pallet_index: u32,
             data: Vec<u8>,
             fee: BalanceOf<T>,
         ) -> DispatchResult {

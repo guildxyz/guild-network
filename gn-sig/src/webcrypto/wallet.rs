@@ -5,7 +5,7 @@ pub struct Wallet(SigningKey);
 
 impl Wallet {
     pub fn from_seed(seed: [u8; 32]) -> Option<Self> {
-        SigningKey::from_slice(&seed).ok().map(|k| Self(k))
+        SigningKey::from_slice(&seed).ok().map(Self)
     }
 
     pub fn sign<T: AsRef<[u8]>>(&self, msg: T) -> Option<[u8; 65]> {

@@ -18,7 +18,7 @@ fn link_and_unlink_addresses() {
         let prefix_2 = [2u8; 8];
 
         // trying to link address without registering first
-        let signature = wallet.sign(&linked_account_0.to_le_bytes()).unwrap();
+        let signature = wallet.sign(linked_account_0.to_le_bytes()).unwrap();
         assert_noop!(
             <GuildIdentity>::link_address(
                 RuntimeOrigin::signed(linked_account_0),
@@ -52,7 +52,7 @@ fn link_and_unlink_addresses() {
             IdentityEvent::AddressLinked(primary_account, prefix_0, linked_account_0)
         );
         // link second address under the same prefix
-        let signature = wallet.sign(&linked_account_1.to_le_bytes()).unwrap();
+        let signature = wallet.sign(linked_account_1.to_le_bytes()).unwrap();
         assert_ok!(<GuildIdentity>::link_address(
             RuntimeOrigin::signed(linked_account_1),
             primary_account,
@@ -74,7 +74,7 @@ fn link_and_unlink_addresses() {
             IdentityError::AddressAlreadyLinked
         );
         // try to link another address to the same prefix
-        let signature = wallet.sign(&linked_account_2.to_le_bytes()).unwrap();
+        let signature = wallet.sign(linked_account_2.to_le_bytes()).unwrap();
         assert_noop!(
             <GuildIdentity>::link_address(
                 RuntimeOrigin::signed(linked_account_2),
@@ -91,7 +91,7 @@ fn link_and_unlink_addresses() {
             prefix_1,
             signature
         ));
-        let signature = wallet.sign(&linked_account_3.to_le_bytes()).unwrap();
+        let signature = wallet.sign(linked_account_3.to_le_bytes()).unwrap();
         assert_ok!(<GuildIdentity>::link_address(
             RuntimeOrigin::signed(linked_account_3),
             primary_account,
@@ -99,7 +99,7 @@ fn link_and_unlink_addresses() {
             signature
         ));
         // try to add a new address type
-        let signature = wallet.sign(&linked_account_0.to_le_bytes()).unwrap();
+        let signature = wallet.sign(linked_account_0.to_le_bytes()).unwrap();
         assert_noop!(
             <GuildIdentity>::link_address(
                 RuntimeOrigin::signed(linked_account_0),
@@ -147,21 +147,21 @@ fn link_and_unlink_addresses() {
             &[linked_account_3]
         );
         // link new addresses and add a new prefix
-        let signature = wallet.sign(&linked_account_0.to_le_bytes()).unwrap();
+        let signature = wallet.sign(linked_account_0.to_le_bytes()).unwrap();
         assert_ok!(<GuildIdentity>::link_address(
             RuntimeOrigin::signed(linked_account_0),
             primary_account,
             prefix_1,
             signature
         ));
-        let signature = wallet.sign(&linked_account_2.to_le_bytes()).unwrap();
+        let signature = wallet.sign(linked_account_2.to_le_bytes()).unwrap();
         assert_ok!(<GuildIdentity>::link_address(
             RuntimeOrigin::signed(linked_account_2),
             primary_account,
             prefix_2,
             signature
         ));
-        let signature = wallet.sign(&linked_account_1.to_le_bytes()).unwrap();
+        let signature = wallet.sign(linked_account_1.to_le_bytes()).unwrap();
         assert_ok!(<GuildIdentity>::link_address(
             RuntimeOrigin::signed(linked_account_1),
             primary_account,
