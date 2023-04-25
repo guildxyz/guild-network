@@ -6,6 +6,7 @@
 
 import threading
 import time
+from typing import List
 import numpy as np
 import pandas as pd
 from substrateinterface import SubstrateInterface
@@ -13,11 +14,13 @@ from subprocess import Popen, DEVNULL, PIPE, run, TimeoutExpired
 from threading import Event, Thread
 import shlex
 from random import randint
-substr = SubstrateInterface(url="wss://1.oracle.network.guild.xyz")
+substr = SubstrateInterface(url="ws://localhost:9944")
 print("Connected")
 
 BLOCK_OVERHEAD = 187  # bytes
 END_CAPTURE_TIMEFRAME = 1
+TEST_CYCLE = 20
+SIG_FAIL_LVL = 0.05  # 5%
 
 # based on 1000 samples
 BASELINE = {
@@ -34,8 +37,11 @@ print(
 )
 
 
-class Capture:
+class SignificantFailure(Exception):
+    pass
 
+
+class Capture:
     def __init__(self, stop_event) -> None:
         self.z_size = np.NaN
         self.last_timestamp = np.NaN
@@ -87,7 +93,7 @@ class Capture:
 
         if abs(self.z_size) > 5 and not self.capture:
             self.capture = True
-            print("CAPTURE TRIGGERED")
+            # print("CAPTURE TRIGGERED")
             print(f"z-size: {self.z_size}")
 
         if self.capture:
@@ -105,13 +111,16 @@ class Capture:
                 'extrs': extr_num,
                 'latency': latency
             }
+            if z_lat > 3134:
+                self.failures += 1
+
             if abs(z_lat) > 3:
                 print("ANOMALY IN BLOCKTIME DETECTED")
                 print(f"z-lat: {z_lat:.3f}")
-                self.anomalies['block_time'].append((latency, z_lat))
+                self.anomalies['block_time'].append(z_lat)
 
             print(f"Latency: {latency:.3f}")
-            print(f"Block size: {block_size}")
+            # print(f"Block size: {block_size}")
             print(f"Number of extrinsics: {extr_num}")
         self.last_timestamp = timestamp
 
@@ -133,12 +142,15 @@ class Capture:
             "s_total": self.data['size'].sum(),
             "s_stdev": self.data['size'].std(),
             "s_mean": self.data['size'].mean(),
-            "s_total": self.data['extrs'].sum(),
+            "e_total": self.data['extrs'].sum(),
             "e_stdev": self.data['extrs'].std(),
             "e_mean": self.data['extrs'].mean(),
         }
 
     def print_stats(self):
+        print(self.stats)
+
+    def pretty_print_stats(self):
         print(self.data)
         print("### Block time")
         if self.data['latency'].std() > BASELINE["lat_stdev"] * 3:
@@ -184,30 +196,63 @@ def start_collection(stop_event: Event):
     return capture
 
 
-def single_test(tps, num, stop_event: Event):
-    cmd = f"../../target/release/gn-cli -i 65.108.102.250 stress --seed {hex(randint(0, 0xffffffff))} --tps {tps} -n {num} register-other"
-    test = Popen(shlex.split(cmd), stderr=PIPE, stdout=DEVNULL)
+def single_test(iter_n, tps, tx_num, stop_event: Event):
+    print(f"Start iteration {iter_n+1}, with params {tx_num} num, {tps} tps")
+    cmd = f"../../target/release/gn-cli -i localhost stress --seed {hex(randint(0, 0xffffffff))} --tps {tps} -n {tx_num} register-other"
+    test = Popen(shlex.split(cmd), stderr=PIPE, stdout=PIPE)
+
     test.wait()
     stop_event.set()
 
 
-def start_iteration(tps, num):
+def start_iteration(iter_n, tps, tx_num):
     stop_event = threading.Event()
-    test = Thread(target=single_test, args=(tps, num, stop_event))
+    test = Thread(target=single_test, args=(iter_n, tps, tx_num, stop_event))
     test.start()
     return start_collection(stop_event)
 
 
+def count_failures(test_cycle: List[Capture]):
+    failures = 0
+
+    for iteration in test_cycle:
+        for _, val in iteration.anomalies.items():
+            sum(val)
+        failures += iteration.failures
+    return failures
+
+
 def start_tests(params):
     results = []
-    for _ in range(0, 20):
-        res = start_iteration(64, params)
+    print(f"START TEST CYCLE WITH PARAMETERS {params} num, {params} tps")
+    for i in range(0, TEST_CYCLE):
+        res = start_iteration(i, params, params)
         results.append(res)
+    failures = count_failures(results)
+    print(
+        f"END TEST CYCLE WITH PARAMETERS {params} num, {params} tps; FAILURES DETECTED: {failures}, RATE: {failures/TEST_CYCLE*100}%"
+    )
+    if failures > int(TEST_CYCLE * SIG_FAIL_LVL):
+        print(f"SIGNIFICANT FAILURE DETECTED AT {params}")
+    if failures >= int(TEST_CYCLE * 0.5):
+        raise SignificantFailure
 
 
 def main():
-    initial_parameters = 256
-    start_tests(initial_parameters)
+    params = 1000
+    results = {}
+    while True:
+        try:
+            failure_rate = start_tests(params)
+            if failure_rate is not None:
+                results[params] = failure_rate
+        except SignificantFailure:
+            break
+        params += 100
+    print(
+        f"First significant failure detected at {list(results.keys())[0]} num, {list(results.keys())[0]} tps")
+    print(f"")
+    print(results)
 
 
 if __name__ == "__main__":
