@@ -100,7 +100,10 @@ fn link_and_unlink_identities() {
             RuntimeOrigin::signed(account),
             prefix_1
         ));
-        assert_eq!(last_event(), IdentityEvent::IdentityUnlinked(account, prefix_1, identity_1));
+        assert_eq!(
+            last_event(),
+            IdentityEvent::IdentityUnlinked(account, prefix_1, identity_1)
+        );
         assert_eq!(<GuildIdentity>::identities(account).unwrap().len(), 2);
         assert!(<GuildIdentity>::identities(account)
             .unwrap()

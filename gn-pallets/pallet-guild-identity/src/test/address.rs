@@ -182,6 +182,24 @@ fn link_and_unlink_addresses() {
         // invalid unlink/delete transactions
         let failing_transactions = vec![
             (
+                <GuildIdentity>::link_address(
+                    RuntimeOrigin::signed(linked_account_0),
+                    primary_account,
+                    prefix_1,
+                    [0u8; 65],
+                ),
+                IdentityError::InvalidAuthoritySignature,
+            ),
+            (
+                <GuildIdentity>::link_address(
+                    RuntimeOrigin::signed(linked_account_0),
+                    primary_account,
+                    prefix_1,
+                    signature,
+                ),
+                IdentityError::UnknownAuthority,
+            ),
+            (
                 <GuildIdentity>::unlink_address(
                     RuntimeOrigin::signed(linked_account_0),
                     prefix_0,

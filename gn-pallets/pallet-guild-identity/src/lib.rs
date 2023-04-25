@@ -96,10 +96,10 @@ pub mod pallet {
         IdentityCheckFailed,
         InvalidAuthoritySignature,
         InvalidOracleAnswer,
-        InvalidOracleRequest,
         MaxLinkedAddressesExceeded,
         MaxLinkedAddressTypesExceeded,
         MaxLinkedIdentitiesExceeded,
+        NoPalletIndex,
         UnknownAuthority,
     }
 
@@ -287,7 +287,7 @@ pub mod pallet {
                 identity,
             };
             let pallet_index = <T as frame_system::Config>::PalletInfo::index::<Self>()
-                .ok_or(Error::<T>::InvalidOracleRequest)?;
+                .ok_or(Error::<T>::NoPalletIndex)?;
             <pallet_oracle::Pallet<T>>::initiate_request(
                 origin,
                 pallet_index as u32,
@@ -326,7 +326,7 @@ pub mod pallet {
                 .ok_or(Error::<T>::InvalidOracleAnswer)?;
 
             let pallet_index = <T as frame_system::Config>::PalletInfo::index::<Self>()
-                .ok_or(Error::<T>::InvalidOracleRequest)?;
+                .ok_or(Error::<T>::NoPalletIndex)?;
 
             ensure!(
                 request.pallet_index == pallet_index as u32,
