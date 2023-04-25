@@ -55,8 +55,9 @@ pub struct LinkIdentityRequest<T> {
 }
 
 #[derive(Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq)]
-pub struct AccessCheckRequest<T, H> {
+pub struct AccessCheckRequest<T> {
     pub requester: T,
     pub account: T,
-    pub role_id: H,
+    pub guild_name: GuildName,
+    pub role_name: GuildName,
 }

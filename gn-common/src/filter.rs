@@ -1,5 +1,5 @@
 use crate::hash::{Hash, Keccak256};
-use crate::{GuildName, Identity, RoleName};
+use crate::{GuildName, RoleName};
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
@@ -23,7 +23,7 @@ pub enum Filter {
 }
 
 impl Filter {
-    pub fn allowlist(allowlist: &[Identity], logic: Logic) -> Self {
+    pub fn allowlist<T: AsRef<[u8]>>(allowlist: &[T], logic: Logic) -> Self {
         let length = allowlist.len();
         let root = crate::merkle::root::<Keccak256, _>(allowlist);
         Filter::Allowlist(root, logic, length as u32)

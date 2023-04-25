@@ -44,7 +44,7 @@ pub trait WeightInfo {
 	fn join_role_with_allowlist() -> Weight;
 	fn join_unfiltered_role() -> Weight;
 	fn leave() -> Weight;
-	fn request_oracle_check() -> Weight;
+	fn request_access_check() -> Weight;
 }
 
 /// Weight functions for `pallet_guild`.
@@ -80,7 +80,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn leave() -> Weight {
 		Weight::from_ref_time(1000)		
 	}		
-	fn request_oracle_check() -> Weight {
+	fn request_access_check() -> Weight {
 		Weight::from_ref_time(1000)		
 	}		
 }
@@ -116,7 +116,7 @@ impl WeightInfo for () {
 	fn leave() -> Weight {
 		Weight::from_ref_time(1000)		
 	}		
-	fn request_oracle_check() -> Weight {
+	fn request_access_check() -> Weight {
 		Weight::from_ref_time(1000)		
 	}		
 }

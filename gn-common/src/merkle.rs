@@ -1,5 +1,5 @@
 use crate::hash::{Hash, Keccak256};
-use crate::{Decode, Encode, Identity, SpVec, TypeInfo};
+use crate::{Decode, Encode, SpVec, TypeInfo};
 use serde::{Deserialize, Serialize};
 
 pub use binary_merkle_tree::merkle_root as root;
@@ -9,7 +9,7 @@ pub type Leaf<'a> = binary_merkle_tree::Leaf<'a, Hash>;
 pub struct Proof(SpVec<Hash>);
 
 impl Proof {
-    pub fn new(allowlist: &[Identity], leaf_index: usize) -> Self {
+    pub fn new<T: AsRef<[u8]>>(allowlist: &[T], leaf_index: usize) -> Self {
         let merkle_proof =
             binary_merkle_tree::merkle_proof::<Keccak256, _, _>(allowlist, leaf_index);
         Self(merkle_proof.proof)
