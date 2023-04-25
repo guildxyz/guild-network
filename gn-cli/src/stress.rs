@@ -32,7 +32,7 @@ pub async fn register_other_identity(api: Api, num: usize, seed: &str, tps: usiz
 
     for chunk in &(0..num).chunks(tps) {
         let tx_futures = chunk
-            .map(|i| {
+            .map(|_i| {
                 let password = format!("//{}", hex::encode(seed_bytes));
                 let signer = tx::signer("", Some(&password)).expect("invalid signer");
                 let identity = Identity::Other(pad_to_n_bytes::<64, _>(format!("other{}", id)));
@@ -41,11 +41,11 @@ pub async fn register_other_identity(api: Api, num: usize, seed: &str, tps: usiz
                 seed_bytes[index] = seed_bytes[index].wrapping_add(1);
                 index = index.wrapping_add(1) % seed_bytes.len();
                 let payload = tx::register(identity_with_auth, id_index);
-                log::info!("registration {} submitted", i);
                 tx::send::owned_but_dont_watch(api.clone(), payload, signer)
             })
             .collect::<Vec<_>>();
         try_join_all(tx_futures).await.expect("failed to send tx");
         tokio::time::sleep(Duration::from_secs(1)).await;
+        log::info!("registration batch submitted");
     }
 }
