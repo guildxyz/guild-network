@@ -285,7 +285,7 @@ Initial parameters:
     - 1000 total tx
     - 20 iterations per cycle
     - 100 increase per cycle
-  See round1.log
+  See round2.log
 
 END TEST CYCLE WITH PARAMETERS 1200 num, 1200 tps; FAILURES DETECTED: 1, RATE: 5.0%
 END TEST CYCLE WITH PARAMETERS 1300 num, 1300 tps; FAILURES DETECTED: 2, RATE: 10.0%
@@ -296,4 +296,31 @@ END TEST CYCLE WITH PARAMETERS 1700 num, 1700 tps; FAILURES DETECTED: 5, RATE: 2
 END TEST CYCLE WITH PARAMETERS 1800 num, 1800 tps; FAILURES DETECTED: 3, RATE: 15.0%
 END TEST CYCLE WITH PARAMETERS 1900 num, 1900 tps; FAILURES DETECTED: 10, RATE: 50.0%
 
-### Round 3 
+### Round 3
+Conditions: Continuous flood stress with increasing pressure
+Initial parameters:
+    - 1900 tps
+    - 1900 total tx
+    - 20 iterations per cycle
+    - 100 increase per cycle
+  See round3.log
+
+END TEST CYCLE WITH PARAMETERS 1900 num, 1900 tps; FAILURES DETECTED: 4, RATE: 20.0%
+END TEST CYCLE WITH PARAMETERS 2000 num, 2000 tps; FAILURES DETECTED: 12, RATE: 60.0%
+
+Test aborted unexpectedly due issues with local node.
+
+# Round 4
+Conditions: Continuous flood stress with increasing pressure
+Initial parameters:
+    - 2100 tps
+    - 2100 total tx
+    - 20 iterations per cycle
+    - 100 increase per cycle
+  See round4.log
+
+END TEST CYCLE WITH PARAMETERS 2100 num, 2100 tps; FAILURES DETECTED: 8, RATE: 40.0%
+END TEST CYCLE WITH PARAMETERS 2200 num, 2200 tps; FAILURES DETECTED: 14, RATE: 70.0%
+END TEST CYCLE WITH PARAMETERS 2300 num, 2300 tps; FAILURES DETECTED: 20, RATE: 100.0%
+
+Test aborted prematurely due to 100% failure rate in block time

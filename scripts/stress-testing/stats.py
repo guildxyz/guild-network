@@ -242,7 +242,7 @@ class CaptureCycle:
 
 
 def main():
-    params = 1900
+    params = 2100
     results = {}
     capture_cycles = []
     while True:
