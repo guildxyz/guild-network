@@ -263,3 +263,37 @@
 
 - Conclusion: **Significant change in both the mean and dispersion of the block time has been observed**, block size and extrinsic count has remained the same as expected, but increase in block size and extrinsics mean has fallen short of the expected amount; see a detailed explanation of results above.
 
+# New testing framework
+
+## Initial Results
+
+### Round 1
+Conditions: Continuous flood stress with increasing pressure
+Initial parameters:
+  - 256 tps
+  - 256 total tx
+  - 10 iterations per cycle
+  - 256 increase per cycle
+See round1.log
+
+END TEST CYCLE WITH PARAMETERS 1792 num, 1792 tps; FAILURES DETECTED: 3, RATE: 30%
+
+### Round 2
+Conditions: Continuous flood stress with increasing pressure
+Initial parameters:
+    - 1000 tps
+    - 1000 total tx
+    - 20 iterations per cycle
+    - 100 increase per cycle
+  See round1.log
+
+END TEST CYCLE WITH PARAMETERS 1200 num, 1200 tps; FAILURES DETECTED: 1, RATE: 5.0%
+END TEST CYCLE WITH PARAMETERS 1300 num, 1300 tps; FAILURES DETECTED: 2, RATE: 10.0%
+END TEST CYCLE WITH PARAMETERS 1400 num, 1400 tps; FAILURES DETECTED: 3, RATE: 15.0%
+END TEST CYCLE WITH PARAMETERS 1500 num, 1500 tps; FAILURES DETECTED: 6, RATE: 30.0%
+END TEST CYCLE WITH PARAMETERS 1600 num, 1600 tps; FAILURES DETECTED: 7, RATE: 35.0%
+END TEST CYCLE WITH PARAMETERS 1700 num, 1700 tps; FAILURES DETECTED: 5, RATE: 25.0%
+END TEST CYCLE WITH PARAMETERS 1800 num, 1800 tps; FAILURES DETECTED: 3, RATE: 15.0%
+END TEST CYCLE WITH PARAMETERS 1900 num, 1900 tps; FAILURES DETECTED: 10, RATE: 50.0%
+
+### Round 3 

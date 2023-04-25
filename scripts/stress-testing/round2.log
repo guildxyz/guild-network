@@ -1,0 +1,2262 @@
+Connected
+Baseline stats: {'size_mean': 250.91, 'size_stdev': 111.40789747418995, 'lat_mean': 3.0, 'lat_stdev': 0.000941154367299, 'extr_mean': 1.28, 'extr_stdev': 0.586467342606512}
+START TEST CYCLE WITH PARAMETERS 1000 num, 1000 tps
+Start iteration 1, with params 1000 num, 1000 tps
+New block #1595152
+New block #1595153
+New block #1595154
+New block #1595155
+z-size: 2126.8428484156066
+Latency: 3.001
+Number of extrinsics: 1001
+New block #1595156
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 237198, 's_stdev': nan, 's_mean': 237198.0, 'e_total': 1001, 'e_stdev': nan, 'e_mean': 1001.0}
+Start iteration 2, with params 1000 num, 1000 tps
+New block #1595156
+New block #1595157
+New block #1595158
+z-size: 2126.8428484156066
+Latency: 3.000
+Number of extrinsics: 1001
+New block #1595159
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 237198, 's_stdev': nan, 's_mean': 237198.0, 'e_total': 1001, 'e_stdev': nan, 'e_mean': 1001.0}
+Start iteration 3, with params 1000 num, 1000 tps
+New block #1595159
+New block #1595160
+New block #1595161
+z-size: 2126.8428484156066
+Latency: 2.999
+Number of extrinsics: 1001
+New block #1595162
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 237198, 's_stdev': nan, 's_mean': 237198.0, 'e_total': 1001, 'e_stdev': nan, 'e_mean': 1001.0}
+Start iteration 4, with params 1000 num, 1000 tps
+New block #1595162
+New block #1595163
+New block #1595164
+z-size: 2126.8428484156066
+Latency: 3.000
+Number of extrinsics: 1001
+New block #1595165
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 237198, 's_stdev': nan, 's_mean': 237198.0, 'e_total': 1001, 'e_stdev': nan, 'e_mean': 1001.0}
+Start iteration 5, with params 1000 num, 1000 tps
+New block #1595165
+New block #1595166
+New block #1595167
+z-size: 2133.251729798234
+Latency: 3.000
+Number of extrinsics: 1007
+New block #1595168
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 237912, 's_stdev': nan, 's_mean': 237912.0, 'e_total': 1007, 'e_stdev': nan, 'e_mean': 1007.0}
+Start iteration 6, with params 1000 num, 1000 tps
+New block #1595168
+New block #1595169
+New block #1595170
+z-size: 2126.8428484156066
+Latency: 3.000
+Number of extrinsics: 1001
+New block #1595171
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 237198, 's_stdev': nan, 's_mean': 237198.0, 'e_total': 1001, 'e_stdev': nan, 'e_mean': 1001.0}
+Start iteration 7, with params 1000 num, 1000 tps
+New block #1595171
+New block #1595172
+New block #1595173
+z-size: 2126.8428484156066
+Latency: 3.000
+Number of extrinsics: 1001
+New block #1595174
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 237198, 's_stdev': nan, 's_mean': 237198.0, 'e_total': 1001, 'e_stdev': nan, 'e_mean': 1001.0}
+Start iteration 8, with params 1000 num, 1000 tps
+New block #1595174
+New block #1595175
+New block #1595176
+z-size: 2126.8428484156066
+Latency: 3.001
+Number of extrinsics: 1001
+New block #1595177
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 237198, 's_stdev': nan, 's_mean': 237198.0, 'e_total': 1001, 'e_stdev': nan, 'e_mean': 1001.0}
+Start iteration 9, with params 1000 num, 1000 tps
+New block #1595177
+New block #1595178
+New block #1595179
+z-size: 2126.8428484156066
+Latency: 3.000
+Number of extrinsics: 1001
+New block #1595180
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 237198, 's_stdev': nan, 's_mean': 237198.0, 'e_total': 1001, 'e_stdev': nan, 'e_mean': 1001.0}
+Start iteration 10, with params 1000 num, 1000 tps
+New block #1595180
+New block #1595181
+New block #1595182
+z-size: 2126.8428484156066
+Latency: 3.001
+Number of extrinsics: 1001
+New block #1595183
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 237198, 's_stdev': nan, 's_mean': 237198.0, 'e_total': 1001, 'e_stdev': nan, 'e_mean': 1001.0}
+Start iteration 11, with params 1000 num, 1000 tps
+New block #1595183
+New block #1595184
+New block #1595185
+z-size: 2128.5662450899263
+Latency: 3.001
+Number of extrinsics: 1002
+New block #1595186
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 237390, 's_stdev': nan, 's_mean': 237390.0, 'e_total': 1002, 'e_stdev': nan, 'e_mean': 1002.0}
+Start iteration 12, with params 1000 num, 1000 tps
+New block #1595186
+New block #1595187
+New block #1595188
+z-size: 2126.8428484156066
+Latency: 3.001
+Number of extrinsics: 1001
+New block #1595189
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 237198, 's_stdev': nan, 's_mean': 237198.0, 'e_total': 1001, 'e_stdev': nan, 'e_mean': 1001.0}
+Start iteration 13, with params 1000 num, 1000 tps
+New block #1595189
+New block #1595190
+New block #1595191
+z-size: 2126.8428484156066
+Latency: 3.000
+Number of extrinsics: 1001
+New block #1595192
+Latency: 3.000
+Number of extrinsics: 5
+New block #1595193
+Latency: 3.000
+Number of extrinsics: 31
+New block #1595194
+{'t_stdev': 0.0, 't_mean': 3.0, 's_total': 242006, 's_stdev': 135565.24127272938, 's_mean': 80668.66666666667, 'e_total': 1037, 'e_stdev': 567.6841845016763, 'e_mean': 345.6666666666667}
+Start iteration 14, with params 1000 num, 1000 tps
+New block #1595194
+New block #1595195
+New block #1595196
+z-size: 2126.8428484156066
+Latency: 3.000
+Number of extrinsics: 1001
+New block #1595197
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 237198, 's_stdev': nan, 's_mean': 237198.0, 'e_total': 1001, 'e_stdev': nan, 'e_mean': 1001.0}
+Start iteration 15, with params 1000 num, 1000 tps
+New block #1595197
+New block #1595198
+New block #1595199
+z-size: 2126.8428484156066
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: -3.188
+Latency: 2.997
+Number of extrinsics: 1001
+New block #1595200
+{'t_stdev': nan, 't_mean': 2.997, 's_total': 237198, 's_stdev': nan, 's_mean': 237198.0, 'e_total': 1001, 'e_stdev': nan, 'e_mean': 1001.0}
+Start iteration 16, with params 1000 num, 1000 tps
+New block #1595200
+New block #1595201
+New block #1595202
+z-size: 2126.8428484156066
+Latency: 2.999
+Number of extrinsics: 1001
+New block #1595203
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 237198, 's_stdev': nan, 's_mean': 237198.0, 'e_total': 1001, 'e_stdev': nan, 'e_mean': 1001.0}
+Start iteration 17, with params 1000 num, 1000 tps
+New block #1595203
+New block #1595204
+New block #1595205
+z-size: 2126.8428484156066
+Latency: 3.000
+Number of extrinsics: 1001
+New block #1595206
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 237198, 's_stdev': nan, 's_mean': 237198.0, 'e_total': 1001, 'e_stdev': nan, 'e_mean': 1001.0}
+Start iteration 18, with params 1000 num, 1000 tps
+New block #1595206
+New block #1595207
+New block #1595208
+z-size: 2126.8428484156066
+Latency: 3.000
+Number of extrinsics: 1001
+New block #1595209
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 237198, 's_stdev': nan, 's_mean': 237198.0, 'e_total': 1001, 'e_stdev': nan, 'e_mean': 1001.0}
+Start iteration 19, with params 1000 num, 1000 tps
+New block #1595209
+New block #1595210
+New block #1595211
+z-size: 1956.6574268265085
+Latency: 3.000
+Number of extrinsics: 921
+New block #1595212
+Latency: 2.999
+Number of extrinsics: 82
+New block #1595213
+{'t_stdev': 0.0007071067811864697, 't_mean': 2.9995000000000003, 's_total': 237589, 's_stdev': 140634.34638984888, 's_mean': 118794.5, 'e_total': 1003, 'e_stdev': 593.2625894155134, 'e_mean': 501.5}
+Start iteration 20, with params 1000 num, 1000 tps
+New block #1595213
+New block #1595214
+New block #1595215
+z-size: 2126.8428484156066
+Latency: 3.000
+Number of extrinsics: 1001
+New block #1595216
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 237198, 's_stdev': nan, 's_mean': 237198.0, 'e_total': 1001, 'e_stdev': nan, 'e_mean': 1001.0}
+END TEST CYCLE WITH PARAMETERS 1000 num, 1000 tps; FAILURES DETECTED: 0, RATE: 0.0%
+START TEST CYCLE WITH PARAMETERS 1100 num, 1100 tps
+Start iteration 1, with params 1100 num, 1100 tps
+New block #1595216
+New block #1595217
+New block #1595218
+z-size: 2341.298022076299
+Latency: 3.000
+Number of extrinsics: 1102
+New block #1595219
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 261090, 's_stdev': nan, 's_mean': 261090.0, 'e_total': 1102, 'e_stdev': nan, 'e_mean': 1102.0}
+Start iteration 2, with params 1100 num, 1100 tps
+New block #1595219
+New block #1595220
+New block #1595221
+z-size: 2339.5746254019787
+Latency: 3.000
+Number of extrinsics: 1101
+New block #1595222
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 260898, 's_stdev': nan, 's_mean': 260898.0, 'e_total': 1101, 'e_stdev': nan, 'e_mean': 1101.0}
+Start iteration 3, with params 1100 num, 1100 tps
+New block #1595222
+New block #1595223
+z-size: 25.16060408239368
+Latency: 3.001
+Number of extrinsics: 25
+New block #1595224
+Latency: 2.999
+Number of extrinsics: 1102
+New block #1595225
+{'t_stdev': 0.0014142135623729393, 't_mean': 3.0, 's_total': 264143, 's_stdev': 182458.2982834708, 's_mean': 132071.5, 'e_total': 1127, 'e_stdev': 761.5540033379117, 'e_mean': 563.5}
+Start iteration 4, with params 1100 num, 1100 tps
+New block #1595225
+New block #1595226
+New block #1595227
+z-size: 2339.5746254019787
+Latency: 2.999
+Number of extrinsics: 1101
+New block #1595228
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 260898, 's_stdev': nan, 's_mean': 260898.0, 'e_total': 1101, 'e_stdev': nan, 'e_mean': 1101.0}
+Start iteration 5, with params 1100 num, 1100 tps
+New block #1595228
+New block #1595229
+New block #1595230
+z-size: 2341.5673028066612
+Latency: 3.000
+Number of extrinsics: 1102
+New block #1595231
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 261120, 's_stdev': nan, 's_mean': 261120.0, 'e_total': 1102, 'e_stdev': nan, 'e_mean': 1102.0}
+Start iteration 6, with params 1100 num, 1100 tps
+New block #1595231
+New block #1595232
+New block #1595233
+z-size: 2339.5746254019787
+Latency: 3.000
+Number of extrinsics: 1101
+New block #1595234
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 260898, 's_stdev': nan, 's_mean': 260898.0, 'e_total': 1101, 'e_stdev': nan, 'e_mean': 1101.0}
+Start iteration 7, with params 1100 num, 1100 tps
+New block #1595234
+New block #1595235
+New block #1595236
+z-size: 2339.5746254019787
+Latency: 2.999
+Number of extrinsics: 1101
+New block #1595237
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 260898, 's_stdev': nan, 's_mean': 260898.0, 'e_total': 1101, 'e_stdev': nan, 'e_mean': 1101.0}
+Start iteration 8, with params 1100 num, 1100 tps
+New block #1595237
+New block #1595238
+New block #1595239
+z-size: 2339.5746254019787
+Latency: 3.001
+Number of extrinsics: 1101
+New block #1595240
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 260898, 's_stdev': nan, 's_mean': 260898.0, 'e_total': 1101, 'e_stdev': nan, 'e_mean': 1101.0}
+Start iteration 9, with params 1100 num, 1100 tps
+New block #1595240
+New block #1595241
+New block #1595242
+z-size: 2339.5746254019787
+Latency: 3.001
+Number of extrinsics: 1101
+New block #1595243
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 260898, 's_stdev': nan, 's_mean': 260898.0, 'e_total': 1101, 'e_stdev': nan, 'e_mean': 1101.0}
+Start iteration 10, with params 1100 num, 1100 tps
+New block #1595243
+New block #1595244
+New block #1595245
+z-size: 2339.5746254019787
+Latency: 3.000
+Number of extrinsics: 1101
+New block #1595246
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 260898, 's_stdev': nan, 's_mean': 260898.0, 'e_total': 1101, 'e_stdev': nan, 'e_mean': 1101.0}
+Start iteration 11, with params 1100 num, 1100 tps
+New block #1595246
+New block #1595247
+z-size: 17.68357580266169
+Latency: 3.001
+Number of extrinsics: 18
+New block #1595248
+Latency: 2.999
+Number of extrinsics: 519
+New block #1595249
+Latency: 3.000
+Number of extrinsics: 585
+New block #1595250
+{'t_stdev': 0.0009999999999998899, 't_mean': 3.0, 's_total': 263555, 's_stdev': 74582.07577114849, 's_mean': 87851.66666666667, 'e_total': 1122, 'e_stdev': 310.0661219804576, 'e_mean': 374.0}
+Start iteration 12, with params 1100 num, 1100 tps
+New block #1595250
+New block #1595251
+New block #1595252
+z-size: 2339.5746254019787
+Latency: 3.000
+Number of extrinsics: 1101
+New block #1595253
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 260898, 's_stdev': nan, 's_mean': 260898.0, 'e_total': 1101, 'e_stdev': nan, 'e_mean': 1101.0}
+Start iteration 13, with params 1100 num, 1100 tps
+New block #1595253
+New block #1595254
+New block #1595255
+New block #1595256
+z-size: 2341.280070027608
+Latency: 2.999
+Number of extrinsics: 1102
+New block #1595257
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 261088, 's_stdev': nan, 's_mean': 261088.0, 'e_total': 1102, 'e_stdev': nan, 'e_mean': 1102.0}
+Start iteration 14, with params 1100 num, 1100 tps
+New block #1595257
+New block #1595258
+New block #1595259
+z-size: 2339.5746254019787
+Latency: 3.000
+Number of extrinsics: 1101
+New block #1595260
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 260898, 's_stdev': nan, 's_mean': 260898.0, 'e_total': 1101, 'e_stdev': nan, 'e_mean': 1101.0}
+Start iteration 15, with params 1100 num, 1100 tps
+New block #1595260
+New block #1595261
+New block #1595262
+z-size: 2339.5746254019787
+Latency: 3.001
+Number of extrinsics: 1101
+New block #1595263
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 260898, 's_stdev': nan, 's_mean': 260898.0, 'e_total': 1101, 'e_stdev': nan, 'e_mean': 1101.0}
+Start iteration 16, with params 1100 num, 1100 tps
+New block #1595263
+New block #1595264
+New block #1595265
+z-size: 1601.395359259267
+Latency: 3.001
+Number of extrinsics: 754
+New block #1595266
+Latency: 3.000
+Number of extrinsics: 348
+New block #1595267
+{'t_stdev': 0.0007071067811864697, 't_mean': 3.0004999999999997, 's_total': 261096, 's_stdev': 68039.22869933197, 's_mean': 130548.0, 'e_total': 1102, 'e_stdev': 287.0853531617383, 'e_mean': 551.0}
+Start iteration 17, with params 1100 num, 1100 tps
+New block #1595267
+New block #1595268
+New block #1595269
+z-size: 2342.850874288056
+Latency: 2.999
+Number of extrinsics: 1103
+New block #1595270
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 261263, 's_stdev': nan, 's_mean': 261263.0, 'e_total': 1103, 'e_stdev': nan, 'e_mean': 1103.0}
+Start iteration 18, with params 1100 num, 1100 tps
+New block #1595270
+New block #1595271
+New block #1595272
+New block #1595273
+z-size: 2339.5746254019787
+Latency: 2.999
+Number of extrinsics: 1101
+New block #1595274
+Latency: 3.000
+Number of extrinsics: 26
+New block #1595275
+{'t_stdev': 0.0007071067811864697, 't_mean': 2.9995000000000003, 's_total': 264071, 's_stdev': 182239.09518130295, 's_mean': 132035.5, 'e_total': 1127, 'e_stdev': 760.1397897755386, 'e_mean': 563.5}
+Start iteration 19, with params 1100 num, 1100 tps
+New block #1595275
+New block #1595276
+z-size: 5.933959934511427
+Latency: 3.001
+Number of extrinsics: 7
+New block #1595277
+Latency: 2.999
+Number of extrinsics: 1101
+New block #1595278
+{'t_stdev': 0.0014142135623729393, 't_mean': 3.0, 's_total': 261810, 's_stdev': 183837.86361356574, 's_mean': 130905.0, 'e_total': 1108, 'e_stdev': 773.574818618083, 'e_mean': 554.0}
+Start iteration 20, with params 1100 num, 1100 tps
+New block #1595278
+New block #1595279
+New block #1595280
+New block #1595281
+z-size: 2339.5746254019787
+Latency: 2.998
+Number of extrinsics: 1101
+New block #1595282
+{'t_stdev': nan, 't_mean': 2.998, 's_total': 260898, 's_stdev': nan, 's_mean': 260898.0, 'e_total': 1101, 'e_stdev': nan, 'e_mean': 1101.0}
+END TEST CYCLE WITH PARAMETERS 1100 num, 1100 tps; FAILURES DETECTED: 0, RATE: 0.0%
+START TEST CYCLE WITH PARAMETERS 1200 num, 1200 tps
+Start iteration 1, with params 1200 num, 1200 tps
+New block #1595282
+New block #1595283
+New block #1595284
+z-size: 2552.306402388351
+Latency: 3.000
+Number of extrinsics: 1201
+New block #1595285
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 284598, 's_stdev': nan, 's_mean': 284598.0, 'e_total': 1201, 'e_stdev': nan, 'e_mean': 1201.0}
+Start iteration 2, with params 1200 num, 1200 tps
+New block #1595285
+New block #1595286
+New block #1595287
+z-size: 2552.306402388351
+Latency: 3.000
+Number of extrinsics: 1201
+New block #1595288
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 284598, 's_stdev': nan, 's_mean': 284598.0, 'e_total': 1201, 'e_stdev': nan, 'e_mean': 1201.0}
+Start iteration 3, with params 1200 num, 1200 tps
+New block #1595288
+New block #1595289
+New block #1595290
+z-size: 2122.588212875879
+Latency: 3.000
+Number of extrinsics: 999
+New block #1595291
+Latency: 3.000
+Number of extrinsics: 203
+New block #1595292
+{'t_stdev': 0.0, 't_mean': 3.0, 's_total': 284796, 's_stdev': 133397.10848440457, 's_mean': 142398.0, 'e_total': 1202, 'e_stdev': 562.8569978244918, 'e_mean': 601.0}
+Start iteration 4, with params 1200 num, 1200 tps
+New block #1595292
+New block #1595293
+New block #1595294
+z-size: 2552.306402388351
+Latency: 3.001
+Number of extrinsics: 1201
+New block #1595295
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 284598, 's_stdev': nan, 's_mean': 284598.0, 'e_total': 1201, 'e_stdev': nan, 'e_mean': 1201.0}
+Start iteration 5, with params 1200 num, 1200 tps
+New block #1595295
+New block #1595296
+New block #1595297
+New block #1595298
+z-size: 2552.306402388351
+Latency: 3.000
+Number of extrinsics: 1201
+New block #1595299
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 284598, 's_stdev': nan, 's_mean': 284598.0, 'e_total': 1201, 'e_stdev': nan, 'e_mean': 1201.0}
+Start iteration 6, with params 1200 num, 1200 tps
+New block #1595299
+New block #1595300
+New block #1595301
+z-size: 2552.306402388351
+Latency: 3.001
+Number of extrinsics: 1201
+New block #1595302
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 284598, 's_stdev': nan, 's_mean': 284598.0, 'e_total': 1201, 'e_stdev': nan, 'e_mean': 1201.0}
+Start iteration 7, with params 1200 num, 1200 tps
+New block #1595302
+New block #1595303
+z-size: 397.9438711718884
+Latency: 3.000
+Number of extrinsics: 374
+New block #1595304
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3188.637
+Latency: 6.001
+Number of extrinsics: 2025
+New block #1595305
+{'t_stdev': 2.122027450340829, 't_mean': 4.500500000000001, 's_total': 427239, 's_stdev': 239050.88240895493, 's_mean': 213619.5, 'e_total': 2399, 'e_stdev': 1167.43329573899, 'e_mean': 1199.5}
+Start iteration 8, with params 1200 num, 1200 tps
+New block #1595305
+New block #1595306
+z-size: 48.23796267445963
+Latency: 2.999
+Number of extrinsics: 46
+New block #1595307
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 5625, 's_stdev': nan, 's_mean': 5625.0, 'e_total': 46, 'e_stdev': nan, 'e_mean': 46.0}
+Start iteration 9, with params 1200 num, 1200 tps
+New block #1595307
+New block #1595308
+z-size: 2552.306402388351
+Latency: 3.000
+Number of extrinsics: 1201
+New block #1595309
+Latency: 3.000
+Number of extrinsics: 577
+New block #1595310
+Latency: 3.001
+Number of extrinsics: 627
+New block #1595311
+{'t_stdev': 0.0005773502691895622, 't_mean': 3.0003333333333333, 's_total': 569767, 's_stdev': 82201.71010589338, 's_mean': 189922.33333333334, 'e_total': 2405, 'e_stdev': 346.73524962618575, 'e_mean': 801.6666666666666}
+Start iteration 10, with params 1200 num, 1200 tps
+New block #1595311
+New block #1595312
+z-size: 5.305638230332269
+Latency: 3.000
+Number of extrinsics: 4
+New block #1595313
+Latency: 3.000
+Number of extrinsics: 1201
+New block #1595314
+{'t_stdev': 0.0, 't_mean': 3.0, 's_total': 285440, 's_stdev': 200645.79180237, 's_mean': 142720.0, 'e_total': 1205, 'e_stdev': 846.4068170802974, 'e_mean': 602.5}
+Start iteration 11, with params 1200 num, 1200 tps
+New block #1595314
+New block #1595315
+New block #1595316
+z-size: 2552.306402388351
+Latency: 3.001
+Number of extrinsics: 1201
+New block #1595317
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 284598, 's_stdev': nan, 's_mean': 284598.0, 'e_total': 1201, 'e_stdev': nan, 'e_mean': 1201.0}
+Start iteration 12, with params 1200 num, 1200 tps
+New block #1595317
+New block #1595318
+New block #1595319
+z-size: 2552.306402388351
+Latency: 3.000
+Number of extrinsics: 1201
+New block #1595320
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 284598, 's_stdev': nan, 's_mean': 284598.0, 'e_total': 1201, 'e_stdev': nan, 'e_mean': 1201.0}
+Start iteration 13, with params 1200 num, 1200 tps
+New block #1595320
+New block #1595321
+New block #1595322
+z-size: 2552.306402388351
+Latency: 3.000
+Number of extrinsics: 1201
+New block #1595323
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 284598, 's_stdev': nan, 's_mean': 284598.0, 'e_total': 1201, 'e_stdev': nan, 'e_mean': 1201.0}
+Start iteration 14, with params 1200 num, 1200 tps
+New block #1595323
+New block #1595324
+New block #1595325
+z-size: 1535.4485083934915
+Latency: 3.000
+Number of extrinsics: 723
+New block #1595326
+Latency: 3.000
+Number of extrinsics: 1201
+New block #1595327
+Latency: 3.001
+Number of extrinsics: 5
+New block #1595328
+Latency: 2.999
+Number of extrinsics: 475
+New block #1595329
+{'t_stdev': 0.0008164965809276362, 't_mean': 3.0, 's_total': 427992, 's_stdev': 94019.74619550229, 's_mean': 106998.0, 'e_total': 2404, 'e_stdev': 498.65686264872227, 'e_mean': 601.0}
+Start iteration 15, with params 1200 num, 1200 tps
+New block #1595329
+New block #1595330
+New block #1595331
+z-size: 2552.306402388351
+Latency: 3.001
+Number of extrinsics: 1201
+New block #1595332
+Latency: 2.999
+Number of extrinsics: 4
+New block #1595333
+{'t_stdev': 0.0014142135623729393, 't_mean': 3.0, 's_total': 285227, 's_stdev': 200796.40554676272, 's_mean': 142613.5, 'e_total': 1205, 'e_stdev': 846.4068170802974, 'e_mean': 602.5}
+Start iteration 16, with params 1200 num, 1200 tps
+New block #1595333
+New block #1595334
+New block #1595335
+z-size: 2552.306402388351
+Latency: 3.000
+Number of extrinsics: 1201
+New block #1595336
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 284598, 's_stdev': nan, 's_mean': 284598.0, 'e_total': 1201, 'e_stdev': nan, 'e_mean': 1201.0}
+Start iteration 17, with params 1200 num, 1200 tps
+New block #1595336
+New block #1595337
+New block #1595338
+z-size: 2552.306402388351
+Latency: 3.000
+Number of extrinsics: 1201
+New block #1595339
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 284598, 's_stdev': nan, 's_mean': 284598.0, 'e_total': 1201, 'e_stdev': nan, 'e_mean': 1201.0}
+Start iteration 18, with params 1200 num, 1200 tps
+New block #1595339
+New block #1595340
+New block #1595341
+New block #1595342
+z-size: 2552.306402388351
+Latency: 3.001
+Number of extrinsics: 1201
+New block #1595343
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 284598, 's_stdev': nan, 's_mean': 284598.0, 'e_total': 1201, 'e_stdev': nan, 'e_mean': 1201.0}
+Start iteration 19, with params 1200 num, 1200 tps
+New block #1595343
+New block #1595344
+New block #1595345
+z-size: 2552.306402388351
+Latency: 3.001
+Number of extrinsics: 1201
+New block #1595346
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 284598, 's_stdev': nan, 's_mean': 284598.0, 'e_total': 1201, 'e_stdev': nan, 'e_mean': 1201.0}
+Start iteration 20, with params 1200 num, 1200 tps
+New block #1595346
+New block #1595347
+New block #1595348
+z-size: 2552.306402388351
+Latency: 3.000
+Number of extrinsics: 1201
+New block #1595349
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 284598, 's_stdev': nan, 's_mean': 284598.0, 'e_total': 1201, 'e_stdev': nan, 'e_mean': 1201.0}
+END TEST CYCLE WITH PARAMETERS 1200 num, 1200 tps; FAILURES DETECTED: 1, RATE: 5.0%
+START TEST CYCLE WITH PARAMETERS 1300 num, 1300 tps
+Start iteration 1, with params 1300 num, 1300 tps
+New block #1595349
+New block #1595350
+New block #1595351
+New block #1595352
+z-size: 2766.7885041220798
+Latency: 3.000
+Number of extrinsics: 1302
+New block #1595353
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 308493, 's_stdev': nan, 's_mean': 308493.0, 'e_total': 1302, 'e_stdev': nan, 'e_mean': 1302.0}
+Start iteration 2, with params 1300 num, 1300 tps
+New block #1595353
+New block #1595354
+New block #1595355
+z-size: 2765.0381793747233
+Latency: 3.000
+Number of extrinsics: 1301
+New block #1595356
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 37
+New block #1595357
+{'t_stdev': 2.1213203435596424, 't_mean': 4.5, 's_total': 312780, 's_stdev': 214830.35383297212, 's_mean': 156390.0, 'e_total': 1338, 'e_stdev': 893.7829714197961, 'e_mean': 669.0}
+Start iteration 3, with params 1300 num, 1300 tps
+New block #1595357
+New block #1595358
+New block #1595359
+New block #1595360
+New block #1595361
+z-size: 2765.0381793747233
+Latency: 3.000
+Number of extrinsics: 1301
+New block #1595362
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 308298, 's_stdev': nan, 's_mean': 308298.0, 'e_total': 1301, 'e_stdev': nan, 'e_mean': 1301.0}
+Start iteration 4, with params 1300 num, 1300 tps
+New block #1595362
+New block #1595363
+New block #1595364
+z-size: 2765.0381793747233
+Latency: 3.001
+Number of extrinsics: 1301
+New block #1595365
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 308298, 's_stdev': nan, 's_mean': 308298.0, 'e_total': 1301, 'e_stdev': nan, 'e_mean': 1301.0}
+Start iteration 5, with params 1300 num, 1300 tps
+New block #1595365
+New block #1595366
+New block #1595367
+z-size: 693.0306715274575
+Latency: 2.999
+Number of extrinsics: 327
+New block #1595368
+Latency: 3.001
+Number of extrinsics: 975
+New block #1595369
+{'t_stdev': 0.0014142135623729393, 't_mean': 3.0, 's_total': 308496, 's_stdev': 108594.63102750522, 's_mean': 154248.0, 'e_total': 1302, 'e_stdev': 458.2051942088828, 'e_mean': 651.0}
+Start iteration 6, with params 1300 num, 1300 tps
+New block #1595369
+New block #1595370
+New block #1595371
+z-size: 2765.0381793747233
+Latency: 3.000
+Number of extrinsics: 1301
+New block #1595372
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 308298, 's_stdev': nan, 's_mean': 308298.0, 'e_total': 1301, 'e_stdev': nan, 'e_mean': 1301.0}
+Start iteration 7, with params 1300 num, 1300 tps
+New block #1595372
+New block #1595373
+New block #1595374
+New block #1595375
+z-size: 2765.0381793747233
+Latency: 3.000
+Number of extrinsics: 1301
+New block #1595376
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 308298, 's_stdev': nan, 's_mean': 308298.0, 'e_total': 1301, 'e_stdev': nan, 'e_mean': 1301.0}
+Start iteration 8, with params 1300 num, 1300 tps
+New block #1595376
+New block #1595377
+New block #1595378
+z-size: 2765.0381793747233
+Latency: 3.000
+Number of extrinsics: 1301
+New block #1595379
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 308298, 's_stdev': nan, 's_mean': 308298.0, 'e_total': 1301, 'e_stdev': nan, 'e_mean': 1301.0}
+Start iteration 9, with params 1300 num, 1300 tps
+New block #1595379
+New block #1595380
+New block #1595381
+z-size: 2765.0381793747233
+Latency: 3.000
+Number of extrinsics: 1301
+New block #1595382
+Latency: 3.000
+Number of extrinsics: 6
+New block #1595383
+Latency: 3.001
+Number of extrinsics: 45
+New block #1595384
+Latency: 3.000
+Number of extrinsics: 9
+New block #1595385
+{'t_stdev': 0.0004999999999999449, 't_mean': 3.00025, 's_total': 315820, 's_stdev': 152909.4078357073, 's_mean': 78955.0, 'e_total': 1361, 'e_stdev': 640.7450741129423, 'e_mean': 340.25}
+Start iteration 10, with params 1300 num, 1300 tps
+New block #1595385
+New block #1595386
+New block #1595387
+z-size: 2765.0381793747233
+Latency: 3.000
+Number of extrinsics: 1301
+New block #1595388
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 308298, 's_stdev': nan, 's_mean': 308298.0, 'e_total': 1301, 'e_stdev': nan, 'e_mean': 1301.0}
+Start iteration 11, with params 1300 num, 1300 tps
+New block #1595388
+New block #1595389
+New block #1595390
+z-size: 2766.9859766576787
+Latency: 2.999
+Number of extrinsics: 1302
+New block #1595391
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 308515, 's_stdev': nan, 's_mean': 308515.0, 'e_total': 1302, 'e_stdev': nan, 'e_mean': 1302.0}
+Start iteration 12, with params 1300 num, 1300 tps
+New block #1595391
+New block #1595392
+New block #1595393
+New block #1595394
+z-size: 2765.0381793747233
+Latency: 3.000
+Number of extrinsics: 1301
+New block #1595395
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 308298, 's_stdev': nan, 's_mean': 308298.0, 'e_total': 1301, 'e_stdev': nan, 'e_mean': 1301.0}
+Start iteration 13, with params 1300 num, 1300 tps
+New block #1595395
+New block #1595396
+New block #1595397
+z-size: 2135.3521194950613
+Latency: 3.000
+Number of extrinsics: 1005
+New block #1595398
+Latency: 3.000
+Number of extrinsics: 297
+New block #1595399
+{'t_stdev': 0.0, 't_mean': 3.0, 's_total': 308496, 's_stdev': 118649.68945597793, 's_mean': 154248.0, 'e_total': 1302, 'e_stdev': 500.63160108007565, 'e_mean': 651.0}
+Start iteration 14, with params 1300 num, 1300 tps
+New block #1595399
+New block #1595400
+New block #1595401
+z-size: 182.47440676016413
+Latency: 3.001
+Number of extrinsics: 87
+New block #1595402
+Latency: 2.999
+Number of extrinsics: 1215
+New block #1595403
+{'t_stdev': 0.0014142135623729393, 't_mean': 3.0, 's_total': 308496, 's_stdev': 189035.09845528688, 's_mean': 154248.0, 'e_total': 1302, 'e_stdev': 797.6164491784256, 'e_mean': 651.0}
+Start iteration 15, with params 1300 num, 1300 tps
+New block #1595403
+New block #1595404
+New block #1595405
+z-size: 2765.0381793747233
+Latency: 3.000
+Number of extrinsics: 1301
+New block #1595406
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 308298, 's_stdev': nan, 's_mean': 308298.0, 'e_total': 1301, 'e_stdev': nan, 'e_mean': 1301.0}
+Start iteration 16, with params 1300 num, 1300 tps
+New block #1595406
+New block #1595407
+New block #1595408
+z-size: 2765.0381793747233
+Latency: 3.000
+Number of extrinsics: 1301
+New block #1595409
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 308298, 's_stdev': nan, 's_mean': 308298.0, 'e_total': 1301, 'e_stdev': nan, 'e_mean': 1301.0}
+Start iteration 17, with params 1300 num, 1300 tps
+New block #1595409
+New block #1595410
+z-size: 5.933959934511427
+Latency: 3.001
+Number of extrinsics: 7
+New block #1595411
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 912, 's_stdev': nan, 's_mean': 912.0, 'e_total': 7, 'e_stdev': nan, 'e_mean': 7.0}
+Start iteration 18, with params 1300 num, 1300 tps
+New block #1595411
+New block #1595412
+z-size: 2766.492295318681
+Latency: 2.999
+Number of extrinsics: 1302
+New block #1595413
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 308460, 's_stdev': nan, 's_mean': 308460.0, 'e_total': 1302, 'e_stdev': nan, 'e_mean': 1302.0}
+Start iteration 19, with params 1300 num, 1300 tps
+New block #1595413
+New block #1595414
+z-size: 2765.0381793747233
+Latency: 3.001
+Number of extrinsics: 1301
+New block #1595415
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 308298, 's_stdev': nan, 's_mean': 308298.0, 'e_total': 1301, 'e_stdev': nan, 'e_mean': 1301.0}
+Start iteration 20, with params 1300 num, 1300 tps
+New block #1595415
+New block #1595416
+z-size: 2766.770552073389
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1302
+New block #1595417
+Latency: 3.000
+Number of extrinsics: 1301
+New block #1595418
+{'t_stdev': 2.1213203435596424, 't_mean': 4.5, 's_total': 616789, 's_stdev': 136.47160876900367, 's_mean': 308394.5, 'e_total': 2603, 'e_stdev': 0.7071067811865476, 'e_mean': 1301.5}
+END TEST CYCLE WITH PARAMETERS 1300 num, 1300 tps; FAILURES DETECTED: 2, RATE: 10.0%
+SIGNIFICANT FAILURE DETECTED AT 1300
+START TEST CYCLE WITH PARAMETERS 1400 num, 1400 tps
+Start iteration 1, with params 1400 num, 1400 tps
+New block #1595418
+New block #1595419
+New block #1595420
+New block #1595421
+z-size: 2977.7699563610954
+Latency: 3.000
+Number of extrinsics: 1401
+New block #1595422
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 331998, 's_stdev': nan, 's_mean': 331998.0, 'e_total': 1401, 'e_stdev': nan, 'e_mean': 1401.0}
+Start iteration 2, with params 1400 num, 1400 tps
+New block #1595422
+New block #1595423
+New block #1595424
+New block #1595425
+z-size: 2977.7699563610954
+Latency: 3.001
+Number of extrinsics: 1401
+New block #1595426
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 331998, 's_stdev': nan, 's_mean': 331998.0, 'e_total': 1401, 'e_stdev': nan, 'e_mean': 1401.0}
+Start iteration 3, with params 1400 num, 1400 tps
+New block #1595426
+New block #1595427
+New block #1595428
+New block #1595429
+z-size: 2977.7699563610954
+Latency: 3.000
+Number of extrinsics: 1401
+New block #1595430
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 331998, 's_stdev': nan, 's_mean': 331998.0, 'e_total': 1401, 'e_stdev': nan, 'e_mean': 1401.0}
+Start iteration 4, with params 1400 num, 1400 tps
+New block #1595430
+New block #1595431
+z-size: 18.751722699766262
+Latency: 3.000
+Number of extrinsics: 19
+New block #1595432
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 2340, 's_stdev': nan, 's_mean': 2340.0, 'e_total': 19, 'e_stdev': nan, 'e_mean': 19.0}
+Start iteration 5, with params 1400 num, 1400 tps
+New block #1595432
+New block #1595433
+z-size: 2979.1702161589806
+Latency: 3.000
+Number of extrinsics: 1402
+New block #1595434
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3188.637
+Latency: 6.001
+Number of extrinsics: 1401
+New block #1595435
+{'t_stdev': 2.122027450340829, 't_mean': 4.500500000000001, 's_total': 664152, 's_stdev': 110.30865786510141, 's_mean': 332076.0, 'e_total': 2803, 'e_stdev': 0.7071067811865476, 'e_mean': 1401.5}
+Start iteration 6, with params 1400 num, 1400 tps
+New block #1595435
+New block #1595436
+New block #1595437
+New block #1595438
+z-size: 2977.7699563610954
+Latency: 3.001
+Number of extrinsics: 1401
+New block #1595439
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 331998, 's_stdev': nan, 's_mean': 331998.0, 'e_total': 1401, 'e_stdev': nan, 'e_mean': 1401.0}
+Start iteration 7, with params 1400 num, 1400 tps
+New block #1595439
+New block #1595440
+New block #1595441
+New block #1595442
+z-size: 2977.7699563610954
+Latency: 2.999
+Number of extrinsics: 1401
+New block #1595443
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 331998, 's_stdev': nan, 's_mean': 331998.0, 'e_total': 1401, 'e_stdev': nan, 'e_mean': 1401.0}
+Start iteration 8, with params 1400 num, 1400 tps
+New block #1595443
+New block #1595444
+New block #1595445
+New block #1595446
+z-size: 2977.7699563610954
+Latency: 3.000
+Number of extrinsics: 1401
+New block #1595447
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 331998, 's_stdev': nan, 's_mean': 331998.0, 'e_total': 1401, 'e_stdev': nan, 'e_mean': 1401.0}
+Start iteration 9, with params 1400 num, 1400 tps
+New block #1595447
+New block #1595448
+New block #1595449
+New block #1595450
+z-size: 2977.7699563610954
+Latency: 3.000
+Number of extrinsics: 1401
+New block #1595451
+Latency: 3.000
+Number of extrinsics: 691
+New block #1595452
+Latency: 3.000
+Number of extrinsics: 711
+New block #1595453
+{'t_stdev': 0.0, 't_mean': 3.0, 's_total': 498994, 's_stdev': 143476.47693379334, 's_mean': 166331.33333333334, 'e_total': 2803, 'e_stdev': 404.2688874169435, 'e_mean': 934.3333333333334}
+Start iteration 10, with params 1400 num, 1400 tps
+New block #1595453
+New block #1595454
+New block #1595455
+New block #1595456
+z-size: 2977.7699563610954
+Latency: 2.999
+Number of extrinsics: 1401
+New block #1595457
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3188.637
+Latency: 6.001
+Number of extrinsics: 17
+New block #1595458
+{'t_stdev': 2.122734557122016, 't_mean': 4.5, 's_total': 334100, 's_stdev': 233271.69868631728, 's_mean': 167050.0, 'e_total': 1418, 'e_stdev': 978.6357851621817, 'e_mean': 709.0}
+Start iteration 11, with params 1400 num, 1400 tps
+New block #1595458
+New block #1595459
+New block #1595460
+New block #1595461
+z-size: 2975.642638591232
+Latency: 3.000
+Number of extrinsics: 1400
+New block #1595462
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 331761, 's_stdev': nan, 's_mean': 331761.0, 'e_total': 1400, 'e_stdev': nan, 'e_mean': 1400.0}
+Start iteration 12, with params 1400 num, 1400 tps
+New block #1595462
+New block #1595463
+New block #1595464
+New block #1595465
+z-size: 2977.7699563610954
+Latency: 3.001
+Number of extrinsics: 1401
+New block #1595466
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 331998, 's_stdev': nan, 's_mean': 331998.0, 'e_total': 1401, 'e_stdev': nan, 'e_mean': 1401.0}
+Start iteration 13, with params 1400 num, 1400 tps
+New block #1595466
+New block #1595467
+New block #1595468
+z-size: 1918.3657069689616
+Latency: 3.000
+Number of extrinsics: 903
+New block #1595469
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3188.637
+Latency: 6.001
+Number of extrinsics: 499
+New block #1595470
+{'t_stdev': 2.122027450340829, 't_mean': 4.500500000000001, 's_total': 332196, 's_stdev': 67704.06008504955, 's_mean': 166098.0, 'e_total': 1402, 'e_stdev': 285.6711395993652, 'e_mean': 701.0}
+Start iteration 14, with params 1400 num, 1400 tps
+New block #1595470
+New block #1595471
+New block #1595472
+z-size: 5.117141719078521
+Latency: 2.999
+Number of extrinsics: 4
+New block #1595473
+Latency: 3.000
+Number of extrinsics: 1401
+New block #1595474
+{'t_stdev': 0.0007071067811864697, 't_mean': 2.9995000000000003, 's_total': 332819, 's_stdev': 234177.50247301726, 's_mean': 166409.5, 'e_total': 1405, 'e_stdev': 987.8281733176069, 'e_mean': 702.5}
+Start iteration 15, with params 1400 num, 1400 tps
+New block #1595474
+New block #1595475
+New block #1595476
+z-size: 2977.7699563610954
+Latency: 3.000
+Number of extrinsics: 1401
+New block #1595477
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 331998, 's_stdev': nan, 's_mean': 331998.0, 'e_total': 1401, 'e_stdev': nan, 'e_mean': 1401.0}
+Start iteration 16, with params 1400 num, 1400 tps
+New block #1595477
+New block #1595478
+New block #1595479
+z-size: 88.87242488616035
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3.188
+Latency: 3.003
+Number of extrinsics: 43
+New block #1595480
+{'t_stdev': nan, 't_mean': 3.003, 's_total': 10152, 's_stdev': nan, 's_mean': 10152.0, 'e_total': 43, 'e_stdev': nan, 'e_mean': 43.0}
+Start iteration 17, with params 1400 num, 1400 tps
+New block #1595480
+New block #1595481
+z-size: 2930.0803390138976
+Latency: 3.000
+Number of extrinsics: 1398
+New block #1595482
+Latency: 3.000
+Number of extrinsics: 17
+New block #1595483
+Latency: 3.000
+Number of extrinsics: 1412
+New block #1595484
+{'t_stdev': 0.0, 't_mean': 3.0, 's_total': 662094, 's_stdev': 189338.6414153223, 's_mean': 220698.0, 'e_total': 2827, 'e_stdev': 801.3927459949543, 'e_mean': 942.3333333333334}
+Start iteration 18, with params 1400 num, 1400 tps
+New block #1595484
+New block #1595485
+New block #1595486
+z-size: 2439.558560585574
+Latency: 2.999
+Number of extrinsics: 1148
+New block #1595487
+Latency: 3.000
+Number of extrinsics: 255
+New block #1595488
+{'t_stdev': 0.0007071067811864697, 't_mean': 2.9995000000000003, 's_total': 332358, 's_stdev': 149705.8192856911, 's_mean': 166179.0, 'e_total': 1403, 'e_stdev': 631.4463555995869, 'e_mean': 701.5}
+Start iteration 19, with params 1400 num, 1400 tps
+New block #1595488
+New block #1595489
+New block #1595490
+New block #1595491
+z-size: 2977.7699563610954
+Latency: 3.000
+Number of extrinsics: 1401
+New block #1595492
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 331998, 's_stdev': nan, 's_mean': 331998.0, 'e_total': 1401, 'e_stdev': nan, 'e_mean': 1401.0}
+Start iteration 20, with params 1400 num, 1400 tps
+New block #1595492
+New block #1595493
+New block #1595494
+z-size: 1278.043058239981
+Latency: 3.001
+Number of extrinsics: 602
+New block #1595495
+Latency: 2.999
+Number of extrinsics: 800
+New block #1595496
+{'t_stdev': 0.0014142135623729393, 't_mean': 3.0, 's_total': 332196, 's_stdev': 33181.692813959926, 's_mean': 166098.0, 'e_total': 1402, 'e_stdev': 140.0071426749364, 'e_mean': 701.0}
+END TEST CYCLE WITH PARAMETERS 1400 num, 1400 tps; FAILURES DETECTED: 3, RATE: 15.0%
+SIGNIFICANT FAILURE DETECTED AT 1400
+START TEST CYCLE WITH PARAMETERS 1500 num, 1500 tps
+Start iteration 1, with params 1500 num, 1500 tps
+New block #1595496
+New block #1595497
+New block #1595498
+New block #1595499
+z-size: 3190.501733347468
+Latency: 3.000
+Number of extrinsics: 1501
+New block #1595500
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 355698, 's_stdev': nan, 's_mean': 355698.0, 'e_total': 1501, 'e_stdev': nan, 'e_mean': 1501.0}
+Start iteration 2, with params 1500 num, 1500 tps
+New block #1595500
+New block #1595501
+New block #1595502
+z-size: 3190.501733347468
+Latency: 3.000
+Number of extrinsics: 1501
+New block #1595503
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 36
+New block #1595504
+{'t_stdev': 2.1213203435596424, 't_mean': 4.5, 's_total': 360258, 's_stdev': 248292.06093228192, 's_mean': 180129.0, 'e_total': 1537, 'e_stdev': 1035.9114344382922, 'e_mean': 768.5}
+Start iteration 3, with params 1500 num, 1500 tps
+New block #1595504
+New block #1595505
+New block #1595506
+New block #1595507
+z-size: 3192.234106046133
+Latency: 2.999
+Number of extrinsics: 1502
+New block #1595508
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 355891, 's_stdev': nan, 's_mean': 355891.0, 'e_total': 1502, 'e_stdev': nan, 'e_mean': 1502.0}
+Start iteration 4, with params 1500 num, 1500 tps
+New block #1595508
+New block #1595509
+New block #1595510
+z-size: 599.4286896534537
+Latency: 3.000
+Number of extrinsics: 283
+New block #1595511
+Latency: 3.001
+Number of extrinsics: 1219
+New block #1595512
+{'t_stdev': 0.0007071067811864697, 't_mean': 3.0004999999999997, 's_total': 355896, 's_stdev': 156858.9114841742, 's_mean': 177948.0, 'e_total': 1502, 'e_stdev': 661.8519471906085, 'e_mean': 751.0}
+Start iteration 5, with params 1500 num, 1500 tps
+New block #1595512
+New block #1595513
+New block #1595514
+New block #1595515
+z-size: 3190.501733347468
+Latency: 3.000
+Number of extrinsics: 1501
+New block #1595516
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 355698, 's_stdev': nan, 's_mean': 355698.0, 'e_total': 1501, 'e_stdev': nan, 'e_mean': 1501.0}
+Start iteration 6, with params 1500 num, 1500 tps
+New block #1595516
+New block #1595517
+New block #1595518
+New block #1595519
+z-size: 3190.501733347468
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1501
+New block #1595520
+{'t_stdev': nan, 't_mean': 6.0, 's_total': 355698, 's_stdev': nan, 's_mean': 355698.0, 'e_total': 1501, 'e_stdev': nan, 'e_mean': 1501.0}
+Start iteration 7, with params 1500 num, 1500 tps
+New block #1595520
+New block #1595521
+New block #1595522
+New block #1595523
+z-size: 3190.501733347468
+Latency: 3.000
+Number of extrinsics: 1501
+New block #1595524
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 355698, 's_stdev': nan, 's_mean': 355698.0, 'e_total': 1501, 'e_stdev': nan, 'e_mean': 1501.0}
+Start iteration 8, with params 1500 num, 1500 tps
+New block #1595524
+New block #1595525
+New block #1595526
+New block #1595527
+z-size: 3192.2251300217877
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1502
+New block #1595528
+{'t_stdev': nan, 't_mean': 6.0, 's_total': 355890, 's_stdev': nan, 's_mean': 355890.0, 'e_total': 1502, 'e_stdev': nan, 'e_mean': 1502.0}
+Start iteration 9, with params 1500 num, 1500 tps
+New block #1595528
+New block #1595529
+z-size: 16.61542890555712
+Latency: 3.000
+Number of extrinsics: 17
+New block #1595530
+Latency: 3.000
+Number of extrinsics: 5
+New block #1595531
+Latency: 2.999
+Number of extrinsics: 1501
+New block #1595532
+{'t_stdev': 0.0005773502691895622, 't_mean': 2.9996666666666667, 's_total': 358474, 's_stdev': 204562.2199462387, 's_mean': 119491.33333333333, 'e_total': 1523, 'e_stdev': 860.2728249417933, 'e_mean': 507.6666666666667}
+Start iteration 10, with params 1500 num, 1500 tps
+New block #1595532
+New block #1595533
+New block #1595534
+New block #1595535
+z-size: 3190.501733347468
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3186.512
+Latency: 5.999
+Number of extrinsics: 1501
+New block #1595536
+{'t_stdev': nan, 't_mean': 5.999, 's_total': 355698, 's_stdev': nan, 's_mean': 355698.0, 'e_total': 1501, 'e_stdev': nan, 'e_mean': 1501.0}
+Start iteration 11, with params 1500 num, 1500 tps
+New block #1595536
+New block #1595537
+New block #1595538
+New block #1595539
+z-size: 3190.501733347468
+Latency: 3.001
+Number of extrinsics: 1501
+New block #1595540
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 355698, 's_stdev': nan, 's_mean': 355698.0, 'e_total': 1501, 'e_stdev': nan, 'e_mean': 1501.0}
+Start iteration 12, with params 1500 num, 1500 tps
+New block #1595540
+New block #1595541
+New block #1595542
+z-size: 290.96761302321397
+Latency: 2.999
+Number of extrinsics: 138
+New block #1595543
+Latency: 3.001
+Number of extrinsics: 1365
+New block #1595544
+{'t_stdev': 0.0014142135623729393, 't_mean': 3.0, 's_total': 356087, 's_stdev': 205593.41795033225, 's_mean': 178043.5, 'e_total': 1503, 'e_stdev': 867.6200205158938, 'e_mean': 751.5}
+Start iteration 13, with params 1500 num, 1500 tps
+New block #1595544
+New block #1595545
+New block #1595546
+New block #1595547
+z-size: 3190.501733347468
+Latency: 2.999
+Number of extrinsics: 1501
+New block #1595548
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 355698, 's_stdev': nan, 's_mean': 355698.0, 'e_total': 1501, 'e_stdev': nan, 'e_mean': 1501.0}
+Start iteration 14, with params 1500 num, 1500 tps
+New block #1595548
+New block #1595549
+New block #1595550
+z-size: 300.7065994379909
+Latency: 3.000
+Number of extrinsics: 143
+New block #1595551
+Latency: 3.000
+Number of extrinsics: 1362
+New block #1595552
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 142
+New block #1595553
+Latency: 3.000
+Number of extrinsics: 22
+New block #1595554
+{'t_stdev': 1.5, 't_mean': 3.75, 's_total': 376063, 's_stdev': 152941.68672923459, 's_mean': 94015.75, 'e_total': 1669, 'e_stdev': 632.3898454803546, 'e_mean': 417.25}
+Start iteration 15, with params 1500 num, 1500 tps
+New block #1595554
+New block #1595555
+New block #1595556
+z-size: 958.9453927604228
+Latency: 3.000
+Number of extrinsics: 452
+New block #1595557
+Latency: 3.000
+Number of extrinsics: 1050
+New block #1595558
+{'t_stdev': 0.0, 't_mean': 3.0, 's_total': 355896, 's_stdev': 100215.41567044464, 's_mean': 177948.0, 'e_total': 1502, 'e_stdev': 422.8498551495554, 'e_mean': 751.0}
+Start iteration 16, with params 1500 num, 1500 tps
+New block #1595558
+New block #1595559
+New block #1595560
+New block #1595561
+z-size: 3190.501733347468
+Latency: 2.999
+Number of extrinsics: 1501
+New block #1595562
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 355698, 's_stdev': nan, 's_mean': 355698.0, 'e_total': 1501, 'e_stdev': nan, 'e_mean': 1501.0}
+Start iteration 17, with params 1500 num, 1500 tps
+New block #1595562
+New block #1595563
+New block #1595564
+New block #1595565
+z-size: 3190.501733347468
+Latency: 3.000
+Number of extrinsics: 1501
+New block #1595566
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 355698, 's_stdev': nan, 's_mean': 355698.0, 'e_total': 1501, 'e_stdev': nan, 'e_mean': 1501.0}
+Start iteration 18, with params 1500 num, 1500 tps
+New block #1595566
+New block #1595567
+New block #1595568
+New block #1595569
+z-size: 3190.501733347468
+Latency: 3.000
+Number of extrinsics: 1501
+New block #1595570
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 355698, 's_stdev': nan, 's_mean': 355698.0, 'e_total': 1501, 'e_stdev': nan, 'e_mean': 1501.0}
+Start iteration 19, with params 1500 num, 1500 tps
+New block #1595570
+New block #1595571
+New block #1595572
+New block #1595573
+z-size: 3190.501733347468
+Latency: 3.001
+Number of extrinsics: 1501
+New block #1595574
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 355698, 's_stdev': nan, 's_mean': 355698.0, 'e_total': 1501, 'e_stdev': nan, 'e_mean': 1501.0}
+Start iteration 20, with params 1500 num, 1500 tps
+New block #1595574
+New block #1595575
+New block #1595576
+New block #1595577
+z-size: 3190.501733347468
+Latency: 3.000
+Number of extrinsics: 1501
+New block #1595578
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 7
+New block #1595579
+Latency: 3.000
+Number of extrinsics: 23
+New block #1595580
+{'t_stdev': 1.7320508075688772, 't_mean': 4.0, 's_total': 359426, 's_stdev': 204288.37335818534, 's_mean': 119808.66666666667, 'e_total': 1531, 'e_stdev': 857.9797977419593, 'e_mean': 510.3333333333333}
+END TEST CYCLE WITH PARAMETERS 1500 num, 1500 tps; FAILURES DETECTED: 6, RATE: 30.0%
+SIGNIFICANT FAILURE DETECTED AT 1500
+START TEST CYCLE WITH PARAMETERS 1600 num, 1600 tps
+Start iteration 1, with params 1600 num, 1600 tps
+New block #1595580
+New block #1595581
+New block #1595582
+New block #1595583
+z-size: 3405.1813076167955
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1602
+New block #1595584
+{'t_stdev': nan, 't_mean': 6.0, 's_total': 379615, 's_stdev': nan, 's_mean': 379615.0, 'e_total': 1602, 'e_stdev': nan, 'e_mean': 1602.0}
+Start iteration 2, with params 1600 num, 1600 tps
+New block #1595584
+New block #1595585
+New block #1595586
+New block #1595587
+z-size: 3404.95690700816
+Latency: 2.999
+Number of extrinsics: 1602
+New block #1595588
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 379590, 's_stdev': nan, 's_mean': 379590.0, 'e_total': 1602, 'e_stdev': nan, 'e_mean': 1602.0}
+Start iteration 3, with params 1600 num, 1600 tps
+New block #1595588
+New block #1595589
+New block #1595590
+New block #1595591
+z-size: 3405.109499422032
+Latency: 3.000
+Number of extrinsics: 1602
+New block #1595592
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 379607, 's_stdev': nan, 's_mean': 379607.0, 'e_total': 1602, 'e_stdev': nan, 'e_mean': 1602.0}
+Start iteration 4, with params 1600 num, 1600 tps
+New block #1595592
+New block #1595593
+New block #1595594
+New block #1595595
+z-size: 3403.23351033384
+Latency: 3.000
+Number of extrinsics: 1601
+New block #1595596
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 379398, 's_stdev': nan, 's_mean': 379398.0, 'e_total': 1601, 'e_stdev': nan, 'e_mean': 1601.0}
+Start iteration 5, with params 1600 num, 1600 tps
+New block #1595596
+New block #1595597
+New block #1595598
+New block #1595599
+z-size: 3403.23351033384
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1601
+New block #1595600
+{'t_stdev': nan, 't_mean': 6.0, 's_total': 379398, 's_stdev': nan, 's_mean': 379398.0, 'e_total': 1601, 'e_stdev': nan, 'e_mean': 1601.0}
+Start iteration 6, with params 1600 num, 1600 tps
+New block #1595600
+New block #1595601
+New block #1595602
+New block #1595603
+z-size: 3403.23351033384
+Latency: 3.000
+Number of extrinsics: 1601
+New block #1595604
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 379398, 's_stdev': nan, 's_mean': 379398.0, 'e_total': 1601, 'e_stdev': nan, 'e_mean': 1601.0}
+Start iteration 7, with params 1600 num, 1600 tps
+New block #1595604
+New block #1595605
+New block #1595606
+New block #1595607
+z-size: 3403.23351033384
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1601
+New block #1595608
+{'t_stdev': nan, 't_mean': 6.0, 's_total': 379398, 's_stdev': nan, 's_mean': 379398.0, 'e_total': 1601, 'e_stdev': nan, 'e_mean': 1601.0}
+Start iteration 8, with params 1600 num, 1600 tps
+New block #1595608
+New block #1595609
+New block #1595610
+z-size: 3190.501733347468
+Latency: 2.999
+Number of extrinsics: 1501
+
+New block #1595611
+Latency: 3.000
+Number of extrinsics: 102
+New block #1595612
+{'t_stdev': 0.0007071067811864697, 't_mean': 2.9995000000000003, 's_total': 379753, 's_stdev': 234507.01423305017, 's_mean': 189876.5, 'e_total': 1603, 'e_stdev': 989.24238687998, 'e_mean': 801.5}
+Start iteration 9, with params 1600 num, 1600 tps
+New block #1595612
+New block #1595613
+New block #1595614
+New block #1595615
+z-size: 3403.23351033384
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: -3.188
+Latency: 2.997
+Number of extrinsics: 1601
+New block #1595616
+{'t_stdev': nan, 't_mean': 2.997, 's_total': 379398, 's_stdev': nan, 's_mean': 379398.0, 'e_total': 1601, 'e_stdev': nan, 'e_mean': 1601.0}
+Start iteration 10, with params 1600 num, 1600 tps
+New block #1595616
+New block #1595617
+New block #1595618
+z-size: 3396.4745640017413
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3188.637
+Latency: 6.001
+Number of extrinsics: 1598
+New block #1595619
+Latency: 2.999
+Number of extrinsics: 6
+New block #1595620
+{'t_stdev': 2.122734557122016, 't_mean': 4.5, 's_total': 380000, 's_stdev': 266784.3174738725, 's_mean': 190000.0, 'e_total': 1604, 'e_stdev': 1125.7139956489837, 'e_mean': 802.0}
+Start iteration 11, with params 1600 num, 1600 tps
+New block #1595620
+New block #1595621
+New block #1595622
+z-size: 3404.687626277798
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1602
+New block #1595623
+{'t_stdev': nan, 't_mean': 6.0, 's_total': 379560, 's_stdev': nan, 's_mean': 379560.0, 'e_total': 1602, 'e_stdev': nan, 'e_mean': 1602.0}
+Start iteration 12, with params 1600 num, 1600 tps
+New block #1595623
+New block #1595624
+New block #1595625
+New block #1595626
+z-size: 3403.23351033384
+Latency: 3.000
+Number of extrinsics: 1601
+New block #1595627
+Latency: 3.000
+Number of extrinsics: 7
+New block #1595628
+Latency: 3.001
+Number of extrinsics: 10
+New block #1595629
+{'t_stdev': 0.0005773502691895622, 't_mean': 3.0003333333333333, 's_total': 381652, 's_stdev': 218394.96950555738, 's_mean': 127217.33333333333, 'e_total': 1618, 'e_stdev': 919.4315272674378, 'e_mean': 539.3333333333334}
+Start iteration 13, with params 1600 num, 1600 tps
+New block #1595629
+New block #1595630
+New block #1595631
+New block #1595632
+z-size: 3406.6533756094436
+Latency: 3.000
+Number of extrinsics: 1603
+New block #1595633
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 379779, 's_stdev': nan, 's_mean': 379779.0, 'e_total': 1603, 'e_stdev': nan, 'e_mean': 1603.0}
+Start iteration 14, with params 1600 num, 1600 tps
+New block #1595633
+New block #1595634
+New block #1595635
+New block #1595636
+z-size: 3403.23351033384
+Latency: 2.999
+Number of extrinsics: 1601
+New block #1595637
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 379398, 's_stdev': nan, 's_mean': 379398.0, 'e_total': 1601, 'e_stdev': nan, 'e_mean': 1601.0}
+Start iteration 15, with params 1600 num, 1600 tps
+New block #1595637
+New block #1595638
+New block #1595639
+New block #1595640
+New block #1595641
+z-size: 3403.23351033384
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1601
+New block #1595642
+{'t_stdev': nan, 't_mean': 6.0, 's_total': 379398, 's_stdev': nan, 's_mean': 379398.0, 'e_total': 1601, 'e_stdev': nan, 'e_mean': 1601.0}
+Start iteration 16, with params 1600 num, 1600 tps
+New block #1595642
+New block #1595643
+New block #1595644
+New block #1595645
+z-size: 3403.23351033384
+Latency: 3.000
+Number of extrinsics: 1601
+New block #1595646
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 379398, 's_stdev': nan, 's_mean': 379398.0, 'e_total': 1601, 'e_stdev': nan, 'e_mean': 1601.0}
+Start iteration 17, with params 1600 num, 1600 tps
+New block #1595646
+New block #1595647
+New block #1595648
+New block #1595649
+New block #1595650
+z-size: 3403.23351033384
+Latency: 3.000
+Number of extrinsics: 1601
+New block #1595651
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 379398, 's_stdev': nan, 's_mean': 379398.0, 'e_total': 1601, 'e_stdev': nan, 'e_mean': 1601.0}
+Start iteration 18, with params 1600 num, 1600 tps
+New block #1595651
+New block #1595652
+New block #1595653
+New block #1595654
+z-size: 3403.23351033384
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1601
+New block #1595655
+{'t_stdev': nan, 't_mean': 6.0, 's_total': 379398, 's_stdev': nan, 's_mean': 379398.0, 'e_total': 1601, 'e_stdev': nan, 'e_mean': 1601.0}
+Start iteration 19, with params 1600 num, 1600 tps
+New block #1595655
+New block #1595656
+New block #1595657
+z-size: 5.530038838967683
+Latency: 2.999
+Number of extrinsics: 6
+New block #1595658
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 867, 's_stdev': nan, 's_mean': 867.0, 'e_total': 6, 'e_stdev': nan, 'e_mean': 6.0}
+Start iteration 20, with params 1600 num, 1600 tps
+New block #1595658
+New block #1595659
+z-size: 3403.23351033384
+Latency: 3.000
+Number of extrinsics: 1601
+New block #1595660
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 379398, 's_stdev': nan, 's_mean': 379398.0, 'e_total': 1601, 'e_stdev': nan, 'e_mean': 1601.0}
+END TEST CYCLE WITH PARAMETERS 1600 num, 1600 tps; FAILURES DETECTED: 7, RATE: 35.0%
+SIGNIFICANT FAILURE DETECTED AT 1600
+START TEST CYCLE WITH PARAMETERS 1700 num, 1700 tps
+Start iteration 1, with params 1700 num, 1700 tps
+New block #1595660
+New block #1595661
+z-size: 3403.23351033384
+Latency: 2.999
+Number of extrinsics: 1601
+New block #1595662
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1701
+New block #1595663
+{'t_stdev': 2.1220274503408287, 't_mean': 4.4995, 's_total': 782496, 's_stdev': 16758.430714121176, 's_mean': 391248.0, 'e_total': 3302, 'e_stdev': 70.71067811865476, 'e_mean': 1651.0}
+Start iteration 2, with params 1700 num, 1700 tps
+New block #1595663
+New block #1595664
+New block #1595665
+New block #1595666
+z-size: 3615.965287320212
+Latency: 3.000
+Number of extrinsics: 1701
+New block #1595667
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 403098, 's_stdev': nan, 's_mean': 403098.0, 'e_total': 1701, 'e_stdev': nan, 'e_mean': 1701.0}
+Start iteration 3, with params 1700 num, 1700 tps
+New block #1595667
+New block #1595668
+New block #1595669
+New block #1595670
+z-size: 3618.2092934065663
+Latency: 2.999
+Number of extrinsics: 1702
+New block #1595671
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 403348, 's_stdev': nan, 's_mean': 403348.0, 'e_total': 1702, 'e_stdev': nan, 'e_mean': 1702.0}
+Start iteration 4, with params 1700 num, 1700 tps
+New block #1595671
+New block #1595672
+z-size: 7.684284681867655
+Latency: 2.999
+Number of extrinsics: 7
+New block #1595673
+Latency: 3.000
+Number of extrinsics: 35
+New block #1595674
+Latency: 3.000
+Number of extrinsics: 1701
+New block #1595675
+{'t_stdev': 0.0005773502691895622, 't_mean': 2.9996666666666667, 's_total': 408449, 's_stdev': 231189.35895566936, 's_mean': 136149.66666666666, 'e_total': 1743, 'e_stdev': 970.0494832739204, 'e_mean': 581.0}
+Start iteration 5, with params 1700 num, 1700 tps
+New block #1595675
+New block #1595676
+New block #1595677
+New block #1595678
+z-size: 3615.965287320212
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3188.637
+Latency: 6.001
+Number of extrinsics: 1701
+New block #1595679
+{'t_stdev': nan, 't_mean': 6.001, 's_total': 403098, 's_stdev': nan, 's_mean': 403098.0, 'e_total': 1701, 'e_stdev': nan, 'e_mean': 1701.0}
+Start iteration 6, with params 1700 num, 1700 tps
+New block #1595679
+New block #1595680
+New block #1595681
+New block #1595682
+z-size: 3615.965287320212
+Latency: 3.000
+Number of extrinsics: 1701
+New block #1595683
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 403098, 's_stdev': nan, 's_mean': 403098.0, 'e_total': 1701, 'e_stdev': nan, 'e_mean': 1701.0}
+Start iteration 7, with params 1700 num, 1700 tps
+New block #1595683
+New block #1595684
+New block #1595685
+New block #1595686
+z-size: 3615.965287320212
+Latency: 2.999
+Number of extrinsics: 1701
+New block #1595687
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 403098, 's_stdev': nan, 's_mean': 403098.0, 'e_total': 1701, 'e_stdev': nan, 'e_mean': 1701.0}
+Start iteration 8, with params 1700 num, 1700 tps
+New block #1595687
+New block #1595688
+New block #1595689
+z-size: 46.326069488885906
+Latency: 2.999
+Number of extrinsics: 23
+New block #1595690
+Latency: 3.000
+Number of extrinsics: 1689
+New block #1595691
+Latency: 3.000
+Number of extrinsics: 13
+New block #1595692
+Latency: 3.000
+Number of extrinsics: 5
+New block #1595693
+{'t_stdev': 0.0004999999999999449, 't_mean': 2.99975, 's_total': 406786, 's_stdev': 198262.22780533193, 's_mean': 101696.5, 'e_total': 1730, 'e_stdev': 837.6990310765954, 'e_mean': 432.5}
+Start iteration 9, with params 1700 num, 1700 tps
+New block #1595693
+New block #1595694
+New block #1595695
+New block #1595696
+z-size: 3615.965287320212
+Latency: 3.001
+Number of extrinsics: 1701
+New block #1595697
+{'t_stdev': nan, 't_mean': 3.001, 's_total': 403098, 's_stdev': nan, 's_mean': 403098.0, 'e_total': 1701, 'e_stdev': nan, 'e_mean': 1701.0}
+Start iteration 10, with params 1700 num, 1700 tps
+New block #1595697
+New block #1595698
+New block #1595699
+New block #1595700
+z-size: 3617.41940326417
+Latency: 3.000
+Number of extrinsics: 1702
+New block #1595701
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 403260, 's_stdev': nan, 's_mean': 403260.0, 'e_total': 1702, 'e_stdev': nan, 'e_mean': 1702.0}
+Start iteration 11, with params 1700 num, 1700 tps
+New block #1595701
+New block #1595702
+New block #1595703
+New block #1595704
+New block #1595705
+z-size: 3615.965287320212
+Latency: 3.000
+Number of extrinsics: 1701
+New block #1595706
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 403098, 's_stdev': nan, 's_mean': 403098.0, 'e_total': 1701, 'e_stdev': nan, 'e_mean': 1701.0}
+Start iteration 12, with params 1700 num, 1700 tps
+New block #1595706
+New block #1595707
+New block #1595708
+New block #1595709
+z-size: 3615.965287320212
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1701
+New block #1595710
+{'t_stdev': nan, 't_mean': 6.0, 's_total': 403098, 's_stdev': nan, 's_mean': 403098.0, 'e_total': 1701, 'e_stdev': nan, 'e_mean': 1701.0}
+Start iteration 13, with params 1700 num, 1700 tps
+New block #1595710
+New block #1595711
+New block #1595712
+New block #1595713
+z-size: 3615.965287320212
+Latency: 3.000
+Number of extrinsics: 1701
+New block #1595714
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 403098, 's_stdev': nan, 's_mean': 403098.0, 'e_total': 1701, 'e_stdev': nan, 'e_mean': 1701.0}
+Start iteration 14, with params 1700 num, 1700 tps
+New block #1595714
+New block #1595715
+New block #1595716
+z-size: 8.070253728720566
+Latency: 3.000
+Number of extrinsics: 9
+New block #1595717
+Latency: 2.999
+Number of extrinsics: 1701
+New block #1595718
+{'t_stdev': 0.0007071067811864697, 't_mean': 2.9995000000000003, 's_total': 404248, 's_stdev': 284220.1564843704, 's_mean': 202124.0, 'e_total': 1710, 'e_stdev': 1196.4246737676385, 'e_mean': 855.0}
+Start iteration 15, with params 1700 num, 1700 tps
+New block #1595718
+New block #1595719
+New block #1595720
+New block #1595721
+z-size: 2220.4448302896103
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: -31.876
+Latency: 2.970
+Number of extrinsics: 1045
+New block #1595722
+Latency: 3.000
+Number of extrinsics: 657
+New block #1595723
+{'t_stdev': 0.021213203435596288, 't_mean': 2.9850000000000003, 's_total': 403296, 's_stdev': 65022.711170790164, 's_mean': 201648.0, 'e_total': 1702, 'e_stdev': 274.35743110038044, 'e_mean': 851.0}
+Start iteration 16, with params 1700 num, 1700 tps
+New block #1595723
+New block #1595724
+New block #1595725
+New block #1595726
+z-size: 3618.7029747455645
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1702
+New block #1595727
+{'t_stdev': nan, 't_mean': 6.0, 's_total': 403403, 's_stdev': nan, 's_mean': 403403.0, 'e_total': 1702, 'e_stdev': nan, 'e_mean': 1702.0}
+Start iteration 17, with params 1700 num, 1700 tps
+New block #1595727
+New block #1595728
+New block #1595729
+New block #1595730
+z-size: 3143.700742410466
+Latency: 3.000
+Number of extrinsics: 1479
+New block #1595731
+Latency: 3.000
+Number of extrinsics: 224
+New block #1595732
+{'t_stdev': 0.0, 't_mean': 3.0, 's_total': 403489, 's_stdev': 210349.41816059296, 's_mean': 201744.5, 'e_total': 1703, 'e_stdev': 887.4190103891171, 'e_mean': 851.5}
+Start iteration 18, with params 1700 num, 1700 tps
+New block #1595732
+New block #1595733
+New block #1595734
+z-size: 229.17666142936645
+Latency: 2.999
+Number of extrinsics: 216
+New block #1595735
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1701
+New block #1595736
+{'t_stdev': 2.1220274503408287, 't_mean': 4.4995, 's_total': 428881, 's_stdev': 266801.9951434022, 's_mean': 214440.5, 'e_total': 1917, 'e_stdev': 1050.053570062023, 'e_mean': 958.5}
+Start iteration 19, with params 1700 num, 1700 tps
+New block #1595736
+New block #1595737
+z-size: 28.36504477370739
+Latency: 3.000
+Number of extrinsics: 28
+New block #1595738
+Latency: 3.000
+Number of extrinsics: 1
+New block #1595739
+Latency: 3.001
+Number of extrinsics: 1703
+New block #1595740
+{'t_stdev': 0.0005773502691895622, 't_mean': 3.0003333333333333, 's_total': 407109, 's_stdev': 231924.56909305663, 's_mean': 135703.0, 'e_total': 1732, 'e_stdev': 974.9494003964171, 'e_mean': 577.3333333333334}
+Start iteration 20, with params 1700 num, 1700 tps
+New block #1595740
+New block #1595741
+New block #1595742
+New block #1595743
+New block #1595744
+z-size: 3615.965287320212
+Latency: 3.000
+Number of extrinsics: 1701
+New block #1595745
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 403098, 's_stdev': nan, 's_mean': 403098.0, 'e_total': 1701, 'e_stdev': nan, 'e_mean': 1701.0}
+END TEST CYCLE WITH PARAMETERS 1700 num, 1700 tps; FAILURES DETECTED: 5, RATE: 25.0%
+SIGNIFICANT FAILURE DETECTED AT 1700
+START TEST CYCLE WITH PARAMETERS 1800 num, 1800 tps
+Start iteration 1, with params 1800 num, 1800 tps
+New block #1595745
+New block #1595746
+New block #1595747
+New block #1595748
+z-size: 3832.134881630879
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1803
+New block #1595749
+{'t_stdev': nan, 't_mean': 6.0, 's_total': 427181, 's_stdev': nan, 's_mean': 427181.0, 'e_total': 1803, 'e_stdev': nan, 'e_mean': 1803.0}
+Start iteration 2, with params 1800 num, 1800 tps
+New block #1595749
+New block #1595750
+New block #1595751
+New block #1595752
+New block #1595753
+z-size: 3828.6970643065847
+Latency: 3.000
+Number of extrinsics: 1801
+New block #1595754
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 426798, 's_stdev': nan, 's_mean': 426798.0, 'e_total': 1801, 'e_stdev': nan, 'e_mean': 1801.0}
+Start iteration 3, with params 1800 num, 1800 tps
+New block #1595754
+New block #1595755
+New block #1595756
+New block #1595757
+z-size: 3828.6970643065847
+Latency: 3.000
+Number of extrinsics: 1801
+New block #1595758
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 426798, 's_stdev': nan, 's_mean': 426798.0, 'e_total': 1801, 'e_stdev': nan, 'e_mean': 1801.0}
+Start iteration 4, with params 1800 num, 1800 tps
+New block #1595758
+New block #1595759
+z-size: 19.81986959687083
+Latency: 3.000
+Number of extrinsics: 20
+New block #1595760
+Latency: 3.000
+Number of extrinsics: 1
+New block #1595761
+Latency: 3.000
+Number of extrinsics: 1524
+New block #1595762
+Latency: 3.000
+Number of extrinsics: 278
+New block #1595763
+{'t_stdev': 0.0, 't_mean': 3.0, 's_total': 429653, 's_stdev': 171872.1311447845, 's_mean': 107413.25, 'e_total': 1823, 'e_stdev': 723.2861927803314, 'e_mean': 455.75}
+Start iteration 5, with params 1800 num, 1800 tps
+New block #1595763
+New block #1595764
+New block #1595765
+New block #1595766
+z-size: 3828.6970643065847
+Latency: 3.000
+Number of extrinsics: 1801
+New block #1595767
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 426798, 's_stdev': nan, 's_mean': 426798.0, 'e_total': 1801, 'e_stdev': nan, 'e_mean': 1801.0}
+Start iteration 6, with params 1800 num, 1800 tps
+New block #1595767
+New block #1595768
+New block #1595769
+New block #1595770
+New block #1595771
+z-size: 3828.6970643065847
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: -4.250
+Latency: 2.996
+Number of extrinsics: 1801
+New block #1595772
+{'t_stdev': nan, 't_mean': 2.996, 's_total': 426798, 's_stdev': nan, 's_mean': 426798.0, 'e_total': 1801, 'e_stdev': nan, 'e_mean': 1801.0}
+Start iteration 7, with params 1800 num, 1800 tps
+New block #1595772
+New block #1595773
+New block #1595774
+New block #1595775
+z-size: 3828.6970643065847
+Latency: 3.000
+Number of extrinsics: 1801
+New block #1595776
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 426798, 's_stdev': nan, 's_mean': 426798.0, 'e_total': 1801, 'e_stdev': nan, 'e_mean': 1801.0}
+Start iteration 8, with params 1800 num, 1800 tps
+New block #1595776
+New block #1595777
+New block #1595778
+New block #1595779
+z-size: 1356.753815724939
+Latency: 3.000
+Number of extrinsics: 639
+New block #1595780
+Latency: 3.000
+Number of extrinsics: 1165
+New block #1595781
+Latency: 3.001
+Number of extrinsics: 645
+New block #1595782
+Latency: 2.999
+Number of extrinsics: 32
+New block #1595783
+Latency: 3.000
+Number of extrinsics: 14
+New block #1595784
+{'t_stdev': 0.0007071067811864697, 't_mean': 3.0, 's_total': 509737, 's_stdev': 115072.04560317853, 's_mean': 101947.4, 'e_total': 2495, 'e_stdev': 484.19675752735066, 'e_mean': 499.0}
+Start iteration 9, with params 1800 num, 1800 tps
+New block #1595784
+New block #1595785
+New block #1595786
+New block #1595787
+z-size: 3828.6970643065847
+Latency: 2.999
+Number of extrinsics: 1801
+New block #1595788
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 426798, 's_stdev': nan, 's_mean': 426798.0, 'e_total': 1801, 'e_stdev': nan, 'e_mean': 1801.0}
+Start iteration 10, with params 1800 num, 1800 tps
+New block #1595788
+New block #1595789
+New block #1595790
+New block #1595791
+z-size: 3830.4204609809044
+Latency: 3.000
+Number of extrinsics: 1802
+New block #1595792
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 3
+New block #1595793
+{'t_stdev': 2.1213203435596424, 't_mean': 4.5, 's_total': 427596, 's_stdev': 301499.0177894449, 's_mean': 213798.0, 'e_total': 1805, 'e_stdev': 1272.085099354599, 'e_mean': 902.5}
+Start iteration 11, with params 1800 num, 1800 tps
+New block #1595793
+New block #1595794
+New block #1595795
+New block #1595796
+z-size: 3645.7477360983044
+Latency: 3.000
+Number of extrinsics: 1715
+New block #1595797
+Latency: 3.000
+Number of extrinsics: 87
+New block #1595798
+{'t_stdev': 0.0, 't_mean': 3.0, 's_total': 426996, 's_stdev': 272827.2520258927, 's_mean': 213498.0, 'e_total': 1802, 'e_stdev': 1151.1698397716993, 'e_mean': 901.0}
+Start iteration 12, with params 1800 num, 1800 tps
+New block #1595798
+New block #1595799
+New block #1595800
+New block #1595801
+z-size: 3828.6970643065847
+Latency: 3.000
+Number of extrinsics: 1801
+New block #1595802
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 426798, 's_stdev': nan, 's_mean': 426798.0, 'e_total': 1801, 'e_stdev': nan, 'e_mean': 1801.0}
+Start iteration 13, with params 1800 num, 1800 tps
+New block #1595802
+New block #1595803
+New block #1595804
+New block #1595805
+z-size: 2292.7736344649766
+Latency: 3.000
+Number of extrinsics: 1079
+New block #1595806
+Latency: 3.001
+Number of extrinsics: 725
+New block #1595807
+Latency: 3.000
+Number of extrinsics: 5
+New block #1595808
+{'t_stdev': 0.0005773502691895622, 't_mean': 3.0003333333333333, 's_total': 427981, 's_stdev': 129900.64712053337, 's_mean': 142660.33333333334, 'e_total': 1809, 'e_stdev': 547.2951671630218, 'e_mean': 603.0}
+Start iteration 14, with params 1800 num, 1800 tps
+New block #1595808
+New block #1595809
+New block #1595810
+New block #1595811
+z-size: 3828.6970643065847
+Latency: 3.000
+Number of extrinsics: 1801
+New block #1595812
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 426798, 's_stdev': nan, 's_mean': 426798.0, 'e_total': 1801, 'e_stdev': nan, 'e_mean': 1801.0}
+Start iteration 15, with params 1800 num, 1800 tps
+New block #1595812
+New block #1595813
+New block #1595814
+New block #1595815
+z-size: 1588.6314526400847
+Latency: 3.000
+Number of extrinsics: 748
+New block #1595816
+Latency: 3.000
+Number of extrinsics: 1054
+New block #1595817
+{'t_stdev': 0.0, 't_mean': 3.0, 's_total': 426996, 's_stdev': 51280.7979852108, 's_mean': 213498.0, 'e_total': 1802, 'e_stdev': 216.37467504308356, 'e_mean': 901.0}
+Start iteration 16, with params 1800 num, 1800 tps
+New block #1595817
+New block #1595818
+New block #1595819
+New block #1595820
+z-size: 3828.6970643065847
+Latency: 3.000
+Number of extrinsics: 1801
+New block #1595821
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 426798, 's_stdev': nan, 's_mean': 426798.0, 'e_total': 1801, 'e_stdev': nan, 'e_mean': 1801.0}
+Start iteration 17, with params 1800 num, 1800 tps
+New block #1595821
+New block #1595822
+New block #1595823
+New block #1595824
+z-size: 3828.6970643065847
+Latency: 3.000
+Number of extrinsics: 1801
+New block #1595825
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 426798, 's_stdev': nan, 's_mean': 426798.0, 'e_total': 1801, 'e_stdev': nan, 'e_mean': 1801.0}
+Start iteration 18, with params 1800 num, 1800 tps
+New block #1595825
+New block #1595826
+New block #1595827
+New block #1595828
+New block #1595829
+z-size: 3830.0973241044694
+Latency: 3.000
+Number of extrinsics: 1802
+New block #1595830
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 426954, 's_stdev': nan, 's_mean': 426954.0, 'e_total': 1802, 'e_stdev': nan, 'e_mean': 1802.0}
+Start iteration 19, with params 1800 num, 1800 tps
+New block #1595830
+New block #1595831
+New block #1595832
+New block #1595833
+z-size: 3828.6970643065847
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3186.512
+Latency: 5.999
+Number of extrinsics: 1801
+New block #1595834
+{'t_stdev': nan, 't_mean': 5.999, 's_total': 426798, 's_stdev': nan, 's_mean': 426798.0, 'e_total': 1801, 'e_stdev': nan, 'e_mean': 1801.0}
+Start iteration 20, with params 1800 num, 1800 tps
+New block #1595834
+New block #1595835
+New block #1595836
+New block #1595837
+z-size: 3828.6970643065847
+Latency: 3.000
+Number of extrinsics: 1801
+New block #1595838
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 426798, 's_stdev': nan, 's_mean': 426798.0, 'e_total': 1801, 'e_stdev': nan, 'e_mean': 1801.0}
+END TEST CYCLE WITH PARAMETERS 1800 num, 1800 tps; FAILURES DETECTED: 3, RATE: 15.0%
+SIGNIFICANT FAILURE DETECTED AT 1800
+START TEST CYCLE WITH PARAMETERS 1900 num, 1900 tps
+Start iteration 1, with params 1900 num, 1900 tps
+New block #1595838
+New block #1595839
+New block #1595840
+New block #1595841
+z-size: 4041.428841292957
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1901
+New block #1595842
+{'t_stdev': nan, 't_mean': 6.0, 's_total': 450498, 's_stdev': nan, 's_mean': 450498.0, 'e_total': 1901, 'e_stdev': nan, 'e_mean': 1901.0}
+Start iteration 2, with params 1900 num, 1900 tps
+New block #1595842
+New block #1595843
+New block #1595844
+New block #1595845
+New block #1595846
+z-size: 4041.428841292957
+Latency: 2.999
+Number of extrinsics: 1901
+New block #1595847
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 450498, 's_stdev': nan, 's_mean': 450498.0, 'e_total': 1901, 'e_stdev': nan, 'e_mean': 1901.0}
+Start iteration 3, with params 1900 num, 1900 tps
+New block #1595847
+New block #1595848
+New block #1595849
+New block #1595850
+z-size: 4041.428841292957
+Latency: 3.000
+Number of extrinsics: 1901
+New block #1595851
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 450498, 's_stdev': nan, 's_mean': 450498.0, 'e_total': 1901, 'e_stdev': nan, 'e_mean': 1901.0}
+Start iteration 4, with params 1900 num, 1900 tps
+New block #1595851
+New block #1595852
+z-size: 10.206547522929704
+Latency: 3.000
+Number of extrinsics: 11
+New block #1595853
+Latency: 3.000
+Number of extrinsics: 8
+New block #1595854
+{'t_stdev': 0.0, 't_mean': 3.0, 's_total': 2419, 's_stdev': 252.43712088359746, 's_mean': 1209.5, 'e_total': 19, 'e_stdev': 2.1213203435596424, 'e_mean': 9.5}
+Start iteration 5, with params 1900 num, 1900 tps
+New block #1595854
+New block #1595855
+z-size: 4043.152237967277
+Latency: 3.000
+Number of extrinsics: 1902
+New block #1595856
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 450690, 's_stdev': nan, 's_mean': 450690.0, 'e_total': 1902, 'e_stdev': nan, 'e_mean': 1902.0}
+Start iteration 6, with params 1900 num, 1900 tps
+New block #1595856
+New block #1595857
+z-size: 3026.698265067961
+Latency: 3.000
+Number of extrinsics: 1424
+New block #1595858
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 478
+New block #1595859
+Latency: 3.000
+Number of extrinsics: 1901
+New block #1595860
+{'t_stdev': 1.7320508075688772, 't_mean': 4.0, 's_total': 901194, 's_stdev': 171651.22108799577, 's_mean': 300398.0, 'e_total': 3803, 'e_stdev': 724.2667556455517, 'e_mean': 1267.6666666666667}
+Start iteration 7, with params 1900 num, 1900 tps
+New block #1595860
+New block #1595861
+New block #1595862
+New block #1595863
+New block #1595864
+z-size: 4041.428841292957
+Latency: 3.000
+Number of extrinsics: 1901
+New block #1595865
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 450498, 's_stdev': nan, 's_mean': 450498.0, 'e_total': 1901, 'e_stdev': nan, 'e_mean': 1901.0}
+Start iteration 8, with params 1900 num, 1900 tps
+New block #1595865
+New block #1595866
+New block #1595867
+z-size: 4041.428841292957
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3186.512
+Latency: 5.999
+Number of extrinsics: 1901
+New block #1595868
+{'t_stdev': nan, 't_mean': 5.999, 's_total': 450498, 's_stdev': nan, 's_mean': 450498.0, 'e_total': 1901, 'e_stdev': nan, 'e_mean': 1901.0}
+Start iteration 9, with params 1900 num, 1900 tps
+New block #1595868
+New block #1595869
+z-size: 11.920968172904265
+Latency: 3.000
+Number of extrinsics: 12
+New block #1595870
+Latency: 3.000
+Number of extrinsics: 1
+New block #1595871
+Latency: 3.000
+Number of extrinsics: 705
+New block #1595872
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1199
+New block #1595873
+{'t_stdev': 1.5, 't_mean': 3.75, 's_total': 452822, 's_stdev': 138203.21950060836, 's_mean': 113205.5, 'e_total': 1917, 'e_stdev': 581.9647039698084, 'e_mean': 479.25}
+Start iteration 10, with params 1900 num, 1900 tps
+New block #1595873
+New block #1595874
+New block #1595875
+New block #1595876
+New block #1595877
+z-size: 4041.428841292957
+Latency: 3.000
+Number of extrinsics: 1901
+New block #1595878
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 450498, 's_stdev': nan, 's_mean': 450498.0, 'e_total': 1901, 'e_stdev': nan, 'e_mean': 1901.0}
+Start iteration 11, with params 1900 num, 1900 tps
+New block #1595878
+New block #1595879
+New block #1595880
+New block #1595881
+New block #1595882
+z-size: 4041.428841292957
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3188.637
+Latency: 6.001
+Number of extrinsics: 1901
+New block #1595883
+{'t_stdev': nan, 't_mean': 6.001, 's_total': 450498, 's_stdev': nan, 's_mean': 450498.0, 'e_total': 1901, 'e_stdev': nan, 'e_mean': 1901.0}
+Start iteration 12, with params 1900 num, 1900 tps
+New block #1595883
+New block #1595884
+New block #1595885
+New block #1595886
+z-size: 1471.62897529758
+Latency: 2.999
+Number of extrinsics: 693
+New block #1595887
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1209
+New block #1595888
+{'t_stdev': 2.1220274503408287, 't_mean': 4.4995, 's_total': 450696, 's_stdev': 86473.50248486527, 's_mean': 225348.0, 'e_total': 1902, 'e_stdev': 364.8670990922585, 'e_mean': 951.0}
+Start iteration 13, with params 1900 num, 1900 tps
+New block #1595888
+New block #1595889
+z-size: 6.26607283529184
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 7
+New block #1595890
+Latency: 3.000
+Number of extrinsics: 1
+New block #1595891
+Latency: 3.000
+Number of extrinsics: 1902
+New block #1595892
+{'t_stdev': 1.7320508075688772, 't_mean': 4.0, 's_total': 451840, 's_stdev': 259876.88577542506, 's_mean': 150613.33333333334, 'e_total': 1910, 'e_stdev': 1095.8149174624943, 'e_mean': 636.6666666666666}
+Start iteration 14, with params 1900 num, 1900 tps
+New block #1595892
+New block #1595893
+New block #1595894
+New block #1595895
+New block #1595896
+z-size: 4043.1612139916224
+Latency: 3.000
+Number of extrinsics: 1902
+New block #1595897
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 450691, 's_stdev': nan, 's_mean': 450691.0, 'e_total': 1902, 'e_stdev': nan, 'e_mean': 1902.0}
+Start iteration 15, with params 1900 num, 1900 tps
+New block #1595897
+New block #1595898
+New block #1595899
+New block #1595900
+New block #1595901
+z-size: 4043.1612139916224
+Latency: 2.999
+Number of extrinsics: 1902
+New block #1595902
+{'t_stdev': nan, 't_mean': 2.999, 's_total': 450691, 's_stdev': nan, 's_mean': 450691.0, 'e_total': 1902, 'e_stdev': nan, 'e_mean': 1902.0}
+Start iteration 16, with params 1900 num, 1900 tps
+New block #1595902
+New block #1595903
+New block #1595904
+New block #1595905
+z-size: 3920.1717284107244
+Latency: 3.000
+Number of extrinsics: 1844
+New block #1595906
+Latency: 3.001
+Number of extrinsics: 58
+New block #1595907
+{'t_stdev': 0.0007071067811864697, 't_mean': 3.0004999999999997, 's_total': 450696, 's_stdev': 299305.5725542042, 's_mean': 225348.0, 'e_total': 1902, 'e_stdev': 1262.8927111991738, 'e_mean': 951.0}
+Start iteration 17, with params 1900 num, 1900 tps
+New block #1595907
+New block #1595908
+z-size: 57.20501099553076
+Latency: 3.000
+Number of extrinsics: 55
+New block #1595909
+{'t_stdev': nan, 't_mean': 3.0, 's_total': 6624, 's_stdev': nan, 's_mean': 6624.0, 'e_total': 55, 'e_stdev': nan, 'e_mean': 55.0}
+Start iteration 18, with params 1900 num, 1900 tps
+New block #1595909
+New block #1595910
+z-size: 4043.304830381149
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1902
+New block #1595911
+{'t_stdev': nan, 't_mean': 6.0, 's_total': 450707, 's_stdev': nan, 's_mean': 450707.0, 'e_total': 1902, 'e_stdev': nan, 'e_mean': 1902.0}
+Start iteration 19, with params 1900 num, 1900 tps
+New block #1595911
+New block #1595912
+z-size: 4063.3662447931547
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3187.575
+Latency: 6.000
+Number of extrinsics: 1920
+New block #1595913
+{'t_stdev': nan, 't_mean': 6.0, 's_total': 452942, 's_stdev': nan, 's_mean': 452942.0, 'e_total': 1920, 'e_stdev': nan, 'e_mean': 1920.0}
+Start iteration 20, with params 1900 num, 1900 tps
+New block #1595913
+New block #1595914
+z-size: 2135.3521194950613
+Latency: 3.000
+Number of extrinsics: 1005
+New block #1595915
+Latency: 3.000
+Number of extrinsics: 897
+New block #1595916
+Latency: 3.000
+Number of extrinsics: 1
+New block #1595917
+ANOMALY IN BLOCKTIME DETECTED
+z-lat: 3188.637
+Latency: 6.001
+Number of extrinsics: 1901
+New block #1595918
+{'t_stdev': 1.5005000000000002, 't_mean': 3.7502500000000003, 's_total': 901392, 's_stdev': 184130.95214004625, 's_mean': 225348.0, 'e_total': 3804, 'e_stdev': 776.9238486921782, 'e_mean': 951.0}
+END TEST CYCLE WITH PARAMETERS 1900 num, 1900 tps; FAILURES DETECTED: 10, RATE: 50.0%
+SIGNIFICANT FAILURE DETECTED AT 1900
+Traceback (most recent call last):
+  File "/TEMP/wangg/work/node/scripts/stress-testing/stats.py", line 265, in <module>
+    main()
+  File "/TEMP/wangg/work/node/scripts/stress-testing/stats.py", line 258, in main
+    f"First significant failure detected at {list(results.keys())[0]} num, {list(results.keys())[0]} tps")
+IndexError: list index out of range
