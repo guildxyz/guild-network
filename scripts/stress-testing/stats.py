@@ -103,7 +103,6 @@ class Capture:
                 else:
                     self.end_capture = END_CAPTURE_TIMEFRAME
                 if self.end_capture == 0:
-                    print("END OF CAPTURE")
                     return "Done"
             self.data.loc[block_num] = {  # type: ignore
                 'timestamp': timestamp,
@@ -182,77 +181,82 @@ class Capture:
         print(f"Test lasted {len(self.data.index)} blocks")
 
 
-def start_collection(stop_event: Event):
+class CaptureCycle:
+    def __init__(self, tps, tx_num) -> None:
+        self.tps = tps
+        self.tx_num = tx_num
+        self.captures = {}
 
-    capture = Capture(stop_event)
+    def start_collection(self, iter_n, stop_event: Event):
 
-    def subscription_handler(obj, _update_nr, _subscription_id):
-        return capture.callback(obj)
+        capture = Capture(stop_event)
 
-    substr.subscribe_block_headers(subscription_handler)
+        def subscription_handler(obj, _update_nr, _subscription_id):
+            return capture.callback(obj)
 
-    capture.calc_stats()
-    capture.print_stats()
-    return capture
+        substr.subscribe_block_headers(subscription_handler)
 
+        capture.calc_stats()
+        capture.print_stats()
+        self.captures[iter_n] = capture
+        return capture
 
-def single_test(iter_n, tps, tx_num, stop_event: Event):
-    print(f"Start iteration {iter_n+1}, with params {tx_num} num, {tps} tps")
-    cmd = f"../../target/release/gn-cli -i localhost stress --seed {hex(randint(0, 0xffffffff))} --tps {tps} -n {tx_num} register-other"
-    test = Popen(shlex.split(cmd), stderr=PIPE, stdout=PIPE)
+    def single_test(self, iter_n, tps, tx_num, stop_event: Event):
+        print(
+            f"Start iteration {iter_n+1}, with params {tx_num} num, {tps} tps")
+        cmd = f"../../target/release/gn-cli -i localhost stress --seed {hex(randint(0, 0xffffffff))} --tps {tps} -n {tx_num} register-other"
+        test = Popen(shlex.split(cmd), stderr=PIPE, stdout=PIPE)
 
-    test.wait()
-    stop_event.set()
+        test.wait()
+        stop_event.set()
 
+    def start_iteration(self, iter_n, tps, tx_num):
+        stop_event = threading.Event()
+        test = Thread(target=self.single_test, args=(
+            iter_n, tps, tx_num, stop_event))
+        test.start()
+        return self.start_collection(iter_n, stop_event)
 
-def start_iteration(iter_n, tps, tx_num):
-    stop_event = threading.Event()
-    test = Thread(target=single_test, args=(iter_n, tps, tx_num, stop_event))
-    test.start()
-    return start_collection(stop_event)
+    def count_failures(self, test_cycle: List[Capture]):
+        failures = 0
 
+        for iteration in test_cycle:
+            failures += iteration.failures
+        return failures
 
-def count_failures(test_cycle: List[Capture]):
-    failures = 0
+    def start_tests(self):
+        results = []
+        print(
+            f"START TEST CYCLE WITH PARAMETERS {self.tx_num} num, {self.tps} tps")
+        for i in range(0, TEST_CYCLE):
+            res = self.start_iteration(i, self.tx_num, self.tps)
+            results.append(res)
+        failures = self.count_failures(results)
+        print(
+            f"END TEST CYCLE WITH PARAMETERS {self.tx_num} num, {self.tps} tps; FAILURES DETECTED: {failures}, RATE: {failures/TEST_CYCLE*100}%"
+        )
 
-    for iteration in test_cycle:
-        for _, val in iteration.anomalies.items():
-            sum(val)
-        failures += iteration.failures
-    return failures
-
-
-def start_tests(params):
-    results = []
-    print(f"START TEST CYCLE WITH PARAMETERS {params} num, {params} tps")
-    for i in range(0, TEST_CYCLE):
-        res = start_iteration(i, params, params)
-        results.append(res)
-    failures = count_failures(results)
-    print(
-        f"END TEST CYCLE WITH PARAMETERS {params} num, {params} tps; FAILURES DETECTED: {failures}, RATE: {failures/TEST_CYCLE*100}%"
-    )
-    if failures > int(TEST_CYCLE * SIG_FAIL_LVL):
-        print(f"SIGNIFICANT FAILURE DETECTED AT {params}")
-    if failures >= int(TEST_CYCLE * 0.5):
-        raise SignificantFailure
+        if failures >= int(TEST_CYCLE * SIG_FAIL_LVL):
+            print(f"SIGNIFICANT FAILURE DETECTED AT {self.tx_num}")
+        return failures/TEST_CYCLE
 
 
 def main():
-    params = 1000
+    params = 1900
     results = {}
+    capture_cycles = []
     while True:
-        try:
-            failure_rate = start_tests(params)
-            if failure_rate is not None:
-                results[params] = failure_rate
-        except SignificantFailure:
+        c = CaptureCycle(params, params)
+        failure_rate = c.start_tests()
+        results[params] = failure_rate
+        if failure_rate >= int(TEST_CYCLE * 0.5):
             break
         params += 100
     print(
         f"First significant failure detected at {list(results.keys())[0]} num, {list(results.keys())[0]} tps")
     print(f"")
     print(results)
+    print(capture_cycles)
 
 
 if __name__ == "__main__":
