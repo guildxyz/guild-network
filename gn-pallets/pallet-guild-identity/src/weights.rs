@@ -38,6 +38,7 @@ pub trait WeightInfo {
 	fn authorize() -> Weight;
 	fn link_address() -> Weight;
 	fn unlink_address() -> Weight;
+	fn remove_addresses() -> Weight;
 	fn link_identity() -> Weight;
 	fn unlink_identity() -> Weight;
 }
@@ -61,6 +62,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	}
 
 	fn unlink_address() -> Weight {
+		Weight::from_ref_time(1000)
+	}
+
+	fn remove_addresses() -> Weight {
 		Weight::from_ref_time(1000)
 	}
 
@@ -91,6 +96,10 @@ impl WeightInfo for () {
 	}
 
 	fn unlink_address() -> Weight {
+		Weight::from_ref_time(1000)
+	}
+
+	fn remove_addresses() -> Weight {
 		Weight::from_ref_time(1000)
 	}
 

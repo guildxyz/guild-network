@@ -85,8 +85,8 @@ fn invalid_transactions_fail() {
             ),
         ];
 
-        for (result, error) in failing_transactions {
-            assert_noop!(result, error);
+        for (tx, error) in failing_transactions {
+            assert_noop!(tx, error);
         }
     });
 }

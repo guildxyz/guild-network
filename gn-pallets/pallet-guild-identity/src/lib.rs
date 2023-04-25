@@ -78,6 +78,7 @@ pub mod pallet {
         AccountDeregistered(T::AccountId),
         AddressLinked(T::AccountId, Prefix, T::AccountId),
         AddressUnlinked(T::AccountId, Prefix, T::AccountId),
+        AddressesRemoved(T::AccountId, Prefix),
         IdentityLinked(T::AccountId, Prefix, Identity),
         IdentityUnlinked(T::AccountId, Prefix, Identity),
     }
@@ -246,6 +247,23 @@ pub mod pallet {
         }
 
         #[pallet::call_index(5)]
+        #[pallet::weight((<T as Config>::WeightInfo::remove_addresses(), Pays::No))]
+        pub fn remove_addresses(origin: OriginFor<T>, prefix: Prefix) -> DispatchResult {
+            let signer = ensure_signed(origin)?;
+            Addresses::<T>::try_mutate(&signer, |maybe_address_map| {
+                if let Some(address_map) = maybe_address_map {
+                    address_map
+                        .remove(&prefix)
+                        .ok_or(Error::<T>::AddressPrefixDoesNotExist)
+                } else {
+                    Err(Error::<T>::AccountDoesNotExist)
+                }
+            })?;
+            Self::deposit_event(Event::AddressesRemoved(signer, prefix));
+            Ok(())
+        }
+
+        #[pallet::call_index(6)]
         #[pallet::weight((<T as Config>::WeightInfo::link_identity(), Pays::No))]
         pub fn link_identity(
             origin: OriginFor<T>,
@@ -276,7 +294,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::call_index(6)]
+        #[pallet::call_index(7)]
         #[pallet::weight((<T as Config>::WeightInfo::unlink_identity(), Pays::No))]
         pub fn unlink_identity(origin: OriginFor<T>, prefix: Prefix) -> DispatchResult {
             let signer = ensure_signed(origin)?;
@@ -294,7 +312,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::call_index(7)]
+        #[pallet::call_index(8)]
         #[pallet::weight((0, DispatchClass::Operational, Pays::No))]
         pub fn callback(
             origin: OriginFor<T>,
