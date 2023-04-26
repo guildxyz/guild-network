@@ -1,11 +1,12 @@
 use super::*;
 use crate::Pallet as Guild;
+use pallet_guild_identity::Pallet as GuildIdentity;
 
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
+use frame_support::assert_ok;
 use frame_support::traits::Get;
 use frame_system::RawOrigin;
 use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
-use gn_common::identity::*;
 use gn_common::merkle::Proof as MerkleProof;
 use sp_std::vec;
 
@@ -13,15 +14,6 @@ const ACCOUNT: &str = "account";
 const SEED: u32 = 999;
 
 benchmarks! {
-    register {
-        let caller: T::AccountId = whitelisted_caller();
-        let (identity, signature) = id_with_auth::<T>(&caller);
-        let identity_with_auth = IdentityWithAuth::Ecdsa(identity, signature);
-        let index = 1;
-    }: _(RawOrigin::Signed(caller.clone()), identity_with_auth, index)
-    verify {
-        assert_eq!(Guild::<T>::user_data(caller, index), Some(identity));
-    }
     create_guild {
         let n in 0 .. <T as Config>::MaxSerializedLen::get();
 
@@ -53,7 +45,7 @@ benchmarks! {
         let role_name = [0u8; 32];
         init_guild::<T>(&caller, guild_name);
 
-        let allowlist = vec![Identity::Other([0u8; 64]); n as usize];
+        let allowlist = vec![account(ACCOUNT, 123, SEED); n as usize];
         let logic = vec![100u8; s as usize];
         let req = vec![200u8; s as usize];
         let serialized_requirements = (vec![req; r as usize], logic);
@@ -108,39 +100,62 @@ benchmarks! {
         assert!(Guild::<T>::role_id(guild_id, role_name).is_some());
     }
 
-    join {
+    join_free_role {
+        let guild_name = [0u8; 32];
+        let role_name = [0u8; 32];
+        let caller: T::AccountId = whitelisted_caller();
+
+        init_guild::<T>(&caller, guild_name);
+        assert_ok!(Guild::<T>::create_free_role(RawOrigin::Signed(caller.clone()).into(), guild_name, role_name));
+
+    }: _(RawOrigin::Signed(caller.clone()), guild_name, role_name)
+    verify {
+        let guild_id = Guild::<T>::guild_id(guild_name).unwrap();
+        let role_id = Guild::<T>::role_id(guild_id, role_name).unwrap();
+        assert!(Guild::<T>::member(role_id, caller).is_some());
+    }
+
+    // TODO
+    join_child_role {
+    }: _()
+    verify {
+    }
+
+    // TODO
+    join_unfiltered_role {
+    }: _()
+    verify {
+    }
+
+    join_role_with_allowlist {
         let n = <T as Config>::MaxAllowlistLen::get() as usize;
 
         // identity
         let caller: T::AccountId = whitelisted_caller();
-        let (identity, signature) = id_with_auth::<T>(&caller);
-        let identity_with_auth = IdentityWithAuth::Ecdsa(identity, signature);
-        Guild::<T>::register(
+        assert_ok!(GuildIdentity::<T>::register(
             RawOrigin::Signed(caller.clone()).into(),
-            identity_with_auth,
-            0,
-        ).unwrap();
+        ));
 
         // guild
         let guild_name = [0u8; 32];
         let role_name = [0u8; 32];
         init_guild::<T>(&caller, guild_name);
-        let mut allowlist = vec![Identity::Address20([0u8; 20]); n - 1];
-        allowlist.push(identity);
+        let mut allowlist = vec![account(ACCOUNT, 10, SEED); n - 1];
+        allowlist.push(caller.clone());
 
-        Guild::<T>::create_role_with_allowlist(
+        assert_ok!(Guild::<T>::create_role_with_allowlist(
             RawOrigin::Signed(caller.clone()).into(),
             guild_name,
             role_name,
             allowlist.clone(),
             FilterLogic::And,
             None,
-        ).unwrap();
+        ));
 
         // proof to the last element
-        let proof = MerkleProof::new(&allowlist, n - 1, 0);
+        let proof = MerkleProof::new(&allowlist, n - 1);
 
-    }: _(RawOrigin::Signed(caller.clone()), guild_name, role_name, Some(proof))
+    }: _(RawOrigin::Signed(caller.clone()), guild_name, role_name, proof)
     verify {
         let guild_id = Guild::<T>::guild_id(guild_name).unwrap();
         let role_id = Guild::<T>::role_id(guild_id, role_name).unwrap();
@@ -149,30 +164,25 @@ benchmarks! {
 
     leave {
         let caller: T::AccountId = whitelisted_caller();
-        let (identity, signature) = id_with_auth::<T>(&caller);
-        let identity_with_auth = IdentityWithAuth::Ecdsa(identity, signature);
 
-        Guild::<T>::register(
+        assert_ok!(GuildIdentity::<T>::register(
             RawOrigin::Signed(caller.clone()).into(),
-            identity_with_auth,
-            0,
-        ).unwrap();
+        ));
 
         let guild_name = [0u8; 32];
         let role_name = [0u8; 32];
         init_guild::<T>(&caller, guild_name);
-        Guild::<T>::create_free_role(
+        assert_ok!(Guild::<T>::create_free_role(
             RawOrigin::Signed(caller.clone()).into(),
             guild_name,
             role_name,
-        ).unwrap();
+        ));
 
-        Guild::<T>::join(
+        assert_ok!(Guild::<T>::join_free_role(
             RawOrigin::Signed(caller.clone()).into(),
             guild_name,
             role_name,
-            None,
-        ).unwrap();
+        ));
     }: _(RawOrigin::Signed(caller.clone()), guild_name, role_name)
     verify {
         let guild_id = Guild::<T>::guild_id(guild_name).unwrap();
@@ -180,6 +190,8 @@ benchmarks! {
         assert!(Guild::<T>::member(role_id, caller).is_none());
     }
 
+    /*
+     * TODO
     request_oracle_check {
         let r = <T as Config>::MaxReqsPerRole::get() as usize;
         let s = <T as Config>::MaxSerializedLen::get() as usize;
@@ -237,6 +249,7 @@ benchmarks! {
         let role_id = Guild::<T>::role_id(guild_id, role_name).unwrap();
         assert!(Guild::<T>::member(role_id, caller).is_some());
     }
+    */
 
     impl_benchmark_test_suite!(Guild, crate::mock::new_test_ext(), crate::mock::TestRuntime, extra = false);
 }
@@ -246,15 +259,9 @@ fn init_guild<T: Config>(caller: &T::AccountId, guild_name: [u8; 32]) {
         1u32,
     ));
     let metadata = vec![0u8; <T as Config>::MaxSerializedLen::get() as usize];
-    Guild::<T>::create_guild(
+    assert_ok!(Guild::<T>::create_guild(
         RawOrigin::Signed(caller.clone()).into(),
         guild_name,
         metadata,
-    )
-    .unwrap();
-}
-
-fn id_with_auth<T: Config>(caller: &T::AccountId) -> (Identity, EcdsaSignature) {
-    let seed = [2u8; 32];
-    gn_common::identity::test_ecdsa_id_with_auth(seed, gn_common::utils::verification_msg(caller))
+    ));
 }

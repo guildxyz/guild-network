@@ -1,5 +1,5 @@
 use crate::hash::{Hash, Keccak256};
-use crate::{GuildName, RoleName};
+use crate::{GuildName, RoleName, SpVec};
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
@@ -23,8 +23,9 @@ pub enum Filter {
 }
 
 impl Filter {
-    pub fn allowlist<T: AsRef<[u8]>>(allowlist: &[T], logic: Logic) -> Self {
+    pub fn allowlist<T: Encode>(allowlist: &[T], logic: Logic) -> Self {
         let length = allowlist.len();
+        let allowlist: SpVec<SpVec<u8>> = allowlist.iter().map(|item| item.encode()).collect();
         let root = crate::merkle::root::<Keccak256, _>(allowlist);
         Filter::Allowlist(root, logic, length as u32)
     }

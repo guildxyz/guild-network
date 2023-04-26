@@ -87,7 +87,7 @@ fn join_and_leave_role_with_allowlist() {
     let user_2: <TestRuntime as frame_system::Config>::AccountId = 2;
     let guild_name = [0u8; 32];
     let role_name = [0u8; 32];
-    let allowlist = vec![[0u8; 8], user_1.to_le_bytes(), [2u8; 8]];
+    let allowlist = vec![12, user_1, 33];
     let mut role_id = Default::default();
     let mut ext = new_test_ext();
 
@@ -497,16 +497,6 @@ fn role_with_filtered_requirements() {
             GuildEvent::RoleAssigned(user, guild_name, role_name_0)
         );
         assert!(<Guild>::member(role_id_0, user).is_some());
-        //assert_ok!(<Guild>::join_free_role(
-        //    RuntimeOrigin::signed(owner),
-        //    guild_name,
-        //    role_name_0
-        //));
-        //assert_eq!(
-        //    last_event(),
-        //    GuildEvent::RoleAssigned(owner, guild_name, role_name_0)
-        //);
-        //assert!(<Guild>::member(role_id_0, owner).is_some());
 
         // user joins role 1 with AND filter logic so an oracle request is
         // dispatched
@@ -642,5 +632,18 @@ fn role_with_filtered_requirements() {
             GuildEvent::RoleStripped(user, guild_name, role_name_1)
         );
         assert!(<Guild>::member(role_id_1, user).is_none());
+
+        // sudo remove user
+        assert_ok!(<Guild>::sudo_remove(
+            RuntimeOrigin::root(),
+            user,
+            guild_name,
+            role_name_0
+        ));
+        assert_eq!(
+            last_event(),
+            GuildEvent::RoleStripped(user, guild_name, role_name_0)
+        );
+        assert!(<Guild>::member(role_id_0, user).is_none());
     });
 }

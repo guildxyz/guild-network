@@ -79,7 +79,6 @@ impl pallet_balances::Config for TestRuntime {
 }
 
 impl pallet_guild::Config for TestRuntime {
-    type AllowlistItem = [u8; (Self::AccountId::BITS / 8) as usize];
     type MaxAllowlistLen = MaxAllowlistLen;
     type MaxRolesPerGuild = MaxRolesPerGuild;
     type MaxReqsPerRole = MaxReqsPerRole;
