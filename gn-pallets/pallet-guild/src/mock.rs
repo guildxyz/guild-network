@@ -18,6 +18,7 @@ frame_support::construct_runtime!(
     {
         Balances: pallet_balances,
         Guild: pallet_guild::{Pallet, Storage, Event<T>},
+        GuildIdentity: pallet_guild_identity::{Pallet, Storage, Event<T>},
         Oracle: pallet_oracle::{Pallet, Call, Storage, Event<T>},
         RandomnessCollectiveFlip: pallet_randomness_collective_flip,
         System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
@@ -32,6 +33,9 @@ parameter_types! {
     pub const MaxRolesPerGuild: u32 = 10;
     pub const MaxReqsPerRole: u32 = 10;
     pub const MaxSerializedLen: u32 = 10;
+    pub const MaxLinkedAddresses: u32 = 2;
+    pub const MaxLinkedAddressTypes: u32 = 2;
+    pub const MaxLinkedIdentities: u32 = 3;
     pub const ValidityPeriod: u64 = 10;
 }
 
@@ -80,6 +84,14 @@ impl pallet_guild::Config for TestRuntime {
     type MaxReqsPerRole = MaxReqsPerRole;
     type MaxSerializedLen = MaxSerializedLen;
     type MyRandomness = RandomnessCollectiveFlip;
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+}
+
+impl pallet_guild_identity::Config for TestRuntime {
+    type MaxLinkedAddresses = MaxLinkedAddresses;
+    type MaxLinkedAddressTypes = MaxLinkedAddressTypes;
+    type MaxLinkedIdentities = MaxLinkedIdentities;
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
 }

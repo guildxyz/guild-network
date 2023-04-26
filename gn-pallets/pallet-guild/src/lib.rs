@@ -318,7 +318,8 @@ pub mod pallet {
             guild_name: GuildName,
             role_name: RoleName,
         ) -> DispatchResult {
-            Self::do_create_role(origin, guild_name, role_name, None, None)?;
+            let signer = ensure_signed(origin)?;
+            Self::do_create_role(signer, guild_name, role_name, None, None)?;
             Ok(())
         }
 
@@ -335,13 +336,14 @@ pub mod pallet {
             filter_logic: gn_common::filter::Logic,
             requirements: Option<SerializedRequirements>,
         ) -> DispatchResult {
+            let signer = ensure_signed(origin)?;
             ensure!(
                 !allowlist.is_empty() && allowlist.len() <= T::MaxAllowlistLen::get() as usize,
                 Error::<T>::InvalidAllowlistLen
             );
             let filter = Filter::allowlist(&allowlist, filter_logic);
             let role_id =
-                Self::do_create_role(origin, guild_name, role_name, Some(filter), requirements)?;
+                Self::do_create_role(signer, guild_name, role_name, Some(filter), requirements)?;
 
             let offchain_key = gn_common::offchain_allowlist_key(role_id.as_ref());
             sp_io::offchain_index::set(&offchain_key, &allowlist.encode());
@@ -362,6 +364,7 @@ pub mod pallet {
             filter_logic: gn_common::filter::Logic,
             requirements: Option<SerializedRequirements>,
         ) -> DispatchResult {
+            let signer = ensure_signed(origin)?;
             let guild_id = Self::guild_id(filter.name).ok_or(Error::<T>::GuildDoesNotExist)?;
             if let Some(parent_role_name) = filter.role {
                 ensure!(
@@ -370,7 +373,7 @@ pub mod pallet {
                 );
             }
             let filter = Filter::Guild(filter, filter_logic);
-            Self::do_create_role(origin, guild_name, role_name, Some(filter), requirements)?;
+            Self::do_create_role(signer, guild_name, role_name, Some(filter), requirements)?;
             Ok(())
         }
 
@@ -385,7 +388,8 @@ pub mod pallet {
             role_name: RoleName,
             requirements: SerializedRequirements,
         ) -> DispatchResult {
-            Self::do_create_role(origin, guild_name, role_name, None, Some(requirements))?;
+            let signer = ensure_signed(origin)?;
+            Self::do_create_role(signer, guild_name, role_name, None, Some(requirements))?;
             Ok(())
         }
 
@@ -444,6 +448,21 @@ pub mod pallet {
 
             Ok(())
         }
+
+        #[pallet::call_index(12)]
+        #[pallet::weight((0, DispatchClass::Operational, Pays::No))]
+        pub fn sudo_remove(
+            origin: OriginFor<T>,
+            account: T::AccountId,
+            guild_name: GuildName,
+            role_name: RoleName,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            let (role_id, _) = Self::checked_role(&account, &guild_name, &role_name)?;
+            Members::<T>::remove(role_id, &account);
+            Self::deposit_event(Event::RoleStripped(account, guild_name, role_name));
+            Ok(())
+        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -478,13 +497,12 @@ pub mod pallet {
         }
 
         fn do_create_role(
-            origin: OriginFor<T>,
+            signer: T::AccountId,
             guild_name: GuildName,
             role_name: RoleName,
             filter: Option<Filter>,
             requirements: Option<SerializedRequirements>,
         ) -> Result<T::Hash, DispatchError> {
-            let signer = ensure_signed(origin)?;
             let guild_id = Self::guild_id(guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
             ensure!(
                 !RoleIdMap::<T>::contains_key(guild_id, role_name),
