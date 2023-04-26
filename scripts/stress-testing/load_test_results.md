@@ -335,9 +335,11 @@ A failure rate of 5% was observed under constant extended load (1200 tps) which
 then continually increased with pressure. Further testing to verify these results is required.
 
 ## Reliability testing
-
+ 
 The purpose of this test is to further examine and refine the upper bounds of
 load conditions under which the chain can no longer function properly.
+
+### Round 1
 
 Conditions: Increasing pressure with constant load
 Parameters:
@@ -361,3 +363,26 @@ END TEST CYCLE WITH PARAMETERS 1900 num, 1400 tps; FAILURES DETECTED: 10, RATE: 
 END TEST CYCLE WITH PARAMETERS 1900 num, 1500 tps; FAILURES DETECTED: 11, RATE: 55.00000000000001%
 END TEST CYCLE WITH PARAMETERS 1900 num, 1600 tps; FAILURES DETECTED: 11, RATE: 55.00000000000001%
 END TEST CYCLE WITH PARAMETERS 1900 num, 1700 tps; FAILURES DETECTED: 10, RATE: 50.0%
+
+### Round 2
+
+Conditions: Constant low pressure with constant moderate load
+Parameters:
+  - 10 tps
+  - 500 total tx
+  - 100 iterations per cycle
+
+END TEST CYCLE WITH PARAMETERS 500 num, 10 tps; FAILURES DETECTED: 0, RATE: 0.0%
+
+## Round 3
+
+Conditions: Constant high pressure with increasing load
+
+Parameters:
+  - 500 tps
+  - 10 total tx
+  - 25 iterations per cycle
+  - 10 increase in total tx per cycle
+  - up until 280 total tx
+ 
+No failures observed 
