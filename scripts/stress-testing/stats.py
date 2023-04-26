@@ -131,9 +131,6 @@ class Capture:
         for col in ['size', 'extrs', 'latency']:
             self.data['z-' + col] = (self.data[col] -
                                      self.data[col].mean()) / self.data[col].std()
-            self.data['z-mod-' + col] = 0.6745 * \
-                (self.data[col] - self.data[col].median()) / \
-                (self.data[col] - self.data[col].median()).abs().median()
 
         self.stats = {
             "t_stdev": self.data['latency'].std(),
@@ -210,10 +207,10 @@ class CaptureCycle:
         test.wait()
         stop_event.set()
 
-    def start_iteration(self, iter_n, tps, tx_num):
+    def start_iteration(self, iter_n):
         stop_event = threading.Event()
         test = Thread(target=self.single_test, args=(
-            iter_n, tps, tx_num, stop_event))
+            iter_n, self.tps, self.tx_num, stop_event))
         test.start()
         return self.start_collection(iter_n, stop_event)
 
@@ -229,7 +226,7 @@ class CaptureCycle:
         print(
             f"START TEST CYCLE WITH PARAMETERS {self.tx_num} num, {self.tps} tps")
         for i in range(0, TEST_CYCLE):
-            res = self.start_iteration(i, self.tx_num, self.tps)
+            res = self.start_iteration(i)
             results.append(res)
         failures = self.count_failures(results)
         print(
@@ -241,7 +238,7 @@ class CaptureCycle:
         return failures/TEST_CYCLE
 
 
-def main():
+def initial_testing():
     params = 2100
     results = {}
     capture_cycles = []
@@ -257,6 +254,28 @@ def main():
     print(f"")
     print(results)
     print(capture_cycles)
+
+
+def reliability_testing():
+    params = 100
+    results = {}
+    capture_cycles = []
+    while True:
+        c = CaptureCycle(params, 1900)
+        failure_rate = c.start_tests()
+        results[params] = failure_rate
+        if params == 1900:
+            break
+        params += 100
+    print(
+        f"First significant failure detected at {list(results.keys())[0]} num, {list(results.keys())[0]} tps")
+    print(f"")
+    print(results)
+    print(capture_cycles)
+
+
+def main():
+    reliability_testing()
 
 
 if __name__ == "__main__":

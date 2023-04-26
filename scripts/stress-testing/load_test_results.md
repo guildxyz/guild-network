@@ -265,7 +265,10 @@
 
 # New testing framework
 
-## Initial Results
+## Initial testing
+
+The purpose of this test is to establish an estimated range of load conditions
+under which the chain can no longer function properly.
 
 ### Round 1
 Conditions: Continuous flood stress with increasing pressure
@@ -331,3 +334,30 @@ Test aborted prematurely due to 100% failure rate in block time
 A failure rate of 5% was observed under constant extended load (1200 tps) which
 then continually increased with pressure. Further testing to verify these results is required.
 
+## Reliability testing
+
+The purpose of this test is to further examine and refine the upper bounds of
+load conditions under which the chain can no longer function properly.
+
+Conditions: Increasing pressure with constant load
+Parameters:
+  - 100 tps
+  - 1900 total tx
+  - 20 iterations per cycle
+  - 100 increase in tps per cycle
+
+See reliability.log
+
+END TEST CYCLE WITH PARAMETERS 1900 num, 500 tps; FAILURES DETECTED: 1, RATE: 5.0%
+END TEST CYCLE WITH PARAMETERS 1900 num, 600 tps; FAILURES DETECTED: 7, RATE: 35.0%
+END TEST CYCLE WITH PARAMETERS 1900 num, 700 tps; FAILURES DETECTED: 10, RATE: 50.0%
+END TEST CYCLE WITH PARAMETERS 1900 num, 800 tps; FAILURES DETECTED: 4, RATE: 20.0%
+END TEST CYCLE WITH PARAMETERS 1900 num, 900 tps; FAILURES DETECTED: 13, RATE: 65.0%
+END TEST CYCLE WITH PARAMETERS 1900 num, 1000 tps; FAILURES DETECTED: 12, RATE: 60.0%
+END TEST CYCLE WITH PARAMETERS 1900 num, 1100 tps; FAILURES DETECTED: 15, RATE: 75.0%
+END TEST CYCLE WITH PARAMETERS 1900 num, 1200 tps; FAILURES DETECTED: 9, RATE: 45.0%
+END TEST CYCLE WITH PARAMETERS 1900 num, 1300 tps; FAILURES DETECTED: 9, RATE: 45.0%
+END TEST CYCLE WITH PARAMETERS 1900 num, 1400 tps; FAILURES DETECTED: 10, RATE: 50.0%
+END TEST CYCLE WITH PARAMETERS 1900 num, 1500 tps; FAILURES DETECTED: 11, RATE: 55.00000000000001%
+END TEST CYCLE WITH PARAMETERS 1900 num, 1600 tps; FAILURES DETECTED: 11, RATE: 55.00000000000001%
+END TEST CYCLE WITH PARAMETERS 1900 num, 1700 tps; FAILURES DETECTED: 10, RATE: 50.0%
