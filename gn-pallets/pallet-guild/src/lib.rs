@@ -31,10 +31,12 @@ pub mod pallet {
     use pallet_guild_identity::Config as IdentityConfig;
     use pallet_guild_identity::Pallet as IdentityPallet;
     use pallet_oracle::Config as OracleConfig;
+    use parity_scale_codec::Codec;
     use sp_std::vec::Vec as SpVec;
 
     #[pallet::config]
     pub trait Config: IdentityConfig + OracleConfig + frame_system::Config {
+        type AllowlistItem: AsRef<[u8]> + Codec + core::fmt::Debug + Parameter;
         #[pallet::constant]
         type MaxAllowlistLen: Get<u32>;
         #[pallet::constant]
@@ -332,7 +334,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             guild_name: GuildName,
             role_name: RoleName,
-            allowlist: SpVec<gn_common::Identity>,
+            allowlist: SpVec<<T as Config>::AllowlistItem>,
             filter_logic: gn_common::filter::Logic,
             requirements: Option<SerializedRequirements>,
         ) -> DispatchResult {

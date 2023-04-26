@@ -110,8 +110,8 @@ fn guild_with_free_roles() {
 
 #[test]
 fn role_with_allowlist_filter() {
-    let allowlist_0 = vec![[0u8; 32], [1u8; 32], [2u8; 32]];
-    let allowlist_1 = vec![[1u8; 32], [2u8; 32], [3u8; 32], [4u8; 32]];
+    let allowlist_0 = vec![[0u8; 8], [1u8; 8], [2u8; 8]];
+    let allowlist_1 = vec![[1u8; 8], [2u8; 8], [3u8; 8], [4u8; 8]];
     let mut ext = new_test_ext();
     let mut role_id_0 = Default::default();
     let mut role_id_1 = Default::default();
@@ -132,7 +132,7 @@ fn role_with_allowlist_filter() {
                     RuntimeOrigin::signed(signer + 1),
                     guild_name,
                     role_name_0,
-                    vec![[0u8; 32]],
+                    vec![[0u8; 8]],
                     FilterLogic::And,
                     None,
                 ),
@@ -155,7 +155,7 @@ fn role_with_allowlist_filter() {
                     guild_name,
                     role_name_0,
                     vec![
-                        [0u8; 32];
+                        [0u8; 8];
                         <TestRuntime as pallet_guild::Config>::MaxAllowlistLen::get() as usize + 1
                     ],
                     FilterLogic::And,

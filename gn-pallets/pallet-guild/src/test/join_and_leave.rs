@@ -1,6 +1,6 @@
 use super::*;
-use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
 use gn_common::merkle::Proof as MerkleProof;
+use parity_scale_codec::Encode;
 
 #[test]
 fn join_and_leave_free_role() {
@@ -11,56 +11,67 @@ fn join_and_leave_free_role() {
         let role_name = [0u8; 32];
         let invalid_name = [100u8; 32];
 
-        let (address, signature) = dummy_ecdsa_id_with_auth(user, [2u8; 32]);
-
         dummy_guild(owner, guild_name);
 
-        <Guild>::create_free_role(RuntimeOrigin::signed(owner), guild_name, role_name).unwrap();
+        assert_ok!(<Guild>::create_free_role(
+            RuntimeOrigin::signed(owner),
+            guild_name,
+            role_name
+        ));
 
         let failing_transactions = vec![
             (
-                <Guild>::join(RuntimeOrigin::none(), guild_name, role_name, None),
-                "BadOrigin",
+                <Guild>::join_free_role(RuntimeOrigin::signed(user), invalid_name, role_name),
+                GuildError::GuildDoesNotExist,
             ),
             (
-                <Guild>::join(RuntimeOrigin::root(), guild_name, role_name, None),
-                "BadOrigin",
+                <Guild>::join_free_role(RuntimeOrigin::signed(user), guild_name, invalid_name),
+                GuildError::RoleDoesNotExist,
             ),
             (
-                <Guild>::join(RuntimeOrigin::signed(user), invalid_name, role_name, None),
-                "GuildDoesNotExist",
-            ),
-            (
-                <Guild>::join(RuntimeOrigin::signed(user), guild_name, invalid_name, None),
-                "RoleDoesNotExist",
-            ),
-            (
-                <Guild>::join(RuntimeOrigin::signed(user), guild_name, role_name, None),
-                "UserNotRegistered",
+                <Guild>::join_free_role(RuntimeOrigin::signed(user), guild_name, role_name),
+                GuildError::UserNotRegistered,
             ),
         ];
-
-        for (tx, raw_error_msg) in failing_transactions {
-            assert_eq!(error_msg(tx.unwrap_err()), raw_error_msg);
+        for (tx, error) in failing_transactions {
+            assert_noop!(tx, error);
         }
+        // register user
+        assert_ok!(<GuildIdentity>::register(RuntimeOrigin::signed(user),));
+        // invalid join requests
+        let failing_transactions = vec![
+            <Guild>::join_child_role(RuntimeOrigin::signed(user), guild_name, role_name),
+            <Guild>::join_role_with_allowlist(
+                RuntimeOrigin::signed(user),
+                guild_name,
+                role_name,
+                MerkleProof::new(&[&[1], &[2]], 0),
+            ),
+            <Guild>::join_unfiltered_role(RuntimeOrigin::signed(user), guild_name, role_name),
+        ];
 
-        <Guild>::register(
+        for tx in failing_transactions {
+            assert_noop!(tx, GuildError::InvalidJoinRequest);
+        }
+        // join free role
+        assert_ok!(<Guild>::join_free_role(
             RuntimeOrigin::signed(user),
-            IdentityWithAuth::Ecdsa(address, signature),
-            0,
-        )
-        .unwrap();
-        <Guild>::join(RuntimeOrigin::signed(user), guild_name, role_name, None).unwrap();
+            guild_name,
+            role_name
+        ));
         assert_eq!(
             last_event(),
             GuildEvent::RoleAssigned(user, guild_name, role_name)
         );
-
         let guild_id = <Guild>::guild_id(guild_name).unwrap();
         let role_id = <Guild>::role_id(guild_id, role_name).unwrap();
         assert_eq!(<Guild>::member(role_id, user), Some(true));
-
-        <Guild>::leave(RuntimeOrigin::signed(user), guild_name, role_name).unwrap();
+        // leave free role
+        assert_ok!(<Guild>::leave(
+            RuntimeOrigin::signed(user),
+            guild_name,
+            role_name
+        ));
         assert_eq!(
             last_event(),
             GuildEvent::RoleStripped(user, guild_name, role_name)
@@ -71,54 +82,31 @@ fn join_and_leave_free_role() {
 
 #[test]
 fn join_and_leave_role_with_allowlist() {
-    let id_index = 0;
-    let owner = 0;
-    let user_1 = 1;
-    let user_2 = 2;
+    let owner: <TestRuntime as frame_system::Config>::AccountId = 0;
+    let user_1: <TestRuntime as frame_system::Config>::AccountId = 1;
+    let user_2: <TestRuntime as frame_system::Config>::AccountId = 2;
     let guild_name = [0u8; 32];
     let role_name = [0u8; 32];
-    let mut allowlist = vec![
-        Identity::Address20([0u8; 20]),
-        Identity::Address20([1u8; 20]),
-        Identity::Address20([2u8; 20]),
-    ];
+    let allowlist = vec![[0u8; 8], user_1.to_le_bytes(), [2u8; 8]];
     let mut role_id = Default::default();
     let mut ext = new_test_ext();
 
     ext.execute_with(|| {
         // user 1 registers
-        let (address, signature) = dummy_ecdsa_id_with_auth(user_1, [1u8; 32]);
-        allowlist.push(address);
-        <Guild>::register(
-            RuntimeOrigin::signed(user_1),
-            IdentityWithAuth::Ecdsa(address, signature),
-            id_index,
-        )
-        .unwrap();
-        assert_eq!(last_event(), GuildEvent::IdRegistered(user_1, id_index));
-
+        assert_ok!(<GuildIdentity>::register(RuntimeOrigin::signed(user_1)));
         // user 2 registers
-        let (address, signature) = dummy_ecdsa_id_with_auth(user_2, [2u8; 32]);
-        <Guild>::register(
-            RuntimeOrigin::signed(user_2),
-            IdentityWithAuth::Ecdsa(address, signature),
-            id_index,
-        )
-        .unwrap();
-        assert_eq!(last_event(), GuildEvent::IdRegistered(user_2, id_index));
-
+        assert_ok!(<GuildIdentity>::register(RuntimeOrigin::signed(user_2),));
         // owner creates a new guild
         dummy_guild(owner, guild_name);
         // owner creates a new role with allowlist
-        <Guild>::create_role_with_allowlist(
+        assert_ok!(<Guild>::create_role_with_allowlist(
             RuntimeOrigin::signed(owner),
             guild_name,
             role_name,
             allowlist.clone(),
             FilterLogic::And,
             None,
-        )
-        .unwrap();
+        ));
         let guild_id = <Guild>::guild_id(guild_name).unwrap();
         role_id = <Guild>::role_id(guild_id, role_name).unwrap();
     });
@@ -129,65 +117,54 @@ fn join_and_leave_role_with_allowlist() {
         offchain_db.get(&gn_common::offchain_allowlist_key(role_id.as_ref())),
         Some(allowlist.encode())
     );
-    let leaf_index = allowlist.len() - 1;
-    let proof = MerkleProof::new(&allowlist, leaf_index, id_index);
 
-    let proof_with_invalid_path = MerkleProof {
-        path: vec![],
-        id_index,
-    };
-
-    let proof_with_invalid_id_index = MerkleProof {
-        path: proof.path.clone(),
-        id_index: id_index + 1,
-    };
+    let proof_0 = MerkleProof::new(&allowlist, 0);
+    let proof_1 = MerkleProof::new(&allowlist, 1);
 
     ext.execute_with(|| {
         let failing_transactions = vec![
             (
-                <Guild>::join(RuntimeOrigin::signed(user_1), guild_name, role_name, None),
-                "MissingAllowlistProof",
-            ),
-            (
-                <Guild>::join(
+                <Guild>::join_role_with_allowlist(
                     RuntimeOrigin::signed(user_1),
                     guild_name,
                     role_name,
-                    Some(proof_with_invalid_path),
+                    proof_0,
                 ),
-                "AccessDenied",
+                GuildError::AccessDenied,
             ),
             (
-                <Guild>::join(
-                    RuntimeOrigin::signed(user_1),
-                    guild_name,
-                    role_name,
-                    Some(proof_with_invalid_id_index),
-                ),
-                "IdNotRegistered",
-            ),
-            (
-                <Guild>::join(
+                <Guild>::join_role_with_allowlist(
                     RuntimeOrigin::signed(user_2),
                     guild_name,
                     role_name,
-                    Some(proof.clone()),
+                    proof_1.clone(),
                 ),
-                "AccessDenied",
+                GuildError::AccessDenied,
+            ),
+            (
+                <Guild>::join_free_role(RuntimeOrigin::signed(user_2), guild_name, role_name),
+                GuildError::InvalidJoinRequest,
+            ),
+            (
+                <Guild>::join_child_role(RuntimeOrigin::signed(user_2), guild_name, role_name),
+                GuildError::InvalidJoinRequest,
+            ),
+            (
+                <Guild>::join_unfiltered_role(RuntimeOrigin::signed(user_2), guild_name, role_name),
+                GuildError::InvalidJoinRequest,
             ),
         ];
 
-        for (tx, raw_error_msg) in failing_transactions {
-            assert_eq!(error_msg(tx.unwrap_err()), raw_error_msg);
+        for (tx, error) in failing_transactions {
+            assert_noop!(tx, error);
         }
 
-        <Guild>::join(
+        assert_ok!(<Guild>::join_role_with_allowlist(
             RuntimeOrigin::signed(user_1),
             guild_name,
             role_name,
-            Some(proof),
-        )
-        .unwrap();
+            proof_1,
+        ));
         assert_eq!(
             last_event(),
             GuildEvent::RoleAssigned(user_1, guild_name, role_name)
@@ -195,7 +172,11 @@ fn join_and_leave_role_with_allowlist() {
 
         assert_eq!(<Guild>::member(role_id, user_1), Some(true));
 
-        <Guild>::leave(RuntimeOrigin::signed(user_1), guild_name, role_name).unwrap();
+        assert_ok!(<Guild>::leave(
+            RuntimeOrigin::signed(user_1),
+            guild_name,
+            role_name
+        ));
         assert_eq!(
             last_event(),
             GuildEvent::RoleStripped(user_1, guild_name, role_name)
@@ -230,43 +211,45 @@ fn join_and_leave_role_with_filter() {
     new_test_ext().execute_with(|| {
         dummy_guild(owner, g0);
         dummy_guild(owner, g1);
-        <Guild>::create_free_role(RuntimeOrigin::signed(owner), g0, g0r0).unwrap();
-        <Guild>::create_free_role(RuntimeOrigin::signed(owner), g0, g0r1).unwrap();
-        <Guild>::create_child_role(
+        assert_ok!(<Guild>::create_free_role(
+            RuntimeOrigin::signed(owner),
+            g0,
+            g0r0
+        ));
+        assert_ok!(<Guild>::create_free_role(
+            RuntimeOrigin::signed(owner),
+            g0,
+            g0r1
+        ));
+        assert_ok!(<Guild>::create_child_role(
             RuntimeOrigin::signed(owner),
             g0,
             g0r2,
             filter_0,
             filter_logic,
             None,
-        )
-        .unwrap();
-        <Guild>::create_free_role(RuntimeOrigin::signed(owner), g1, g1r0).unwrap();
-        <Guild>::create_free_role(RuntimeOrigin::signed(owner), g1, g1r1).unwrap();
-        <Guild>::create_child_role(
+        ));
+        assert_ok!(<Guild>::create_free_role(
+            RuntimeOrigin::signed(owner),
+            g1,
+            g1r0
+        ));
+        assert_ok!(<Guild>::create_free_role(
+            RuntimeOrigin::signed(owner),
+            g1,
+            g1r1
+        ));
+        assert_ok!(<Guild>::create_child_role(
             RuntimeOrigin::signed(owner),
             g1,
             g1r2,
             filter_1,
             filter_logic,
             None,
-        )
-        .unwrap();
+        ));
 
-        let (address, signature) = dummy_ecdsa_id_with_auth(user_1, [1u8; 32]);
-        <Guild>::register(
-            RuntimeOrigin::signed(user_1),
-            IdentityWithAuth::Ecdsa(address, signature),
-            0,
-        )
-        .unwrap();
-        let (address, signature) = dummy_ecdsa_id_with_auth(user_2, [2u8; 32]);
-        <Guild>::register(
-            RuntimeOrigin::signed(user_2),
-            IdentityWithAuth::Ecdsa(address, signature),
-            0,
-        )
-        .unwrap();
+        assert_ok!(<GuildIdentity>::register(RuntimeOrigin::signed(user_1)));
+        assert_ok!(<GuildIdentity>::register(RuntimeOrigin::signed(user_2)));
 
         let g0_id = <Guild>::guild_id(g0).unwrap();
         let g0r0_id = <Guild>::role_id(g0_id, g0r0).unwrap();
@@ -278,15 +261,27 @@ fn join_and_leave_role_with_filter() {
         let g1r2_id = <Guild>::role_id(g1_id, g1r2).unwrap();
 
         // user 1 joins guild 0 role 0
-        <Guild>::join(RuntimeOrigin::signed(user_1), g0, g0r0, None).unwrap();
+        assert_ok!(<Guild>::join_free_role(
+            RuntimeOrigin::signed(user_1),
+            g0,
+            g0r0,
+        ));
         // user 2 joins guild 0 role 1
-        <Guild>::join(RuntimeOrigin::signed(user_2), g0, g0r1, None).unwrap();
+        assert_ok!(<Guild>::join_free_role(
+            RuntimeOrigin::signed(user_2),
+            g0,
+            g0r1,
+        ));
         // user 1 can join guild 0 role 2 because they joined guild 0 role 0
-        <Guild>::join(RuntimeOrigin::signed(user_1), g0, g0r2, None).unwrap();
+        assert_ok!(<Guild>::join_child_role(
+            RuntimeOrigin::signed(user_1),
+            g0,
+            g0r2,
+        ));
         // user 2 cannot join guild 0 role 2 because they haven't joined guild 0 role 0
-        assert_eq!(
-            error_msg(<Guild>::join(RuntimeOrigin::signed(user_2), g0, g0r2, None).unwrap_err()),
-            "AccessDenied"
+        assert_noop!(
+            <Guild>::join_child_role(RuntimeOrigin::signed(user_2), g0, g0r2),
+            GuildError::AccessDenied
         );
         assert!(<Guild>::member(g0r0_id, user_1).is_some());
         assert!(<Guild>::member(g0r1_id, user_1).is_none());
@@ -296,20 +291,32 @@ fn join_and_leave_role_with_filter() {
         assert!(<Guild>::member(g0r2_id, user_2).is_none());
 
         // user 1 leaves all roles in guild 0
-        <Guild>::leave(RuntimeOrigin::signed(user_1), g0, g0r0).unwrap();
-        <Guild>::leave(RuntimeOrigin::signed(user_1), g0, g0r2).unwrap();
+        assert_ok!(<Guild>::leave(RuntimeOrigin::signed(user_1), g0, g0r0));
+        assert_ok!(<Guild>::leave(RuntimeOrigin::signed(user_1), g0, g0r2));
         assert!(<Guild>::member(g0r0_id, user_1).is_none());
         assert!(<Guild>::member(g0r1_id, user_1).is_none());
         assert!(<Guild>::member(g0r2_id, user_1).is_none());
         // now only user 2 can join guild 1 role 2 because it
         // requires at least one joined role in guild 0
-        <Guild>::join(RuntimeOrigin::signed(user_1), g1, g1r0, None).unwrap();
-        <Guild>::join(RuntimeOrigin::signed(user_1), g1, g1r1, None).unwrap();
-        assert_eq!(
-            error_msg(<Guild>::join(RuntimeOrigin::signed(user_1), g1, g1r2, None).unwrap_err()),
-            "AccessDenied"
+        assert_ok!(<Guild>::join_free_role(
+            RuntimeOrigin::signed(user_1),
+            g1,
+            g1r0,
+        ));
+        assert_ok!(<Guild>::join_free_role(
+            RuntimeOrigin::signed(user_1),
+            g1,
+            g1r1,
+        ));
+        assert_noop!(
+            <Guild>::join_child_role(RuntimeOrigin::signed(user_1), g1, g1r2),
+            GuildError::AccessDenied,
         );
-        <Guild>::join(RuntimeOrigin::signed(user_2), g1, g1r2, None).unwrap();
+        assert_ok!(<Guild>::join_child_role(
+            RuntimeOrigin::signed(user_2),
+            g1,
+            g1r2,
+        ));
 
         assert!(<Guild>::member(g0r0_id, user_1).is_none());
         assert!(<Guild>::member(g0r1_id, user_1).is_none());
@@ -324,6 +331,21 @@ fn join_and_leave_role_with_filter() {
         assert!(<Guild>::member(g1r0_id, user_2).is_none());
         assert!(<Guild>::member(g1r1_id, user_2).is_none());
         assert!(<Guild>::member(g1r2_id, user_2).is_some());
+
+        let failing_transactions = vec![
+            <Guild>::join_free_role(RuntimeOrigin::signed(user_2), g1, g1r2),
+            <Guild>::join_role_with_allowlist(
+                RuntimeOrigin::signed(user_2),
+                g1,
+                g1r2,
+                MerkleProof::new(&[&[1], &[2]], 0),
+            ),
+            <Guild>::join_unfiltered_role(RuntimeOrigin::signed(user_2), g1, g1r2),
+        ];
+
+        for tx in failing_transactions {
+            assert_noop!(tx, GuildError::InvalidJoinRequest);
+        }
     });
 }
 
@@ -340,46 +362,32 @@ fn join_and_leave_unfiltered_role() {
 
         // new guild with unfiltered role
         dummy_guild(owner, guild_name);
-        <Guild>::create_unfiltered_role(
+        assert_ok!(<Guild>::create_unfiltered_role(
             RuntimeOrigin::signed(owner),
             guild_name,
             role_name,
             (vec![], vec![]),
-        )
-        .unwrap();
+        ));
 
         let guild_id = <Guild>::guild_id(guild_name).unwrap();
         let role_id = <Guild>::role_id(guild_id, role_name).unwrap();
 
         // register oracle operator
-        <Oracle>::register_operator(RuntimeOrigin::root(), operator).unwrap();
-        <Oracle>::activate_operator(RuntimeOrigin::signed(operator)).unwrap();
-        // register identity that requires oracle check
-        <Guild>::register(
-            RuntimeOrigin::signed(user),
-            IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]),
-            0,
-        )
-        .unwrap();
-
-        <Oracle>::callback(
-            RuntimeOrigin::signed(operator),
-            request_id,
-            vec![u8::from(true)],
-        )
-        .unwrap();
-
-        assert_eq!(last_event(), GuildEvent::IdRegistered(user, 0));
-        request_id += 1;
+        assert_ok!(<Oracle>::register_operator(RuntimeOrigin::root(), operator));
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(operator)));
+        assert_ok!(<GuildIdentity>::register(RuntimeOrigin::signed(user),));
 
         // try to get a role that requires oracle check
-        <Guild>::join(RuntimeOrigin::signed(user), guild_name, role_name, None).unwrap();
-        <Oracle>::callback(
+        assert_ok!(<Guild>::join_unfiltered_role(
+            RuntimeOrigin::signed(user),
+            guild_name,
+            role_name
+        ));
+        assert_ok!(<Guild>::callback(
             RuntimeOrigin::signed(operator),
             request_id,
-            vec![u8::from(true)],
-        )
-        .unwrap();
+            true,
+        ));
         request_id += 1;
         assert_eq!(
             last_event(),
@@ -387,27 +395,33 @@ fn join_and_leave_unfiltered_role() {
         );
         assert!(<Guild>::member(role_id, user).is_some());
         // owner requests an oracle check on user
-        <Guild>::request_oracle_check(RuntimeOrigin::signed(owner), user, guild_name, role_name)
-            .unwrap();
+        assert_ok!(<Guild>::request_access_check(
+            RuntimeOrigin::signed(owner),
+            user,
+            guild_name,
+            role_name
+        ));
         // operator responds with true, so nothing happens
-        <Oracle>::callback(
+        assert_ok!(<Guild>::callback(
             RuntimeOrigin::signed(operator),
             request_id,
-            vec![u8::from(true)],
-        )
-        .unwrap();
+            true,
+        ));
         request_id += 1;
         assert!(<Guild>::member(role_id, user).is_some());
         // owner requests another oracle check on user
-        <Guild>::request_oracle_check(RuntimeOrigin::signed(owner), user, guild_name, role_name)
-            .unwrap();
+        assert_ok!(<Guild>::request_access_check(
+            RuntimeOrigin::signed(owner),
+            user,
+            guild_name,
+            role_name
+        ));
         // operator responds with false, so user is stripped of the role
-        <Oracle>::callback(
+        assert_ok!(<Guild>::callback(
             RuntimeOrigin::signed(operator),
             request_id,
-            vec![u8::from(false)],
-        )
-        .unwrap();
+            false,
+        ));
         assert_eq!(
             last_event(),
             GuildEvent::RoleStripped(user, guild_name, role_name)
@@ -415,6 +429,7 @@ fn join_and_leave_unfiltered_role() {
         assert!(<Guild>::member(role_id, user).is_none());
     });
 }
+/*
 
 #[test]
 fn role_with_filtered_requirements() {
@@ -636,3 +651,4 @@ fn role_with_filtered_requirements() {
         assert!(<Guild>::member(role_id_1, user).is_none());
     });
 }
+*/

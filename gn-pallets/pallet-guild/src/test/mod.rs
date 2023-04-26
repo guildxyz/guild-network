@@ -1,7 +1,7 @@
 mod guild_and_role;
 mod helpers;
-//mod join_and_leave;
-//
+mod join_and_leave;
+
 use helpers::*;
 
 use crate::mock::*;
@@ -50,7 +50,7 @@ fn signer_checks() {
                 RuntimeOrigin::root(),
                 guild,
                 role,
-                vec![[0u8; 32], [1u8; 32]],
+                vec![[0u8; 8], [1u8; 8]],
                 FilterLogic::And,
                 None,
             ),
@@ -58,7 +58,7 @@ fn signer_checks() {
                 RuntimeOrigin::none(),
                 guild,
                 role,
-                vec![[0u8; 32], [1u8; 32]],
+                vec![[0u8; 8], [1u8; 8]],
                 FilterLogic::And,
                 None,
             ),
