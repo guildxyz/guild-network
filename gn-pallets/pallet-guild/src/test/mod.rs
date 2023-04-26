@@ -1,13 +1,14 @@
-//mod guild_and_role;
+mod guild_and_role;
 mod helpers;
 //mod join_and_leave;
+//
+use helpers::*;
 
 use crate::mock::*;
 use frame_support::dispatch::DispatchError;
 use frame_support::{assert_noop, assert_ok};
-use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
+use gn_common::filter::{Filter, Guild as GuildFilter, Logic as FilterLogic};
 use gn_common::merkle::Proof as MerkleProof;
-use helpers::*;
 
 #[test]
 fn signer_checks() {

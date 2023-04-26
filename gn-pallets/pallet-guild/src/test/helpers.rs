@@ -23,7 +23,11 @@ pub fn last_event() -> pallet_guild::Event<TestRuntime> {
 }
 
 pub fn dummy_guild(signer: AccountId, guild_name: GuildName) {
-    <Guild>::create_guild(RuntimeOrigin::signed(signer), guild_name, METADATA.to_vec()).unwrap();
+    assert_ok!(<Guild>::create_guild(
+        RuntimeOrigin::signed(signer),
+        guild_name,
+        METADATA.to_vec()
+    ));
     assert_eq!(last_event(), GuildEvent::GuildCreated(signer, guild_name));
     let guild_id = <Guild>::guild_id(guild_name).unwrap();
     let guild = <Guild>::guild(guild_id).unwrap();

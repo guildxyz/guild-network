@@ -1,5 +1,5 @@
 use super::*;
-use gn_common::filter::{Filter, Guild as GuildFilter, Logic as FilterLogic};
+use parity_scale_codec::Encode;
 
 #[test]
 fn guild_creation() {
@@ -13,16 +13,8 @@ fn guild_creation() {
 
         let failing_transactions = vec![
             (
-                <Guild>::create_guild(RuntimeOrigin::none(), guild_name, vec![]),
-                "BadOrigin",
-            ),
-            (
-                <Guild>::create_guild(RuntimeOrigin::root(), guild_name, vec![]),
-                "BadOrigin",
-            ),
-            (
                 <Guild>::create_guild(RuntimeOrigin::signed(signer), guild_name, vec![]),
-                "GuildAlreadyExists",
+                GuildError::GuildAlreadyExists,
             ),
             (
                 <Guild>::create_guild(
@@ -30,12 +22,12 @@ fn guild_creation() {
                     [0u8; 32],
                     vec![0u8; max_serialized_len + 1],
                 ),
-                "MaxSerializedLenExceeded",
+                GuildError::MaxSerializedLenExceeded,
             ),
         ];
 
-        for (tx, raw_error_msg) in failing_transactions {
-            assert_eq!(error_msg(tx.unwrap_err()), raw_error_msg);
+        for (tx, error) in failing_transactions {
+            assert_noop!(tx, error);
         }
     });
 }
@@ -57,8 +49,11 @@ fn guild_with_free_roles() {
         for i in 0..<TestRuntime as pallet_guild::Config>::MaxRolesPerGuild::get() as u8 {
             role_name[0] = i;
             role_names.push(role_name);
-            <Guild>::create_free_role(RuntimeOrigin::signed(signer), guild_name, role_name)
-                .unwrap();
+            assert_ok!(<Guild>::create_free_role(
+                RuntimeOrigin::signed(signer),
+                guild_name,
+                role_name
+            ));
             assert_eq!(
                 last_event(),
                 GuildEvent::RoleCreated(signer, guild_name, role_name)
@@ -78,24 +73,16 @@ fn guild_with_free_roles() {
 
         let failing_transactions = vec![
             (
-                <Guild>::create_free_role(RuntimeOrigin::none(), guild_name, role_name),
-                "BadOrigin",
-            ),
-            (
-                <Guild>::create_free_role(RuntimeOrigin::root(), other_guild_name, other_role_name),
-                "BadOrigin",
-            ),
-            (
                 <Guild>::create_free_role(
                     RuntimeOrigin::signed(signer),
                     other_guild_name,
                     other_role_name,
                 ),
-                "GuildDoesNotExist",
+                GuildError::GuildDoesNotExist.into(),
             ),
             (
                 <Guild>::create_free_role(RuntimeOrigin::signed(signer), guild_name, role_name),
-                "RoleAlreadyExists",
+                GuildError::RoleAlreadyExists.into(),
             ),
             (
                 <Guild>::create_free_role(
@@ -103,7 +90,7 @@ fn guild_with_free_roles() {
                     guild_name,
                     other_role_name,
                 ),
-                "BadOrigin",
+                DispatchError::BadOrigin,
             ),
             (
                 <Guild>::create_free_role(
@@ -111,29 +98,20 @@ fn guild_with_free_roles() {
                     guild_name,
                     other_role_name,
                 ),
-                "MaxRolesPerGuildExceeded",
+                GuildError::MaxRolesPerGuildExceeded.into(),
             ),
         ];
 
-        for (tx, raw_error_msg) in failing_transactions {
-            assert_eq!(error_msg(tx.unwrap_err()), raw_error_msg);
+        for (tx, error) in failing_transactions {
+            assert_noop!(tx, error);
         }
     });
 }
 
 #[test]
 fn role_with_allowlist_filter() {
-    let allowlist_0 = vec![
-        Identity::Address20([0u8; 20]),
-        Identity::Address20([1u8; 20]),
-        Identity::Address20([2u8; 20]),
-    ];
-    let allowlist_1 = vec![
-        Identity::Address32([1u8; 32]),
-        Identity::Address32([2u8; 32]),
-        Identity::Address32([3u8; 32]),
-        Identity::Address32([4u8; 32]),
-    ];
+    let allowlist_0 = vec![[0u8; 32], [1u8; 32], [2u8; 32]];
+    let allowlist_1 = vec![[1u8; 32], [2u8; 32], [3u8; 32], [4u8; 32]];
     let mut ext = new_test_ext();
     let mut role_id_0 = Default::default();
     let mut role_id_1 = Default::default();
@@ -151,36 +129,14 @@ fn role_with_allowlist_filter() {
         let failing_transactions = vec![
             (
                 <Guild>::create_role_with_allowlist(
-                    RuntimeOrigin::root(),
-                    guild_name,
-                    role_name_0,
-                    vec![Identity::Address20([0u8; 20]); 1],
-                    FilterLogic::And,
-                    None,
-                ),
-                "BadOrigin",
-            ),
-            (
-                <Guild>::create_role_with_allowlist(
-                    RuntimeOrigin::none(),
-                    guild_name,
-                    role_name_0,
-                    vec![Identity::Address20([0u8; 20]); 1],
-                    FilterLogic::And,
-                    None,
-                ),
-                "BadOrigin",
-            ),
-            (
-                <Guild>::create_role_with_allowlist(
                     RuntimeOrigin::signed(signer + 1),
                     guild_name,
                     role_name_0,
-                    vec![Identity::Address20([0u8; 20]); 1],
+                    vec![[0u8; 32]],
                     FilterLogic::And,
                     None,
                 ),
-                "BadOrigin",
+                DispatchError::BadOrigin,
             ),
             (
                 <Guild>::create_role_with_allowlist(
@@ -191,7 +147,7 @@ fn role_with_allowlist_filter() {
                     FilterLogic::And,
                     None,
                 ),
-                "InvalidAllowlistLen",
+                GuildError::InvalidAllowlistLen.into(),
             ),
             (
                 <Guild>::create_role_with_allowlist(
@@ -199,30 +155,29 @@ fn role_with_allowlist_filter() {
                     guild_name,
                     role_name_0,
                     vec![
-                        Identity::Address20([0u8; 20]);
+                        [0u8; 32];
                         <TestRuntime as pallet_guild::Config>::MaxAllowlistLen::get() as usize + 1
                     ],
                     FilterLogic::And,
                     None,
                 ),
-                "InvalidAllowlistLen",
+                GuildError::InvalidAllowlistLen.into(),
             ),
         ];
-        for (tx, raw_error_msg) in failing_transactions {
-            assert_eq!(error_msg(tx.unwrap_err()), raw_error_msg);
+        for (tx, error) in failing_transactions {
+            assert_noop!(tx, error);
         }
 
         let guild_id = <Guild>::guild_id(guild_name).unwrap();
 
-        <Guild>::create_role_with_allowlist(
+        assert_ok!(<Guild>::create_role_with_allowlist(
             RuntimeOrigin::signed(signer),
             guild_name,
             role_name_0,
             allowlist_0.clone(),
             filter_logic_0,
             None,
-        )
-        .unwrap();
+        ));
 
         role_id_0 = <Guild>::role_id(guild_id, role_name_0).unwrap();
         assert_eq!(
@@ -232,15 +187,14 @@ fn role_with_allowlist_filter() {
 
         let filter_0 = Filter::allowlist(&allowlist_0, filter_logic_0);
 
-        <Guild>::create_role_with_allowlist(
+        assert_ok!(<Guild>::create_role_with_allowlist(
             RuntimeOrigin::signed(signer),
             guild_name,
             role_name_1,
             allowlist_1.clone(),
             filter_logic_1,
             Some((vec![], vec![])),
-        )
-        .unwrap();
+        ));
         role_id_1 = <Guild>::role_id(guild_id, role_name_1).unwrap();
 
         let filter_1 = Filter::allowlist(&allowlist_1, filter_logic_1);
@@ -295,32 +249,13 @@ fn role_with_guild_filter() {
 
         dummy_guild(signer, guild_name_0);
         dummy_guild(signer, guild_name_1);
-        <Guild>::create_free_role(RuntimeOrigin::signed(signer), guild_name_1, role_name_0)
-            .unwrap();
+        assert_ok!(<Guild>::create_free_role(
+            RuntimeOrigin::signed(signer),
+            guild_name_1,
+            role_name_0
+        ));
 
         let failing_transactions = vec![
-            (
-                <Guild>::create_child_role(
-                    RuntimeOrigin::none(),
-                    guild_name_1,
-                    role_name_0,
-                    filter_0,
-                    filter_logic_0,
-                    None,
-                ),
-                "BadOrigin",
-            ),
-            (
-                <Guild>::create_child_role(
-                    RuntimeOrigin::root(),
-                    guild_name_1,
-                    role_name_0,
-                    filter_0,
-                    filter_logic_0,
-                    None,
-                ),
-                "BadOrigin",
-            ),
             (
                 <Guild>::create_child_role(
                     RuntimeOrigin::signed(signer),
@@ -330,7 +265,7 @@ fn role_with_guild_filter() {
                     filter_logic_0,
                     None,
                 ),
-                "GuildDoesNotExist",
+                GuildError::GuildDoesNotExist,
             ),
             (
                 <Guild>::create_child_role(
@@ -341,36 +276,34 @@ fn role_with_guild_filter() {
                     filter_logic_1,
                     None,
                 ),
-                "RoleDoesNotExist",
+                GuildError::RoleDoesNotExist,
             ),
         ];
-        for (tx, raw_error_msg) in failing_transactions {
-            assert_eq!(error_msg(tx.unwrap_err()), raw_error_msg);
+        for (tx, error) in failing_transactions {
+            assert_noop!(tx, error);
         }
 
-        <Guild>::create_child_role(
+        assert_ok!(<Guild>::create_child_role(
             RuntimeOrigin::signed(signer),
             guild_name_0,
             role_name_0,
             filter_0,
             filter_logic_0,
             None,
-        )
-        .unwrap();
+        ));
         assert_eq!(
             last_event(),
             GuildEvent::RoleCreated(signer, guild_name_0, role_name_0)
         );
 
-        <Guild>::create_child_role(
+        assert_ok!(<Guild>::create_child_role(
             RuntimeOrigin::signed(signer),
             guild_name_0,
             role_name_1,
             filter_1,
             filter_logic_1,
             Some((vec![], vec![])),
-        )
-        .unwrap();
+        ));
 
         assert_eq!(
             last_event(),
@@ -411,30 +344,12 @@ fn unfiltered_role() {
         let failing_transactions = vec![
             (
                 <Guild>::create_unfiltered_role(
-                    RuntimeOrigin::none(),
-                    guild_name,
-                    role_name,
-                    (vec![], vec![]),
-                ),
-                "BadOrigin",
-            ),
-            (
-                <Guild>::create_unfiltered_role(
-                    RuntimeOrigin::root(),
-                    guild_name,
-                    role_name,
-                    (vec![], vec![]),
-                ),
-                "BadOrigin",
-            ),
-            (
-                <Guild>::create_unfiltered_role(
                     RuntimeOrigin::signed(signer + 1),
                     guild_name,
                     role_name,
                     (vec![], vec![]),
                 ),
-                "BadOrigin",
+                DispatchError::BadOrigin,
             ),
             (
                 <Guild>::create_unfiltered_role(
@@ -443,7 +358,7 @@ fn unfiltered_role() {
                     role_name,
                     (vec![vec![]; max_reqs_per_role + 1], vec![]),
                 ),
-                "MaxReqsPerRoleExceeded",
+                GuildError::MaxReqsPerRoleExceeded.into(),
             ),
             (
                 <Guild>::create_unfiltered_role(
@@ -455,7 +370,7 @@ fn unfiltered_role() {
                         vec![0; max_serialized_len + 1],
                     ),
                 ),
-                "MaxSerializedLenExceeded",
+                GuildError::MaxSerializedLenExceeded.into(),
             ),
             (
                 <Guild>::create_unfiltered_role(
@@ -467,23 +382,22 @@ fn unfiltered_role() {
                         vec![0; max_serialized_len],
                     ),
                 ),
-                "MaxSerializedLenExceeded",
+                GuildError::MaxSerializedLenExceeded.into(),
             ),
         ];
-        for (tx, raw_error_msg) in failing_transactions {
-            assert_eq!(error_msg(tx.unwrap_err()), raw_error_msg);
+        for (tx, error) in failing_transactions {
+            assert_noop!(tx, error);
         }
         let valid_requirements = (
             vec![vec![0; max_serialized_len]; max_reqs_per_role],
             vec![0; max_serialized_len],
         );
-        <Guild>::create_unfiltered_role(
+        assert_ok!(<Guild>::create_unfiltered_role(
             RuntimeOrigin::signed(signer),
             guild_name,
             role_name,
             valid_requirements.clone(),
-        )
-        .unwrap();
+        ));
 
         assert_eq!(
             last_event(),
