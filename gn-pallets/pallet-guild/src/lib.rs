@@ -120,6 +120,7 @@ pub mod pallet {
         InvalidOracleAnswer,
         InvalidOracleRequest,
         UserNotRegistered,
+        UserNotJoined,
         CodecError,
         MaxRolesPerGuildExceeded,
         MaxReqsPerRoleExceeded,
@@ -252,7 +253,7 @@ pub mod pallet {
             let guild_id = Self::guild_id(guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
             let role_id = Self::role_id(guild_id, role_name).ok_or(Error::<T>::RoleDoesNotExist)?;
             if IdentityPallet::<T>::addresses(&account).is_none() {
-                Members::<T>::take(role_id, &account).ok_or(Error::<T>::InvalidOracleRequest)?;
+                Members::<T>::take(role_id, &account).ok_or(Error::<T>::UserNotJoined)?;
                 Self::deposit_event(Event::RoleStripped(account, guild_name, role_name));
                 return Ok(());
             }

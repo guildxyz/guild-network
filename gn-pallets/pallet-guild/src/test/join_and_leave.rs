@@ -429,7 +429,6 @@ fn join_and_leave_unfiltered_role() {
         assert!(<Guild>::member(role_id, user).is_none());
     });
 }
-/*
 
 #[test]
 fn role_with_filtered_requirements() {
@@ -453,25 +452,27 @@ fn role_with_filtered_requirements() {
 
         // create guild with three roles
         dummy_guild(owner, guild_name);
-        <Guild>::create_free_role(RuntimeOrigin::signed(owner), guild_name, role_name_0).unwrap();
-        <Guild>::create_child_role(
+        assert_ok!(<Guild>::create_free_role(
+            RuntimeOrigin::signed(owner),
+            guild_name,
+            role_name_0
+        ));
+        assert_ok!(<Guild>::create_child_role(
             RuntimeOrigin::signed(owner),
             guild_name,
             role_name_1,
             filter,
             filter_logic_1,
             Some((vec![], vec![])),
-        )
-        .unwrap();
-        <Guild>::create_child_role(
+        ));
+        assert_ok!(<Guild>::create_child_role(
             RuntimeOrigin::signed(owner),
             guild_name,
             role_name_2,
             filter,
             filter_logic_2,
             Some((vec![], vec![])),
-        )
-        .unwrap();
+        ));
 
         let guild_id = <Guild>::guild_id(guild_name).unwrap();
         let role_id_0 = <Guild>::role_id(guild_id, role_name_0).unwrap();
@@ -479,54 +480,48 @@ fn role_with_filtered_requirements() {
         let role_id_2 = <Guild>::role_id(guild_id, role_name_2).unwrap();
 
         // register oracle operator
-        <Oracle>::register_operator(RuntimeOrigin::root(), operator).unwrap();
-        <Oracle>::activate_operator(RuntimeOrigin::signed(operator)).unwrap();
+        assert_ok!(<Oracle>::register_operator(RuntimeOrigin::root(), operator));
+        assert_ok!(<Oracle>::activate_operator(RuntimeOrigin::signed(operator)));
         // register identity that requires oracle check
-        <Guild>::register(
-            RuntimeOrigin::signed(user),
-            IdentityWithAuth::Other(Identity::Other([0u8; 64]), [0u8; 64]),
-            0,
-        )
-        .unwrap();
-
-        <Oracle>::callback(
-            RuntimeOrigin::signed(operator),
-            request_id,
-            vec![u8::from(true)],
-        )
-        .unwrap();
-        request_id += 1;
-
-        assert_eq!(last_event(), GuildEvent::IdRegistered(user, 0));
+        assert_ok!(<GuildIdentity>::register(RuntimeOrigin::signed(user)));
         // owner also registers an identity
-        let (address, signature) = dummy_ecdsa_id_with_auth(owner, [2u8; 32]);
-        <Guild>::register(
-            RuntimeOrigin::signed(owner),
-            IdentityWithAuth::Ecdsa(address, signature),
-            0,
-        )
-        .unwrap();
-        assert_eq!(last_event(), GuildEvent::IdRegistered(owner, 0));
-
-        // user and owner both join the free role
-        <Guild>::join(RuntimeOrigin::signed(user), guild_name, role_name_0, None).unwrap();
+        assert_ok!(<GuildIdentity>::register(RuntimeOrigin::signed(owner),));
+        // user joins the free role
+        assert_ok!(<Guild>::join_free_role(
+            RuntimeOrigin::signed(user),
+            guild_name,
+            role_name_0
+        ));
         assert_eq!(
             last_event(),
             GuildEvent::RoleAssigned(user, guild_name, role_name_0)
         );
         assert!(<Guild>::member(role_id_0, user).is_some());
+        //assert_ok!(<Guild>::join_free_role(
+        //    RuntimeOrigin::signed(owner),
+        //    guild_name,
+        //    role_name_0
+        //));
+        //assert_eq!(
+        //    last_event(),
+        //    GuildEvent::RoleAssigned(owner, guild_name, role_name_0)
+        //);
+        //assert!(<Guild>::member(role_id_0, owner).is_some());
 
         // user joins role 1 with AND filter logic so an oracle request is
         // dispatched
-        <Guild>::join(RuntimeOrigin::signed(user), guild_name, role_name_1, None).unwrap();
+        assert_ok!(<Guild>::join_child_role(
+            RuntimeOrigin::signed(user),
+            guild_name,
+            role_name_1
+        ));
         // user doesn't become a member until the oracle responds with true
         assert!(<Guild>::member(role_id_1, user).is_none());
-        <Oracle>::callback(
+        assert_ok!(<Guild>::callback(
             RuntimeOrigin::signed(operator),
             request_id,
-            vec![u8::from(true)],
-        )
-        .unwrap();
+            true,
+        ));
         request_id += 1;
         assert_eq!(
             last_event(),
@@ -536,7 +531,11 @@ fn role_with_filtered_requirements() {
 
         // user joins role 2 with OR filter logic so no oracle request
         // dispatched
-        <Guild>::join(RuntimeOrigin::signed(user), guild_name, role_name_2, None).unwrap();
+        assert_ok!(<Guild>::join_child_role(
+            RuntimeOrigin::signed(user),
+            guild_name,
+            role_name_2
+        ));
         assert_eq!(
             last_event(),
             GuildEvent::RoleAssigned(user, guild_name, role_name_2)
@@ -545,26 +544,26 @@ fn role_with_filtered_requirements() {
 
         // owner tries to join role 1 with AND filter logic, which fails, so no
         // oracle rquest is dispatched
-        assert_eq!(
-            error_msg(
-                <Guild>::join(RuntimeOrigin::signed(owner), guild_name, role_name_1, None)
-                    .unwrap_err()
-            ),
-            "AccessDenied"
+        assert_noop!(
+            <Guild>::join_child_role(RuntimeOrigin::signed(owner), guild_name, role_name_1),
+            GuildError::AccessDenied
         );
         assert!(<Guild>::member(role_id_1, owner).is_none());
         // owner tries to join role 2 with OR filter logic, so an oracle
         // request is dispatched
-        <Guild>::join(RuntimeOrigin::signed(owner), guild_name, role_name_2, None).unwrap();
+        assert_ok!(<Guild>::join_child_role(
+            RuntimeOrigin::signed(owner),
+            guild_name,
+            role_name_2
+        ));
         assert!(<Guild>::member(role_id_2, owner).is_none());
         // owner joins role because, even though the filter failed,
         // the requirement check by the oracle passed
-        <Oracle>::callback(
+        assert_ok!(<Guild>::callback(
             RuntimeOrigin::signed(operator),
             request_id,
-            vec![u8::from(true)],
-        )
-        .unwrap();
+            true,
+        ));
         request_id += 1;
         assert_eq!(
             last_event(),
@@ -575,75 +574,69 @@ fn role_with_filtered_requirements() {
         // request invalid oracle checks
         let failing_transactions = vec![
             (
-                <Guild>::request_oracle_check(
+                <Guild>::request_access_check(
                     RuntimeOrigin::signed(user),
                     user,
                     guild_name,
                     role_name_0,
                 ),
-                "BadOrigin",
+                DispatchError::BadOrigin,
             ),
             (
-                <Guild>::request_oracle_check(
-                    RuntimeOrigin::signed(operator),
-                    owner,
-                    guild_name,
-                    role_name_1,
-                ),
-                "InvalidOracleRequest",
-            ),
-            (
-                <Guild>::request_oracle_check(
+                <Guild>::request_access_check(
                     RuntimeOrigin::signed(operator),
                     user,
                     role_name_0,
                     role_name_1,
                 ),
-                "GuildDoesNotExist",
+                GuildError::GuildDoesNotExist.into(),
             ),
             (
-                <Guild>::request_oracle_check(
+                <Guild>::request_access_check(
                     RuntimeOrigin::signed(operator),
                     user,
                     guild_name,
                     guild_name,
                 ),
-                "RoleDoesNotExist",
+                GuildError::RoleDoesNotExist.into(),
             ),
             (
-                <Guild>::request_oracle_check(
+                <Guild>::request_access_check(
                     RuntimeOrigin::signed(user),
                     operator,
                     guild_name,
                     role_name_0,
                 ),
-                "UserNotRegistered",
+                GuildError::UserNotJoined.into(),
             ),
             (
-                <Guild>::request_oracle_check(
+                <Guild>::request_access_check(
                     RuntimeOrigin::signed(operator),
                     user,
                     guild_name,
                     role_name_2,
                 ),
-                "InvalidOracleRequest",
+                GuildError::InvalidOracleRequest.into(),
             ),
         ];
-        for (tx, raw_error_msg) in failing_transactions {
-            assert_eq!(error_msg(tx.unwrap_err()), raw_error_msg);
+        for (tx, error) in failing_transactions {
+            assert_noop!(tx, error);
         }
 
         // owner requests a check on user in role 1 (with AND filter logic)
-        <Guild>::request_oracle_check(RuntimeOrigin::signed(owner), user, guild_name, role_name_1)
-            .unwrap();
+        assert_ok!(<Guild>::request_access_check(
+            RuntimeOrigin::signed(owner),
+            user,
+            guild_name,
+            role_name_1
+        ));
         assert!(<Guild>::member(role_id_1, user).is_some());
         // role 1 is stripped from user due to the failed oracle check
-        <Oracle>::callback(
+        assert_ok!(<Guild>::callback(
             RuntimeOrigin::signed(operator),
             request_id,
-            vec![u8::from(false)],
-        )
-        .unwrap();
+            false,
+        ));
         assert_eq!(
             last_event(),
             GuildEvent::RoleStripped(user, guild_name, role_name_1)
@@ -651,4 +644,3 @@ fn role_with_filtered_requirements() {
         assert!(<Guild>::member(role_id_1, user).is_none());
     });
 }
-*/
