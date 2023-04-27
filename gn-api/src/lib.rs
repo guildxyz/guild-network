@@ -6,12 +6,12 @@ pub use subxt::utils::MultiAddress;
 pub use subxt::utils::H256;
 pub use subxt::PolkadotConfig as ClientConfig;
 
-//mod cast;
+mod cast;
 #[subxt::subxt(runtime_metadata_path = "./artifacts/metadata.scale")]
 pub mod runtime {}
 //pub mod query;
-//#[cfg(feature = "tx")]
-//pub mod tx;
+#[cfg(feature = "tx")]
+pub mod tx;
 
 pub type Api = subxt::OnlineClient<ClientConfig>;
 pub type AccountId = subxt::utils::AccountId32;

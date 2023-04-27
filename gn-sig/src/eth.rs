@@ -40,7 +40,10 @@ pub fn hash_message<M: AsRef<[u8]>>(message: M) -> [u8; 32] {
 /// In case of an invalid signature, the function returns None. It is important
 /// that the recovery id of the signature (the last byte) is normalized to
 /// either 0 or 1.
-pub fn recover_prehashed(message: &[u8; 32], signature: &[u8; 65]) -> Option<PublicKey> {
+pub fn recover_prehashed(
+    message: &[u8; 32],
+    signature: &crate::EcdsaSignature,
+) -> Option<PublicKey> {
     let rid = RecoveryId::from_i32(signature[64] as i32).ok()?;
     let sig = RecoverableSignature::from_compact(&signature[..64], rid).ok()?;
     // NOTE this never fails because the prehashed message is 32 bytes

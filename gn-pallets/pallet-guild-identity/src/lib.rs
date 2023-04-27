@@ -172,7 +172,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             primary: T::AccountId,
             prefix: Prefix,
-            auth_sig: [u8; 65],
+            auth_sig: gn_sig::EcdsaSignature,
         ) -> DispatchResult {
             let signer = ensure_signed(origin)?;
             // verify authority signature

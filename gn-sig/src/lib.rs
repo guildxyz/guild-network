@@ -10,3 +10,5 @@ pub mod webcrypto;
 
 pub use multisignature::MultiSignature;
 pub use multisigner::MultiSigner;
+
+pub type EcdsaSignature = [u8; 65];

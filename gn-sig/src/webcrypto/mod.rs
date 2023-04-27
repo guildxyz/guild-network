@@ -5,7 +5,10 @@ use ecdsa::RecoveryId;
 use gn_common::hash::sha2_256;
 use p256::ecdsa::{Signature, VerifyingKey};
 
-pub fn recover_prehashed(msg: &[u8; 32], signature: &[u8; 65]) -> Option<VerifyingKey> {
+pub fn recover_prehashed(
+    msg: &[u8; 32],
+    signature: &crate::EcdsaSignature,
+) -> Option<VerifyingKey> {
     let recid = RecoveryId::from_byte(signature[64])?;
     let sig = Signature::from_slice(&signature[0..64]).ok()?;
     VerifyingKey::recover_from_prehash(msg, &sig, recid).ok()

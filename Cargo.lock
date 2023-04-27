@@ -3137,6 +3137,7 @@ dependencies = [
  "futures",
  "gn-common",
  "gn-engine",
+ "gn-sig",
  "gn-test-data",
  "hex",
  "log",
