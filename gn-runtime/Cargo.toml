@@ -17,6 +17,7 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-guild/runtime-benchmarks",
+  "pallet-guild-identity/runtime-benchmarks",
   "pallet-oracle/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-validator-manager/runtime-benchmarks",
@@ -36,6 +37,7 @@ std = [
   "pallet-balances/std",
   "pallet-grandpa/std",
   "pallet-guild/std",
+  "pallet-guild-identity/std",
   "pallet-im-online/std",
   "pallet-oracle/std",
   "pallet-randomness-collective-flip/std",
@@ -67,6 +69,7 @@ try-runtime = [
   "pallet-balances/try-runtime",
   "pallet-grandpa/try-runtime",
   "pallet-guild/try-runtime",
+  "pallet-guild-identity/try-runtime",
   "pallet-im-online/try-runtime",
   "pallet-oracle/try-runtime",
   "pallet-randomness-collective-flip/try-runtime",
@@ -80,6 +83,7 @@ try-runtime = [
 # local
 gn-sig = { version = "0.0.0-alpha", path = "../gn-sig", default-features = false }
 pallet-guild = { version = "0.0.0-alpha", path = "../gn-pallets/pallet-guild", default-features = false }
+pallet-guild-identity = { version = "0.0.0-alpha", path = "../gn-pallets/pallet-guild-identity", default-features = false }
 pallet-oracle = { version = "0.0.0-alpha", path = "../gn-pallets/pallet-oracle", default-features = false }
 pallet-validator-manager = { version = "0.0.0-alpha", path = "../gn-pallets/pallet-validator-manager", default-features = false }
 

@@ -3190,18 +3190,11 @@ name = "gn-common"
 version = "0.0.0-alpha"
 dependencies = [
  "binary-merkle-tree",
- "ethers",
  "hash-db",
  "parity-scale-codec 3.4.0",
  "scale-info",
- "serde",
- "serde_json",
- "serde_test",
  "sha2 0.10.6",
  "sha3 0.10.6",
- "sp-core",
- "sp-io",
- "tokio",
 ]
 
 [[package]]
@@ -3295,6 +3288,7 @@ dependencies = [
  "pallet-balances",
  "pallet-grandpa",
  "pallet-guild",
+ "pallet-guild-identity",
  "pallet-im-online",
  "pallet-oracle",
  "pallet-randomness-collective-flip",
@@ -8449,15 +8443,6 @@ checksum = "cad406b69c91885b5107daf2c29572f6c8cdb3c66826821e286c533490c0bc76"
 dependencies = [
  "itoa",
  "ryu",
- "serde",
-]
-
-[[package]]
-name = "serde_test"
-version = "1.0.152"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3611210d2d67e3513204742004d6ac6f589e521861dabb0f649b070eea8bed9e"
-dependencies = [
  "serde",
 ]
 

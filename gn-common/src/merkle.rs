@@ -1,11 +1,10 @@
 use crate::hash::{Hash, Keccak256};
 use crate::{Decode, Encode, SpVec, TypeInfo};
-use serde::{Deserialize, Serialize};
 
 pub use binary_merkle_tree::merkle_root as root;
 pub type Leaf<'a> = binary_merkle_tree::Leaf<'a, Hash>;
 
-#[derive(Serialize, Deserialize, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq)]
+#[derive(Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq)]
 pub struct Proof(SpVec<Hash>);
 
 impl Proof {

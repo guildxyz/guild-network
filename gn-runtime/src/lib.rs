@@ -104,7 +104,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 104,
+    spec_version: 105,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -346,9 +346,16 @@ impl pallet_sudo::Config for Runtime {
     type RuntimeCall = RuntimeCall;
 }
 
+impl pallet_guild_identity::Config for Runtime {
+    type MaxLinkedAddresses = ConstU32<3>;
+    type MaxLinkedAddressTypes = ConstU32<3>;
+    type MaxLinkedIdentities = ConstU32<5>;
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_guild_identity::weights::SubstrateWeight<Runtime>;
+}
+
 impl pallet_guild::Config for Runtime {
     type MaxAllowlistLen = ConstU32<128>;
-    type MaxIdentities = ConstU8<10>;
     type MaxRolesPerGuild = ConstU32<10>;
     type MaxReqsPerRole = ConstU32<10>;
     type MaxSerializedLen = ConstU32<256>;
@@ -359,7 +366,6 @@ impl pallet_guild::Config for Runtime {
 
 impl pallet_oracle::Config for Runtime {
     type Currency = Balances;
-    type Callback = pallet_guild::Call<Runtime>;
     type RuntimeEvent = RuntimeEvent;
     type MaxOperators = ConstU32<10>;
     type MinimumFee = MinimumFee;
@@ -405,6 +411,7 @@ construct_runtime!(
         Aura: pallet_aura,
         Grandpa: pallet_grandpa,
 
+        GuildIdentity: pallet_guild_identity = 69,
         Guild: pallet_guild = 70,
         Oracle: pallet_oracle = 71,
 
@@ -491,6 +498,7 @@ mod benches {
         [pallet_balances, Balances]
         [pallet_timestamp, Timestamp]
         [pallet_guild, Guild]
+        [pallet_guild_identity, GuildIdentity]
         [pallet_oracle, Oracle]
     );
 }

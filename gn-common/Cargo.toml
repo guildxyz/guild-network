@@ -17,17 +17,5 @@ binary-merkle-tree = { version = "4.0.0", default-features = false }
 hash-db = { version = "0.15.2", default-features = false }
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
-serde = { version = "1.0.144", default-features = false, features = ["derive"] }
 sha2 = { version = "0.10", default-features = false }
 sha3 = { version = "0.10", default-features = false }
-
-[dev-dependencies]
-# general
-ethers = "1.0.2"
-serde_json = "1"
-serde_test = "1"
-tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
-
-# substrate primitives
-sp-core = { workspace = true, features = ["std"] }
-sp-io = { workspace = true, features = ["std"] }
