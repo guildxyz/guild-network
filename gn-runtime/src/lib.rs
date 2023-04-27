@@ -497,8 +497,8 @@ mod benches {
         [frame_system, SystemBench::<Runtime>]
         [pallet_balances, Balances]
         [pallet_timestamp, Timestamp]
-        [pallet_guild, Guild]
         [pallet_guild_identity, GuildIdentity]
+        [pallet_guild, Guild]
         [pallet_oracle, Oracle]
     );
 }
@@ -650,6 +650,7 @@ impl_runtime_apis! {
             use frame_support::traits::StorageInfoTrait;
 
             let mut list = Vec::<BenchmarkList>::new();
+            list_benchmark!(list, extra, pallet_guild_identity, GuildIdentity);
             list_benchmark!(list, extra, pallet_guild, Guild);
             list_benchmark!(list, extra, pallet_oracle, Oracle);
 
@@ -682,6 +683,7 @@ impl_runtime_apis! {
             let mut batches = Vec::<BenchmarkBatch>::new();
             let params = (&config, &whitelist);
 
+            add_benchmark!(params, batches, pallet_guild_identity, GuildIdentity);
             add_benchmark!(params, batches, pallet_guild, Guild);
             add_benchmark!(params, batches, pallet_oracle, Oracle);
             Ok(batches)

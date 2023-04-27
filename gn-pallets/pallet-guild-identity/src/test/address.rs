@@ -1,6 +1,7 @@
 use super::*;
 use gn_sig::webcrypto::hash_pubkey;
 use gn_sig::webcrypto::wallet::Wallet;
+use parity_scale_codec::Encode;
 
 #[test]
 fn link_and_unlink_addresses() {
@@ -11,6 +12,8 @@ fn link_and_unlink_addresses() {
         let linked_account_2: <TestRuntime as frame_system::Config>::AccountId = 102;
         let linked_account_3: <TestRuntime as frame_system::Config>::AccountId = 103;
 
+        let wallet = Wallet::from_seed([10u8; 32]).unwrap();
+        let authority_0 = hash_pubkey(&wallet.pubkey());
         let wallet = Wallet::from_seed([12u8; 32]).unwrap();
         let authority_1 = hash_pubkey(&wallet.pubkey());
         let prefix_0 = [0u8; 8];
@@ -18,7 +21,7 @@ fn link_and_unlink_addresses() {
         let prefix_2 = [2u8; 8];
 
         // trying to link address without registering first
-        let signature = wallet.sign(linked_account_0.to_le_bytes()).unwrap();
+        let signature = wallet.sign(linked_account_0.encode()).unwrap();
         assert_noop!(
             <GuildIdentity>::link_address(
                 RuntimeOrigin::signed(linked_account_0),
@@ -34,6 +37,11 @@ fn link_and_unlink_addresses() {
             primary_account
         )));
         // authorize
+        assert_ok!(<GuildIdentity>::authorize(
+            RuntimeOrigin::signed(primary_account),
+            authority_0,
+            true
+        ));
         assert_ok!(<GuildIdentity>::authorize(
             RuntimeOrigin::signed(primary_account),
             authority_1,

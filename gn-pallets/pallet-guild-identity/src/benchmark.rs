@@ -21,10 +21,6 @@ benchmarks! {
     }
 
     deregister {
-        let a in 1 .. <T as Config>::MaxLinkedAddresses::get();
-        let t in 1 .. <T as Config>::MaxLinkedAddressTypes::get();
-        let n in 1 .. <T as Config>::MaxLinkedIdentities::get();
-
         let user: T::AccountId = whitelisted_caller();
         let operator: T::AccountId = account(ACCOUNT, 10, SEED);
 
@@ -34,12 +30,12 @@ benchmarks! {
         let authority_1 = hash_pubkey(&wallet_1.pubkey());
 
         oracle_init_and_register::<T>(&user, &operator);
-        assert_ok!(GuildIdentity::<T>::authorize(RawOrigin::Signed(user.clone()).into(), [9u8; 32], false));
-        assert_ok!(GuildIdentity::<T>::authorize(RawOrigin::Signed(user.clone()).into(), [8u8; 32], true));
+        assert_ok!(GuildIdentity::<T>::authorize(RawOrigin::Signed(user.clone()).into(), authority_0, false));
+        assert_ok!(GuildIdentity::<T>::authorize(RawOrigin::Signed(user.clone()).into(), authority_1, true));
 
-        for i in 0..t {
+        for i in 0..<T as Config>::MaxLinkedAddressTypes::get() {
             let prefix = [i as u8; 8];
-            for j in 0..a {
+            for j in 0..<T as Config>::MaxLinkedAddresses::get() {
                 let account: T::AccountId = account(ACCOUNT, i + j, SEED);
                 let signature = wallet_0.sign(account.encode()).unwrap();
                 assert_ok!(GuildIdentity::<T>::link_address(
@@ -51,7 +47,7 @@ benchmarks! {
             }
         }
 
-        for i in 0..n {
+        for i in 0..<T as Config>::MaxLinkedIdentities::get() {
             let prefix = [i as u8; 8];
             let identity = [i as u8; 32];
             assert_ok!(GuildIdentity::<T>::link_identity(
@@ -116,8 +112,6 @@ benchmarks! {
     }
 
     remove_addresses {
-        let a in 1 .. <T as Config>::MaxLinkedAddresses::get();
-
         let user: T::AccountId =  whitelisted_caller();
         let wallet = Wallet::from_seed([10u8; 32]).unwrap();
         let authority = hash_pubkey(&wallet.pubkey());
@@ -125,7 +119,7 @@ benchmarks! {
         assert_ok!(GuildIdentity::<T>::authorize(RawOrigin::Signed(user.clone()).into(), authority, false));
 
         let prefix = [0u8; 8];
-        for i in 0..a {
+        for i in 0..<T as Config>::MaxLinkedAddresses::get() {
             let linked: T::AccountId = account(ACCOUNT, i, SEED);
             let signature = wallet.sign(linked.encode()).unwrap();
             assert_ok!(GuildIdentity::<T>::link_address(
@@ -178,7 +172,7 @@ benchmarks! {
         assert!(identity_map.get(&prefix).is_none());
     }
 
-    impl_benchmark_test_suite!(Guild, crate::mock::new_test_ext(), crate::mock::TestRuntime, extra = false);
+    impl_benchmark_test_suite!(GuildIdentity, crate::mock::new_test_ext(), crate::mock::TestRuntime, extra = false);
 }
 
 fn oracle_init_and_register<T: Config>(user: &T::AccountId, operator: &T::AccountId) {

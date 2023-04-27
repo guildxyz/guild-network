@@ -92,14 +92,6 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         .build_storage::<TestRuntime>()
         .unwrap()
         .into();
-    ext.execute_with(|| {
-        init_chain();
-    });
+    ext.execute_with(|| System::set_block_number(1));
     ext
-}
-
-fn init_chain() {
-    for i in 0..2 {
-        System::set_block_number(i);
-    }
 }
