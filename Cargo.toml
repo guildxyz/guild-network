@@ -1,11 +1,11 @@
 [workspace]
 members = [
-    "gn-api",
-    "gn-cli",
+    #"gn-api",
+    #"gn-cli",
     "gn-common",
-    "gn-engine",
+    #"gn-engine",
     "gn-node",
-    "gn-oracle",
+    #"gn-oracle",
     "gn-pallets/pallet-guild",
     "gn-pallets/pallet-guild-identity",
     "gn-pallets/pallet-oracle",
@@ -17,12 +17,12 @@ members = [
 ]
 # don't include wasm in the build process
 default-members = [
-    "gn-api",
-    "gn-cli",
+    #"gn-api",
+    #"gn-cli",
     "gn-common",
-    "gn-engine",
+    #"gn-engine",
     "gn-node",
-    "gn-oracle",
+    #"gn-oracle",
     "gn-pallets/pallet-guild",
     "gn-pallets/pallet-guild-identity",
     "gn-pallets/pallet-oracle",

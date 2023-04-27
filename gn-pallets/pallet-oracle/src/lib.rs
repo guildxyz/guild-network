@@ -256,13 +256,7 @@ pub mod pallet {
         ///
         /// Request details are encapsulated in `data` which must be
         /// SCALE encoded. If provided fee is sufficient, Operator must send
-        /// back the request result in `callback` Extrinsic which then will
-        /// dispatch back to the request originator callback identified by
-        /// `callback`. The fee is `reserved` and only actually transferred
-        /// when the result is provided in the callback. Operators are expected
-        /// to listen to `OracleRequest` events. This event contains all the
-        /// required information to perform the request and provide back
-        /// the result.
+        /// back the answer to the `callback` function of the given pallet.
         #[pallet::call_index(4)]
         #[pallet::weight((T::WeightInfo::initiate_request(data.len() as u32), Pays::No))]
         pub fn initiate_request(

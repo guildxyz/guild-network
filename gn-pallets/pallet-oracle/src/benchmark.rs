@@ -2,14 +2,8 @@ use super::*;
 use crate::Pallet as Oracle;
 
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
-use frame_support::dispatch::{
-    DispatchResultWithPostInfo, PostDispatchInfo, UnfilteredDispatchable,
-};
-use frame_support::pallet_prelude::Pays;
 use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
-use parity_scale_codec::{Decode, Encode, EncodeLike};
-use scale_info::TypeInfo;
 use sp_std::{vec, vec::Vec};
 
 const ACCOUNT: &str = "operator";
@@ -68,8 +62,7 @@ benchmarks! {
 
         let data = vec![128; n as usize];
         let fee = T::Currency::minimum_balance();
-        let callback = MockCallback::<T>::test();
-    }: _(RawOrigin::Signed(caller), callback, data, fee)
+    }: _(RawOrigin::Signed(caller), 1, data, fee)
     verify {
         assert_eq!(Oracle::<T>::request_identifier(), 1);
         assert_eq!(Oracle::<T>::next_operator(), 1);
@@ -86,37 +79,4 @@ fn register_operators<T: Config>(n: u32) -> Vec<T::AccountId> {
     }
 
     operators
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, TypeInfo, Encode, Decode)]
-pub struct MockCallback<T>(pub core::marker::PhantomData<T>);
-
-impl<T> EncodeLike<()> for MockCallback<T> {}
-
-impl<T> CallbackWithParameter for MockCallback<T> {
-    fn with_result(&self, result: Vec<u8>) -> Option<Self> {
-        if result == [0, 0] {
-            None
-        } else {
-            Some(Self(core::marker::PhantomData))
-        }
-    }
-}
-
-impl<T: frame_system::Config> UnfilteredDispatchable for MockCallback<T> {
-    type RuntimeOrigin = <T as frame_system::Config>::RuntimeOrigin;
-    fn dispatch_bypass_filter(self, _origin: Self::RuntimeOrigin) -> DispatchResultWithPostInfo {
-        Ok(PostDispatchInfo {
-            actual_weight: None,
-            pays_fee: Pays::No,
-        })
-    }
-}
-
-impl<T: Config> MockCallback<T> {
-    pub fn test() -> <T as Config>::Callback {
-        let mut enc = vec![9];
-        enc.extend(vec![1u8, 2, 3].encode());
-        Decode::decode(&mut &enc[..]).unwrap()
-    }
 }
