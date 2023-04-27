@@ -7,7 +7,6 @@ version = "0.0.0-alpha"
 default = ["std"]
 runtime-benchmarks = [
   "frame-benchmarking/runtime-benchmarks",
-  "gn-common/test-sig",
 ]
 std = [
   "gn-common/std",

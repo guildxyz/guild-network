@@ -5608,6 +5608,7 @@ dependencies = [
 name = "pallet-guild-identity"
 version = "0.0.0-alpha"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "gn-common",

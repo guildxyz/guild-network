@@ -5,8 +5,11 @@ version = "0.0.0-alpha"
 
 [features]
 default = ["std"]
-runtime-benchmarks = []
+runtime-benchmarks = [
+  "frame-benchmarking/runtime-benchmarks",
+]
 std = [
+	"frame-benchmarking?/std",
 	"frame-support/std",
 	"frame-system/std",
 	"gn-common/std",
@@ -29,6 +32,7 @@ parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
 
 # substrate frame
+frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 
