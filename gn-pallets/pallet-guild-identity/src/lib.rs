@@ -318,7 +318,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(8)]
-        #[pallet::weight((0, DispatchClass::Operational, Pays::No))]
+        #[pallet::weight((0, DispatchClass::Operational))]
         pub fn callback(
             origin: OriginFor<T>,
             request_id: RequestIdentifier,

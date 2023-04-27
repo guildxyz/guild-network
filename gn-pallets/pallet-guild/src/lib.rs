@@ -395,7 +395,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(11)]
-        #[pallet::weight((0, DispatchClass::Operational, Pays::No))]
+        #[pallet::weight((0, DispatchClass::Operational))]
         pub fn callback(
             origin: OriginFor<T>,
             request_id: RequestIdentifier,
@@ -451,7 +451,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(12)]
-        #[pallet::weight((0, DispatchClass::Operational, Pays::No))]
+        #[pallet::weight((0, DispatchClass::Operational))]
         pub fn sudo_remove(
             origin: OriginFor<T>,
             account: T::AccountId,

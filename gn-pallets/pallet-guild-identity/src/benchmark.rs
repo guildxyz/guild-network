@@ -37,9 +37,9 @@ benchmarks! {
         assert_ok!(GuildIdentity::<T>::authorize(RawOrigin::Signed(user.clone()).into(), [9u8; 32], false));
         assert_ok!(GuildIdentity::<T>::authorize(RawOrigin::Signed(user.clone()).into(), [8u8; 32], true));
 
-        for i in 1..t {
+        for i in 0..t {
             let prefix = [i as u8; 8];
-            for j in 1..a {
+            for j in 0..a {
                 let account: T::AccountId = account(ACCOUNT, i + j, SEED);
                 let signature = wallet_0.sign(account.encode()).unwrap();
                 assert_ok!(GuildIdentity::<T>::link_address(
@@ -51,7 +51,7 @@ benchmarks! {
             }
         }
 
-        for i in 1..n {
+        for i in 0..n {
             let prefix = [i as u8; 8];
             let identity = [i as u8; 32];
             assert_ok!(GuildIdentity::<T>::link_identity(
@@ -59,6 +59,7 @@ benchmarks! {
                 prefix,
                 identity,
             ));
+            assert_ok!(GuildIdentity::<T>::callback(RawOrigin::Signed(operator.clone()).into(), i.into(), true));
         }
 
         let address_map = GuildIdentity::<T>::addresses(&user).unwrap();
@@ -85,9 +86,11 @@ benchmarks! {
         let user: T::AccountId = account(ACCOUNT, 10, SEED);
         let linked: T::AccountId = whitelisted_caller();
         let wallet = Wallet::from_seed([10u8; 32]).unwrap();
+        let authority = hash_pubkey(&wallet.pubkey());
         let signature = wallet.sign(linked.encode()).unwrap();
         let prefix = [0u8; 8];
         assert_ok!(GuildIdentity::<T>::register(RawOrigin::Signed(user.clone()).into()));
+        assert_ok!(GuildIdentity::<T>::authorize(RawOrigin::Signed(user.clone()).into(), authority, false));
     }: _(RawOrigin::Signed(linked.clone()), user.clone(), prefix, signature)
     verify {
         let address_map = GuildIdentity::<T>::addresses(user).unwrap();
@@ -97,17 +100,82 @@ benchmarks! {
 
     unlink_address {
         let user: T::AccountId =  whitelisted_caller();
-        let linked: T::AccountId =account(ACCOUNT, 10, SEED);
+        let linked: T::AccountId = account(ACCOUNT, 10, SEED);
         let wallet = Wallet::from_seed([10u8; 32]).unwrap();
+        let authority = hash_pubkey(&wallet.pubkey());
         let signature = wallet.sign(linked.encode()).unwrap();
         let prefix = [0u8; 8];
         assert_ok!(GuildIdentity::<T>::register(RawOrigin::Signed(user.clone()).into()));
+        assert_ok!(GuildIdentity::<T>::authorize(RawOrigin::Signed(user.clone()).into(), authority, false));
         assert_ok!(GuildIdentity::<T>::link_address(RawOrigin::Signed(linked.clone()).into(), user.clone(), prefix, signature));
     }: _(RawOrigin::Signed(user.clone()), prefix, linked)
     verify {
         let address_map = GuildIdentity::<T>::addresses(user).unwrap();
         let address_vec = address_map.get(&prefix).unwrap();
         assert!(address_vec.is_empty());
+    }
+
+    remove_addresses {
+        let a in 1 .. <T as Config>::MaxLinkedAddresses::get();
+
+        let user: T::AccountId =  whitelisted_caller();
+        let wallet = Wallet::from_seed([10u8; 32]).unwrap();
+        let authority = hash_pubkey(&wallet.pubkey());
+        assert_ok!(GuildIdentity::<T>::register(RawOrigin::Signed(user.clone()).into()));
+        assert_ok!(GuildIdentity::<T>::authorize(RawOrigin::Signed(user.clone()).into(), authority, false));
+
+        let prefix = [0u8; 8];
+        for i in 0..a {
+            let linked: T::AccountId = account(ACCOUNT, i, SEED);
+            let signature = wallet.sign(linked.encode()).unwrap();
+            assert_ok!(GuildIdentity::<T>::link_address(
+                RawOrigin::Signed(linked.clone()).into(),
+                user.clone(),
+                prefix,
+                signature
+            ));
+        }
+
+        let address_map = GuildIdentity::<T>::addresses(&user).unwrap();
+        let address_vec = address_map.get(&prefix).unwrap();
+        assert_eq!(address_vec.len(), <T as Config>::MaxLinkedAddresses::get() as usize);
+    }: _(RawOrigin::Signed(user.clone()), prefix)
+    verify {
+        let address_map = GuildIdentity::<T>::addresses(&user).unwrap();
+        assert!(address_map.get(&prefix).is_none());
+    }
+
+    link_identity {
+        let user: T::AccountId =  whitelisted_caller();
+        let operator: T::AccountId = account(ACCOUNT, 10, SEED);
+        let prefix = [0u8; 8];
+        let identity = [123u8; 32];
+        oracle_init_and_register::<T>(&user, &operator);
+    }: _(RawOrigin::Signed(user.clone()), prefix, identity)
+    verify {
+        assert_ok!(GuildIdentity::<T>::callback(RawOrigin::Signed(operator).into(), 0, true));
+        let identity_map = GuildIdentity::<T>::identities(&user).unwrap();
+        assert_eq!(identity_map.get(&prefix), Some(&identity));
+    }
+
+    unlink_identity {
+        let user: T::AccountId =  whitelisted_caller();
+        let operator: T::AccountId = account(ACCOUNT, 10, SEED);
+        let prefix = [0u8; 8];
+        let identity = [123u8; 32];
+        oracle_init_and_register::<T>(&user, &operator);
+        assert_ok!(GuildIdentity::<T>::link_identity(
+            RawOrigin::Signed(user.clone()).into(),
+            prefix,
+            identity,
+        ));
+        assert_ok!(GuildIdentity::<T>::callback(RawOrigin::Signed(operator).into(), 0, true));
+        let identity_map = GuildIdentity::<T>::identities(&user).unwrap();
+        assert_eq!(identity_map.get(&prefix), Some(&identity));
+    }: _(RawOrigin::Signed(user.clone()), prefix)
+    verify {
+        let identity_map = GuildIdentity::<T>::identities(&user).unwrap();
+        assert!(identity_map.get(&prefix).is_none());
     }
 
     impl_benchmark_test_suite!(Guild, crate::mock::new_test_ext(), crate::mock::TestRuntime, extra = false);
