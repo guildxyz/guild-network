@@ -411,6 +411,7 @@ pub mod pallet {
             request_id: RequestIdentifier,
             result: bool,
         ) -> DispatchResult {
+            let signer = ensure_signed(origin)?;
             let request = <pallet_oracle::Pallet<T>>::request(request_id)
                 .ok_or(Error::<T>::InvalidOracleAnswer)?;
 
@@ -425,7 +426,7 @@ pub mod pallet {
             let request = AccessCheckRequest::<T::AccountId>::decode(&mut request.data.as_slice())
                 .map_err(|_| Error::<T>::InvalidOracleAnswer)?;
 
-            <pallet_oracle::Pallet<T>>::callback(origin, request_id)?;
+            <pallet_oracle::Pallet<T>>::callback(RawOrigin::Root, signer, request_id)?;
 
             let guild_id =
                 Self::guild_id(request.guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;

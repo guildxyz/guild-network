@@ -315,19 +315,22 @@ pub mod pallet {
             Ok(())
         }
 
-        /// The callback used to be notified of all Operators results.
+        /// The callback used to process all operator results.
         ///
-        /// Only the Operator responsible for an identified request can notify
+        /// Only the Operator responsible for an identified request can send
         /// back the result. Result is then dispatched back to the originator's
         /// callback. The fee reserved during `initiate_request` is transferred
         /// as soon as this callback is called.
         #[pallet::call_index(5)]
         #[pallet::weight((0, DispatchClass::Operational, Pays::No))]
-        pub fn callback(origin: OriginFor<T>, request_id: RequestIdentifier) -> DispatchResult {
-            let signer = ensure_signed(origin)?;
-
+        pub fn callback(
+            origin: OriginFor<T>,
+            operator: T::AccountId,
+            request_id: RequestIdentifier,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
             let request = Requests::<T>::get(request_id).ok_or(Error::<T>::UnknownRequest)?;
-            ensure!(request.operator == signer, Error::<T>::WrongOperator);
+            ensure!(request.operator == operator, Error::<T>::WrongOperator);
 
             // NOTE: This should not be possible technically but it is here to be safe
             ensure!(
