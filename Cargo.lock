@@ -3252,6 +3252,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "gn-oracle"
+version = "0.0.0-alpha"
+dependencies = [
+ "env_logger 0.9.3",
+ "futures",
+ "gn-api",
+ "gn-common",
+ "log",
+ "sp-core",
+ "structopt",
+ "tokio",
+]
+
+[[package]]
 name = "gn-runtime"
 version = "0.0.0-alpha"
 dependencies = [

@@ -6,11 +6,9 @@ use futures::{future::try_join_all, StreamExt};
 use gn_api::{
     query,
     tx::{self, Signer},
-    Api, GuildCall, OracleCallback, OracleRequest, SubxtError,
+    Api,
 };
-use gn_common::identity::Identity;
-use gn_common::utils::{matches_variant, verification_msg};
-use gn_common::{RequestData, RequestIdentifier};
+use gn_common::Identity;
 use sp_core::crypto::{ExposeSecret, SecretString, Zeroize};
 use structopt::StructOpt;
 
@@ -60,11 +58,11 @@ async fn main() {
         activate(api.clone(), Arc::clone(&signer)).await;
     }
 
-    run(api, signer).await
+    //run(api, signer).await
 }
 
 pub async fn activate(api: Api, operator: Arc<Signer>) {
-    if !query::is_operator_registered(api.clone(), operator.account_id())
+    if !query::oracle::is_registered(api.clone(), operator.account_id())
         .await
         .expect("failed to fetch operator info")
     {
@@ -78,6 +76,7 @@ pub async fn activate(api: Api, operator: Arc<Signer>) {
     log::info!("operator activation request submitted");
 }
 
+/*
 pub async fn run(api: Api, operator: Arc<Signer>) {
     let active = query::active_operators(api.clone())
         .await
@@ -249,3 +248,4 @@ async fn compile_answer(
     log::info!("oracle answer ({}): {:?}", request_id, result);
     Ok(tx::oracle_callback(request_id, result))
 }
+*/

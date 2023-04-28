@@ -6,7 +6,6 @@ edition = "2021"
 [features]
 default = [
     "gn-common/default",
-    "gn-engine/default",
     "subxt/default",
     "tx",
 ]
@@ -14,7 +13,6 @@ external-oracle = []
 prefund = []
 tx = [
     "sp-core",
-    "gn-engine/check",
     "gn-sig",
 ]
 wasm = ["subxt/jsonrpsee-web"]
@@ -22,7 +20,6 @@ wasm = ["subxt/jsonrpsee-web"]
 [dependencies]
 # local
 gn-common = { version = "0.0.0-alpha", path = "../gn-common", default-features = false }
-gn-engine = { version = "0.0.0-alpha", path = "../gn-engine", default-features = false }
 gn-sig = { version = "0.0.0-alpha", path = "../gn-sig", features = ["wallet"], optional = true }
 subxt = { git = "https://github.com/agoraxyz/subxt", branch = "bumped-wasm", default-features = false }
 

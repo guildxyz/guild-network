@@ -7,7 +7,6 @@ pub mod filter;
 pub mod hash;
 pub mod merkle;
 pub mod pad;
-pub mod utils;
 
 use parity_scale_codec::alloc::vec::Vec as SpVec;
 use parity_scale_codec::{Decode, Encode};
