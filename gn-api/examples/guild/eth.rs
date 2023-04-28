@@ -2,7 +2,7 @@ use ethers::core::k256::ecdsa::SigningKey;
 use ethers::signers::{LocalWallet, Signer as EthSignerT};
 use gn_api::tx::{self, Signer};
 use gn_api::{query, Api, ClientConfig};
-
+use parity_scale_codec::Encode;
 use subxt::utils::{MultiAddress, MultiSignature};
 
 use std::sync::Arc;
@@ -52,13 +52,57 @@ impl subxt::tx::Signer<ClientConfig> for EthSigner {
 }
 
 pub async fn eth(api: Api, _signer: Arc<Signer>) {
-    let eth_signer = Arc::new(EthSigner::from_seed([2u8; 32]));
+    let primary = Arc::new(EthSigner::from_seed([2u8; 32]));
+    let linked = Arc::new(EthSigner::from_seed([3u8; 32]));
+    let wallet = gn_sig::webcrypto::wallet::Wallet::from_seed([10u8; 32]).unwrap();
+    let authority = gn_sig::webcrypto::hash_pubkey(&wallet.pubkey());
+    let prefix = [98u8; 8];
+
+    // create a guild just for fun
     let guild_name = [111u8; 32];
     let payload = tx::guild::create_guild(guild_name, vec![1, 2, 3]);
-    tx::send::in_block(api.clone(), &payload, Arc::clone(&eth_signer))
+    tx::send::in_block(api.clone(), &payload, Arc::clone(&primary))
         .await
         .unwrap();
 
-    let guild_id = query::guild::guild_id(api, guild_name).await.unwrap();
-    println!("{:?}", guild_id);
+    // check that guild is indeed created
+    let guild_id = query::guild::guild_id(api.clone(), guild_name)
+        .await
+        .unwrap();
+    println!("CREATED GUILD: {:?}", guild_id);
+
+    // register primary address
+    let payload = tx::identity::register();
+    tx::send::in_block(api.clone(), &payload, Arc::clone(&primary))
+        .await
+        .expect("failed to send tx");
+
+    // authorize wallet
+    let payload = tx::identity::authorize(authority, false);
+    tx::send::in_block(api.clone(), &payload, Arc::clone(&primary))
+        .await
+        .expect("failed to send tx");
+
+    let authorities = query::identity::authorities(api.clone(), primary.as_ref().account_id())
+        .await
+        .expect("failed to dispatch query");
+
+    assert_eq!(authorities, [authority, [0u8; 32]]);
+
+    // link address
+    let signature = wallet.sign(linked.account_id().encode()).unwrap();
+    let payload = tx::identity::link_address(primary.account_id().clone(), prefix, signature);
+    tx::send::in_block(api.clone(), &payload, Arc::clone(&linked))
+        .await
+        .expect("failed to send tx");
+
+    // check addresses
+    let address_map = query::identity::addresses(api, primary.as_ref().account_id())
+        .await
+        .expect("failed to dispatch query");
+
+    let expected = vec![linked.as_ref().account_id().clone()];
+    assert_eq!(address_map.get(&prefix), Some(&expected));
+
+    println!("LINKED ADDRESS: {}", expected[0]);
 }

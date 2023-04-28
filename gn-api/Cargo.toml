@@ -23,7 +23,7 @@ wasm = ["subxt/jsonrpsee-web"]
 # local
 gn-common = { version = "0.0.0-alpha", path = "../gn-common", default-features = false }
 gn-engine = { version = "0.0.0-alpha", path = "../gn-engine", default-features = false }
-gn-sig = { version = "0.0.0-alpha", path = "../gn-sig", optional = true }
+gn-sig = { version = "0.0.0-alpha", path = "../gn-sig", features = ["wallet"], optional = true }
 subxt = { git = "https://github.com/agoraxyz/subxt", branch = "bumped-wasm", default-features = false }
 
 # general

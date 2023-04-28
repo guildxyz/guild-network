@@ -1,5 +1,5 @@
 use crate::{cast, runtime, AccountId, Api, SubxtError};
-use gn_common::{Identity, Prefix};
+use gn_common::{Authority, Identity, Prefix};
 
 use std::collections::BTreeMap;
 
@@ -15,7 +15,7 @@ pub async fn identities(
         .await?
         .ok_or(SubxtError::Other("account not registered".into()))?;
 
-    Ok(cast::identity_map::from_runtime(identity_map))
+    Ok(identity_map.0.into_iter().collect())
 }
 
 pub async fn addresses(
@@ -30,5 +30,20 @@ pub async fn addresses(
         .await?
         .ok_or(SubxtError::Other("account not registered".into()))?;
 
-    Ok(cast::address_map::from_runtime(address_map))
+    let map = address_map
+        .0
+        .into_iter()
+        .map(|(prefix, address_vec)| (prefix, cast::address_vec::from_runtime(address_vec)))
+        .collect();
+
+    Ok(map)
+}
+
+pub async fn authorities(api: Api, user_id: &AccountId) -> Result<[Authority; 2], SubxtError> {
+    api.storage()
+        .at(None)
+        .await?
+        .fetch(&runtime::storage().guild_identity().authorities(user_id))
+        .await?
+        .ok_or(SubxtError::Other("account not registered".into()))
 }

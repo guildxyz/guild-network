@@ -53,7 +53,10 @@ pub async fn requests(
     let mut iter = api.storage().at(None).await?.iter(root, page_size).await?;
     while let Some((key, value)) = iter.next().await? {
         let key_bytes = (&key.0[48..]).try_into().unwrap();
-        map.insert(RequestIdentifier::from_le_bytes(key_bytes), cast::oracle_request::from_runtime(value));
+        map.insert(
+            RequestIdentifier::from_le_bytes(key_bytes),
+            cast::oracle_request::from_runtime(value),
+        );
     }
     Ok(map)
 }

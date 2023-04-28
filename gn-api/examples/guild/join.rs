@@ -31,7 +31,6 @@ pub async fn join(api: Api, root: Arc<Signer>) {
 
     join_guilds(api.clone(), &users).await;
 
-
     #[cfg(not(feature = "external-oracle"))]
     send_dummy_oracle_answers(api.clone(), &_operators).await;
 
