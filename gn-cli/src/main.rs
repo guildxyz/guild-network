@@ -2,9 +2,7 @@
 #![deny(clippy::dbg_macro)]
 #![deny(unused_crate_dependencies)]
 
-mod guild;
 mod key;
-mod stress;
 mod sudo;
 mod transfer;
 
@@ -12,9 +10,8 @@ use gn_api::tx;
 use sp_core::crypto::{ExposeSecret, SecretString, Zeroize};
 use structopt::StructOpt;
 
-use std::path::PathBuf;
-
 const TX_ERROR: &str = "failed to send tx";
+#[cfg(feature = "verify")]
 const QUERY_ERROR: &str = "failed to execute query";
 
 #[derive(StructOpt)]
@@ -23,8 +20,6 @@ pub enum Command {
     Key(KeySubCmd),
     /// Chain interactions that require sudo access
     Sudo(SudoSubCmd),
-    /// Guild-related on-chain interactions
-    Guild(GuildSubCmd),
     /// Transfer funds
     Transfer {
         /// The destination account receiving the transferred amount
@@ -33,48 +28,6 @@ pub enum Command {
         /// The balance to be transferred to the destination account
         #[structopt(long, short)]
         balance: u128,
-    },
-    /// Run stress tests
-    Stress {
-        /// Number of accounts to register
-        #[structopt(long, short, default_value = "100")]
-        num: usize,
-        /// Transactions per second
-        #[structopt(long, short, default_value = "10")]
-        tps: usize,
-        /// Initial seed
-        #[structopt(long, short, default_value = "guild network")]
-        seed: String,
-        /// Subcommand
-        #[structopt(subcommand)]
-        subcommand: StressSubCmd,
-    },
-}
-
-#[derive(StructOpt)]
-pub enum StressSubCmd {
-    AddressGen {
-        /// Output file path
-        #[structopt(long, short, default_value = "/tmp/addresses.txt")]
-        output: PathBuf,
-    },
-    RegisterEvm {
-        /// Identity index
-        #[structopt(long, short, default_value = "0")]
-        index: u8,
-    },
-    RegisterOther {
-        /// Identity index
-        #[structopt(long, short, default_value = "0")]
-        index: u8,
-    },
-    Join {
-        /// Guild name
-        #[structopt(long, short)]
-        guild: String,
-        /// Role name
-        #[structopt(long, short)]
-        role: String,
     },
 }
 
@@ -90,52 +43,6 @@ pub enum KeySubCmd {
     Rotate,
     /// Rotate session keys and set them
     Rotset,
-}
-
-// TODO add create guild and create role where input can be parsed from a
-// json file
-#[derive(StructOpt)]
-pub enum GuildSubCmd {
-    /// Register an identity on Guild Network
-    Register(Identity),
-    /// Join a specific role in a guild
-    Join {
-        /// Guild name
-        #[structopt(long, short)]
-        guild: String,
-        /// Role name
-        #[structopt(long, short)]
-        role: String,
-        /// Index among the user's registered identities
-        #[structopt(long, short, requires("leaf"))]
-        id: Option<u8>,
-        /// Index of identity in the role's allowlist
-        #[structopt(long, short, requires("id"))]
-        leaf: Option<usize>,
-    },
-}
-
-#[derive(StructOpt)]
-pub enum Identity {
-    /// Discord identity handle
-    Discord {
-        id: String,
-        #[structopt(default_value = "0")]
-        index: u8,
-    },
-    /// Telegram identity handle
-    Telegram {
-        id: String,
-        #[structopt(default_value = "0")]
-        index: u8,
-    },
-    /// EVM specific address and respective signature
-    Evm {
-        address: String,
-        signature: String,
-        #[structopt(default_value = "0")]
-        index: u8,
-    },
 }
 
 #[derive(StructOpt)]
@@ -207,34 +114,6 @@ async fn main() {
     log::info!("signer account: {}", signer.account_id());
 
     match opt.command {
-        Command::Stress {
-            num,
-            tps,
-            seed,
-            subcommand,
-        } => match subcommand {
-            StressSubCmd::AddressGen { output } => {
-                stress::generate_evm_addresses(output, num, &seed)
-            }
-            StressSubCmd::RegisterOther { index } => {
-                stress::register_other_identity(api, num, &seed, tps, index).await
-            }
-            _ => todo!(),
-        },
-        Command::Guild(GuildSubCmd::Register(identity)) => {
-            guild::register_identity(api, signer, identity).await
-        }
-        Command::Guild(GuildSubCmd::Join {
-            guild,
-            role,
-            id,
-            leaf,
-        }) => {
-            let indices = id
-                .zip(leaf)
-                .map(|(i, l)| guild::ProofIndices { id: i, leaf: l });
-            guild::join(api, signer, guild, role, indices).await
-        }
         Command::Key(KeySubCmd::Generate { curve }) => {
             key::generate(&curve, opt.password.expose_secret())
         }

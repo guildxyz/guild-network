@@ -32,14 +32,9 @@ pub async fn sudo(api: Api, signer: Arc<Signer>, maybe_operator: Option<&str>, m
 
     #[cfg(not(feature = "verify"))]
     {
-        //tx::send::ready(api.clone(), &tx::sudo(payload), Arc::clone(&signer))
-        tx::send::ready(
-            api.clone(),
-            &tx::sudo(tx::add_validator(&account_id)),
-            Arc::clone(&signer),
-        )
-        .await
-        .expect("failed to send tx");
+        tx::send::ready(api.clone(), &tx::sudo(payload), Arc::clone(&signer))
+            .await
+            .expect("failed to send tx");
 
         tx::send::batch(
             api,
@@ -58,12 +53,12 @@ pub async fn sudo(api: Api, signer: Arc<Signer>, maybe_operator: Option<&str>, m
 
         match method {
             Method::OracleRegister => {
-                assert!(query::is_operator_registered(api, &account_id)
+                assert!(query::oracle::is_registered(api, &account_id)
                     .await
                     .expect("query failed"));
             }
             Method::OracleDeregister => {
-                assert!(!query::is_operator_registered(api, &account_id)
+                assert!(!query::oracle::is_registered(api, &account_id)
                     .await
                     .expect("query failed"));
             }
