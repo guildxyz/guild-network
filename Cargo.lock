@@ -3144,8 +3144,6 @@ dependencies = [
  "parity-scale-codec 3.4.0",
  "paste",
  "rand 0.8.5",
- "serde",
- "serde_json",
  "sp-core",
  "structopt",
  "subxt",

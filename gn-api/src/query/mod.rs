@@ -1,12 +1,12 @@
-mod functions;
-pub use functions::*;
+pub mod guild;
+pub mod identity;
+pub mod oracle;
 
-use crate::SubxtError;
+use crate::{runtime, AccountId, Api, SessionKeys, SubxtError};
 use gn_common::Role;
 use gn_engine::RequirementsWithLogic;
-use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct FilteredRequirements {
     pub filter: Option<gn_common::filter::Filter>,
     pub requirements: Option<gn_engine::RequirementsWithLogic>,
@@ -29,4 +29,30 @@ impl TryFrom<Role> for FilteredRequirements {
             requirements,
         })
     }
+}
+
+pub async fn is_validator_added(api: Api, id: &AccountId) -> Result<bool, SubxtError> {
+    let validators_key = runtime::storage().validator_manager().validators();
+    let validators = api
+        .storage()
+        .at(None)
+        .await?
+        .fetch(&validators_key)
+        .await?
+        .ok_or(SubxtError::Other("empty validator set".to_string()))?;
+
+    Ok(validators.contains(id))
+}
+
+pub async fn next_session_keys(api: Api, validator: &AccountId) -> Result<SessionKeys, SubxtError> {
+    let storage_key = runtime::storage().session().next_keys(validator);
+    let keys = api
+        .storage()
+        .at(None)
+        .await?
+        .fetch(&storage_key)
+        .await?
+        .ok_or_else(|| SubxtError::Other(format!("no session key set for: {validator}")))?;
+
+    Ok(keys)
 }

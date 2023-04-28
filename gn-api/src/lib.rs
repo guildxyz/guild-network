@@ -1,5 +1,6 @@
 #![deny(clippy::all)]
 #![deny(clippy::dbg_macro)]
+#![deny(unused_crate_dependencies)]
 
 // re-exports
 pub use subxt::utils::MultiAddress;
@@ -9,7 +10,7 @@ pub use subxt::PolkadotConfig as ClientConfig;
 mod cast;
 #[subxt::subxt(runtime_metadata_path = "./artifacts/metadata.scale")]
 pub mod runtime {}
-//pub mod query;
+pub mod query;
 #[cfg(feature = "tx")]
 pub mod tx;
 
