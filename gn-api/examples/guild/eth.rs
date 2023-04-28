@@ -2,7 +2,6 @@ use ethers::core::k256::ecdsa::SigningKey;
 use ethers::signers::{LocalWallet, Signer as EthSignerT};
 use gn_api::tx::{self, Signer};
 use gn_api::{query, Api, ClientConfig};
-use gn_common::utils::evm_to_account;
 
 use subxt::utils::{MultiAddress, MultiSignature};
 
@@ -16,14 +15,14 @@ pub struct EthSigner {
 impl EthSigner {
     pub fn from_seed(seed: [u8; 32]) -> Self {
         let wallet = LocalWallet::from(SigningKey::from_bytes(&seed).unwrap());
-        let account_id = <ClientConfig as subxt::Config>::AccountId::from(evm_to_account(
+        let account_id = <ClientConfig as subxt::Config>::AccountId::from(gn_sig::address2account(
             wallet.address().to_fixed_bytes(),
         ));
         Self { account_id, wallet }
     }
 
-    pub fn evm_address(&self) -> [u8; 20] {
-        self.wallet.address().to_fixed_bytes()
+    pub fn account_id(&self) -> &<ClientConfig as subxt::Config>::AccountId {
+        &self.account_id
     }
 }
 
@@ -55,11 +54,11 @@ impl subxt::tx::Signer<ClientConfig> for EthSigner {
 pub async fn eth(api: Api, _signer: Arc<Signer>) {
     let eth_signer = Arc::new(EthSigner::from_seed([2u8; 32]));
     let guild_name = [111u8; 32];
-    let payload = tx::create_guild(guild_name, vec![1, 2, 3]);
+    let payload = tx::guild::create_guild(guild_name, vec![1, 2, 3]);
     tx::send::in_block(api.clone(), &payload, Arc::clone(&eth_signer))
         .await
         .unwrap();
 
-    let guild_id = query::guild_id(api, guild_name).await.unwrap();
+    let guild_id = query::guild::guild_id(api, guild_name).await.unwrap();
     println!("{:?}", guild_id);
 }

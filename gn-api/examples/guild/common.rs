@@ -1,12 +1,12 @@
 use crate::eth::EthSigner;
 use futures::future::try_join_all;
 use gn_api::query;
-use gn_api::tx::{self, Signer, SignerT, TxStatus};
+use gn_api::tx::{self, Signer, TxStatus};
 use gn_api::{AccountId, Api};
 use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
-use gn_common::identity::{EcdsaSignature, Identity, IdentityWithAuth};
 use gn_common::merkle::Proof as MerkleProof;
-use gn_common::pad::unpad_from_n_bytes;
+use gn_common::pad::{pad_to_n_bytes, unpad_from_n_bytes};
+use gn_common::{Identity, Prefix};
 use gn_test_data::*;
 
 use std::sync::Arc;
@@ -27,7 +27,7 @@ pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>, accounts: &[Arc<
     // create two guilds
     tx::send::ready(
         api.clone(),
-        &tx::create_guild(FIRST_GUILD, vec![1, 2, 3]),
+        &tx::guild::create_guild(FIRST_GUILD, vec![1, 2, 3]),
         Arc::clone(&signer),
     )
     .await
@@ -37,7 +37,7 @@ pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>, accounts: &[Arc<
 
     tx::send::in_block(
         api.clone(),
-        &tx::create_guild(SECOND_GUILD, vec![4, 5, 6]),
+        &tx::guild::create_guild(SECOND_GUILD, vec![4, 5, 6]),
         Arc::clone(&signer),
     )
     .await
@@ -45,9 +45,9 @@ pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>, accounts: &[Arc<
 
     println!("second guild created");
 
-    let allowlist: Vec<Identity> = accounts
+    let allowlist: Vec<AccountId> = accounts
         .iter()
-        .map(|acc| Identity::Address20(acc.as_ref().evm_address()))
+        .map(|acc| acc.as_ref().account_id().clone())
         .collect();
 
     let filter = GuildFilter {
@@ -58,21 +58,21 @@ pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>, accounts: &[Arc<
     // NOTE cannot try-join them because of different `impl TxPayload` opaque types
     tx::send::ready(
         api.clone(),
-        &tx::create_free_role(FIRST_GUILD, FIRST_ROLE),
+        &tx::guild::create_free_role(FIRST_GUILD, FIRST_ROLE),
         Arc::clone(&signer),
     )
     .await
     .unwrap();
     tx::send::ready(
         api.clone(),
-        &tx::create_free_role(SECOND_GUILD, FIRST_ROLE),
+        &tx::guild::create_free_role(SECOND_GUILD, FIRST_ROLE),
         Arc::clone(&signer),
     )
     .await
     .unwrap();
     tx::send::ready(
         api.clone(),
-        &tx::create_role_with_allowlist(
+        &tx::guild::create_role_with_allowlist(
             FIRST_GUILD,
             SECOND_ROLE,
             allowlist,
@@ -86,7 +86,8 @@ pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>, accounts: &[Arc<
     .unwrap();
     tx::send::in_block(
         api.clone(),
-        &tx::create_child_role(SECOND_GUILD, SECOND_ROLE, filter, FilterLogic::Or, None).unwrap(),
+        &tx::guild::create_child_role(SECOND_GUILD, SECOND_ROLE, filter, FilterLogic::Or, None)
+            .unwrap(),
         signer,
     )
     .await
@@ -97,7 +98,7 @@ pub async fn create_dummy_guilds(api: Api, signer: Arc<Signer>, accounts: &[Arc<
 
 pub async fn join_guilds(api: Api, users: &[Arc<EthSigner>]) {
     // everybody joins the first guild's free role
-    let payload = tx::join(FIRST_GUILD, FIRST_ROLE, None);
+    let payload = tx::guild::join_free_role(FIRST_GUILD, FIRST_ROLE);
     let join_request_futures = users
         .iter()
         .map(|acc| tx::send::in_block(api.clone(), &payload, Arc::clone(acc)))
@@ -108,17 +109,16 @@ pub async fn join_guilds(api: Api, users: &[Arc<EthSigner>]) {
     println!("first guild first role joined");
 
     // only 2 joins the allowlist
-    let allowlist = query::allowlist(api.clone(), FIRST_GUILD, SECOND_ROLE)
+    let allowlist = query::guild::allowlist(api.clone(), FIRST_GUILD, SECOND_ROLE)
         .await
-        .unwrap()
         .unwrap();
 
-    let proof_0 = MerkleProof::new(&allowlist, 0, 0);
-    let proof_1 = MerkleProof::new(&allowlist, 1, 0);
+    let proof_0 = MerkleProof::new(&allowlist, 0);
+    let proof_1 = MerkleProof::new(&allowlist, 1);
 
     let payloads = vec![
-        tx::join(FIRST_GUILD, SECOND_ROLE, Some(proof_0)),
-        tx::join(FIRST_GUILD, SECOND_ROLE, Some(proof_1)),
+        tx::guild::join_role_with_allowlist(FIRST_GUILD, SECOND_ROLE, proof_0),
+        tx::guild::join_role_with_allowlist(FIRST_GUILD, SECOND_ROLE, proof_1),
     ];
 
     let join_request_futures = users
@@ -134,7 +134,7 @@ pub async fn join_guilds(api: Api, users: &[Arc<EthSigner>]) {
 
     // only 5 joins the child role (they are all registered in first guild's
     // first role
-    let payload = tx::join(SECOND_GUILD, SECOND_ROLE, None);
+    let payload = tx::guild::join_child_role(SECOND_GUILD, SECOND_ROLE);
     let join_request_futures = users
         .iter()
         .take(5)
@@ -146,7 +146,7 @@ pub async fn join_guilds(api: Api, users: &[Arc<EthSigner>]) {
     println!("second guild second role joined");
 
     // other 5 joins the free role of the second guild
-    let payload = tx::join(SECOND_GUILD, FIRST_ROLE, None);
+    let payload = tx::guild::join_free_role(SECOND_GUILD, FIRST_ROLE);
     let join_request_futures = users
         .iter()
         .skip(5)
@@ -161,33 +161,14 @@ pub async fn join_guilds(api: Api, users: &[Arc<EthSigner>]) {
 pub async fn register_users(api: Api, users: &[Arc<EthSigner>]) {
     let register_address_payloads = users
         .iter()
-        .map(|acc| {
-            let msg = gn_common::utils::verification_msg(acc.account_id());
-
-            let signature = match acc.sign(msg.as_bytes()) {
-                subxt::utils::MultiSignature::Ecdsa(sig) => sig,
-                _ => unreachable!(),
-            };
-
-            let id_with_auth = IdentityWithAuth::Ecdsa(
-                Identity::Address20(acc.evm_address()),
-                EcdsaSignature(signature),
-            );
-            tx::register(id_with_auth, 0)
-        })
+        .map(|_| tx::identity::register())
         .collect::<Vec<_>>();
 
     let register_discord_payloads = users
         .iter()
         .enumerate()
         .map(|(i, _)| {
-            tx::register(
-                IdentityWithAuth::Other(
-                    Identity::Other(gn_common::pad::padded_id(b"discord:", i as u64)),
-                    [0u8; 64],
-                ),
-                1,
-            )
+            tx::identity::link_identity(pad_to_n_bytes::<8, _>(b"discord"), [i as u8; 32])
         })
         .collect::<Vec<_>>();
 
@@ -223,7 +204,7 @@ pub async fn register_users(api: Api, users: &[Arc<EthSigner>]) {
 pub async fn wait_for_members(api: Api, filter: &GuildFilter, member_count: usize) {
     let mut i = 0;
     loop {
-        let members = query::members(api.clone(), filter, PAGE_SIZE)
+        let members = query::guild::members(api.clone(), filter, PAGE_SIZE)
             .await
             .expect("failed to query members");
         if members.len() == member_count {
@@ -251,20 +232,25 @@ pub async fn wait_for_members(api: Api, filter: &GuildFilter, member_count: usiz
     }
 }
 
-pub async fn wait_for_identity(api: Api, account: &AccountId, identity: &Identity, index: usize) {
+pub async fn wait_for_identity(
+    api: Api,
+    account: &AccountId,
+    prefix: &Prefix,
+    identity: &Identity,
+) {
     let mut i = 0;
     loop {
-        let user_identity = query::user_identity(api.clone(), account)
+        let identity_map = query::identity::identities(api.clone(), account)
             .await
             .expect("failed to fetch user identities");
-        if user_identity.len() > index {
-            assert_eq!(user_identity.get(index), Some(identity));
+        if let Some(id) = identity_map.get(prefix) {
+            assert_eq!(id, identity);
             println!("USER ID REGISTERED");
             break;
         } else {
             i += 1;
             if i == RETRIES {
-                panic!("couldn't find identity at index {index}")
+                panic!("couldn't find identity with prefix {prefix:?}")
             }
             tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
         }

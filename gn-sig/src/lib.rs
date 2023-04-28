@@ -8,6 +8,7 @@ mod multisignature;
 mod multisigner;
 pub mod webcrypto;
 
+pub use eth::address2account;
 pub use multisignature::MultiSignature;
 pub use multisigner::MultiSigner;
 

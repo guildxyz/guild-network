@@ -59,7 +59,7 @@ async fn activate_operators(api: Api, accounts: &[Arc<Signer>]) {
 async fn wait_for_registered_operator(api: Api, operator: &AccountId) {
     let mut i = 0;
     loop {
-        if query::is_operator_registered(api.clone(), operator)
+        if query::oracle::is_registered(api.clone(), operator)
             .await
             .expect("failed to fetch registered operator")
         {
@@ -75,19 +75,30 @@ async fn wait_for_registered_operator(api: Api, operator: &AccountId) {
 }
 
 pub async fn send_dummy_oracle_answers(api: Api, operators: &[Arc<Signer>]) {
-    let oracle_requests = query::oracle_requests(api.clone(), PAGE_SIZE)
+    let oracle_requests = query::oracle::requests(api.clone(), PAGE_SIZE)
         .await
         .expect("failed to fetch oracle requests");
 
-    for (request_id, operator_id) in oracle_requests {
-        let tx = tx::oracle_callback(request_id, vec![u8::from(true)]);
+    for (request_id, request) in oracle_requests {
         let signer = operators
             .iter()
-            .find(|operator| operator.account_id() == &operator_id)
+            .find(|operator| operator.account_id() == &request.operator)
             .unwrap();
-        tx::send::ready(api.clone(), &tx, Arc::clone(signer))
-            .await
-            .expect("failed to submit oracle answer");
+        match request.pallet_index {
+            69 => {
+                let callback = tx::identity::callback(request_id, true);
+                tx::send::ready(api.clone(), &callback, Arc::clone(signer))
+                    .await
+                    .expect("failed to submit oracle answer");
+            }
+            70 => {
+                let callback = tx::guild::callback(request_id, true);
+                tx::send::ready(api.clone(), &callback, Arc::clone(signer))
+                    .await
+                    .expect("failed to submit oracle answer");
+            }
+            _ => panic!("invalid pallet index"),
+        };
     }
 
     println!("oracle requests successfully answered");

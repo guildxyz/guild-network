@@ -30,7 +30,7 @@ pub async fn init_operators(api: Api, _root: Arc<Signer>) -> Vec<Arc<Signer>> {
 async fn wait_for_active_operators(api: Api) -> Vec<AccountId> {
     let mut i = 0;
     loop {
-        let active_operators = query::active_operators(api.clone())
+        let active_operators = query::oracle::active_operators(api.clone())
             .await
             .expect("failed to fetch active operators");
         if active_operators.is_empty() {
@@ -50,10 +50,10 @@ async fn wait_for_active_operators(api: Api) -> Vec<AccountId> {
 pub async fn wait_for_oracle_answers(api: Api) {
     let mut i = 0;
     loop {
-        let oracle_requests = query::oracle_requests(api.clone(), PAGE_SIZE)
+        let request_map = query::oracle::requests(api.clone(), PAGE_SIZE)
             .await
             .expect("failed to fetch oracle requests");
-        if !oracle_requests.is_empty() {
+        if !request_map.is_empty() {
             i += 1;
             if i == RETRIES {
                 panic!("ran out of retries while checking oracle requests")

@@ -60,3 +60,13 @@ pub struct AccessCheckRequest<T> {
     pub guild_name: GuildName,
     pub role_name: GuildName,
 }
+
+#[derive(Encode, Decode, TypeInfo, Clone)]
+pub struct OracleRequest<AccountId, BlockNumber, BalanceOf> {
+    pub requester: AccountId,
+    pub operator: AccountId,
+    pub block_number: BlockNumber,
+    pub fee: BalanceOf,
+    pub pallet_index: u32,
+    pub data: SerializedData,
+}

@@ -1,5 +1,4 @@
 use parity_scale_codec::alloc::string::String;
-use parity_scale_codec::alloc::vec::Vec;
 
 /// Panics if the input is more than N bytes long.
 pub fn pad_to_n_bytes<const N: usize, T: AsRef<[u8]>>(input: T) -> [u8; N] {
@@ -18,13 +17,6 @@ pub fn unpad_from_n_bytes<const N: usize>(input: &[u8; N]) -> String {
         .take_while(|&&x| x != 0)
         .map(|&x| char::from(x))
         .collect()
-}
-
-/// Panics if the prefix bytes + 8 is more than 64 bytes
-pub fn padded_id<T: AsRef<[u8]>>(prefix: T, id: u64) -> [u8; 64] {
-    let mut tmp = Vec::from(prefix.as_ref());
-    tmp.extend_from_slice(id.to_le_bytes().as_ref());
-    pad_to_n_bytes(tmp)
 }
 
 #[cfg(test)]

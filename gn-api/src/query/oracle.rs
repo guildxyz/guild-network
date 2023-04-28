@@ -1,6 +1,5 @@
-use crate::{runtime, AccountId, Api, SubxtError};
+use crate::{cast, runtime, AccountId, Api, OracleRequest, SubxtError};
 use gn_common::RequestIdentifier;
-use parity_scale_codec::Decode;
 
 use std::collections::BTreeMap;
 
@@ -26,6 +25,8 @@ pub async fn is_registered(api: Api, id: &AccountId) -> Result<bool, SubxtError>
         .is_some())
 }
 
+/*
+use parity_scale_codec::Decode;
 pub async fn request<T: Decode>(api: Api, id: RequestIdentifier) -> Result<T, SubxtError> {
     let key = runtime::storage().oracle().requests(id);
     let request = api
@@ -40,18 +41,19 @@ pub async fn request<T: Decode>(api: Api, id: RequestIdentifier) -> Result<T, Su
 
     Ok(request)
 }
+*/
 
-pub async fn all_requests(
+pub async fn requests(
     api: Api,
     page_size: u32,
-) -> Result<BTreeMap<RequestIdentifier, AccountId>, SubxtError> {
+) -> Result<BTreeMap<RequestIdentifier, OracleRequest>, SubxtError> {
     let root = runtime::storage().oracle().requests_root();
 
     let mut map = BTreeMap::new();
     let mut iter = api.storage().at(None).await?.iter(root, page_size).await?;
     while let Some((key, value)) = iter.next().await? {
         let key_bytes = (&key.0[48..]).try_into().unwrap();
-        map.insert(RequestIdentifier::from_le_bytes(key_bytes), value.operator);
+        map.insert(RequestIdentifier::from_le_bytes(key_bytes), cast::oracle_request::from_runtime(value));
     }
     Ok(map)
 }

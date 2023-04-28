@@ -138,17 +138,7 @@ pub mod pallet {
     #[pallet::getter(fn next_operator)]
     pub type NextOperator<T: Config> = StorageValue<_, OperatorIdentifier, ValueQuery>;
 
-    #[derive(Encode, Decode, Clone, TypeInfo)]
-    pub struct GenericRequest<AccountId, BlockNumber, BalanceOf> {
-        pub requester: AccountId,
-        pub operator: AccountId,
-        pub block_number: BlockNumber,
-        pub fee: BalanceOf,
-        pub pallet_index: u32,
-        pub data: SpVec<u8>,
-    }
-
-    pub type OracleRequest<T> = GenericRequest<
+    pub type OracleRequest<T> = gn_common::OracleRequest<
         <T as frame_system::Config>::AccountId,
         <T as frame_system::Config>::BlockNumber,
         BalanceOf<T>,

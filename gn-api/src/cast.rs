@@ -1,5 +1,5 @@
 #![allow(unused)]
-use crate::{runtime, AccountId};
+use crate::{runtime, AccountId, OracleRequest};
 use gn_common::filter::{Filter, Logic as FilterLogic};
 use gn_common::merkle::Proof as MerkleProof;
 use gn_common::{Identity, Prefix, Role};
@@ -27,6 +27,7 @@ type RuntimeIdentityMap =
         Identity,
     >;
 type RuntimeMerkleProof = runtime::runtime_types::gn_common::merkle::Proof;
+type RuntimeOracleRequest = runtime::runtime_types::gn_common::OracleRequest<AccountId, u32, u128>;
 type RuntimeRole = runtime::runtime_types::gn_common::Role;
 
 macro_rules! cast {
@@ -49,6 +50,7 @@ cast!(Filter, filter);
 cast!(FilterLogic, filter_logic);
 cast!(Guild, guild);
 cast!(GuildFilter, guild_filter);
+cast!(OracleRequest, oracle_request);
 cast!(Role, role);
 cast!(MerkleProof, proof);
 cast!(IdentityMap, identity_map);
