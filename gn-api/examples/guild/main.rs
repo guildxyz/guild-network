@@ -1,8 +1,7 @@
 mod common;
 mod eth;
-//mod join;
+mod join;
 mod oracle;
-//mod token;
 
 use gn_api::tx;
 
@@ -12,7 +11,6 @@ use structopt::StructOpt;
 enum Example {
     Eth,
     Join,
-    Token,
 }
 
 #[derive(Debug, StructOpt)]
@@ -52,8 +50,6 @@ async fn main() {
 
     match opt.example {
         Example::Eth => eth::eth(api, signer).await,
-        //Example::Token => token::token(api, signer).await,
-        _ => todo!(),
-        //Example::Join => join::join(api, signer).await,
+        Example::Join => join::join(api, signer).await,
     }
 }

@@ -14,7 +14,7 @@ pub async fn init_dummy_operators(api: Api, root: Arc<Signer>) -> Vec<Arc<Signer
 
 fn dummy_operators() -> Vec<Arc<Signer>> {
     let mut seed = ACCOUNT_SEED;
-    (0..N_TEST_ACCOUNTS)
+    (0..5)
         .map(|_| {
             let keypair = Arc::new(Signer::new(Keypair::from_seed(&seed)));
             seed[0] += 1;
@@ -57,7 +57,7 @@ async fn activate_operators(api: Api, accounts: &[Arc<Signer>]) {
 }
 
 async fn wait_for_registered_operator(api: Api, operator: &AccountId) {
-    let mut i = 0;
+    let mut i = 1;
     loop {
         if query::oracle::is_registered(api.clone(), operator)
             .await
@@ -65,11 +65,11 @@ async fn wait_for_registered_operator(api: Api, operator: &AccountId) {
         {
             break;
         }
-        i += 1;
-        println!("waiting for registered operators");
+        println!("waiting for registered operators... (retries: {i}/{RETRIES})");
         if i == RETRIES {
             panic!("no registered operators found");
         }
+        i += 1;
         tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
     }
 }

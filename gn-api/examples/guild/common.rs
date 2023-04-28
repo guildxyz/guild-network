@@ -202,7 +202,7 @@ pub async fn register_users(api: Api, users: &[Arc<EthSigner>]) {
 }
 
 pub async fn wait_for_members(api: Api, filter: &GuildFilter, member_count: usize) {
-    let mut i = 0;
+    let mut i = 1;
     loop {
         let members = query::guild::members(api.clone(), filter, PAGE_SIZE)
             .await
@@ -223,10 +223,11 @@ pub async fn wait_for_members(api: Api, filter: &GuildFilter, member_count: usiz
             members.iter().for_each(|member| println!("\t{member}"));
             break;
         } else {
-            i += 1;
+            println!("waiting for members... (retries: {i}/{RETRIES})");
             if i == RETRIES {
                 panic!("found {} members, expected {member_count}", members.len());
             }
+            i += 1;
             tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
         }
     }
@@ -238,7 +239,7 @@ pub async fn wait_for_identity(
     prefix: &Prefix,
     identity: &Identity,
 ) {
-    let mut i = 0;
+    let mut i = 1;
     loop {
         let identity_map = query::identity::identities(api.clone(), account)
             .await
@@ -248,10 +249,11 @@ pub async fn wait_for_identity(
             println!("USER ID REGISTERED");
             break;
         } else {
-            i += 1;
+            println!("waiting for id registration... (retries: {i}/{RETRIES})");
             if i == RETRIES {
                 panic!("couldn't find identity with prefix {prefix:?}")
             }
+            i += 1;
             tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
         }
     }

@@ -61,7 +61,7 @@ pub struct AccessCheckRequest<T> {
     pub role_name: GuildName,
 }
 
-#[derive(Encode, Decode, TypeInfo, Clone)]
+#[derive(Encode, Decode, TypeInfo, Clone, Debug)]
 pub struct OracleRequest<AccountId, BlockNumber, BalanceOf> {
     pub requester: AccountId,
     pub operator: AccountId,

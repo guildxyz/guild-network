@@ -395,7 +395,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(11)]
-        #[pallet::weight(<T as Config>::WeightInfo::callback())]
+        #[pallet::weight((<T as Config>::WeightInfo::callback(), Pays::No))]
         pub fn callback(
             origin: OriginFor<T>,
             request_id: RequestIdentifier,
