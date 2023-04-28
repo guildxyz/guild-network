@@ -172,6 +172,23 @@ benchmarks! {
         assert!(identity_map.get(&prefix).is_none());
     }
 
+    callback {
+        let user: T::AccountId =  whitelisted_caller();
+        let operator: T::AccountId = account(ACCOUNT, 10, SEED);
+        let prefix = [0u8; 8];
+        let identity = [123u8; 32];
+        oracle_init_and_register::<T>(&user, &operator);
+        assert_ok!(GuildIdentity::<T>::link_identity(
+            RawOrigin::Signed(user.clone()).into(),
+            prefix,
+            identity,
+        ));
+    }: _(RawOrigin::Signed(operator), 0, true)
+    verify {
+        let identity_map = GuildIdentity::<T>::identities(&user).unwrap();
+        assert_eq!(identity_map.get(&prefix), Some(&identity));
+    }
+
     impl_benchmark_test_suite!(GuildIdentity, crate::mock::new_test_ext(), crate::mock::TestRuntime, extra = false);
 }
 

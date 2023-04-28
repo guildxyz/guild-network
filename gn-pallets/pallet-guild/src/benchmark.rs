@@ -39,11 +39,10 @@ benchmarks! {
 
     create_role_with_allowlist {
         let n in 1 .. <T as Config>::MaxAllowlistLen::get();
-        let r in 0 .. <T as Config>::MaxReqsPerRole::get();
-        let s in 0 .. <T as Config>::MaxSerializedLen::get();
-        let logic = vec![100u8; s as usize];
-        let req = vec![200u8; s as usize];
-        let serialized_requirements = (vec![req; r as usize], logic);
+
+        let logic = vec![100u8; <T as Config>::MaxSerializedLen::get() as usize];
+        let req = vec![200u8; <T as Config>::MaxSerializedLen::get() as usize];
+        let serialized_requirements = (vec![req; <T as Config>::MaxReqsPerRole::get() as usize], logic);
 
         let user: T::AccountId = whitelisted_caller();
         let guild_name = [0u8; 32];
@@ -58,11 +57,9 @@ benchmarks! {
     }
 
     create_child_role {
-        let r in 0 .. <T as Config>::MaxReqsPerRole::get();
-        let s in 0 .. <T as Config>::MaxSerializedLen::get();
-        let logic = vec![100u8; s as usize];
-        let req = vec![200u8; s as usize];
-        let serialized_requirements = (vec![req; r as usize], logic);
+        let logic = vec![100u8; <T as Config>::MaxSerializedLen::get() as usize];
+        let req = vec![200u8; <T as Config>::MaxSerializedLen::get() as usize];
+        let serialized_requirements = (vec![req; <T as Config>::MaxReqsPerRole::get() as usize], logic);
 
         let user: T::AccountId = whitelisted_caller();
         let guild_name = [0u8; 32];
@@ -86,11 +83,9 @@ benchmarks! {
     }
 
     create_unfiltered_role {
-        let r in 0 .. <T as Config>::MaxReqsPerRole::get();
-        let s in 0 .. <T as Config>::MaxSerializedLen::get();
-        let logic = vec![100u8; s as usize];
-        let req = vec![200u8; s as usize];
-        let serialized_requirements = (vec![req; r as usize], logic);
+        let logic = vec![100u8; <T as Config>::MaxSerializedLen::get() as usize];
+        let req = vec![200u8; <T as Config>::MaxSerializedLen::get() as usize];
+        let serialized_requirements = (vec![req; <T as Config>::MaxReqsPerRole::get() as usize], logic);
 
         let user: T::AccountId = whitelisted_caller();
         let guild_name = [0u8; 32];
@@ -243,14 +238,12 @@ benchmarks! {
     }
 
     request_access_check {
-        let r = <T as Config>::MaxReqsPerRole::get() as usize;
-        let s = <T as Config>::MaxSerializedLen::get() as usize;
-        let logic = vec![100u8; s];
-        let req = vec![200u8; s];
-        let serialized_requirements = (vec![req; r], logic);
+        let logic = vec![100u8; <T as Config>::MaxSerializedLen::get() as usize];
+        let req = vec![200u8; <T as Config>::MaxSerializedLen::get() as usize];
+        let serialized_requirements = (vec![req; <T as Config>::MaxReqsPerRole::get() as usize], logic);
 
-        let user: T::AccountId = whitelisted_caller();
-        let keeper: T::AccountId = account(ACCOUNT, 123, SEED);
+        let user: T::AccountId = account(ACCOUNT, 123, SEED);
+        let keeper: T::AccountId = whitelisted_caller();
         let operator: T::AccountId = account(ACCOUNT, 222, SEED);
         oracle_init_and_register::<T>(&user, &operator);
 
@@ -272,9 +265,39 @@ benchmarks! {
         ));
 
         assert_ok!(Guild::<T>::callback(RawOrigin::Signed(operator.clone()).into(), 0, true));
-    }: _(RawOrigin::Signed(keeper.clone()), user.clone(), guild_name, role_name)
+    }: _(RawOrigin::Signed(keeper), user.clone(), guild_name, role_name)
     verify {
         assert_ok!(Guild::<T>::callback(RawOrigin::Signed(operator).into(), 1, true));
+        membership_check::<T>(guild_name, role_name, user);
+    }
+
+    callback {
+        let logic = vec![100u8; <T as Config>::MaxSerializedLen::get() as usize];
+        let req = vec![200u8; <T as Config>::MaxSerializedLen::get() as usize];
+        let serialized_requirements = (vec![req; <T as Config>::MaxReqsPerRole::get() as usize], logic);
+
+        let user: T::AccountId = account(ACCOUNT, 222, SEED);
+        let operator: T::AccountId = whitelisted_caller();
+        oracle_init_and_register::<T>(&user, &operator);
+
+        let guild_name = [0u8; 32];
+        let role_name = [0u8; 32];
+        init_guild::<T>(&user, guild_name);
+
+        assert_ok!(Guild::<T>::create_unfiltered_role(
+            RawOrigin::Signed(user.clone()).into(),
+            guild_name,
+            role_name,
+            serialized_requirements,
+        ));
+
+        assert_ok!(Guild::<T>::join_unfiltered_role(
+            RawOrigin::Signed(user.clone()).into(),
+            guild_name,
+            role_name,
+        ));
+    }: _(RawOrigin::Signed(operator), 0, true)
+    verify {
         membership_check::<T>(guild_name, role_name, user);
     }
 

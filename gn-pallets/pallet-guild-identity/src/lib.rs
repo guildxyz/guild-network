@@ -318,12 +318,13 @@ pub mod pallet {
         }
 
         #[pallet::call_index(8)]
-        #[pallet::weight((0, DispatchClass::Operational))]
+        #[pallet::weight(<T as Config>::WeightInfo::callback())]
         pub fn callback(
             origin: OriginFor<T>,
             request_id: RequestIdentifier,
             result: bool,
         ) -> DispatchResult {
+            let signer = ensure_signed(origin)?;
             let request = <pallet_oracle::Pallet<T>>::request(request_id)
                 .ok_or(Error::<T>::InvalidOracleAnswer)?;
 
@@ -338,7 +339,11 @@ pub mod pallet {
             let request = LinkIdentityRequest::<T::AccountId>::decode(&mut request.data.as_slice())
                 .map_err(|_| Error::<T>::InvalidOracleAnswer)?;
 
-            <pallet_oracle::Pallet<T>>::callback(origin, request_id)?;
+            <pallet_oracle::Pallet<T>>::callback(
+                frame_system::RawOrigin::Root.into(),
+                signer,
+                request_id,
+            )?;
 
             if !result {
                 return Err(Error::<T>::IdentityCheckFailed.into());

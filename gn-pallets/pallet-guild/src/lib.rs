@@ -326,11 +326,7 @@ pub mod pallet {
 
         #[pallet::call_index(8)]
         #[pallet::weight((
-            <T as Config>::WeightInfo::create_role_with_allowlist(
-                allowlist.len() as u32,
-                <T as Config>::MaxReqsPerRole::get(),
-                <T as Config>::MaxSerializedLen::get(),
-            ),
+            <T as Config>::WeightInfo::create_role_with_allowlist(allowlist.len() as u32),
             Pays::No
         ))]
         pub fn create_role_with_allowlist(
@@ -358,10 +354,7 @@ pub mod pallet {
 
         #[pallet::call_index(9)]
         #[pallet::weight((
-            <T as Config>::WeightInfo::create_child_role(
-                <T as Config>::MaxReqsPerRole::get(),
-                <T as Config>::MaxSerializedLen::get(),
-            ),
+            <T as Config>::WeightInfo::create_child_role(),
             Pays::No
         ))]
         pub fn create_child_role(
@@ -387,10 +380,7 @@ pub mod pallet {
 
         #[pallet::call_index(10)]
         #[pallet::weight((
-            <T as Config>::WeightInfo::create_unfiltered_role(
-                <T as Config>::MaxReqsPerRole::get(),
-                <T as Config>::MaxSerializedLen::get(),
-            ),
+            <T as Config>::WeightInfo::create_unfiltered_role(),
             Pays::No
         ))]
         pub fn create_unfiltered_role(
@@ -405,7 +395,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(11)]
-        #[pallet::weight((0, DispatchClass::Operational))]
+        #[pallet::weight(<T as Config>::WeightInfo::callback())]
         pub fn callback(
             origin: OriginFor<T>,
             request_id: RequestIdentifier,
@@ -426,7 +416,11 @@ pub mod pallet {
             let request = AccessCheckRequest::<T::AccountId>::decode(&mut request.data.as_slice())
                 .map_err(|_| Error::<T>::InvalidOracleAnswer)?;
 
-            <pallet_oracle::Pallet<T>>::callback(RawOrigin::Root, signer, request_id)?;
+            <pallet_oracle::Pallet<T>>::callback(
+                frame_system::RawOrigin::Root.into(),
+                signer,
+                request_id,
+            )?;
 
             let guild_id =
                 Self::guild_id(request.guild_name).ok_or(Error::<T>::GuildDoesNotExist)?;
