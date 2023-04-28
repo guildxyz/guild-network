@@ -374,7 +374,7 @@ Parameters:
 
 END TEST CYCLE WITH PARAMETERS 500 num, 10 tps; FAILURES DETECTED: 0, RATE: 0.0%
 
-## Round 3
+### Round 3
 
 Conditions: Constant high pressure with increasing load
 
@@ -386,3 +386,67 @@ Parameters:
   - up until 280 total tx
  
 No failures observed 
+
+### Round 4
+
+Conditions: Constant low pressure, constant high load, 100 rounds
+
+Parameters:
+  - 500 tps
+  - 2000 total tx
+  - 100 iterations
+
+END TEST CYCLE WITH PARAMETERS 2000 num, 500 tps; FAILURES DETECTED: 10, RATE: 10.0%
+
+### Round 5
+
+Conditions: Constant low pressure, constant high load, 100 rounds
+
+Parameters:
+  - 500 tps
+  - 1000 total tx
+  - 100 iterations
+
+END TEST CYCLE WITH PARAMETERS 1000 num, 500 tps; FAILURES DETECTED: 0, RATE: 0.0%
+
+### Round 6
+
+Conditions: Constant low pressure, constant high load, 100 rounds
+
+Parameters:
+  - 500 tps
+  - 1500 total tx
+  - 100 iterations
+
+END TEST CYCLE WITH PARAMETERS 1500 num, 500 tps; FAILURES DETECTED: 13, RATE: 13.0%
+
+### Round 7
+
+Conditions: Constant high pressure, constant high load, 100 rounds
+
+Parameters:
+  - 1200 tps
+  - 1200 total tx
+  - 100 iterations
+
+END TEST CYCLE WITH PARAMETERS 1200 num, 1200 tps; FAILURES DETECTED: 0, RATE: 0.0%
+
+### Round 8
+
+Conditions: Constant high pressure, constant high load, 100 rounds
+
+Parameters:
+  - 1900 tps
+  - 1900 total tx
+  - 100 iterations
+
+END TEST CYCLE WITH PARAMETERS 1900 num, 1900 tps; FAILURES DETECTED: 4, RATE: 4.0%
+
+### Round 9
+
+Conditions: Constant high pressure, constant high load, 100 rounds
+
+Parameters:
+  - 2200 tps
+  - 2200 total tx
+  - 100 iterations

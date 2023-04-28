@@ -19,7 +19,7 @@ print("Connected")
 
 BLOCK_OVERHEAD = 187  # bytes
 END_CAPTURE_TIMEFRAME = 1
-TEST_CYCLE = 25
+TEST_CYCLE = 100
 SIG_FAIL_LVL = 0.05  # 5%
 
 # based on 1000 samples
@@ -260,13 +260,13 @@ def reliability_testing():
     params = 10
     results = {}
     capture_cycles = []
-    while True:
-        c = CaptureCycle(500, params)
-        failure_rate = c.start_tests()
-        results[params] = failure_rate
-        if params == 500:
-            break
-        params += 10
+    # while True:
+    c = CaptureCycle(2200, 2200)
+    failure_rate = c.start_tests()
+    results[params] = failure_rate
+    # if params == 500:
+    #     break
+    # params += 10
     print(
         f"First significant failure detected at {list(results.keys())[0]} num, {list(results.keys())[0]} tps")
     print(f"")
