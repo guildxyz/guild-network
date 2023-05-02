@@ -1,8 +1,10 @@
+use crate::common::dummy_requirements_with_logic;
 use ethers::core::k256::ecdsa::SigningKey;
 use ethers::signers::{LocalWallet, Signer as EthSignerT};
 use gn_api::tx::{self, Signer};
 use gn_api::{query, Api, ClientConfig};
 use gn_common::utils::evm_to_account;
+use gn_test_data::{FIRST_ROLE, SECOND_ROLE};
 
 use subxt::utils::{MultiAddress, MultiSignature};
 
@@ -60,6 +62,26 @@ pub async fn eth(api: Api, _signer: Arc<Signer>) {
         .await
         .unwrap();
 
-    let guild_id = query::guild_id(api, guild_name).await.unwrap();
-    println!("{:?}", guild_id);
+    let guild_id = query::guild_id(api.clone(), guild_name).await.unwrap();
+    println!("GUILD CREATED: ID: {:?}", guild_id);
+
+    let (first_reqs, second_reqs) = dummy_requirements_with_logic();
+
+    let payload = tx::create_unfiltered_role(guild_name, FIRST_ROLE, first_reqs).unwrap();
+    tx::send::in_block(api.clone(), &payload, Arc::clone(&eth_signer))
+        .await
+        .expect("failed to create first role");
+
+    let role_id = query::role_id(api.clone(), guild_name, FIRST_ROLE)
+        .await
+        .unwrap();
+    println!("FIRST ROLE CREATED, ID: {:?}", role_id);
+
+    let payload = tx::create_unfiltered_role(guild_name, SECOND_ROLE, second_reqs).unwrap();
+    tx::send::in_block(api.clone(), &payload, Arc::clone(&eth_signer))
+        .await
+        .expect("failed to create first role");
+
+    let role_id = query::role_id(api, guild_name, SECOND_ROLE).await.unwrap();
+    println!("SECOND ROLE CREATED, ID: {:?}", role_id);
 }
