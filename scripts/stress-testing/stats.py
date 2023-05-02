@@ -19,7 +19,7 @@ print("Connected")
 
 BLOCK_OVERHEAD = 187  # bytes
 END_CAPTURE_TIMEFRAME = 1
-TEST_CYCLE = 100
+TEST_CYCLE = 20
 SIG_FAIL_LVL = 0.05  # 5%
 
 # based on 1000 samples
@@ -221,16 +221,16 @@ class CaptureCycle:
             failures += iteration.failures
         return failures
 
-    def start_tests(self):
+    def start_tests(self, n):
         results = []
         print(
-            f"START TEST CYCLE WITH PARAMETERS {self.tx_num} num, {self.tps} tps")
+            f"START TEST CYCLE {n} WITH PARAMETERS {self.tx_num} num, {self.tps} tps")
         for i in range(0, TEST_CYCLE):
             res = self.start_iteration(i)
             results.append(res)
         failures = self.count_failures(results)
         print(
-            f"END TEST CYCLE WITH PARAMETERS {self.tx_num} num, {self.tps} tps; FAILURES DETECTED: {failures}, RATE: {failures/TEST_CYCLE*100}%"
+            f"END TEST CYCLE {n} WITH PARAMETERS {self.tx_num} num, {self.tps} tps; FAILURES DETECTED: {failures}, RATE: {failures/TEST_CYCLE*100}%"
         )
 
         if failures >= int(TEST_CYCLE * SIG_FAIL_LVL):
@@ -257,15 +257,17 @@ def initial_testing():
 
 
 def reliability_testing():
-    params = 10
+    params = 2200
     results = {}
     capture_cycles = []
     # while True:
-    c = CaptureCycle(2200, 2200)
-    failure_rate = c.start_tests()
-    results[params] = failure_rate
+    for i in range(25):
+        c = CaptureCycle(params, params)
+        failure_rate = c.start_tests(i)
+        results[i] = failure_rate
+        print(f"Capture cycle {i} ended")
     # if params == 500:
-    #     break
+    # break
     # params += 10
     print(
         f"First significant failure detected at {list(results.keys())[0]} num, {list(results.keys())[0]} tps")
