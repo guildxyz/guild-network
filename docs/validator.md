@@ -250,6 +250,7 @@ also suggests starting a node like this.
         --rpc-cors=all \
         --ws-max-connections 5000 \
         --pruning=archive
+        --no-private-ipv4
 ```
 
 You should download the raw chain specification from
@@ -259,7 +260,7 @@ choose. However, line `--bootnodes [bootnode multiaddress]` should look like
 this
 
 ```bash
-  --bootnodes /ip4/65.108.102.250/tcp/30333/p2p/12D3KooWErJ9ChGGenCAmRQiiqmVxkZvsqkSB5GYVBGpN2rdfccE
+  --bootnodes /ip4/65.108.10.251/tcp/30333/p2p/12D3KooWFFsqmfq77obEVLuZFzEZatogmPeLHYrZQh1j82nUBctu
 ```
 
 ## Set session keys
@@ -327,6 +328,7 @@ archive node unless you prune the node database and start syncing again.
         --bootnodes [bootnode multiaddr] \
         --enable-offchain-indexing true \
         --pruning=archive
+        --no-private-ipv4
 ```
 
 - rpc node (keeps rpc ports open for safe rpc methods)
@@ -344,6 +346,7 @@ archive node unless you prune the node database and start syncing again.
         --rpc-cors=all \
         --ws-max-connections 5000 \
         --pruning=archive
+        --no-private-ipv4
 ```
 
 - pruning validator node (prunes old blocks from the database while only keeping
@@ -358,6 +361,7 @@ archive node unless you prune the node database and start syncing again.
         --bootnodes [bootnode multiaddr] \
         --enable-offchain-indexing true \
         --pruning=256
+        --no-private-ipv4
 ```
 
 **NOTE**: None of the above nodes will expose unsafe RPC methods.
