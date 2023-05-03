@@ -462,7 +462,6 @@ END TEST CYCLE WITH PARAMETERS 2200 num, 2200 tps; FAILURES DETECTED: 35, RATE: 
 END TEST CYCLE WITH PARAMETERS 2200 num, 2200 tps; FAILURES DETECTED: 38, RATE: 38.0%
 
 mean: 36.5%
-stdev: 1.5%
 cor. stdev: 2.12132%
 cor. stderr: 1.5%
 margin of error (95% conf. lvl.) = +/-2.925%
@@ -507,13 +506,291 @@ END TEST CYCLE WITH PARAMETERS 2200 num, 2200 tps; FAILURES DETECTED: 8, RATE: 4
 
 FAILURE
   - mean: 6.76
-  - cor. stdev: 1.42243
-  - cor. sterr: 0.28448
-  - margin of error (95% conf. lvl.) = +/-0.558
+  - unbiased stdev: 1.43749
+  - unbiased sterr: 0.28750
+  - margin of error (95% conf. lvl.) = +/-0.563
 
 RATE:
   - mean: 33.8%
-  - cor. stdev: 7.11220%
-  - cor. sterr: 1.42244%
-  - margin of error (95% conf. lvl.) = +/-2.788%
+  - unbiased stdev: 7.18746%
+  - unbiased sterr: 1.43749%
+  - margin of error (95% conf. lvl.) = +/-2.817%
 
+### Round 11
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 1900 tps
+  - 1900 total tx
+  - 25 testing cycle
+  - 20 rounds per cycle
+
+
+[10, 8, 5, 7, 7, 6, 9, 9, 10, 7, 5, 8, 7, 5, 9, 7, 6, 6, 9, 8, 6, 7, 6, 8, 8]
+[50, 40, 25, 35, 35, 30, 45, 45, 50, 35, 25, 40, 35, 25, 45, 35, 30, 30, 45, 40, 30, 35, 30, 40, 40]
+
+
+FAILURE
+  - mean: 7.32
+  - unbiased stdev: 1.50799
+  - unbiased sterr: 0.30159
+  - margin of error (95% conf. lvl.) = +/-0.563
+
+RATE:
+  - mean: 36.6%
+  - unbiased stdev: 7.53996%
+  - unbiased sterr: 1.50799%
+  - margin of error (95% conf. lvl.) = +/-2.953%
+
+### Round 12
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 1900 tps
+  - 1900 total tx
+  - 10 testing cycle
+  - 10 rounds per cycle
+
+Fails: [1, 5, 3, 3, 4, 4, 5, 5, 2, 3]
+Rates: [0.1, 0.5, 0.3, 0.3, 0.4, 0.4, 0.5, 0.5, 0.2, 0.3]
+
+FAILURE
+  - mean: 3.50
+  - unbiased stdev: 1.39326
+  - unbiased sterr: 0.44059
+  - margin of error (95% conf. lvl.) = +/-0.864
+
+RATE:
+  - mean: 35.00%
+  - unbiased stdev: 13.93261%
+  - unbiased sterr: 4.40588%
+  - margin of error (95% conf. lvl.) = +/-8.636%
+
+### Round 13
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 1200 tps
+  - 1200 total tx
+  - 10 testing cycle
+  - 10 rounds per cycle
+
+Fails: [2, 2, 2, 2, 2, 3, 2, 2, 2, 3]
+Rates: [0.2, 0.2, 0.2, 0.2, 0.2, 0.3, 0.2, 0.2, 0.2, 0.3]
+
+FAILURE
+  - mean: 2.20
+  - unbiased stdev: 0.43386
+  - unbiased sterr: 0.13720
+  - margin of error (95% conf. lvl.) = +/-0.269
+
+RATE:
+  - mean: 22.00%
+  - unbiased stdev: 4.33861%
+  - unbiased sterr: 1.37199%
+  - margin of error (95% conf. lvl.) = +/-2.689%
+
+### Round 13
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 1200 tps
+  - 1200 total tx
+  - 10 testing cycle
+  - 10 rounds per cycle
+
+Fails: [2, 2, 2, 2, 2, 3, 2, 2, 2, 3]
+Rates: [0.2, 0.2, 0.2, 0.2, 0.2, 0.3, 0.2, 0.2, 0.2, 0.3]
+
+FAILURE
+  - mean: 2.20
+  - unbiased stdev: 0.43386
+  - unbiased sterr: 0.13720
+  - margin of error (95% conf. lvl.) = +/-0.269
+
+RATE:
+  - mean: 22.00%
+  - unbiased stdev: 4.33861%
+  - unbiased sterr: 1.37199%
+  - margin of error (95% conf. lvl.) = +/-2.689%
+
+### Round 13
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 1200 tps
+  - 1200 total tx
+  - 20 testing cycle
+  - 5 rounds per cycle
+
+Fails: [3, 6, 5, 3, 3]
+Rates: [0.15, 0.3, 0.25, 0.15, 0.15]
+
+FAILURE
+  - mean: 4.00
+  - unbiased stdev: 1.51186
+  - unbiased sterr: 0.67612
+  - margin of error (95% conf. lvl.) = +/-1.325
+
+RATE:
+  - mean: 20.00%
+  - unbiased stdev: 7.55929%
+  - unbiased sterr: 3.38062%
+  - margin of error (95% conf. lvl.) = +/-6.626%
+
+
+### Round 14
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 1000 tps
+  - 1000 total tx
+  - 20 testing cycle
+  - 10 rounds per cycle
+
+Fails: [2, 0, 0, 0, 4, 3, 2, 5, 2, 5]
+Rates: [0.1, 0.0, 0.0, 0.0, 0.2, 0.15, 0.1, 0.25, 0.1, 0.25]
+
+FAILURE
+  - mean: 2.30
+  - unbiased stdev: 2.00294
+  - unbiased sterr: 0.63338
+  - margin of error (95% conf. lvl.) = +/-1.241
+
+RATE:
+  - mean: 11.50%
+  - unbiased stdev: 10.01470%
+  - unbiased sterr: 3.16692%
+  - margin of error (95% conf. lvl.) = +/-6.207%
+
+### Round 15
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 1000 tps
+  - 1000 total tx
+  - 15 testing cycle
+  - 15 rounds per cycle
+
+Fails: [3, 5, 2, 2, 4, 3, 2, 3, 0, 1, 1, 1, 0, 2, 1]
+Rates: [0.2, 0.3333333333333333, 0.13333333333333333, 0.13333333333333333, 0.26666666666666666, 0.2, 0.13333333333333333, 0.2, 0.0, 0.06666666666666667, 0.06666666666666667, 0.06666666666666667, 0.0, 0.13333333333333333, 0.06666666666666667]
+
+FAILURE
+  - mean: 2.00
+  - unbiased stdev: 1.44016
+  - unbiased sterr: 0.37185
+  - margin of error (95% conf. lvl.) = +/-0.729
+
+RATE:
+  - mean: 13.33%
+  - unbiased stdev: 9.60110%
+  - unbiased sterr: 2.47899%
+  - margin of error (95% conf. lvl.) = +/-4.859%
+
+### Round 15
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 900 tps
+  - 900 total tx
+  - 15 testing cycle
+  - 15 rounds per cycle
+
+Fails: [1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 2, 1, 1, 0, 0]
+Rates: [0.06666666666666667, 0.0, 0.06666666666666667, 0.0, 0.0, 0.0, 0.0, 0.06666666666666667, 0.0, 0.06666666666666667, 0.13333333333333333, 0.06666666666666667, 0.06666666666666667, 0.0, 0.0]
+
+FAILURE
+  - mean: 0.53
+  - unbiased stdev: 0.65168
+  - unbiased sterr: 0.16826
+  - margin of error (95% conf. lvl.) = +/-0.330
+
+RATE:
+  - mean: 3.56%
+  - unbiased stdev: 4.34456%
+  - unbiased sterr: 1.12176%
+  - margin of error (95% conf. lvl.) = +/-2.199%
+
+### Round 16
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 950 tps
+  - 950 total tx
+  - 15 testing cycle
+  - 15 rounds per cycle
+
+Fails: [1, 0, 1, 1, 0, 1, 0, 1, 4, 0, 0, 1, 2, 0, 0]
+Rates: [0.06666666666666667, 0.0, 0.06666666666666667, 0.06666666666666667, 0.0, 0.06666666666666667, 0.0, 0.06666666666666667, 0.26666666666666666, 0.0, 0.0, 0.06666666666666667, 0.13333333333333333, 0.0, 0.0]
+
+FAILURE
+  - mean: 0.80
+  - unbiased stdev: 1.10219
+  - unbiased sterr: 0.28458
+  - margin of error (95% conf. lvl.) = +/-0.558
+
+RATE:
+  - mean: 5.33%
+  - unbiased stdev: 7.34791%
+  - unbiased sterr: 1.89722%
+  - margin of error (95% conf. lvl.) = +/-3.719%
+
+### Round 16
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 950 tps
+  - 950 total tx
+  - 15 testing cycle
+  - 15 rounds per cycle
+
+Fails: [0, 0, 0, 0, 0, 0, 1, 0, 1, 2, 0, 0, 1, 0, 0]
+Rates: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06666666666666667, 0.0, 0.06666666666666667, 0.13333333333333333, 0.0, 0.0, 0.06666666666666667, 0.0, 0.0]
+
+FAILURE
+  - mean: 0.33
+  - unbiased stdev: 0.62854
+  - unbiased sterr: 0.16229
+  - margin of error (95% conf. lvl.) = +/-0.318
+
+RATE:
+  - mean: 2.22%
+  - unbiased stdev: 4.19026%
+  - unbiased sterr: 1.08192%
+  - margin of error (95% conf. lvl.) = +/-2.121%
+
+###  Round 17
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 950 tps
+  - 950 total tx
+  - 20 testing cycle
+  - 25 rounds per cycle
+
+
+Fails: [1, 4, 1, 3, 0, 1, 0, 2, 2, 1, 3, 1, 4, 1, 1, 0, 1, 1, 0, 0]
+Rates: [0.04, 0.16, 0.04, 0.12, 0.0, 0.04, 0.0, 0.08, 0.08, 0.04, 0.12, 0.04, 0.16, 0.04, 0.04, 0.0, 0.04, 0.04, 0.0, 0.0]
+
+FAILURE
+  - mean: 1.35
+  - unbiased stdev: 1.28505
+  - unbiased sterr: 0.28735
+  - margin of error (95% conf. lvl.) = +/-0.563
+
+RATE:
+  - mean: 5.40%
+  - unbiased stdev: 5.14020%
+  - unbiased sterr: 1.14938%
+  - margin of error (95% conf. lvl.) = +/-2.253%

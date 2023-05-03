@@ -14,12 +14,14 @@ from subprocess import Popen, DEVNULL, PIPE, run, TimeoutExpired
 from threading import Event, Thread
 import shlex
 from random import randint
+import scipy.stats
+
 substr = SubstrateInterface(url="ws://localhost:9944")
 print("Connected")
 
 BLOCK_OVERHEAD = 187  # bytes
 END_CAPTURE_TIMEFRAME = 1
-TEST_CYCLE = 20
+TEST_CYCLE = 25
 SIG_FAIL_LVL = 0.05  # 5%
 
 # based on 1000 samples
@@ -31,6 +33,20 @@ BASELINE = {
     "extr_mean": 1.280,
     "extr_stdev": 0.5864673426065120
 }
+
+template = """
+FAILURE
+  - mean: {:.2f}
+  - unbiased stdev: {:.5f}
+  - unbiased sterr: {:.5f}
+  - margin of error (95% conf. lvl.) = +/-{:.3f}
+
+RATE:
+  - mean: {:.2f}%
+  - unbiased stdev: {:.5f}%
+  - unbiased sterr: {:.5f}%
+  - margin of error (95% conf. lvl.) = +/-{:.3f}%
+"""
 
 print(
     f"Baseline stats: {BASELINE}"
@@ -202,9 +218,12 @@ class CaptureCycle:
         print(
             f"Start iteration {iter_n+1}, with params {tx_num} num, {tps} tps")
         cmd = f"../../target/release/gn-cli -i localhost stress --seed {hex(randint(0, 0xffffffff))} --tps {tps} -n {tx_num} register-other"
+        print("START TEST")
         test = Popen(shlex.split(cmd), stderr=PIPE, stdout=PIPE)
 
+        print("WAITING")
         test.wait()
+        print("END WAIT")
         stop_event.set()
 
     def start_iteration(self, iter_n):
@@ -256,12 +275,32 @@ def initial_testing():
     print(capture_cycles)
 
 
+def print_result_stats(results):
+    rates = list(results.values())
+    fails = [int(i * TEST_CYCLE) for i in rates]
+#
+    mu_f = np.mean(fails)
+    sigma_f = np.std(fails, ddof=1.5)
+    sem_f = scipy.stats.sem(fails, ddof=1.5)
+    moe_f = 1.96 * sem_f
+#
+    mu_r = np.mean(rates)
+    sigma_r = np.std(rates, ddof=1.5)
+    sem_r = scipy.stats.sem(rates, ddof=1.5)
+    moe_r = 1.96 * sem_r
+#
+    print("Fails:", fails)
+    print("Rates:", rates)
+    print(template.format(mu_f, sigma_f, sem_f, moe_f,
+                          mu_r * 100, sigma_r * 100, sem_r * 100, moe_r*100))
+
+
 def reliability_testing():
-    params = 2200
+    params = 950
     results = {}
     capture_cycles = []
     # while True:
-    for i in range(25):
+    for i in range(20):
         c = CaptureCycle(params, params)
         failure_rate = c.start_tests(i)
         results[i] = failure_rate
@@ -269,11 +308,7 @@ def reliability_testing():
     # if params == 500:
     # break
     # params += 10
-    print(
-        f"First significant failure detected at {list(results.keys())[0]} num, {list(results.keys())[0]} tps")
-    print(f"")
-    print(results)
-    print(capture_cycles)
+    print_result_stats(results)
 
 
 def main():
