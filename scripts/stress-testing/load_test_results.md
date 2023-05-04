@@ -794,3 +794,94 @@ RATE:
   - unbiased stdev: 5.14020%
   - unbiased sterr: 1.14938%
   - margin of error (95% conf. lvl.) = +/-2.253%
+
+###  Round 18
+
+*Note: parameters are set for an unsupervised overnight test*
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 950 tps
+  - 950 total tx
+  - 50 testing cycle
+  - 50 rounds per cycle
+
+Fails: [2, 2, 4, 2, 0, 4, 0, 2, 1, 3, 1, 2, 4, 1, 2, 2, 2, 2, 3, 0, 5, 2, 3, 1, 3, 1, 1, 1, 1, 2, 2, 4, 3, 0, 2, 2, 2, 1, 2, 3, 2, 1, 1, 3, 1, 1, 2, 4, 2, 2]
+Rates: [0.04, 0.04, 0.08, 0.04, 0.0, 0.08, 0.0, 0.04, 0.02, 0.06, 0.02, 0.04, 0.08, 0.02, 0.04, 0.04, 0.04, 0.04, 0.06, 0.0, 0.1, 0.04, 0.06, 0.02, 0.06, 0.02, 0.02, 0.02, 0.02, 0.04, 0.04, 0.08, 0.06, 0.0, 0.04, 0.04, 0.04, 0.02, 0.04, 0.06, 0.04, 0.02, 0.02, 0.06, 0.02, 0.02, 0.04, 0.08, 0.04, 0.04]
+
+FAILURE
+  - mean: 1.98
+  - unbiased stdev: 1.15749
+  - unbiased sterr: 0.16369
+  - margin of error (95% conf. lvl.) = +/-0.321
+
+RATE:
+  - mean: 3.96%
+  - unbiased stdev: 2.31499%
+  - unbiased sterr: 0.32739%
+  - margin of error (95% conf. lvl.) = +/-0.642%
+
+### Round 19
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 2800 tps
+  - 2800 total tx
+  - 15 testing cycle
+  - 15 rounds per cycle
+
+Fails: [20, 16, 13, 11, 17, 18, 16, 14, 14, 11, 9, 18, 14, 15, 12]
+Rates: [1.3333333333333333, 1.0666666666666667, 0.8666666666666667, 0.7333333333333333, 1.1333333333333333, 1.2, 1.0666666666666667, 0.9333333333333333, 0.9333333333333333, 0.7333333333333333, 0.6, 1.2, 0.9333333333333333, 1.0, 0.8]
+
+FAILURE
+  - mean: 14.53
+  - unbiased stdev: 3.09998
+  - unbiased sterr: 0.80041
+  - margin of error (95% conf. lvl.) = +/-1.569
+
+RATE:
+  - mean: 96.89%
+  - unbiased stdev: 20.66653%
+  - unbiased sterr: 5.33608%
+  - margin of error (95% conf. lvl.) = +/-10.459%
+
+MOE  
+
+### Round 20
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 2800 tps
+  - 2800 total tx
+  - 20 testing cycle
+  - 25 rounds per cycle
+
+Fails: [16, 17, 17, 20, 15, 17, 17, 32, 16, 14, 14, 15, 13, 11, 13, 11, 9, 9, 9, 13, 10, 12, 11, 14, 14]
+Rates: [0.8, 0.85, 0.85, 1.0, 0.75, 0.85, 0.85, 1.6, 0.8, 0.7, 0.7, 0.75, 0.65, 0.55, 0.65, 0.55, 0.45, 0.45, 0.45, 0.65, 0.5, 0.6, 0.55, 0.7, 0.7]
+
+FAILURE
+  - mean: 14.36
+  - unbiased stdev: 4.73897
+  - unbiased sterr: 0.94779
+  - margin of error (95% conf. lvl.) = +/-1.858
+
+RATE:
+  - mean: 71.80%
+  - unbiased stdev: 23.69487%
+  - unbiased sterr: 4.73897%
+  - margin of error (95% conf. lvl.) = +/-9.288%
+
+### Round 21
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 2800 tps
+  - 2800 total tx
+  - 50 testing cycle
+  - 50 rounds per cycle
+
+

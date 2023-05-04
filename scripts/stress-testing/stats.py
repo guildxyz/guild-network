@@ -21,7 +21,7 @@ print("Connected")
 
 BLOCK_OVERHEAD = 187  # bytes
 END_CAPTURE_TIMEFRAME = 1
-TEST_CYCLE = 25
+TEST_CYCLE = 50
 SIG_FAIL_LVL = 0.05  # 5%
 
 # based on 1000 samples
@@ -296,11 +296,11 @@ def print_result_stats(results):
 
 
 def reliability_testing():
-    params = 950
+    params = 2800
     results = {}
     capture_cycles = []
     # while True:
-    for i in range(20):
+    for i in range(50):
         c = CaptureCycle(params, params)
         failure_rate = c.start_tests(i)
         results[i] = failure_rate
