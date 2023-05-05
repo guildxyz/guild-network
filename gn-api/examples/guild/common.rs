@@ -232,29 +232,3 @@ pub async fn wait_for_members(api: Api, filter: &GuildFilter, member_count: usiz
         }
     }
 }
-
-pub async fn wait_for_identity(
-    api: Api,
-    account: &AccountId,
-    prefix: &Prefix,
-    identity: &Identity,
-) {
-    let mut i = 1;
-    loop {
-        let identity_map = query::identity::identities(api.clone(), account)
-            .await
-            .expect("failed to fetch user identities");
-        if let Some(id) = identity_map.get(prefix) {
-            assert_eq!(id, identity);
-            println!("USER ID REGISTERED");
-            break;
-        } else {
-            println!("waiting for id registration... (retries: {i}/{RETRIES})");
-            if i == RETRIES {
-                panic!("couldn't find identity with prefix {prefix:?}")
-            }
-            i += 1;
-            tokio::time::sleep(std::time::Duration::from_millis(SLEEP_DURATION_MS)).await;
-        }
-    }
-}
