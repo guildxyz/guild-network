@@ -6,6 +6,7 @@ edition = "2021"
 [features]
 default = [
     "gn-common/default",
+    "guild-requirements/default",
     "subxt/default",
     "tx",
 ]
@@ -21,6 +22,8 @@ wasm = ["subxt/jsonrpsee-web"]
 # local
 gn-common = { version = "0.0.0-alpha", path = "../gn-common", default-features = false }
 gn-sig = { version = "0.0.0-alpha", path = "../gn-sig", features = ["wallet"], optional = true }
+#guild-requirements = { git = "https://github.com/agoraxyz/guild-rs", branch = "oracle-integration", default-features = false }
+guild-requirements = { path = "../../guild-rs/requirements", default-features = false }
 subxt = { git = "https://github.com/agoraxyz/subxt", branch = "bumped-wasm", default-features = false }
 
 # general

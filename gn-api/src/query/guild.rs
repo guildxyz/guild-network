@@ -2,7 +2,7 @@ use super::FilteredRequirements;
 use crate::{cast, runtime, AccountId, Api, SubxtError, H256};
 use gn_common::filter::Guild as GuildFilter;
 use gn_common::{Guild, GuildName, RoleName};
-use gn_engine::RequirementsWithLogic;
+use guild_requirements::RequirementsWithLogic;
 use subxt::ext::codec::Decode;
 use subxt::storage::address::{StorageHasher, StorageMapKey};
 

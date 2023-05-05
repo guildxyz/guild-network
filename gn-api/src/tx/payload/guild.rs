@@ -3,7 +3,7 @@ use crate::{cast, SubxtError};
 use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
 use gn_common::merkle::Proof as MerkleProof;
 use gn_common::{GuildName, RoleName};
-use gn_engine::RequirementsWithLogic;
+use guild_requirements::{RequirementsWithLogic, SerializedRequirementsWithLogic};
 
 pub fn create_guild(guild_name: GuildName, metadata: Vec<u8>) -> impl TxPayloadT {
     runtime::tx().guild().create_guild(guild_name, metadata)
@@ -23,9 +23,10 @@ pub fn create_role_with_allowlist(
     requirements: Option<RequirementsWithLogic>,
 ) -> Result<impl TxPayloadT, SubxtError> {
     let serialized_requirements = requirements
-        .map(RequirementsWithLogic::into_serialized_tuple)
+        .map(SerializedRequirementsWithLogic::try_from)
         .transpose()
-        .map_err(|e| SubxtError::Other(e.to_string()))?;
+        .map_err(|e| SubxtError::Other(e.to_string()))?
+        .map(|serialized| (serialized.requirements, serialized.logic));
     Ok(runtime::tx().guild().create_role_with_allowlist(
         guild_name,
         role_name,
@@ -43,9 +44,10 @@ pub fn create_child_role(
     requirements: Option<RequirementsWithLogic>,
 ) -> Result<impl TxPayloadT, SubxtError> {
     let serialized_requirements = requirements
-        .map(RequirementsWithLogic::into_serialized_tuple)
+        .map(SerializedRequirementsWithLogic::try_from)
         .transpose()
-        .map_err(|e| SubxtError::Other(e.to_string()))?;
+        .map_err(|e| SubxtError::Other(e.to_string()))?
+        .map(|serialized| (serialized.requirements, serialized.logic));
     Ok(runtime::tx().guild().create_child_role(
         guild_name,
         role_name,
@@ -60,8 +62,8 @@ pub fn create_unfiltered_role(
     role_name: RoleName,
     requirements: RequirementsWithLogic,
 ) -> Result<impl TxPayloadT, SubxtError> {
-    let serialized_requirements = requirements
-        .into_serialized_tuple()
+    let serialized_requirements = SerializedRequirementsWithLogic::try_from(requirements)
+        .map(|serialized| (serialized.requirements, serialized.logic))
         .map_err(|e| SubxtError::Other(e.to_string()))?;
     Ok(runtime::tx()
         .guild()

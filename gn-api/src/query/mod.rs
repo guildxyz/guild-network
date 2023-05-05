@@ -4,21 +4,24 @@ pub mod oracle;
 
 use crate::{runtime, AccountId, Api, SessionKeys, SubxtError};
 use gn_common::Role;
-use gn_engine::RequirementsWithLogic;
+use guild_requirements::{RequirementsWithLogic, SerializedRequirementsWithLogic};
 
 #[derive(Clone, Debug)]
 pub struct FilteredRequirements {
     pub filter: Option<gn_common::filter::Filter>,
-    pub requirements: Option<gn_engine::RequirementsWithLogic>,
+    pub requirements: Option<guild_requirements::RequirementsWithLogic>,
 }
 
 impl TryFrom<Role> for FilteredRequirements {
     type Error = SubxtError;
     fn try_from(role: Role) -> Result<Self, Self::Error> {
         let requirements = if let Some(serialized_requirements) = role.requirements {
-            let reqs_with_logic =
-                RequirementsWithLogic::from_serialized_tuple(serialized_requirements)
-                    .map_err(|err| SubxtError::Other(err.to_string()))?;
+            let serialized_requirements = SerializedRequirementsWithLogic {
+                requirements: serialized_requirements.0,
+                logic: serialized_requirements.1,
+            };
+            let reqs_with_logic = RequirementsWithLogic::try_from(serialized_requirements)
+                .map_err(|err| SubxtError::Other(err.to_string()))?;
             Some(reqs_with_logic)
         } else {
             None
