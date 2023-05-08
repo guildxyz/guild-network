@@ -1,6 +1,7 @@
 use super::*;
 use futures::future::try_join_all;
 use gn_api::tx::{self, Keypair, PairT, TxStatus};
+use gn_common::{PALLET_GUILD_IDENTITY_ID, PALLET_GUILD_ID};
 
 use std::sync::Arc;
 
@@ -85,13 +86,13 @@ pub async fn send_dummy_oracle_answers(api: Api, operators: &[Arc<Signer>]) {
             .find(|operator| operator.account_id() == &request.operator)
             .unwrap();
         match request.pallet_index {
-            69 => {
+            PALLET_GUILD_IDENTITY_ID => {
                 let callback = tx::identity::callback(request_id, true);
                 tx::send::ready(api.clone(), &callback, Arc::clone(signer))
                     .await
                     .expect("failed to submit oracle answer");
             }
-            70 => {
+            PALLET_GUILD_ID => {
                 let callback = tx::guild::callback(request_id, true);
                 tx::send::ready(api.clone(), &callback, Arc::clone(signer))
                     .await

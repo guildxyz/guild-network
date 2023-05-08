@@ -6,7 +6,6 @@ use gn_api::{AccountId, Api};
 use gn_common::filter::{Guild as GuildFilter, Logic as FilterLogic};
 use gn_common::merkle::Proof as MerkleProof;
 use gn_common::pad::{pad_to_n_bytes, unpad_from_n_bytes};
-use gn_common::{Identity, Prefix};
 use gn_test_data::*;
 
 use std::sync::Arc;

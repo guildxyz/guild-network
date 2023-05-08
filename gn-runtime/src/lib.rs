@@ -10,6 +10,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
+use gn_sig::MultiSignature;
 pub use pallet_balances::Call as BalancesCall;
 use pallet_grandpa::{
     fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
@@ -28,8 +29,6 @@ use sp_runtime::{
     transaction_validity::{TransactionSource, TransactionValidity},
     ApplyExtrinsicResult, SaturatedConversion,
 };
-
-use gn_sig::MultiSignature;
 #[cfg(feature = "try-runtime")]
 use sp_staking::offence::ReportOffence;
 use sp_std::prelude::*;
@@ -411,9 +410,9 @@ construct_runtime!(
         Aura: pallet_aura,
         Grandpa: pallet_grandpa,
 
-        GuildIdentity: pallet_guild_identity = 69,
-        Guild: pallet_guild = 70,
-        Oracle: pallet_oracle = 71,
+        GuildIdentity: pallet_guild_identity = 70,
+        Guild: pallet_guild = 71,
+        Oracle: pallet_oracle = 72,
 
         Sudo: pallet_sudo = 255,
     }
@@ -743,6 +742,23 @@ mod tests {
         // System Events
         assert!(
             whitelist.contains("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
+        );
+    }
+
+    #[test]
+    fn pallet_ids() {
+        let account_id = sp_runtime::AccountId32::new([0u8; 32]);
+        assert_eq!(
+            RuntimeEvent::GuildIdentity(pallet_guild_identity::Event::AccountRegistered(
+                account_id.clone()
+            ))
+            .encode()[0],
+            gn_common::PALLET_GUILD_IDENTITY_ID as u8
+        );
+        assert_eq!(
+            RuntimeEvent::Guild(pallet_guild::Event::GuildCreated(account_id, [0u8; 32])).encode()
+                [0],
+            gn_common::PALLET_GUILD_ID as u8
         );
     }
 }

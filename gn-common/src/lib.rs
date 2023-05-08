@@ -13,6 +13,8 @@ use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 
 pub const OFFCHAIN_ALLOWLIST_PREFIX: &[u8] = b"guild-allowlist";
+pub const PALLET_GUILD_IDENTITY_ID: u32 = 70;
+pub const PALLET_GUILD_ID: u32 = 71;
 
 pub fn offchain_allowlist_key(key: &[u8]) -> SpVec<u8> {
     let mut offchain_key = SpVec::from(OFFCHAIN_ALLOWLIST_PREFIX);

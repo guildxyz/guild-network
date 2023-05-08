@@ -6,9 +6,8 @@ use futures::{future::try_join_all, StreamExt};
 use gn_api::{
     query,
     tx::{self, Signer},
-    Api,
+    AccountId, Api, Balance, BlockNumber, Events, OracleRequestEvent,
 };
-use gn_common::Identity;
 use sp_core::crypto::{ExposeSecret, SecretString, Zeroize};
 use structopt::StructOpt;
 
@@ -58,7 +57,7 @@ async fn main() {
         activate(api.clone(), Arc::clone(&signer)).await;
     }
 
-    //run(api, signer).await
+    run(api, signer).await
 }
 
 pub async fn activate(api: Api, operator: Arc<Signer>) {
@@ -76,9 +75,8 @@ pub async fn activate(api: Api, operator: Arc<Signer>) {
     log::info!("operator activation request submitted");
 }
 
-/*
 pub async fn run(api: Api, operator: Arc<Signer>) {
-    let active = query::active_operators(api.clone())
+    let active = query::oracle::active_operators(api.clone())
         .await
         .expect("failed to fetch active operators");
 
@@ -99,83 +97,68 @@ pub async fn run(api: Api, operator: Arc<Signer>) {
 
     while let Some(block_result) = subscription.next().await {
         match block_result {
-            Ok(block) => match block.events().await {
-                Ok(events) => {
-                    //let mut challenge_requests = Vec::new();
-                    //let mut join_requests = Vec::new();
-                    let requests = events
-                        .iter()
-                        .filter_map(|event_result| event_result.ok())
-                        .filter_map(|event_details| {
-                            event_details.as_event::<OracleRequest>().ok().flatten()
-                        })
-                        .collect::<Vec<OracleRequest>>();
-                    // query identity + requirement
-                    // Redis
-                    //submit_answers(api.clone(), Arc::clone(&operator), requests)
+            Ok(block) => {
+                match block.events().await {
+                    Ok(events) => {
+                        let request_ids = OracleRequestIds::new(events, operator.account_id());
+                        // query identity + requirement
+                        // Redis
+                        //submit_answers(api.clone(), Arc::clone(&operator), requests)
+                    }
+                    Err(err) => log::error!("invalid block events: {err}"),
                 }
-                Err(err) => log::error!("invalid block events: {err}"),
-            },
+            }
             Err(err) => log::error!("invalid block: {err}"),
         }
     }
     log::error!("block subscription aborted");
 }
 
-//fn engine(client, id, role, redis) -> Result<bool, ...> {
-//    ...
-//}
-
-//fn challenger(redis, address, h_id) {
-//    // gen r
-//    // cache to redis
-//    // H_c -> frontend
-//    // H_id, H_c^m from bots
-//}
-
-fn submit_answers(api: Api, signer: Arc<Signer>, requests: Vec<OracleRequest>) {
-    tokio::spawn(async move {
-        let answer_futures = requests
-            .into_iter()
-            .filter(|request| {
-                if &request.operator != signer.account_id() {
-                    // request wasn't delegated to us so return
-                    log::trace!("request not delegated to us");
-                    return false;
-                }
-
-                // check whether the incoming request originates from the guild
-                // pallet just for testing basically
-                if !matches_variant(&request.callback, &GuildCall::callback { result: vec![] }) {
-                    log::trace!("callback mismatch");
-                    return false;
-                }
-                true
-            })
-            .map(|request| {
-                log::info!(
-                    "OracleRequest: {}, {}, {:?}, {}",
-                    request.request_id,
-                    request.operator,
-                    request.callback,
-                    request.fee
-                );
-
-                compile_answer(api.clone(), request.request_id)
-            })
-            .collect::<Vec<_>>();
-
-        match try_join_all(answer_futures).await {
-            Ok(answers) => {
-                if let Err(e) = tx::send::batch(api, answers.iter(), signer).await {
-                    log::warn!("failed to send oracle answers: {}", e)
-                }
-            }
-            Err(e) => log::warn!("failed to compile oracle answers: {}", e),
-        }
-    });
+struct RequestIds {
+    challenge: Vec<u64>,
+    join: Vec<u64>,
 }
 
+impl RequestIds {
+    fn new(events: Events, operator: &AccountId) -> Self {
+        let mut challenge = Vec::new();
+        let mut join = Vec::new();
+        for event_result in events.iter() {
+            let maybe_request = event_result
+                .ok()
+                .map(|event| event.as_event::<OracleRequestEvent>().ok().flatten())
+                .flatten();
+            if let Some(request) = maybe_request {
+                if operator == &request.operator {
+                    log::trace!("request not delegated to us");
+                } else {
+                    log::trace!("OracleRequest: {}, {}", request.request_id, request.fee);
+                    match request.pallet_index {
+                        gn_common::PALLET_GUILD_IDENTITY_ID => challenge.push(request.request_id),
+                        gn_common::PALLET_GUILD_ID => join.push(request.request_id),
+                        _ => log::warn!("invalid pallet index: {}", request.pallet_index),
+                    }
+                }
+            }
+        }
+        Self { challenge, join }
+    }
+
+    fn process(self, api: Api, signer: Arc<Signer>) {
+        tokio::spawn(async move {
+            match try_join_all(answer_futures).await {
+                Ok(answers) => {
+                    if let Err(e) = tx::send::batch(api, answers.iter(), signer).await {
+                        log::warn!("failed to send oracle answers: {}", e)
+                    }
+                }
+                Err(e) => log::warn!("failed to compile oracle answers: {}", e),
+            }
+        });
+    }
+}
+
+/*
 async fn compile_answer(
     api: Api,
     request_id: RequestIdentifier,

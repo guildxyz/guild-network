@@ -18,6 +18,7 @@ pub type Api = subxt::OnlineClient<ClientConfig>;
 pub type AccountId = subxt::utils::AccountId32;
 pub type Balance = u128;
 pub type BlockNumber = u32;
+pub type Events = subxt::events::Events<ClientConfig>;
 pub type GuildCall = runtime::runtime_types::pallet_guild::pallet::Call;
 pub type OracleRequestEvent = runtime::oracle::events::OracleRequest;
 pub type OracleRequest = gn_common::OracleRequest<AccountId, BlockNumber, Balance>;
