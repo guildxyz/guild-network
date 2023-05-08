@@ -847,8 +847,6 @@ RATE:
   - unbiased sterr: 5.33608%
   - margin of error (95% conf. lvl.) = +/-10.459%
 
-MOE  
-
 ### Round 20
 
 Condition: Constant moderate pressure, constant high load
@@ -856,8 +854,8 @@ Condition: Constant moderate pressure, constant high load
 Parameters:
   - 2800 tps
   - 2800 total tx
-  - 20 testing cycle
-  - 25 rounds per cycle
+  - 25 testing cycle
+  - 20 rounds per cycle
 
 Fails: [16, 17, 17, 20, 15, 17, 17, 32, 16, 14, 14, 15, 13, 11, 13, 11, 9, 9, 9, 13, 10, 12, 11, 14, 14]
 Rates: [0.8, 0.85, 0.85, 1.0, 0.75, 0.85, 0.85, 1.6, 0.8, 0.7, 0.7, 0.75, 0.65, 0.55, 0.65, 0.55, 0.45, 0.45, 0.45, 0.65, 0.5, 0.6, 0.55, 0.7, 0.7]
@@ -876,6 +874,8 @@ RATE:
 
 ### Round 21
 
+*Note: parameters are set for an unsupervised overnight test*
+
 Condition: Constant moderate pressure, constant high load
 
 Parameters:
@@ -884,4 +884,63 @@ Parameters:
   - 50 testing cycle
   - 50 rounds per cycle
 
+Fails: [28, 34, 34, 31, 25, 63, 82, 21, 25, 35, 16, 40, 67, 83, 11, 8, 19, 37, 51, 82, 82, 21, 13, 25, 28, 27, 39, 34, 34, 37, 39, 32, 37, 30, 39, 47, 46, 45, 40, 32, 28, 28, 47, 48, 39, 34, 43, 35, 41, 41]
+Rates: [0.58, 0.68, 0.68, 0.62, 0.5, 1.26, 1.64, 0.42, 0.5, 0.7, 0.32, 0.8, 1.34, 1.66, 0.22, 0.16, 0.38, 0.74, 1.02, 1.64, 1.64, 0.42, 0.26, 0.5, 0.56, 0.54, 0.78, 0.68, 0.68, 0.74, 0.78, 0.64, 0.74, 0.6, 0.78, 0.94, 0.92, 0.9, 0.8, 0.64, 0.58, 0.56, 0.94, 0.96, 0.78, 0.68, 0.86, 0.7, 0.82, 0.82]
 
+FAILURE
+  - mean: 38.06
+  - unbiased stdev: 17.52102
+  - unbiased sterr: 2.47785
+  - margin of error (95% conf. lvl.) = +/-4.857
+
+RATE:
+  - mean: 76.20%
+  - unbiased stdev: 34.99691%
+  - unbiased sterr: 4.94931%
+  - margin of error (95% conf. lvl.) = +/-9.701%
+
+### Round 22
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 1875 tps
+  - 1875 total tx
+  - 15 testing cycle
+  - 15 rounds per cycle
+
+
+### Round 23
+
+*Note: parameters are set for an unsupervised overnight test*
+
+Condition: Constant moderate pressure, constant high load
+
+Parameters:
+  - 2800 tps
+  - 2800 total tx
+  - 25 testing cycle
+  - 20 rounds per cycle
+
+Fails: [23, 19, 18, 41, 31, 23, 18, 16, 14, 14, 16, 16, 15, 17, 19, 16, 17, 19, 12, 14]
+Rates: [0.92, 0.76, 0.72, 1.64, 1.24, 0.92, 0.72, 0.64, 0.56, 0.56, 0.64, 0.64, 0.6, 0.68, 0.76, 0.64, 0.68, 0.76, 0.48, 0.56]
+
+FAILURE
+  - mean: 18.90
+  - unbiased stdev: 6.76158
+  - unbiased sterr: 1.51193
+  - margin of error (95% conf. lvl.) = +/-2.963
+
+RATE:
+  - mean: 75.60%
+  - unbiased stdev: 27.04631%
+  - unbiased sterr: 6.04774%
+  - margin of error (95% conf. lvl.) = +/-11.854%
+
+
+## Conclusion for testing
+
+The prior load testing yielded the following conclusion:
+Under extended load the chain is capable of bearing loads at failure rates
+-  ~5% error rate: 950 tps
+- ~75% error rate: 2800 tps 
