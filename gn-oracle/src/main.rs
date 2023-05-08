@@ -6,9 +6,13 @@ use futures::{future::try_join_all, StreamExt};
 use gn_api::{
     query,
     tx::{self, Signer},
-    AccountId, Api, Balance, BlockNumber, Events, OracleRequestEvent,
+    AccountId, Api, Balance, BlockNumber, Events, OracleRequest, OracleRequestEvent, SubxtError,
 };
+use gn_api::guild_requirements::PluginManager;
+use gn_common::AccessCheckRequest;
+use reqwest::blocking::Client;
 use sp_core::crypto::{ExposeSecret, SecretString, Zeroize};
+use sp_core::Decode;
 use structopt::StructOpt;
 
 use std::collections::HashMap;
@@ -97,17 +101,13 @@ pub async fn run(api: Api, operator: Arc<Signer>) {
 
     while let Some(block_result) = subscription.next().await {
         match block_result {
-            Ok(block) => {
-                match block.events().await {
-                    Ok(events) => {
-                        let request_ids = OracleRequestIds::new(events, operator.account_id());
-                        // query identity + requirement
-                        // Redis
-                        //submit_answers(api.clone(), Arc::clone(&operator), requests)
-                    }
-                    Err(err) => log::error!("invalid block events: {err}"),
+            Ok(block) => match block.events().await {
+                Ok(events) => {
+                    let request_ids = RequestIds::new(events, operator.account_id());
+                    request_ids.process(api.clone(), Arc::clone(&operator));
                 }
-            }
+                Err(err) => log::error!("invalid block events: {err}"),
+            },
             Err(err) => log::error!("invalid block: {err}"),
         }
     }
@@ -115,14 +115,14 @@ pub async fn run(api: Api, operator: Arc<Signer>) {
 }
 
 struct RequestIds {
-    challenge: Vec<u64>,
-    join: Vec<u64>,
+    challenges: Vec<u64>,
+    joins: Vec<u64>,
 }
 
 impl RequestIds {
     fn new(events: Events, operator: &AccountId) -> Self {
-        let mut challenge = Vec::new();
-        let mut join = Vec::new();
+        let mut challenges = Vec::new();
+        let mut joins = Vec::new();
         for event_result in events.iter() {
             let maybe_request = event_result
                 .ok()
@@ -134,28 +134,40 @@ impl RequestIds {
                 } else {
                     log::trace!("OracleRequest: {}, {}", request.request_id, request.fee);
                     match request.pallet_index {
-                        gn_common::PALLET_GUILD_IDENTITY_ID => challenge.push(request.request_id),
-                        gn_common::PALLET_GUILD_ID => join.push(request.request_id),
+                        gn_common::PALLET_GUILD_IDENTITY_ID => challenges.push(request.request_id),
+                        gn_common::PALLET_GUILD_ID => joins.push(request.request_id),
                         _ => log::warn!("invalid pallet index: {}", request.pallet_index),
                     }
                 }
             }
         }
-        Self { challenge, join }
+        Self { challenges, joins }
     }
 
     fn process(self, api: Api, signer: Arc<Signer>) {
         tokio::spawn(async move {
-            match try_join_all(answer_futures).await {
-                Ok(answers) => {
-                    if let Err(e) = tx::send::batch(api, answers.iter(), signer).await {
-                        log::warn!("failed to send oracle answers: {}", e)
-                    }
-                }
-                Err(e) => log::warn!("failed to compile oracle answers: {}", e),
-            }
+            //let access_checks = access_check(api.clone(), &self.joins).await.unwrap();
+            //if let Err(e) = tx::send::batch(api, access_checks.iter(), signer).await {
+            //    log::warn!("failed to send oracle answers: {}", e)
+            //}
         });
     }
+}
+
+async fn access_check<T: tx::TxPayloadT>(api: Api, reqwest_client: Client, request_id: u64) -> Result<bool, SubxtError> {
+    let oracle_request = query::oracle::request::<OracleRequest>(api.clone(), request_id).await?;
+    let request: AccessCheckRequest<AccountId> = Decode::decode(&mut &oracle_request.data[..])?;
+    let address_map = query::identity::addresses(api.clone(), &request.account).await?;
+    let requirements_with_logic =
+        query::guild::requirements(api.clone(), request.guild_name, request.role_name).await?;
+
+    let pm: PluginManager = todo!();
+    for requirement in requirements_with_logic.requirements {
+        let address_vec = address_map.get(&requirement.prefix.to_le_bytes()).unwrap_or(&Vec::new()).into_iter().map(Display::to_string).collect::<Vec<String>>();
+
+        requirement.check(pm, reqwest_client, &address_vec).map_err(|e| SubxtError::Other(e.to_string()))?;
+    }
+    todo!()
 }
 
 /*

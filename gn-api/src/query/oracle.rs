@@ -1,5 +1,6 @@
 use crate::{cast, runtime, AccountId, Api, OracleRequest, SubxtError};
 use gn_common::RequestIdentifier;
+use parity_scale_codec::Decode;
 
 use std::collections::BTreeMap;
 
@@ -25,8 +26,6 @@ pub async fn is_registered(api: Api, id: &AccountId) -> Result<bool, SubxtError>
         .is_some())
 }
 
-/*
-use parity_scale_codec::Decode;
 pub async fn request<T: Decode>(api: Api, id: RequestIdentifier) -> Result<T, SubxtError> {
     let key = runtime::storage().oracle().requests(id);
     let request = api
@@ -41,7 +40,6 @@ pub async fn request<T: Decode>(api: Api, id: RequestIdentifier) -> Result<T, Su
 
     Ok(request)
 }
-*/
 
 pub async fn requests(
     api: Api,

@@ -156,10 +156,11 @@ pub async fn requirements(
     api: Api,
     guild_name: GuildName,
     role_name: RoleName,
-) -> Result<Option<RequirementsWithLogic>, SubxtError> {
+) -> Result<RequirementsWithLogic, SubxtError> {
     filtered_requirements(api, guild_name, role_name)
         .await
-        .map(|x| x.requirements)
+        .map(|x| x.requirements)?
+        .ok_or(SubxtError::Other("no requirements in this role".into()))
 }
 
 pub async fn allowlist(
