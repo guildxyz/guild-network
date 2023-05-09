@@ -41,6 +41,29 @@ secret and maintain healthy caution when trying the demo.
 perfecting it. Expect bugs and even outages to the service while we strive
 toward a decentralized solution that nobody can just switch off.
 
+## Ongoing work
+At the time of suspending active development, the state of the repo is as
+follows:
+
+Most recent changes can be found on branch `I137-oracle-refactor`. The goal of
+this branch is to modify the oracle nodes such that it supports an identity
+service along with checking requirements. The identity service should be
+responsible to check whether non-crypto identities (e.g. Discord, Telegram)
+belong to a given user.
+
+Users can submit identity registration requests in `pallet-guild-identity`.
+This pallet has been split from the original `pallet-guild` which is now
+solely responsible for creating/managing and joining guilds.
+
+The main part missing is the oracle refactor itself.
+
+Related issues:
+
+- [oracle refactor](https://github.com/agoraxyz/guild-network/issues/137)
+- [identity service](https://github.com/agoraxyz/guild-network/issues/135)
+- [requirement engine 2.0](https://github.com/agoraxyz/guild-rs/tree/oracle-integration)
+
+
 ## Documentation
 
 - [running a validator](docs/validator.md)
