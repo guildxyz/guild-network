@@ -1,7 +1,7 @@
 use super::*;
 use futures::future::try_join_all;
 use gn_api::tx::{self, Keypair, PairT, TxStatus};
-use gn_common::{PALLET_GUILD_IDENTITY_ID, PALLET_GUILD_ID};
+use gn_common::{PALLET_GUILD_ID, PALLET_GUILD_IDENTITY_ID};
 
 use std::sync::Arc;
 

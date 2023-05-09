@@ -8,6 +8,10 @@ env_logger = "0.9.0"
 futures = "0.3.25"
 gn-api = { version = "0.0.0-alpha", path = "../gn-api" }
 gn-common = { version = "0.0.0-alpha", path = "../gn-common" }
+#guild-plugin-manager = { git = "https://github.com/agoraxyz/guild-rs", branch = "oracle-integration", default-features = false }
+guild-plugin-manager = { path = "../../guild-rs/plugin-manager", features = ["mockdb"] }
+#guild-requirements = { git = "https://github.com/agoraxyz/guild-rs", branch = "oracle-integration", default-features = false }
+guild-requirements = { path = "../../guild-rs/requirements", features = ["check"] }
 log = "0.4.17"
 sp-core = { workspace = true }
 structopt = "0.3.26"

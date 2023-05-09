@@ -8,9 +8,9 @@ use gn_api::{
     tx::{self, Signer},
     AccountId, Api, Balance, BlockNumber, Events, OracleRequest, OracleRequestEvent, SubxtError,
 };
-use gn_api::guild_requirements::PluginManager;
 use gn_common::AccessCheckRequest;
-use reqwest::blocking::Client;
+use guild_plugin_manager::{mockdb::MockDb, PluginManager};
+use guild_requirements::check::Client;
 use sp_core::crypto::{ExposeSecret, SecretString, Zeroize};
 use sp_core::Decode;
 use structopt::StructOpt;
@@ -60,8 +60,11 @@ async fn main() {
     if opt.activate {
         activate(api.clone(), Arc::clone(&signer)).await;
     }
+    // TODO
+    // identity service
+    // redis cache for storing dynamic libraries
 
-    run(api, signer).await
+    run(api, cache, signer).await
 }
 
 pub async fn activate(api: Api, operator: Arc<Signer>) {
@@ -79,7 +82,7 @@ pub async fn activate(api: Api, operator: Arc<Signer>) {
     log::info!("operator activation request submitted");
 }
 
-pub async fn run(api: Api, operator: Arc<Signer>) {
+pub async fn run(api: Api, cache: &mut MockDb, operator: Arc<Signer>) {
     let active = query::oracle::active_operators(api.clone())
         .await
         .expect("failed to fetch active operators");
@@ -146,6 +149,7 @@ impl RequestIds {
 
     fn process(self, api: Api, signer: Arc<Signer>) {
         tokio::spawn(async move {
+            // TODO
             //let access_checks = access_check(api.clone(), &self.joins).await.unwrap();
             //if let Err(e) = tx::send::batch(api, access_checks.iter(), signer).await {
             //    log::warn!("failed to send oracle answers: {}", e)
@@ -154,7 +158,11 @@ impl RequestIds {
     }
 }
 
-async fn access_check<T: tx::TxPayloadT>(api: Api, reqwest_client: Client, request_id: u64) -> Result<bool, SubxtError> {
+async fn access_check<T: tx::TxPayloadT>(
+    api: Api,
+    reqwest_client: Client,
+    request_id: u64,
+) -> Result<bool, SubxtError> {
     let oracle_request = query::oracle::request::<OracleRequest>(api.clone(), request_id).await?;
     let request: AccessCheckRequest<AccountId> = Decode::decode(&mut &oracle_request.data[..])?;
     let address_map = query::identity::addresses(api.clone(), &request.account).await?;
@@ -163,9 +171,16 @@ async fn access_check<T: tx::TxPayloadT>(api: Api, reqwest_client: Client, reque
 
     let pm: PluginManager = todo!();
     for requirement in requirements_with_logic.requirements {
-        let address_vec = address_map.get(&requirement.prefix.to_le_bytes()).unwrap_or(&Vec::new()).into_iter().map(Display::to_string).collect::<Vec<String>>();
+        let address_vec = address_map
+            .get(&requirement.prefix.to_le_bytes())
+            .unwrap_or(&Vec::new())
+            .into_iter()
+            .map(Display::to_string)
+            .collect::<Vec<String>>();
 
-        requirement.check(pm, reqwest_client, &address_vec).map_err(|e| SubxtError::Other(e.to_string()))?;
+        requirement
+            .check(pm, reqwest_client, &address_vec)
+            .map_err(|e| SubxtError::Other(e.to_string()))?;
     }
     todo!()
 }

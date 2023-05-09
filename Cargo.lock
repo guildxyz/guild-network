@@ -3157,8 +3157,9 @@ dependencies = [
  "futures",
  "gn-api",
  "gn-common",
+ "guild-plugin-manager",
+ "guild-requirements",
  "log",
- "reqwest",
  "sp-core",
  "structopt",
  "tokio",
@@ -3258,6 +3259,9 @@ dependencies = [
 [[package]]
 name = "guild-common"
 version = "0.1.0"
+dependencies = [
+ "parity-scale-codec",
+]
 
 [[package]]
 name = "guild-plugin-manager"
